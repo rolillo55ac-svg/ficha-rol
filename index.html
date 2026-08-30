@@ -7,14 +7,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#140E0B;
-  --bg-elev:#1C1410;
-  --bg-card:#241A14;
-  --line:rgba(176,141,87,0.24);
-  --line-strong:rgba(176,141,87,0.50);
-  --ink:#F2E9DB;
-  --ink-dim:#C0B095;
-  --ink-faint:#8E7C64;
+  --bg:#120D0A;
+  --bg-elev:#1B130E;
+  --bg-card:#241913;
+  --line:rgba(176,141,87,0.25);
+  --line-strong:rgba(176,141,87,0.52);
+  --ink:#F3EADB;
+  --ink-dim:#C2B196;
+  --ink-faint:#8F7D65;
   --blood:#8C252F;
   --blood-light:#C84B57;
   --accent-rgb:140,37,47;
@@ -63,7 +63,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 /* TOPBAR */
 .topbar{
   position:sticky;top:0;z-index:30;
-  background:linear-gradient(180deg, var(--bg-elev) 85%, rgba(28,20,16,0.96));
+  background:linear-gradient(180deg, var(--bg-elev) 85%, rgba(27,19,14,0.96));
   border-bottom:1.5px solid var(--line-strong);
   padding:12px 16px 14px;
   backdrop-filter:blur(6px);
@@ -261,7 +261,7 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 .money-field label{display:block;font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
 .money-field input{width:100%;background:none;border:none;font-family:var(--font-mono);font-size:1.15rem;color:var(--gold-light);}
 
-/* INVOCACIONES Y BESTIARIO */
+/* INVOCACIONES Y CRIATURAS */
 .creature-card{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:14px;margin-bottom:12px;position:relative;
@@ -286,14 +286,25 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 .lore-title-input{width:calc(100% - 38px);background:transparent;border:none;border-bottom:1px solid var(--line-strong);color:var(--gold-light);font-family:var(--font-display);font-size:.95rem;padding:2px;margin-bottom:6px;}
 .lore-text-area{width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:.84rem;min-height:45px;resize:vertical;}
 
-/* MAPA */
-.map-frame{
-  width:100%;min-height:220px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);
-  background:#090605;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:12px;
-  overflow:hidden;
+/* MAPA INTERACTIVO Y MARCADORES */
+.map-viewer{position:relative;width:100%;min-height:240px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);overflow:hidden;background:#090605;cursor:crosshair;}
+.map-viewer img{width:100%;display:block;user-select:none;}
+.map-pin{position:absolute;transform:translate(-50%,-100%);text-align:center;cursor:pointer;z-index:2;}
+.pin-glyph{width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);margin:0 auto 2px;border:1.5px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.6);}
+.pin-tag{font-size:.65rem;background:rgba(15,10,8,0.92);color:var(--gold-light);padding:2px 6px;border-radius:3px;border:1px solid var(--line);white-space:nowrap;}
+.pin-capital .pin-glyph{background:var(--gold);}
+.pin-ciudad .pin-glyph{background:var(--blood);}
+.pin-poi .pin-glyph{background:var(--teal);}
+.pin-peligro .pin-glyph{background:var(--danger);}
+
+/* BARRA DE FILTROS POR CONTINENTE */
+.continent-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none;}
+.continent-pills::-webkit-scrollbar{display:none;}
+.c-pill{
+  background:var(--bg-elev);border:1px solid var(--line);border-radius:16px;
+  padding:5px 12px;font-size:.74rem;color:var(--ink-dim);white-space:nowrap;cursor:pointer;flex:none;
 }
-.map-frame img{width:100%;display:block;}
-.map-frame.empty{color:var(--ink-faint);font-size:.85rem;font-style:italic;padding:40px 10px;text-align:center;}
+.c-pill.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.18);}
 
 /* DADOS MODAL */
 .roll-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.85);z-index:80;display:flex;align-items:center;justify-content:center;padding:18px;}
@@ -324,7 +335,7 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 /* TABBAR */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:960px;margin:0 auto;
-  background:linear-gradient(0deg, var(--bg-elev) 85%, rgba(28,20,16,0.96));
+  background:linear-gradient(0deg, var(--bg-elev) 85%, rgba(27,19,14,0.96));
   border-top:1.5px solid var(--line-strong);
   display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));
   overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
@@ -375,16 +386,14 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 .btn-row{display:flex;gap:8px;}
 .btn-row .btn{margin-top:0;}
 
-.dtype-row{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
-.dtype-btn{background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:6px;padding:8px 12px;font-family:var(--font-mono);font-size:.9rem;}
-.dtype-btn.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.12);}
-
-.auth-gate-box{
-  background:var(--bg-card);border:1.5px solid var(--line-strong);border-radius:var(--radius);
-  padding:24px 20px;max-width:440px;margin:40px auto;text-align:center;
+.dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0;}
+.dtype-card{
+  background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:8px;
+  padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;
 }
-.auth-gate-title{font-family:var(--font-display);color:var(--gold-light);font-size:1.3rem;margin-bottom:8px;}
-.auth-gate-sub{font-size:.78rem;color:var(--ink-faint);margin-bottom:18px;line-height:1.4;}
+.dtype-card.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.18);}
+.dtype-card svg{width:36px;height:36px;}
+.dtype-card span{font-family:var(--font-mono);font-size:.75rem;font-weight:700;}
 </style>
 </head>
 <body>
@@ -398,6 +407,7 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 <div class="modal-overlay hidden" id="charModalOverlay"><div class="modal" id="charModal"></div></div>
 <div class="modal-overlay hidden" id="diceModalOverlay"><div class="modal" id="diceModal"></div></div>
 <div class="modal-overlay hidden" id="dataModalOverlay"><div class="modal" id="dataModal"></div></div>
+<div class="modal-overlay hidden" id="pinModalOverlay"><div class="modal" id="pinModal"></div></div>
 <div class="roll-overlay hidden" id="rollOverlay">
   <div class="roll-box">
     <div id="rollLabel" style="font-family:var(--font-display);font-size:.95rem;color:var(--gold-light);"></div>
@@ -418,8 +428,7 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV6";
-var SUPABASE_CONFIG_KEY = "krysalisSupabaseConfig";
+var STORAGE_KEY = "krysalisFichasV7";
 var DEFAULT_SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -517,7 +526,8 @@ function getSeedBestiary(){
 function defaultState(){
   return {
     activeId:"", activeTab:"ficha", rollLog:[], characters:[],
-    lore:{pistas:[],npcs:[],objetos:[]}, bestiary:getSeedBestiary(), mapImage:null, mapNote:""
+    lore:{pistas:[],npcs:[],objetos:[]}, bestiary:getSeedBestiary(), mapImage:null, mapNote:"",
+    mapMarkers:[]
   };
 }
 
@@ -527,6 +537,7 @@ function migrateState(s){
   if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
   if(s.mapImage===undefined) s.mapImage=null;
   if(s.mapNote===undefined) s.mapNote="";
+  if(!s.mapMarkers) s.mapMarkers=[];
   (s.characters||[]).forEach(function(c){
     if(c.portrait===undefined) c.portrait=null;
     if(!c.summons) c.summons=[];
@@ -582,7 +593,7 @@ function isGM(){ return currentRole === 'gm'; }
 function activeChar(){
   var c = state.characters.find(function(x){return x.id===state.activeId;}) || state.characters[0];
   if(!c){
-    return blankCharacter("Personaje de prueba");
+    return blankCharacter("Personaje");
   }
   return c;
 }
@@ -600,7 +611,7 @@ function skillBase(skill, c){
 function skillTotal(skill, c){ return skillBase(skill, c) + num(c.skillBonus[skill.id],0); }
 function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
 
-/* MOTOR DE AUDIO WEB-AUDIO */
+/* MOTOR DE AUDIO */
 var audioCtx = null;
 function getAudioCtx(){
   if(!audioCtx){
@@ -673,7 +684,7 @@ function getDieSvg(sides){
     return '<svg viewBox="0 0 100 100"><polygon points="50,10 90,32 90,75 50,94 10,75 10,32" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><polygon points="50,28 78,72 22,72" fill="none" stroke="'+stroke+'" stroke-width="1.8"/><text x="50" y="60" font-family="var(--font-mono)" font-size="18" font-weight="700" fill="'+txt+'" text-anchor="middle">d20</text></svg>';
   }
   if(sides===100){
-    return '<div style="display:flex;gap:6px;"><svg viewBox="0 0 100 100" style="width:50px;height:50px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">00</text></svg><svg viewBox="0 0 100 100" style="width:50px;height:50px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">0</text></svg></div>';
+    return '<div style="display:flex;gap:4px;"><svg viewBox="0 0 100 100" style="width:44px;height:44px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">00</text></svg><svg viewBox="0 0 100 100" style="width:44px;height:44px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">0</text></svg></div>';
   }
   return '<svg viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" rx="10" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><circle cx="32" cy="32" r="5" fill="'+stroke+'"/><circle cx="68" cy="32" r="5" fill="'+stroke+'"/><circle cx="50" cy="50" r="5" fill="'+stroke+'"/><circle cx="32" cy="68" r="5" fill="'+stroke+'"/><circle cx="68" cy="68" r="5" fill="'+stroke+'"/></svg>';
 }
@@ -950,17 +961,17 @@ function tplCombate(c){
     html += '<div class="buff-pill '+(buffs.sangre_ataque_melee?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_melee">🩸 Sangre: +1 Melé</div>'+
             '<div class="buff-pill '+(buffs.sangre_ataque_dist?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_dist">🩸 Sangre: +1 Distancia</div>'+
             '<div class="buff-pill '+(buffs.sangre_perc?'active':'')+'" data-action="toggle-buff" data-buff="sangre_perc">🩸 Sangre: +2 Percepción</div>'+
-            '<div class="buff-pill debuff '+(buffs.sol?'active':'')+'" data-action="toggle-buff" data-buff="sol">☀️ Sol (Vida mitad)</div>'+
+            '<div class="buff-pill debuff '+(buffs.sol?'active':'')+'" data-action="toggle-buff" data-buff="sol">☀️ Sol (Mitad vida)</div>'+
             '<div class="buff-pill debuff '+(buffs.plata?'active':'')+'" data-action="toggle-buff" data-buff="plata">⚔️ Plata (1d6 daño)</div>';
-  }
-  if(isToxic){
+  } else if(isToxic){
     html += '<div class="buff-pill '+(buffs.drogado_dex?'active':'')+'" data-action="toggle-buff" data-buff="drogado_dex">🍄 Drogado: +1 Destreza</div>'+
             '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ El Mono (-1 a todo)</div>'+
             '<div class="buff-pill '+(buffs.inmune_veneno?'active':'')+'" data-action="toggle-buff" data-buff="inmune_veneno">🧪 Inmune al veneno</div>';
+  } else {
+    html += '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ Debuff -1 a todo</div>';
   }
 
-  html += '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ Mono (-1 General)</div>'+
-    '</div>';
+  html += '</div>';
 
   if(c.customBuffs && c.customBuffs.length){
     html += '<div style="margin-top:6px;"><div style="font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;">Buffs Propios / Temporales</div>';
@@ -1024,7 +1035,7 @@ function combatStat(label,bind,val,rollable){
 
 function tplAlquimia(c){
   var html = '<div class="section"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>'+
-    '<div class="section-note">Gestión de dosis, efectos adversos en enemigos y buffs corporales propios.</div>';
+    '<div class="section-note">Gestión de dosis, efectos en enemigos y buffs corporales propios.</div>';
 
   (c.poisons||[]).forEach(function(p){
     html += '<div class="creature-card">'+
@@ -1122,16 +1133,13 @@ function creatureField(label,bind,val){
 }
 
 function tplBestiario(s){
-  var contOpts = CONTINENTES.map(function(ct){
-    return '<option value="'+ct+'" '+(bestiaryContinentFilter===ct?'selected':'')+'>'+ct+'</option>';
+  var pills = CONTINENTES.map(function(ct){
+    return '<button class="c-pill '+(bestiaryContinentFilter===ct?'active':'')+'" data-action="set-bestiary-continent" data-continent="'+ct+'">'+ct+'</button>';
   }).join('');
 
   var html = '<div class="section">'+
     '<div class="section-title"><span>Bestiario y Monturas</span></div>'+
-    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">'+
-      '<label style="font-size:.72rem;color:var(--ink-faint);text-transform:uppercase;">Continente:</label>'+
-      '<select id="bestiaryFilter" style="font-size:.8rem;background:var(--bg-elev);border:1px solid var(--line);padding:4px 8px;border-radius:4px;" data-action="filter-bestiary">'+contOpts+'</select>'+
-    '</div>';
+    '<div class="continent-pills">'+pills+'</div>';
 
   (s.bestiary||[]).filter(function(b){
     return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
@@ -1189,7 +1197,7 @@ function tplExtra(c){
 
   html += '<div class="section"><div class="section-title"><span>Tabla de Diosas</span></div>';
   (c.goddessTable||[]).forEach(function(g){
-    html += '<div class="list-row god-row">'+
+    html += '<div class="list-row pop-row">'+
       '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'">'+
       '<input type="text" placeholder="Gustos" data-bind="goddessTable.'+g.id+'.gustos" value="'+esc(g.gustos)+'">'+
       '<input type="text" placeholder="Disgustos" data-bind="goddessTable.'+g.id+'.disgustos" value="'+esc(g.disgustos)+'">'+
@@ -1202,28 +1210,42 @@ function tplExtra(c){
 }
 
 function tplMundo(s){
-  var html = '<div class="section"><div class="section-title"><span>Mapa de Campaña</span></div>';
+  var pills = CONTINENTES.map(function(ct){
+    return '<button class="c-pill '+(loreContinentFilter===ct?'active':'')+'" data-action="set-lore-continent" data-continent="'+ct+'">'+ct+'</button>';
+  }).join('');
+
+  var html = '<div class="section"><div class="section-title"><span>Mapa de Campaña y Marcadores</span></div>';
   if(s.mapImage){
-    html += '<div class="map-frame"><img src="'+s.mapImage+'" alt="Mapa"></div>';
+    html += '<div class="map-viewer" data-action="map-click">'+
+      '<img src="'+s.mapImage+'" alt="Mapa">'+
+      (s.mapMarkers||[]).map(function(m){
+        var kindClass = m.kind==="Capital"?"pin-capital":m.kind==="Punto de Interés"?"pin-poi":m.kind==="Peligro"?"pin-peligro":"pin-ciudad";
+        return '<div class="map-pin '+kindClass+'" style="left:'+m.x+'%;top:'+m.y+'%;" data-action="edit-pin" data-id="'+m.id+'">'+
+          '<div class="pin-glyph"></div><div class="pin-tag">'+esc(m.name)+'</div>'+
+        '</div>';
+      }).join('')+
+    '</div>';
   } else {
-    html += '<div class="map-frame empty">Sin mapa cargado.</div>';
+    html += '<div class="map-viewer" style="display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:.85rem;padding:40px 10px;">Sin mapa cargado.</div>';
   }
   if(isGM()||!supabaseClient){
-    html += '<div class="btn-row">'+
+    html += '<div class="btn-row" style="margin-top:10px;">'+
       '<button class="btn-compact" data-action="upload-map">Subir Mapa</button>'+
-      (s.mapImage?'<button class="btn-compact" data-action="remove-map">Quitar</button>':'')+
+      (s.mapImage?'<button class="btn-compact" data-action="remove-map">Quitar Mapa</button>':'')+
     '</div>';
   }
   html += '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Lore de Campaña</span></div>';
+  html += '<div class="section"><div class="section-title"><span>Lore, Fauna y Flora</span></div>'+
+    '<div class="continent-pills">'+pills+'</div>';
+
   ["pistas","npcs","objetos"].forEach(function(cat){
-    html += '<div style="font-size:.72rem;color:var(--teal-light);text-transform:uppercase;margin:10px 0 4px;">'+cat.toUpperCase()+'</div>';
+    html += '<div style="font-size:.74rem;color:var(--teal-light);text-transform:uppercase;margin:12px 0 6px;">'+cat.toUpperCase()+'</div>';
     (s.lore[cat]||[]).forEach(function(it){
       html += '<div class="lore-card">'+
         (isGM()||!supabaseClient?'<button class="row-del" data-action="del-lore" data-cat="'+cat+'" data-id="'+it.id+'">✕</button>':'')+
-        '<input type="text" class="lore-title-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'">'+
-        '<textarea class="lore-text-area" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text">'+esc(it.text)+'</textarea>'+
+        '<input type="text" class="lore-title-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Título">'+
+        '<textarea class="lore-text-area" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción">'+esc(it.text)+'</textarea>'+
       '</div>';
     });
     if(isGM()||!supabaseClient){
@@ -1296,22 +1318,14 @@ function handleClick(e){
   var action = btn.getAttribute("data-action");
   var c = activeChar();
 
-  if(action==="filter-bestiary"){
-    bestiaryContinentFilter = document.getElementById("bestiaryFilter").value;
+  if(action==="set-bestiary-continent"){
+    bestiaryContinentFilter = btn.getAttribute("data-continent");
     renderTab();
     return;
   }
-
-  if(action==="gate-login"){
-    var em = document.getElementById("gateEmail").value.trim();
-    var pw = document.getElementById("gatePass").value;
-    supabaseLogin(em, pw);
-    return;
-  }
-  if(action==="gate-signup"){
-    var em2 = document.getElementById("gateEmail").value.trim();
-    var pw2 = document.getElementById("gatePass").value;
-    supabaseSignup(em2, pw2);
+  if(action==="set-lore-continent"){
+    loreContinentFilter = btn.getAttribute("data-continent");
+    renderTab();
     return;
   }
 
@@ -1397,7 +1411,7 @@ function handleClick(e){
   if(action==="del-stone"){ c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-summon"){ c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",notas:""}); saveState(); renderTab(); return; }
   if(action==="del-summon"){ c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-poison"){ c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); saveState(); renderTab(); return; }
+  if(action==="add-poison"){ if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); saveState(); renderTab(); return; }
   if(action==="del-poison"){ c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-passiveNeg"){ c.passivesNeg.push({id:uid(),text:""}); saveState(); renderTab(); return; }
   if(action==="del-passiveNeg"){ c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
@@ -1422,10 +1436,63 @@ function handleClick(e){
     saveState(); renderTab(); return;
   }
   if(action==="upload-map"){ document.getElementById("mapFileInput").click(); return; }
-  if(action==="remove-map"){ state.mapImage=null; saveState(); renderTab(); return; }
+  if(action==="remove-map"){ state.mapImage=null; state.mapMarkers=[]; saveState(); renderTab(); return; }
   if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="open-char-modal" || action==="open-data-modal"){ openCharModal(action==="open-data-modal"); return; }
+
+  // MAPA PINS
+  if(action==="map-click"){
+    var mViewer = btn.querySelector("img"); if(!mViewer) return;
+    var rect = mViewer.getBoundingClientRect();
+    var px = ((e.clientX - rect.left)/rect.width*100).toFixed(2);
+    var py = ((e.clientY - rect.top)/rect.height*100).toFixed(2);
+    openPinModal(px, py);
+    return;
+  }
+  if(action==="edit-pin"){
+    var pinId = btn.getAttribute("data-id");
+    openPinModal(null, null, pinId);
+    return;
+  }
+}
+
+function openPinModal(x, y, pinId){
+  if(!state.mapMarkers) state.mapMarkers=[];
+  var pin = pinId ? state.mapMarkers.find(function(p){return p.id===pinId;}) : {id:uid(), x:x, y:y, name:"", kind:"Ciudad", notes:""};
+  document.getElementById("pinModal").innerHTML =
+    '<h2>'+(pinId?'Editar Marcador':'Nuevo Punto en el Mapa')+'<button data-action="close-modal">&times;</button></h2>'+
+    '<div class="field"><label>Nombre del Lugar</label><input type="text" id="pinName" value="'+esc(pin.name)+'" placeholder="Ej: Bastión de Sangre"></div>'+
+    '<div class="field" style="margin-top:8px;"><label>Tipo de Marcador</label><select id="pinKind">'+
+      ['Ciudad','Capital','Punto de Interés','Peligro'].map(function(k){return '<option value="'+k+'" '+(pin.kind===k?'selected':'')+'>'+k+'</option>';}).join('')+
+    '</select></div>'+
+    '<div class="field" style="margin-top:8px;"><label>Notas / Descripción</label><textarea id="pinNotes" placeholder="Información del lugar...">'+esc(pin.notes)+'</textarea></div>'+
+    '<div class="btn-row" style="margin-top:14px;">'+
+      '<button class="btn btn-primary" data-action="save-pin" data-id="'+pin.id+'" data-x="'+pin.x+'" data-y="'+pin.y+'">Guardar</button>'+
+      (pinId?'<button class="btn btn-ghost" data-action="del-pin" data-id="'+pin.id+'">Borrar</button>':'')+
+    '</div>';
+  document.getElementById("pinModalOverlay").classList.remove("hidden");
+}
+
+function pinModalClick(e){
+  var btn = e.target.closest("[data-action]"); if(!btn) return;
+  var action = btn.getAttribute("data-action");
+  if(action==="close-modal"){ closeModals(); return; }
+  if(action==="save-pin"){
+    var pId = btn.getAttribute("data-id");
+    var existing = state.mapMarkers.find(function(p){return p.id===pId;});
+    var pData = existing || {id:pId, x:btn.getAttribute("data-x"), y:btn.getAttribute("data-y")};
+    pData.name = document.getElementById("pinName").value.trim()||"Punto de interés";
+    pData.kind = document.getElementById("pinKind").value;
+    pData.notes = document.getElementById("pinNotes").value;
+    if(!existing) state.mapMarkers.push(pData);
+    saveState(); closeModals(); renderTab(); return;
+  }
+  if(action==="del-pin"){
+    var pId2 = btn.getAttribute("data-id");
+    state.mapMarkers = state.mapMarkers.filter(function(p){return p.id!==pId2;});
+    saveState(); closeModals(); renderTab(); return;
+  }
 }
 
 function openCharModal(showDataTools){
@@ -1435,13 +1502,13 @@ function openCharModal(showDataTools){
   overlay.classList.remove("hidden");
 }
 function closeModals(){
-  ["charModalOverlay","diceModalOverlay","dataModalOverlay","rollOverlay"].forEach(function(id){
+  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","rollOverlay"].forEach(function(id){
     document.getElementById(id).classList.add("hidden");
   });
 }
 
 function charModalHtml(showDataTools){
-  var html = '<h2>'+(showDataTools?'Cuenta y Configuración':'Personajes')+'<button data-action="close-modal">&times;</button></h2>';
+  var html = '<h2>'+(showDataTools?'Cuenta y Sesión':'Personajes')+'<button data-action="close-modal">&times;</button></h2>';
   state.characters.forEach(function(c){
     var curTheme = c.theme||"default";
     var swatches = THEME_LIST.map(function(t){
@@ -1460,23 +1527,15 @@ function charModalHtml(showDataTools){
   html += '<button class="btn btn-ghost" data-action="add-char">+ Nuevo personaje</button>';
 
   if(showDataTools){
-    var spConfig = getSupabaseConfig();
     html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">'+
-      '<div class="section-title"><span>Servidor Supabase</span></div>'+
-      '<div class="field"><label>Project URL</label><input type="text" id="cfgSupabaseUrl" value="'+esc(spConfig.url)+'"></div>'+
-      '<div class="field" style="margin-top:6px;"><label>Anon Key</label><input type="password" id="cfgSupabaseKey" value="'+esc(spConfig.key)+'"></div>'+
-      '<button class="btn btn-ghost" data-action="save-supabase-config" style="margin-top:8px;">Guardar Conexión</button>'+
-    '</div>';
-
-    html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">'+
-      '<div class="section-title"><span>Sesión de Usuario</span></div>';
+      '<div class="section-title"><span>Sesión de Jugador</span></div>';
     if(currentUser){
       html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:8px;">Conectado: <b>'+esc(currentUser.email)+'</b> ('+currentRole.toUpperCase()+')</div>'+
         '<button class="btn btn-ghost" data-action="auth-logout">Cerrar Sesión</button>';
     } else {
-      html += '<div class="field"><label>Email</label><input type="email" id="authEmail"></div>'+
+      html += '<div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="usuario@gmail.com"></div>'+
         '<div class="field" style="margin-top:6px;"><label>Contraseña</label><input type="password" id="authPass"></div>'+
-        '<div class="btn-row" style="margin-top:8px;">'+
+        '<div class="btn-row" style="margin-top:10px;">'+
           '<button class="btn btn-primary" data-action="auth-login">Entrar</button>'+
           '<button class="btn btn-ghost" data-action="auth-signup">Registrarse</button>'+
         '</div>';
@@ -1518,10 +1577,6 @@ function modalClick(e){
     var thC = state.characters.find(function(x){return x.id===btn.getAttribute("data-id");});
     thC.theme = btn.getAttribute("data-theme"); saveState(); renderTopbar(); renderTab(); return;
   }
-  if(action==="save-supabase-config"){
-    localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({url:document.getElementById("cfgSupabaseUrl").value.trim(), key:document.getElementById("cfgSupabaseKey").value.trim()}));
-    initSupabase(); closeModals(); return;
-  }
   if(action==="auth-login"){ supabaseLogin(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
   if(action==="auth-signup"){ supabaseSignup(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
   if(action==="auth-logout"){ supabaseLogout(); return; }
@@ -1532,16 +1587,23 @@ function modalClick(e){
 var diceState = {qty:1, sides:10, mod:0, mode:"normal"};
 function diceModalHtml(){
   var sidesOpts=[4,6,8,10,12,20,100];
+  var diceCards = sidesOpts.map(function(s){
+    return '<div class="dtype-card '+(diceState.sides===s?'active':'')+'" data-action="pick-die" data-sides="'+s+'">'+
+      getDieSvg(s)+
+      '<span>'+(s===100?'d%':'d'+s)+'</span>'+
+    '</div>';
+  }).join('');
+
   return '<h2>Tirador de Dados<button data-action="close-modal">&times;</button></h2>'+
-    '<div class="field"><label>Modalidad</label><select id="diceMode">'+
+    '<div class="field"><label>Modalidad de Tirada</label><select id="diceMode">'+
       '<option value="normal" '+(diceState.mode==='normal'?'selected':'')+'>Tirada Normal</option>'+
-      '<option value="adv" '+(diceState.mode==='adv'?'selected':'')+'>Ventaja (2 dados, elige mayor)</option>'+
-      '<option value="disadv" '+(diceState.mode==='disadv'?'selected':'')+'>Desventaja (2 dados, elige menor)</option>'+
+      '<option value="adv" '+(diceState.mode==='adv'?'selected':'')+'>Ventaja (2 dados, elige el mayor)</option>'+
+      '<option value="disadv" '+(diceState.mode==='disadv'?'selected':'')+'>Desventaja (2 dados, elige el menor)</option>'+
     '</select></div>'+
+    '<div class="dtype-grid">'+diceCards+'</div>'+
     (diceState.sides===100?'':'<div class="field" style="margin-top:6px;"><label>Cantidad de dados</label><input type="number" min="1" id="diceQty" value="'+diceState.qty+'"></div>')+
-    '<div class="dtype-row">'+sidesOpts.map(function(s){return '<button class="dtype-btn '+(diceState.sides===s?'active':'')+'" data-action="pick-die" data-sides="'+s+'">'+(s===100?'d%':'d'+s)+'</button>';}).join('')+'</div>'+
-    '<div class="field" style="margin-top:6px;"><label>Modificador numérico</label><input type="number" id="diceMod" value="'+diceState.mod+'"></div>'+
-    '<button class="btn btn-primary" data-action="roll-free">Lanzar Dados</button>';
+    '<div class="field" style="margin-top:6px;"><label>Modificador numérico (+ / -)</label><input type="number" id="diceMod" value="'+diceState.mod+'"></div>'+
+    '<button class="btn btn-primary" data-action="roll-free" style="margin-top:12px;">Lanzar Dados</button>';
 }
 function openDiceModal(){
   document.getElementById("diceModal").innerHTML = diceModalHtml();
@@ -1574,7 +1636,7 @@ function diceModalClick(e){
       closeModals(); return;
     }
 
-    diceState.qty = Math.max(1, parseInt(document.getElementById("diceQty").value,10)||1);
+    diceState.qty = Math.max(1, parseInt((document.getElementById("diceQty")||{}).value,10)||1);
     var rolls=[], sum=0;
     for(var i=0;i<diceState.qty;i++){ var r=rollDie(diceState.sides); rolls.push(r); sum+=r; }
     var isCrit = rolls.every(function(r){return r===diceState.sides;});
@@ -1618,29 +1680,18 @@ function resizeImageFile(file, maxDim, quality, callback){
 }
 
 /* SUPABASE SINCRO */
-function getSupabaseConfig(){
-  try{
-    var cfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY)) || {};
-    return { url: cfg.url || DEFAULT_SUPABASE_URL, key: cfg.key || DEFAULT_SUPABASE_KEY };
-  }catch(e){ return {url:DEFAULT_SUPABASE_URL, key:DEFAULT_SUPABASE_KEY}; }
-}
 function initSupabase(){
-  var cfg = getSupabaseConfig();
-  if(!cfg.url || !cfg.key || !window.supabase) {
-    renderTab();
-    return;
-  }
+  if(!window.supabase) return;
   try{
-    supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
+    supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY);
     supabaseClient.auth.getSession().then(function(res){
       if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
-      else { renderTab(); }
-    }).catch(function(){ renderTab(); });
+    }).catch(function(){});
     supabaseClient.auth.onAuthStateChange(function(e, session){
       currentUser = session ? session.user : null;
       if(currentUser) fetchUserProfile(); else { currentRole='player'; renderTopbar(); renderTab(); }
     });
-  }catch(e){ renderTab(); }
+  }catch(e){}
 }
 async function fetchUserProfile(){
   if(!supabaseClient || !currentUser) return;
@@ -1680,7 +1731,7 @@ async function pullAllFromSupabase(){
 }
 function pushCurrentCharToSupabase(){
   if(!supabaseClient || !currentUser) return;
-  var c = activeChar(); if(!c || !c.name || c.id==="empty") return;
+  var c = activeChar(); if(!c || !c.name) return;
   var payload = {name:c.name, data:c, owner_id:currentUser.id, updated_at:new Date().toISOString()};
   if(c.db_id) payload.id = c.db_id;
   supabaseClient.from('characters').upsert(payload).then(function(res){
@@ -1708,9 +1759,11 @@ function init(){
   document.getElementById("charModal").addEventListener("click", modalClick);
   document.getElementById("dataModal").addEventListener("click", modalClick);
   document.getElementById("diceModal").addEventListener("click", diceModalClick);
+  document.getElementById("pinModal").addEventListener("click", pinModalClick);
   document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("rollOverlay").addEventListener("click", function(e){ if(e.target===this||e.target.closest("[data-action='close-modal']")) closeModals(); });
 
   document.getElementById("fabDice").addEventListener("click", openDiceModal);
