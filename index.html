@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v0.96 Pre-1.0</title>
+<title>Krysalis · Fichas de Rol v0.965 Pre-1.0</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -163,12 +163,9 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 
 /* ATRIBUTOS */
 .attr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
-.attr-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 6px;text-align:center;}
+.attr-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 4px;text-align:center;}
 .attr-card label{display:block;font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:2px;}
-.attr-val-box{font-family:var(--font-mono);font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:4px;}
-.attr-ctrls{display:flex;align-items:center;justify-content:center;gap:4px;font-size:.75rem;font-family:var(--font-mono);}
-.attr-ctrls button{width:20px;height:20px;background:var(--bg-card);border:1px solid var(--line);border-radius:3px;color:var(--gold-light);display:flex;align-items:center;justify-content:center;cursor:pointer;}
-.attr-ctrls button:disabled{opacity:0.2;cursor:not-allowed;}
+.attr-val-box{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--gold-light);}
 
 .skill-pool-banner{
   background:rgba(176,141,87,0.14);border:1px solid var(--gold);border-radius:var(--radius-sm);
@@ -182,7 +179,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   letter-spacing:.06em;margin-bottom:4px;padding-left:2px;
 }
 .skill-col-headers{
-  display:grid;grid-template-columns:1fr 36px 64px 44px 34px;gap:4px;
+  display:grid;grid-template-columns:1fr 36px 75px 44px 34px;gap:4px;
   font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;
   padding-bottom:4px;margin-bottom:2px;border-bottom:1px solid var(--line-strong);
 }
@@ -190,7 +187,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .skill-col-headers span:first-child{text-align:left;}
 
 .skill-row{
-  display:grid;grid-template-columns:1fr 36px 64px 44px 34px;gap:4px;align-items:center;
+  display:grid;grid-template-columns:1fr 36px 75px 44px 34px;gap:4px;align-items:center;
   padding:6px 0;border-bottom:1px dashed var(--line);
 }
 .skill-row:last-child{border-bottom:none;}
@@ -201,7 +198,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 }
 .skill-base{font-family:var(--font-mono);font-size:.82rem;color:var(--ink-faint);text-align:center;}
 .skill-bonus-ctrl{display:flex;align-items:center;justify-content:center;gap:2px;}
-.skill-bonus-ctrl span{font-family:var(--font-mono);font-size:.86rem;min-width:16px;text-align:center;}
+.skill-bonus-ctrl span{font-family:var(--font-mono);font-size:.82rem;min-width:24px;text-align:center;color:var(--gold-light);}
 .skill-bonus-ctrl button{
   width:18px;height:18px;background:var(--bg-elev);border:1px solid var(--line);border-radius:3px;
   font-size:.72rem;color:var(--gold-light);display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -434,7 +431,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV096";
+var STORAGE_KEY = "krysalisFichasV0965";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -507,8 +504,8 @@ function blankCharacter(name){
     id:uid(), name:name||"Nuevo Personaje", theme:"default", portrait:null,
     nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
-    attrProgress:{}, attrPointsUnlocked:false,
-    skillBonus:{}, skillHybrid:{}, customSkills:[],
+    skillBonus:{}, skillProgress:{}, skillPointsUnlocked:false,
+    skillHybrid:{}, customSkills:[],
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
     weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
@@ -572,8 +569,8 @@ function migrateState(s){
     if(!c.customSkills) c.customSkills=[];
     if(c.skillPoints===undefined) c.skillPoints=0;
     if(!c.poisons) c.poisons=[];
-    if(!c.attrProgress) c.attrProgress={};
-    if(c.attrPointsUnlocked===undefined) c.attrPointsUnlocked=false;
+    if(!c.skillProgress) c.skillProgress={};
+    if(c.skillPointsUnlocked===undefined) c.skillPointsUnlocked=false;
   });
   return s;
 }
@@ -743,7 +740,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span style="min-width:0;">'+
-          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v0.96 Pre-1.0</span></div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v0.965 Pre-1.0</span></div>'+
           '<div class="char-sub">Nv. '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -810,39 +807,9 @@ function renderTab(){
 
 function tplFicha(c){
   var pStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
-  
-  var unlocked = c.attrPointsUnlocked || false;
   var attrCards = ATTRS.map(function(a){
-    var baseVal = num(c.attrs[a], 0);
-    if(!c.attrProgress) c.attrProgress = {};
-    var prog = num(c.attrProgress[a], 0); // puntos parciales invertidos hacia el siguiente nivel
-    var nextTarget = baseVal + 1;
-    var costNeeded = nextTarget; // para subir de N a N+1 cuesta N+1 puntos
-    
-    var ctrlHtml = '';
-    if (unlocked) {
-      var canSub = prog > 0;
-      var canAdd = baseVal < 8 && num(c.skillPoints, 0) >= 1;
-      ctrlHtml = '<div class="attr-ctrls">' +
-        '<button data-action="attr-sub" data-attr="'+a+'" '+(canSub?'':'disabled')+'>-</button>' +
-        '<span>prog: '+prog+'/'+costNeeded+'</span>' +
-        '<button data-action="attr-add" data-attr="'+a+'" '+(canAdd?'':'disabled')+'>+</button>' +
-      '</div>';
-    } else {
-      ctrlHtml = '<div style="font-size:0.65rem;color:var(--ink-faint);margin-top:2px;">(Bloqueado GM)</div>';
-    }
-
-    return '<div class="attr-card">' +
-      '<label>'+ATTR_LABELS[a]+'</label>' +
-      '<div class="attr-val-box">Nv. '+baseVal+'</div>' +
-      ctrlHtml +
-    '</div>';
+    return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div></div>';
   }).join('');
-
-  var gmAttrControl = isGM() ? '<div style="margin-top:10px;display:flex;gap:6px;align-items:center;">' +
-    '<button class="btn-solid-gold" data-action="toggle-attr-lock">'+(unlocked?'🔒 Bloquear Atributos (GM)':'🔓 Permitir Subida Atributos (GM)')+'</button>' +
-    '<span style="font-size:0.75rem;color:var(--ink-dim);">Estado: '+(unlocked?'Desbloqueado para jugador':'Bloqueado')+'</span>' +
-  '</div>' : '';
 
   return '<div class="section">'+
     '<div class="section-title"><span>Datos del Personaje</span></div>'+
@@ -873,10 +840,8 @@ function tplFicha(c){
     '</div>'+
   '</div>'+
   '<div class="section">'+
-    '<div class="section-title"><span>Atributos Base (Máx. 8)</span></div>'+
-    '<div style="font-size:0.75rem;color:var(--gold-light);margin-bottom:8px;">Puntos de habilidad / mejora disponibles: <b>'+num(c.skillPoints,0)+'</b></div>'+
+    '<div class="section-title"><span>Atributos Base (Bloqueados)</span></div>'+
     '<div class="attr-grid">'+attrCards+'</div>'+
-    gmAttrControl+
   '</div>';
 }
 
@@ -892,35 +857,41 @@ function tplHabilidades(c){
   var hybrids = [];
   SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
 
-  var banner = "";
-  if(num(c.skillPoints,0) > 0){
-    banner = '<div class="skill-pool-banner">'+
-      '<span>Puntos disponibles: <b>'+num(c.skillPoints,0)+'</b></span>'+
-      '<button class="btn-solid-gold" data-action="confirm-skills">Confirmar Asignación</button>'+
-    '</div>';
-  }
+  var unlocked = c.skillPointsUnlocked || false;
+  var banner = '<div class="skill-pool-banner">'+
+    '<span>Puntos de mejora disponibles: <b>'+num(c.skillPoints,0)+'</b></span>'+
+    (isGM()?'<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>':'')+
+  '</div>';
 
   var html = '<div class="section"><div class="section-title"><span>Habilidades Generales</span></div>'+banner;
   ATTRS.forEach(function(a){
     html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
-    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
-    groups[a].forEach(function(s){ html += skillRowHtml(s,c); });
+    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
+    groups[a].forEach(function(s){ html += skillRowHtml(s, c, unlocked); });
     html += '</div>';
   });
   html += '<div class="attr-group"><div class="attr-group-title">Híbridas</div>';
-  html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
-  hybrids.forEach(function(s){ html += skillRowHtml(s,c,true); });
+  html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
+  hybrids.forEach(function(s){ html += skillRowHtml(s, c, unlocked); });
   html += '</div>';
 
   if(c.customSkills && c.customSkills.length){
     html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
-    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
+    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
     c.customSkills.forEach(function(cs){
-      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span><span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
+      var bonusVal = num(c.skillBonus[cs.id],0);
+      if(!c.skillProgress) c.skillProgress = {};
+      var prog = num(c.skillProgress[cs.id],0);
+      var costNeeded = bonusVal + 1;
+      var canSub = bonusVal > 0 || prog > 0;
+      var canAdd = unlocked && bonusVal < 8 && num(c.skillPoints,0) >= 1;
+      
+      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span>'+
+        '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
         '<span class="skill-bonus-ctrl">'+
-          '<button data-action="skill-sub-custom" data-id="'+cs.id+'">-</button>'+
-          '<span>'+num(cs.bonus,0)+'</span>'+
-          '<button data-action="skill-add-custom" data-id="'+cs.id+'">+</button>'+
+          '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+'>-</button>'+
+          '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+          '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+'>+</button>'+
         '</span>'+
         '<span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'">&#127922;</button></div>';
     });
@@ -931,24 +902,32 @@ function tplHabilidades(c){
   return html;
 }
 
-function skillRowHtml(s,c,isHybrid){
+function skillRowHtml(s, c, unlocked){
   var base = skillBase(s,c);
   var total = skillTotal(s,c);
+  var bonusVal = num(c.skillBonus[s.id],0);
+  if(!c.skillProgress) c.skillProgress = {};
+  var prog = num(c.skillProgress[s.id],0);
+  var costNeeded = bonusVal + 1; // Subir de N a N+1 cuesta N+1 puntos
+
   var hybridSel = "";
-  if(isHybrid){
+  if(s.attr==="hybrid"){
     var chosen = c.skillHybrid[s.id] || s.hybridOptions[0];
     hybridSel = '<div><select class="skill-hybrid-select" data-bind="skillHybrid.'+s.id+'">'+
       s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+ATTR_LABELS[o].slice(0,3)+'</option>';}).join('')+
       '</select></div>';
   }
 
+  var canSub = bonusVal > 0 || prog > 0;
+  var canAdd = unlocked && bonusVal < 8 && num(c.skillPoints,0) >= 1;
+
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
     '<span class="skill-base">'+base+'</span>'+
     '<span class="skill-bonus-ctrl">'+
-      '<button data-action="skill-sub" data-id="'+s.id+'">-</button>'+
-      '<span>'+num(c.skillBonus[s.id],0)+'</span>'+
-      '<button data-action="skill-add" data-id="'+s.id+'">+</button>'+
+      '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+'>-</button>'+
+      '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+      '<button data-action="skill-add" data-id="'+s.id+'" '+(canAdd?'':'disabled')+'>+</button>'+
     '</span>'+
     '<span class="skill-total">'+total+'</span>'+
     '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'">&#127922;</button>'+
@@ -1369,92 +1348,107 @@ function handleClick(e){
     saveState(); renderTopbar(); return;
   }
 
-  /* SISTEMA DE SUBIDA DE NIVEL Y ATRIBUTOS */
+  /* SISTEMA DE SUBIDA DE NIVEL Y HABILIDADES GENERALES */
   if(action==="grant-level"){
     c.nivel = String(num(c.nivel,1)+1);
-    c.skillPoints = num(c.skillPoints,0) + 4; // 4 puntos al subir nivel (sirven para habilidades o stats)
+    c.skillPoints = num(c.skillPoints,0) + 4;
     saveState(); renderTopbar(); renderTab(); return;
   }
-  if(action==="toggle-attr-lock"){
+  if(action==="toggle-skill-lock"){
     if(!isGM()) return;
-    c.attrPointsUnlocked = !c.attrPointsUnlocked;
+    c.skillPointsUnlocked = !c.skillPointsUnlocked;
     saveState(); renderTab(); return;
   }
-  if(action==="attr-add"){
-    if(!c.attrPointsUnlocked) return;
-    var aKey = btn.getAttribute("data-attr");
-    var curVal = num(c.attrs[aKey], 0);
-    if(curVal === 0) { alert("No se puede subir un atributo en nivel 0."); return; }
-    if(curVal >= 8) { alert("El atributo ya ha alcanzado el nivel máximo (8)."); return; }
+  if(action==="skill-add"){
+    if(!c.skillPointsUnlocked) return;
+    var sId = btn.getAttribute("data-id");
+    var curBonus = num(c.skillBonus[sId], 0);
+    if(curBonus === 0) { alert("No se puede subir una habilidad que está en nivel 0."); return; }
+    if(curBonus >= 8) { alert("La habilidad ha alcanzado el nivel máximo (8)."); return; }
     if(num(c.skillPoints, 0) < 1) { alert("No tienes puntos disponibles."); return; }
-    
-    if(!c.attrProgress) c.attrProgress = {};
-    var prog = num(c.attrProgress[aKey], 0);
-    var targetLevel = curVal + 1;
+
+    if(!c.skillProgress) c.skillProgress = {};
+    var prog = num(c.skillProgress[sId], 0);
+    var targetLevel = curBonus + 1;
     var costNeeded = targetLevel; // Salto de N a N+1 cuesta N+1 puntos
-    
+
     c.skillPoints--;
     prog++;
-    
+
     if(prog >= costNeeded){
       prog = 0;
-      c.attrs[aKey] = targetLevel;
-      // Escalar automáticamente PV y Maná máximos si procede
-      c.combat.pvMax = num(c.combat.pvMax, 10) + 2;
-      c.combat.manaMax = num(c.combat.manaMax, 10) + 2;
+      c.skillBonus[sId] = targetLevel;
     }
-    c.attrProgress[aKey] = prog;
-    saveState(); renderTopbar(); renderTab(); return;
-  }
-  if(action==="attr-sub"){
-    if(!c.attrPointsUnlocked) return;
-    var aKey2 = btn.getAttribute("data-attr");
-    if(!c.attrProgress) c.attrProgress = {};
-    var prog2 = num(c.attrProgress[aKey2], 0);
-    if(prog2 > 0){
-      prog2--;
-      c.attrProgress[aKey2] = prog2;
-      c.skillPoints++;
-      saveState(); renderTab();
-    }
-    return;
-  }
-
-  if(action==="skill-add"){
-    var sId = btn.getAttribute("data-id");
-    if(num(c.skillPoints,0) > 0){
-      c.skillPoints--;
-      c.skillBonus[sId] = num(c.skillBonus[sId],0) + 1;
-      saveState(); renderTab();
-    }
-    return;
+    c.skillProgress[sId] = prog;
+    saveState(); renderTab(); return;
   }
   if(action==="skill-sub"){
+    if(!c.skillPointsUnlocked) return;
     var sId2 = btn.getAttribute("data-id");
-    if(num(c.skillBonus[sId2],0) > 0){
+    if(!c.skillProgress) c.skillProgress = {};
+    var prog2 = num(c.skillProgress[sId2], 0);
+    var curBonus2 = num(c.skillBonus[sId2], 0);
+
+    if(prog2 > 0){
+      prog2--;
+      c.skillProgress[sId2] = prog2;
       c.skillPoints++;
-      c.skillBonus[sId2] = num(c.skillBonus[sId2],0) - 1;
+      saveState(); renderTab();
+    } else if(curBonus2 > 0){
+      // Si el progreso parcial es 0 pero tiene bonus mayor a 0, permitir decrementar el nivel completo devolviendo los puntos del nivel anterior
+      // Coste del nivel actual era curBonus2, devolvemos curBonus2 puntos y bajamos 1 nivel el bonus
+      var refunded = curBonus2;
+      c.skillBonus[sId2] = curBonus2 - 1;
+      c.skillPoints += refunded;
       saveState(); renderTab();
     }
     return;
   }
   if(action==="skill-add-custom"){
+    if(!c.skillPointsUnlocked) return;
     var csId = btn.getAttribute("data-id");
     var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
-    if(csk && num(c.skillPoints,0) > 0){
+    if(csk){
+      var curBonus = num(csk.bonus, 0);
+      if(curBonus === 0) { alert("No se puede subir una habilidad en nivel 0."); return; }
+      if(curBonus >= 8) { alert("Máximo nivel 8."); return; }
+      if(num(c.skillPoints, 0) < 1) { alert("Puntos insuficientes."); return; }
+
+      if(!c.skillProgress) c.skillProgress = {};
+      var prog = num(c.skillProgress[csId], 0);
+      var targetLevel = curBonus + 1;
+      var costNeeded = targetLevel;
+
       c.skillPoints--;
-      csk.bonus = num(csk.bonus,0) + 1;
+      prog++;
+      if(prog >= costNeeded){
+        prog = 0;
+        csk.bonus = targetLevel;
+      }
+      c.skillProgress[csId] = prog;
       saveState(); renderTab();
     }
     return;
   }
   if(action==="skill-sub-custom"){
+    if(!c.skillPointsUnlocked) return;
     var csId2 = btn.getAttribute("data-id");
     var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
-    if(csk2 && num(csk2.bonus,0) > 0){
-      c.skillPoints++;
-      csk2.bonus = num(csk2.bonus,0) - 1;
-      saveState(); renderTab();
+    if(csk2){
+      if(!c.skillProgress) c.skillProgress = {};
+      var prog2 = num(c.skillProgress[csId2], 0);
+      var curBonus2 = num(csk2.bonus, 0);
+      if(prog2 > 0){
+        prog2--;
+        c.skillProgress[csId2] = prog2;
+        c.skillPoints++;
+        saveState(); renderTab();
+      } else if(curBonus2 > 0){
+        var refunded = curBonus2;
+        csk2.bonus = curBonus2 - 1;
+        c.skillPoints += refunded;
+        saveState(); renderTab();
+      }
     }
     return;
   }
@@ -1487,7 +1481,7 @@ function handleClick(e){
     var attrChoice = prompt("Atributo base (fisico / destreza / inteligencia / percepcion / carisma):","destreza");
     if(ATTRS.indexOf(attrChoice)===-1) attrChoice="destreza";
     if(!c.customSkills) c.customSkills=[];
-    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:0});
+    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:1}); // Empieza en nivel 1 para permitir subidas
     saveState(); renderTab(); return;
   }
   if(action==="add-custom-buff"){
@@ -1983,7 +1977,7 @@ function init(){
   document.getElementById("pinModal").addEventListener("click", pinModalClick);
   document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this, e.target===this) closeModals(); });
+  document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("rollOverlay").addEventListener("click", function(e){
     if(e.target===this || e.target.closest("[data-action='close-roll-modal']")) this.classList.add("hidden");
