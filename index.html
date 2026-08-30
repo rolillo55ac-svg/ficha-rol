@@ -1650,7 +1650,7 @@ function diceModalClick(e){
     var rolls=[], sum=0;
     for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
     var grandTotal = sum + diceConfig.mod;
-    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
+    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+mod:" - "+Math.abs(mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
     return;
   }
 }
@@ -1733,7 +1733,6 @@ function initSupabase(){
   try{
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     
-    // Canal automático en tiempo real para mapas
     if(!realtimeChannel){
       realtimeChannel = supabaseClient.channel('realtime_map_changes')
         .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(payload){
