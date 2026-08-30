@@ -130,7 +130,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);}
 
 /* MAIN */
-main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
+main{flex:1;padding:14px 14px 120px;overflow-y:auto;}
 .section{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;}
 .section-title{
   font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-size:.82rem;
@@ -201,6 +201,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   width:18px;height:18px;background:var(--bg-elev);border:1px solid var(--line);border-radius:3px;
   font-size:.72rem;color:var(--gold-light);display:flex;align-items:center;justify-content:center;cursor:pointer;
 }
+.skill-bonus-ctrl button:disabled{opacity:0.3;cursor:not-allowed;border-color:transparent;}
 .skill-total{font-family:var(--font-mono);font-weight:700;font-size:.95rem;color:var(--gold-light);text-align:center;}
 .dice-btn{
   background:none;border:1px solid var(--line);border-radius:6px;color:var(--ink-faint);
@@ -332,6 +333,14 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .tab-btn.active{color:var(--gold-light);font-weight:700;}
 .tab-btn.active::after{content:'';width:16px;height:2px;background:var(--blood-light);border-radius:2px;}
 
+/* FAB DICE */
+.fab-dice{
+  position:fixed;right:16px;bottom:70px;z-index:41;width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, var(--blood-light), var(--blood) 75%);
+  border:1.5px solid var(--gold);color:var(--ink);font-size:1.4rem;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 18px rgba(0,0,0,0.55);cursor:pointer;
+}
+
 /* MODALES */
 .modal-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.78);z-index:80;display:flex;align-items:flex-end;justify-content:center;}
 @media(min-width:640px){.modal-overlay{align-items:center;}}
@@ -344,7 +353,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .modal h2{font-family:var(--font-display);color:var(--gold-light);font-size:1.1rem;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;}
 .modal h2 button{background:none;border:none;color:var(--ink-faint);font-size:1.3rem;cursor:pointer;}
 
-/* TARJETAS DE PERSONAJE MEJORADAS */
+/* TARJETAS DE PERSONAJE */
 .char-list-item{
   display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);
   border:1px solid var(--line);background:var(--bg-card);margin-bottom:8px;
@@ -396,6 +405,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   <header class="topbar" id="topbar"></header>
   <nav class="tabbar" id="tabbar"></nav>
   <main id="main"></main>
+  <button class="fab-dice" id="fabDice" title="Tirar dados">&#9861;</button>
 </div>
 
 <div class="modal-overlay hidden" id="charModalOverlay"><div class="modal" id="charModal"></div></div>
@@ -422,7 +432,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV17";
+var STORAGE_KEY = "krysalisFichasV18";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -494,7 +504,7 @@ function blankCharacter(name){
     id:uid(), name:name||"Nuevo Personaje", theme:"default", portrait:null,
     nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
-    skillBonus:{}, baseSkillBonus:{}, skillHybrid:{}, customSkills:[],
+    skillBonus:{}, tempAllocated:{}, skillHybrid:{}, customSkills:[],
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
     weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
@@ -549,15 +559,14 @@ function migrateState(s){
   if(!s.lore || !s.lore.objetos) s.lore=getSeedLore();
   if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
   if(!s.maps || !s.maps.length){
-    s.maps = [{ id:"world_main", name:"Mapa de Campaña", image:s.mapImage||null, markers:s.mapMarkers||[] }];
+    s.maps = [{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }];
     s.activeMapId = "world_main";
   }
   (s.characters||[]).forEach(function(c){
     if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10};
     if(c.combat.escudoActual===undefined) c.combat.escudoActual=0;
-    if(!c.baseSkillBonus) c.baseSkillBonus = Object.assign({}, c.skillBonus||{});
+    if(!c.tempAllocated) c.tempAllocated={};
     if(!c.customSkills) c.customSkills=[];
-    (c.customSkills||[]).forEach(function(cs){ if(cs.baseBonus===undefined) cs.baseBonus=num(cs.bonus,0); });
     if(c.skillPoints===undefined) c.skillPoints=0;
     if(!c.poisons) c.poisons=[];
   });
@@ -612,7 +621,7 @@ function skillBase(skill, c){
 function skillTotal(skill, c){ return skillBase(skill, c) + num(c.skillBonus[skill.id],0); }
 function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
 
-/* WEB AUDIO */
+/* AUDIO */
 var audioCtx = null;
 function getAudioCtx(){
   if(!audioCtx){
@@ -735,7 +744,6 @@ function renderTopbar(){
       '<div style="display:flex;align-items:center;gap:6px;">'+
         '<span id="syncBadge" class="sync-status">'+(currentUser?'● En la nube':'○ Local')+'</span>'+
         (isGM() ? '<span class="role-badge gm">★ Máster</span>' : '<span class="role-badge player">Jugador</span>')+
-        '<button class="icon-btn" data-action="open-free-dice" title="Tirador de Dados">&#9861;</button>'+
         '<button class="icon-btn" data-action="open-data-modal" title="Ajustes y Sesión">&#9881;</button>'+
       '</div>'+
     '</div>'+
@@ -846,10 +854,11 @@ function tplHabilidades(c){
   var hybrids = [];
   SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
 
+  var isLevelUpActive = num(c.skillPoints,0) > 0 || (c.tempAllocated && Object.values(c.tempAllocated).some(function(v){return v>0;}));
   var banner = "";
-  if(num(c.skillPoints,0) > 0){
+  if(isLevelUpActive){
     banner = '<div class="skill-pool-banner">'+
-      '<span>Puntos de habilidad disponibles: <b>'+c.skillPoints+'</b></span>'+
+      '<span>Puntos de habilidad para asignar: <b>'+num(c.skillPoints,0)+'</b></span>'+
       '<button class="btn-solid-gold" data-action="confirm-skills">Confirmar Asignación</button>'+
     '</div>';
   }
@@ -858,24 +867,29 @@ function tplHabilidades(c){
   ATTRS.forEach(function(a){
     html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
-    groups[a].forEach(function(s){ html += skillRowHtml(s,c); });
+    groups[a].forEach(function(s){ html += skillRowHtml(s,c,false,isLevelUpActive); });
     html += '</div>';
   });
   html += '<div class="attr-group"><div class="attr-group-title">Híbridas</div>';
   html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
-  hybrids.forEach(function(s){ html += skillRowHtml(s,c,true); });
+  hybrids.forEach(function(s){ html += skillRowHtml(s,c,true,isLevelUpActive); });
   html += '</div>';
 
   if(c.customSkills && c.customSkills.length){
     html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
     c.customSkills.forEach(function(cs){
-      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span><span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
-        '<span class="skill-bonus-ctrl">'+
-          '<button data-action="skill-sub-custom" data-id="'+cs.id+'">-</button>'+
+      var userAllocated = (c.tempAllocated && c.tempAllocated[cs.id]) || 0;
+      var stepperHtml = isLevelUpActive ?
+        '<div class="skill-bonus-ctrl">'+
+          '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(userAllocated>0?'':'disabled')+'>-</button>'+
           '<span>'+num(cs.bonus,0)+'</span>'+
-          '<button data-action="skill-add-custom" data-id="'+cs.id+'">+</button>'+
-        '</span>'+
+          '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(num(c.skillPoints,0)>0?'':'disabled')+'>+</button>'+
+        '</div>' :
+        '<span style="font-family:var(--font-mono);font-size:.88rem;text-align:center;">'+num(cs.bonus,0)+'</span>';
+
+      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span><span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
+        stepperHtml+
         '<span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'">&#127922;</button></div>';
     });
     html += '</div>';
@@ -885,7 +899,7 @@ function tplHabilidades(c){
   return html;
 }
 
-function skillRowHtml(s,c,isHybrid){
+function skillRowHtml(s,c,isHybrid,isLevelUpActive){
   var base = skillBase(s,c);
   var total = skillTotal(s,c);
   var hybridSel = "";
@@ -895,14 +909,20 @@ function skillRowHtml(s,c,isHybrid){
       s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+ATTR_LABELS[o].slice(0,3)+'</option>';}).join('')+
       '</select></div>';
   }
+
+  var userAllocated = (c.tempAllocated && c.tempAllocated[s.id]) || 0;
+  var stepperHtml = isLevelUpActive ?
+    '<div class="skill-bonus-ctrl">'+
+      '<button data-action="skill-sub" data-id="'+s.id+'" '+(userAllocated>0?'':'disabled')+'>-</button>'+
+      '<span>'+num(c.skillBonus[s.id],0)+'</span>'+
+      '<button data-action="skill-add" data-id="'+s.id+'" '+(num(c.skillPoints,0)>0?'':'disabled')+'>+</button>'+
+    '</div>' :
+    '<span style="font-family:var(--font-mono);font-size:.88rem;text-align:center;">'+num(c.skillBonus[s.id],0)+'</span>';
+
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
     '<span class="skill-base">'+base+'</span>'+
-    '<span class="skill-bonus-ctrl">'+
-      '<button data-action="skill-sub" data-id="'+s.id+'">-</button>'+
-      '<span>'+num(c.skillBonus[s.id],0)+'</span>'+
-      '<button data-action="skill-add" data-id="'+s.id+'">+</button>'+
-    '</span>'+
+    stepperHtml+
     '<span class="skill-total">'+total+'</span>'+
     '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'">&#127922;</button>'+
   '</div>';
@@ -1318,21 +1338,30 @@ function handleClick(e){
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
     saveState(); renderTopbar(); return;
   }
+
+  /* SISTEMA DE SUBIDA DE NIVEL Y PUNTOS */
+  if(action==="grant-level"){
+    c.nivel = String(num(c.nivel,1)+1);
+    c.skillPoints = num(c.skillPoints,0) + 4;
+    c.tempAllocated = c.tempAllocated || {};
+    saveState(); renderTopbar(); renderTab(); return;
+  }
   if(action==="skill-add"){
     var sId = btn.getAttribute("data-id");
     if(num(c.skillPoints,0) > 0){
       c.skillPoints--;
-      c.skillBonus[sId] = num(c.skillBonus[sId],0)+1;
+      c.tempAllocated[sId] = (c.tempAllocated[sId] || 0) + 1;
+      c.skillBonus[sId] = num(c.skillBonus[sId],0) + 1;
       saveState(); renderTab();
     }
     return;
   }
   if(action==="skill-sub"){
     var sId2 = btn.getAttribute("data-id");
-    var baseVal = (c.baseSkillBonus && c.baseSkillBonus[sId2]!==undefined) ? c.baseSkillBonus[sId2] : 0;
-    if(num(c.skillBonus[sId2],0) > baseVal){
-      c.skillPoints = num(c.skillPoints,0)+1;
-      c.skillBonus[sId2] = num(c.skillBonus[sId2],0)-1;
+    if((c.tempAllocated[sId2] || 0) > 0){
+      c.skillPoints++;
+      c.tempAllocated[sId2]--;
+      c.skillBonus[sId2] = num(c.skillBonus[sId2],0) - 1;
       saveState(); renderTab();
     }
     return;
@@ -1342,7 +1371,8 @@ function handleClick(e){
     var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
     if(csk && num(c.skillPoints,0) > 0){
       c.skillPoints--;
-      csk.bonus = num(csk.bonus,0)+1;
+      c.tempAllocated[csId] = (c.tempAllocated[csId] || 0) + 1;
+      csk.bonus = num(csk.bonus,0) + 1;
       saveState(); renderTab();
     }
     return;
@@ -1350,24 +1380,20 @@ function handleClick(e){
   if(action==="skill-sub-custom"){
     var csId2 = btn.getAttribute("data-id");
     var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
-    var baseCustom = (csk2 && csk2.baseBonus!==undefined) ? csk2.baseBonus : 0;
-    if(csk2 && num(csk2.bonus,0) > baseCustom){
-      c.skillPoints = num(c.skillPoints,0)+1;
-      csk2.bonus = num(csk2.bonus,0)-1;
+    if(csk2 && (c.tempAllocated[csId2] || 0) > 0){
+      c.skillPoints++;
+      c.tempAllocated[csId2]--;
+      csk2.bonus = num(csk2.bonus,0) - 1;
       saveState(); renderTab();
     }
     return;
   }
   if(action==="confirm-skills"){
-    c.baseSkillBonus = Object.assign({}, c.skillBonus||{});
-    (c.customSkills||[]).forEach(function(cs){ cs.baseBonus = num(cs.bonus,0); });
+    c.tempAllocated = {};
+    c.skillPoints = 0;
     saveState(); renderTab(); return;
   }
-  if(action==="grant-level"){
-    c.nivel = String(num(c.nivel,1)+1);
-    c.skillPoints = num(c.skillPoints,0) + 4;
-    saveState(); renderTopbar(); renderTab(); return;
-  }
+
   if(action==="toggle-buff"){
     var bName = btn.getAttribute("data-buff");
     if(!c.buffs) c.buffs={};
@@ -1392,7 +1418,7 @@ function handleClick(e){
     var attrChoice = prompt("Atributo base (fisico / destreza / inteligencia / percepcion / carisma):","destreza");
     if(ATTRS.indexOf(attrChoice)===-1) attrChoice="destreza";
     if(!c.customSkills) c.customSkills=[];
-    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:0,baseBonus:0});
+    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:0});
     saveState(); renderTab(); return;
   }
   if(action==="add-custom-buff"){
@@ -1492,7 +1518,6 @@ function handleClick(e){
   /* MODALES */
   if(action==="open-char-modal"){ openCharModal(); return; }
   if(action==="open-data-modal"){ openDataModal(); return; }
-  if(action==="open-free-dice"){ openDiceModal(); return; }
   if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
@@ -1718,7 +1743,7 @@ function resizeImageFile(file, maxDim, quality, callback){
   reader.readAsDataURL(file);
 }
 
-/* SUPABASE SYNC */
+/* SUPABASE SINCRO COMPLETA (PERSONAJES + MAPAS) */
 function initSupabase(){
   if(!window.supabase) return;
   try{
@@ -1785,11 +1810,14 @@ async function pullMapFromSupabase(){
   if(!supabaseClient) return;
   try{
     var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'main_map').maybeSingle();
-    if(res.data && res.data.markers){
-      state.maps = res.data.markers;
-      if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
-      saveState(true);
-      if(state.activeTab==="mundo") renderTab();
+    if(res.data && (res.data.data || res.data.markers)){
+      var remoteMaps = res.data.data || res.data.markers;
+      if(Array.isArray(remoteMaps) && remoteMaps.length){
+        state.maps = remoteMaps;
+        if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
+        saveState(true);
+        if(state.activeTab==="mundo") renderTab();
+      }
     }
   }catch(e){}
 }
@@ -1797,7 +1825,7 @@ function pushMapsData(){
   if(!supabaseClient || !currentUser) return;
   supabaseClient.from('campaign_map').upsert({
     id: 'main_map',
-    image_url: "synced_maps",
+    data: state.maps || [],
     markers: state.maps || [],
     updated_at: new Date().toISOString()
   }).then(function(){ updateSyncBadge("synced"); });
@@ -1828,6 +1856,11 @@ function init(){
   document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  document.getElementById("rollOverlay").addEventListener("click", function(e){
+    if(e.target===this || e.target.closest("[data-action='close-roll-modal']")) this.classList.add("hidden");
+  });
+
+  document.getElementById("fabDice").addEventListener("click", openDiceModal);
 
   document.getElementById("portraitFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
