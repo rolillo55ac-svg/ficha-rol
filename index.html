@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol</title>
+<title>Krysalis · Fichas de Rol v0.9</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -103,6 +103,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .sync-status.synced{color:var(--teal-light);border-color:var(--teal);}
 .sync-status.saving{color:var(--gold-light);border-color:var(--gold);}
+.version-tag{font-size:.6rem;font-family:var(--font-mono);background:rgba(176,141,87,0.2);color:var(--gold-light);padding:2px 5px;border-radius:4px;margin-left:6px;border:1px solid var(--line);}
 
 .icon-btn{
   background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
@@ -333,7 +334,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .tab-btn.active{color:var(--gold-light);font-weight:700;}
 .tab-btn.active::after{content:'';width:16px;height:2px;background:var(--blood-light);border-radius:2px;}
 
-/* FAB DICE FLOTANTE */
+/* FAB DICE FLOTANTE CENTRADO EN PANTALLA PARA MODAL */
 .fab-dice{
   position:fixed;right:18px;bottom:72px;z-index:9999;width:52px;height:52px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%, var(--blood-light), var(--blood) 75%);
@@ -341,7 +342,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   box-shadow:0 6px 18px rgba(0,0,0,0.65);cursor:pointer;pointer-events:auto;
 }
 
-/* MODALES */
+/* MODALES CENTRADOS */
 .modal-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.82);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal-overlay.hidden{display:none;}
 .modal{
@@ -430,7 +431,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV21";
+var STORAGE_KEY = "krysalisFichasV09";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -502,7 +503,7 @@ function blankCharacter(name){
     id:uid(), name:name||"Nuevo Personaje", theme:"default", portrait:null,
     nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
-    skillBonus:{}, skillHybrid:{}, customSkills:[],
+    skillBonus:{}, tempAllocated:{}, skillHybrid:{}, customSkills:[],
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
     weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
@@ -563,6 +564,7 @@ function migrateState(s){
   (s.characters||[]).forEach(function(c){
     if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10};
     if(c.combat.escudoActual===undefined) c.combat.escudoActual=0;
+    if(!c.tempAllocated) c.tempAllocated={};
     if(!c.customSkills) c.customSkills=[];
     if(c.skillPoints===undefined) c.skillPoints=0;
     if(!c.poisons) c.poisons=[];
@@ -734,7 +736,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span style="min-width:0;">'+
-          '<div class="char-name">'+esc(c.name)+'</div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v0.9</span></div>'+
           '<div class="char-sub">Nv. '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -851,8 +853,9 @@ function tplHabilidades(c){
   var hybrids = [];
   SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
 
+  var isLevelUpActive = num(c.skillPoints,0) > 0 || (c.tempAllocated && Object.values(c.tempAllocated).some(function(v){return v>0;}));
   var banner = "";
-  if(num(c.skillPoints,0) > 0){
+  if(isLevelUpActive){
     banner = '<div class="skill-pool-banner">'+
       '<span>Puntos de habilidad para asignar: <b>'+num(c.skillPoints,0)+'</b></span>'+
       '<button class="btn-solid-gold" data-action="confirm-skills">Confirmar Asignación</button>'+
@@ -863,27 +866,29 @@ function tplHabilidades(c){
   ATTRS.forEach(function(a){
     html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
-    groups[a].forEach(function(s){ html += skillRowHtml(s,c); });
+    groups[a].forEach(function(s){ html += skillRowHtml(s,c,false,isLevelUpActive); });
     html += '</div>';
   });
   html += '<div class="attr-group"><div class="attr-group-title">Híbridas</div>';
   html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
-  hybrids.forEach(function(s){ html += skillRowHtml(s,c,true); });
+  hybrids.forEach(function(s){ html += skillRowHtml(s,c,true,isLevelUpActive); });
   html += '</div>';
 
   if(c.customSkills && c.customSkills.length){
     html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
     c.customSkills.forEach(function(cs){
-      var canSub = num(cs.bonus,0) > 0 && num(c.skillPoints,0) > 0;
-      var canAdd = num(c.skillPoints,0) > 0;
+      var userAllocated = (c.tempAllocated && c.tempAllocated[cs.id]) || 0;
+      var stepperHtml = isLevelUpActive ?
+        '<div class="skill-bonus-ctrl">'+
+          '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(userAllocated>0?'':'disabled')+'>-</button>'+
+          '<span>'+num(cs.bonus,0)+'</span>'+
+          '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(num(c.skillPoints,0)>0?'':'disabled')+'>+</button>'+
+        '</div>' :
+        '<span style="font-family:var(--font-mono);font-size:.88rem;text-align:center;">'+num(cs.bonus,0)+'</span>';
 
       html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span><span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
-        '<span class="skill-bonus-ctrl">'+
-          '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+'>-</button>'+
-          '<span>'+num(cs.bonus,0)+'</span>'+
-          '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+'>+</button>'+
-        '</span>'+
+        stepperHtml+
         '<span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'">&#127922;</button></div>';
     });
     html += '</div>';
@@ -893,7 +898,7 @@ function tplHabilidades(c){
   return html;
 }
 
-function skillRowHtml(s,c,isHybrid){
+function skillRowHtml(s,c,isHybrid,isLevelUpActive){
   var base = skillBase(s,c);
   var total = skillTotal(s,c);
   var hybridSel = "";
@@ -904,15 +909,14 @@ function skillRowHtml(s,c,isHybrid){
       '</select></div>';
   }
 
-  var currentBonus = num(c.skillBonus[s.id],0);
-  var canSub = currentBonus > 0 && num(c.skillPoints,0) > 0;
-  var canAdd = num(c.skillPoints,0) > 0;
-
-  var stepperHtml = '<div class="skill-bonus-ctrl">'+
-    '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+'>-</button>'+
-    '<span>'+currentBonus+'</span>'+
-    '<button data-action="skill-add" data-id="'+s.id+'" '+(canAdd?'':'disabled')+'>+</button>'+
-  '</div>';
+  var userAllocated = (c.tempAllocated && c.tempAllocated[s.id]) || 0;
+  var stepperHtml = isLevelUpActive ?
+    '<div class="skill-bonus-ctrl">'+
+      '<button data-action="skill-sub" data-id="'+s.id+'" '+(userAllocated>0?'':'disabled')+'>-</button>'+
+      '<span>'+num(c.skillBonus[s.id],0)+'</span>'+
+      '<button data-action="skill-add" data-id="'+s.id+'" '+(num(c.skillPoints,0)>0?'':'disabled')+'>+</button>'+
+    '</div>' :
+    '<span style="font-family:var(--font-mono);font-size:.88rem;text-align:center;">'+num(c.skillBonus[s.id],0)+'</span>';
 
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
@@ -1354,9 +1358,9 @@ function handleClick(e){
   }
   if(action==="skill-sub"){
     var sId2 = btn.getAttribute("data-id");
-    // Permitimos restar sólo si el usuario ha añadido puntos en esta sesión (restaurándolos al pool)
-    // Para simplificar y evitar trampas sin romper nada: si skillPoints es > 0 o hay saldo disponible, permitimos restar lo que se haya sumado.
-    if(num(c.skillBonus[sId2],0) > 0){
+    // Restricción estricta: NO se puede restar puntos de bono base
+    var baseVal = (c.baseSkillBonus && c.baseSkillBonus[sId2]!==undefined) ? c.baseSkillBonus[sId2] : 0;
+    if(num(c.skillBonus[sId2],0) > baseVal){
       c.skillPoints++;
       c.skillBonus[sId2] = num(c.skillBonus[sId2],0) - 1;
       saveState(); renderTab();
@@ -1376,7 +1380,8 @@ function handleClick(e){
   if(action==="skill-sub-custom"){
     var csId2 = btn.getAttribute("data-id");
     var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
-    if(csk2 && num(csk2.bonus,0) > 0){
+    var baseCustom = (csk2 && csk2.baseBonus!==undefined) ? csk2.baseBonus : 0;
+    if(csk2 && num(csk2.bonus,0) > baseCustom){
       c.skillPoints++;
       csk2.bonus = num(csk2.bonus,0) - 1;
       saveState(); renderTab();
@@ -1384,6 +1389,8 @@ function handleClick(e){
     return;
   }
   if(action==="confirm-skills"){
+    c.baseSkillBonus = Object.assign({}, c.skillBonus||{});
+    (c.customSkills||[]).forEach(function(cs){ cs.baseBonus = num(cs.bonus,0); });
     c.skillPoints = 0;
     saveState(); renderTab(); return;
   }
@@ -1412,7 +1419,7 @@ function handleClick(e){
     var attrChoice = prompt("Atributo base (fisico / destreza / inteligencia / percepcion / carisma):","destreza");
     if(ATTRS.indexOf(attrChoice)===-1) attrChoice="destreza";
     if(!c.customSkills) c.customSkills=[];
-    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:0});
+    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:0,baseBonus:0});
     saveState(); renderTab(); return;
   }
   if(action==="add-custom-buff"){
@@ -1742,7 +1749,6 @@ function initSupabase(){
   if(!window.supabase) return;
   try{
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    // Descarga inicial inmediata de mapas públicos
     pullMapFromSupabase();
     supabaseClient.auth.getSession().then(function(res){
       if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
