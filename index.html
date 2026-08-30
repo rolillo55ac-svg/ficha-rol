@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Krysalis · Fichas de Rol</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#140E0B;
+  --bg-elev:#1C1410;
+  --bg-card:#241A14;
+  --line:rgba(176,141,87,0.24);
+  --line-strong:rgba(176,141,87,0.50);
+  --ink:#F2E9DB;
+  --ink-dim:#C0B095;
+  --ink-faint:#8E7C64;
+  --blood:#8C252F;
+  --blood-light:#C84B57;
+  --accent-rgb:140,37,47;
+  --gold:#B08D57;
+  --gold-light:#DEC392;
+  --teal:#3D6E60;
+  --teal-light:#76AC9D;
+  --danger:#C0392B;
+  --radius:10px;
+  --radius-sm:6px;
+  --font-display:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:ui-monospace,'SF Mono',Consolas,'Liberation Mono',monospace;
+}
+body[data-theme="purple"]{--blood:#5A2F82;--blood-light:#9B69D4;--accent-rgb:90,47,130;}
+body[data-theme="blue"]{--blood:#284B76;--blood-light:#5B91C8;--accent-rgb:40,75,118;}
+body[data-theme="pink"]{--blood:#88345C;--blood-light:#D47FA7;--accent-rgb:136,52,92;}
+body[data-theme="green"]{--blood:#26461F;--blood-light:#6CA03C;--accent-rgb:38,70,31;}
+*{box-sizing:border-box;}
+html{font-size:17px;}
+html,body{margin:0;padding:0;min-height:100%;}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(var(--accent-rgb),0.22), transparent 65%),
+    radial-gradient(ellipse 700px 400px at 90% 110%, rgba(61,110,96,0.12), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  transition:background .4s ease;
+}
+button{font-family:inherit;cursor:pointer;}
+input,textarea,select{font-family:inherit;color:var(--ink);}
+::selection{background:var(--blood);color:#fff;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:var(--bg-elev);}
+::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--gold);}
+*{scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--bg-elev);}
+input[type=number]{-moz-appearance:textfield;}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+
+#app{max-width:960px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+
+/* TOPBAR */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:linear-gradient(180deg, var(--bg-elev) 85%, rgba(28,20,16,0.96));
+  border-bottom:1.5px solid var(--line-strong);
+  padding:12px 16px 14px;
+  backdrop-filter:blur(6px);
+}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.char-switch{display:flex;align-items:center;gap:12px;background:none;border:none;color:var(--ink);padding:0;text-align:left;flex:1;min-width:0;}
+.char-crest{
+  width:46px;height:46px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 35% 30%, var(--blood-light), var(--blood) 75%);
+  border:1.5px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:1.25rem;color:var(--ink);
+  background-size:cover;background-position:center;
+}
+.char-name{font-family:var(--font-display);font-size:1.15rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.char-sub{font-size:.74rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;}
+
+.role-badge{
+  font-size:.62rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;
+  padding:3px 8px;border-radius:12px;border:1px solid var(--line);color:var(--ink-faint);background:var(--bg-card);
+}
+.role-badge.gm{border-color:var(--blood-light);color:var(--gold-light);background:rgba(140,37,47,0.3);}
+.role-badge.player{border-color:var(--teal);color:var(--teal-light);}
+
+.icon-btn{
+  background:none;border:1px solid var(--line);color:var(--ink-dim);
+  width:42px;height:42px;border-radius:50%;flex:none;font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;transition:.15s;
+}
+.icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+.save-flag{font-size:.68rem;color:var(--teal-light);opacity:0;transition:opacity .3s;text-transform:uppercase;}
+.save-flag.show{opacity:1;}
+
+.gauges{display:flex;gap:12px;margin-top:10px;}
+.gauge-wrap{flex:1;min-width:0;}
+.gauge-label{display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
+.gauge-nums{font-family:var(--font-mono);color:var(--ink-dim);font-size:.74rem;}
+.gauge{height:14px;border-radius:7px;background:var(--bg-card);border:1px solid var(--line-strong);overflow:hidden;}
+.gauge-fill{height:100%;transition:width .3s ease;}
+.gauge-fill.hp{background:linear-gradient(90deg,var(--blood),var(--blood-light));}
+.gauge-fill.mana{background:linear-gradient(90deg,#2D4B60,#5E8EA8);}
+.gauge-adjust{display:flex;gap:5px;margin-top:6px;}
+.gauge-adjust button{
+  flex:1;background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
+  border-radius:var(--radius-sm);padding:4px 0;font-size:.76rem;font-family:var(--font-mono);
+}
+.gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);}
+
+/* CONTENIDO PRINCIPAL */
+main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
+.section{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;}
+.section-title{
+  font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-size:.82rem;
+  color:var(--gold-light);border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.section-title span{display:flex;align-items:center;gap:6px;}
+.section-title span::before{content:'§';color:var(--blood-light);font-size:1.1rem;}
+.section-note{font-size:.74rem;color:var(--ink-faint);margin:-6px 0 10px;line-height:1.4;}
+
+/* RETRATO Y CAMPOS */
+.portrait-container{display:flex;gap:18px;align-items:center;margin-bottom:14px;}
+.portrait-avatar{
+  width:115px;height:115px;border-radius:12px;border:1.5px solid var(--gold);
+  background:var(--bg-elev);background-size:cover;background-position:center;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:2.2rem;flex:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);
+}
+.portrait-ctrls{display:flex;flex-direction:column;gap:6px;}
+.btn-compact{padding:6px 12px;font-size:.74rem;text-transform:uppercase;border-radius:4px;border:1px solid var(--line);background:none;color:var(--ink-dim);}
+.btn-compact:hover{border-color:var(--gold);color:var(--gold-light);}
+
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+.field-grid.wide{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:3px;}
+.field label{font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
+.field input, .field textarea, .field select{
+  background:transparent;border:none;border-bottom:1px solid var(--line-strong);
+  color:var(--ink);padding:5px 2px;font-size:.95rem;border-radius:0;width:100%;
+}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-bottom-color:var(--teal-light);}
+.field textarea{resize:vertical;min-height:55px;line-height:1.4;}
+
+/* ATRIBUTOS Y LEVEL UP */
+.attr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.attr-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 4px;text-align:center;}
+.attr-card label{display:block;font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:5px;}
+.attr-stepper{display:flex;align-items:center;justify-content:center;gap:2px;}
+.attr-card input{width:40px;text-align:center;background:transparent;border:none;color:var(--gold-light);font-family:var(--font-mono);font-size:1.35rem;font-weight:700;}
+.attr-step{
+  background:var(--bg-card);border:1px solid var(--line);color:var(--gold-light);
+  width:24px;height:24px;border-radius:4px;font-family:var(--font-mono);font-size:.95rem;
+  display:flex;align-items:center;justify-content:center;padding:0;
+}
+.attr-step:hover{border-color:var(--gold);background:rgba(176,141,87,0.15);}
+.level-pool-banner{
+  background:rgba(222,195,146,0.12);border:1px solid var(--gold);border-radius:var(--radius-sm);
+  padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:var(--gold-light);display:flex;justify-content:space-between;align-items:center;
+}
+
+/* TABLA DE HABILIDADES */
+.attr-group{margin-bottom:16px;}
+.attr-group-title{
+  font-family:var(--font-mono);font-size:.76rem;color:var(--teal-light);text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:4px;padding-left:2px;
+}
+.skill-col-headers{
+  display:grid;grid-template-columns:1fr 38px 48px 46px 36px;gap:6px;
+  font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;
+  padding-bottom:5px;margin-bottom:2px;border-bottom:1px solid var(--line-strong);
+}
+.skill-col-headers span{text-align:center;}
+.skill-col-headers span:first-child{text-align:left;}
+
+.skill-row{
+  display:grid;grid-template-columns:1fr 38px 48px 46px 36px;gap:6px;align-items:center;
+  padding:7px 0;border-bottom:1px dashed var(--line);
+}
+.skill-row:last-child{border-bottom:none;}
+.skill-name{font-size:.9rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.skill-hybrid-select{
+  font-size:.65rem;background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);
+  border-radius:4px;padding:2px 3px;margin-top:1px;
+}
+.skill-base{font-family:var(--font-mono);font-size:.84rem;color:var(--ink-faint);text-align:center;}
+.skill-bonus input{
+  width:100%;background:var(--bg-elev);border:1px solid var(--line);border-radius:4px;
+  text-align:center;font-family:var(--font-mono);font-size:.88rem;padding:4px 0;color:var(--ink);
+}
+.skill-total{font-family:var(--font-mono);font-weight:700;font-size:1rem;color:var(--gold-light);text-align:center;}
+.dice-btn{
+  background:none;border:1px solid var(--line);border-radius:6px;color:var(--ink-faint);
+  font-size:1.05rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+}
+.dice-btn:hover{border-color:var(--blood-light);color:var(--blood-light);}
+
+/* COMBATE Y BUFFS */
+.buffs-container{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.buff-pill{
+  background:var(--bg-elev);border:1px solid var(--line);border-radius:20px;
+  padding:6px 12px;font-size:.76rem;color:var(--ink-dim);cursor:pointer;user-select:none;transition:.15s;
+  display:flex;align-items:center;gap:6px;
+}
+.buff-pill.active{border-color:var(--teal-light);color:var(--teal-light);background:rgba(61,110,96,0.3);}
+.buff-pill.debuff.active{border-color:var(--danger);color:#E74C3C;background:rgba(192,57,43,0.3);}
+
+.combat-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.combat-quick-btn{
+  background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:12px 10px;display:flex;flex-direction:column;gap:3px;align-items:center;
+}
+.combat-quick-btn:hover{border-color:var(--blood-light);}
+.combat-quick-btn .cq-label{font-size:.74rem;color:var(--ink-dim);text-transform:uppercase;}
+.combat-quick-btn .cq-total{font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:var(--gold-light);}
+
+.combat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.combat-stat{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 6px;text-align:center;position:relative;}
+.combat-stat label{display:block;font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
+.combat-stat input{width:100%;background:none;border:none;text-align:center;font-family:var(--font-mono);font-size:1.15rem;color:var(--ink);}
+.combat-stat .mini-roll{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--ink-faint);font-size:.9rem;padding:0;}
+.combat-stat .mini-roll:hover{color:var(--blood-light);}
+
+.pv-mana-block{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.pv-mana-block .stat-box{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;}
+.pv-mana-block label{display:block;font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;}
+.pv-mana-inline{display:flex;align-items:center;gap:6px;}
+.pv-mana-inline input{width:100%;background:none;border:none;text-align:center;font-family:var(--font-mono);font-size:1.05rem;color:var(--ink);border-bottom:1px solid var(--line-strong);padding:2px;}
+.pv-mana-inline span{color:var(--ink-faint);font-family:var(--font-mono);}
+
+/* FILAS DINÁMICAS */
+.list-row{display:grid;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);}
+.list-row:last-child{border-bottom:none;}
+.list-row input{background:var(--bg-elev);border:1px solid var(--line);border-radius:4px;padding:7px 9px;font-size:.9rem;}
+.row-del{
+  background:none;border:1px solid var(--line);color:var(--ink-faint);border-radius:6px;
+  width:30px;height:30px;font-size:.95rem;flex:none;display:flex;align-items:center;justify-content:center;
+}
+.row-del:hover{border-color:var(--danger);color:var(--danger);}
+.weapons-row{grid-template-columns:1fr 75px 55px 34px 30px;}
+.armor-row{grid-template-columns:1fr 65px 65px 30px;}
+.inv-row{grid-template-columns:1fr 55px 30px;}
+.spell-row{grid-template-columns:1fr 60px 75px 30px;}
+.stone-row{grid-template-columns:85px 1fr 30px;}
+.text-row{grid-template-columns:1fr 30px;}
+.god-row{grid-template-columns:1fr 1fr 1fr 30px;}
+
+.add-row-btn{
+  width:100%;margin-top:10px;background:none;border:1px dashed var(--line-strong);
+  color:var(--ink-dim);border-radius:var(--radius-sm);padding:9px 0;font-size:.8rem;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.add-row-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+
+.money-row{display:flex;gap:14px;}
+.money-field{flex:1;background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;}
+.money-field label{display:block;font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
+.money-field input{width:100%;background:none;border:none;font-family:var(--font-mono);font-size:1.15rem;color:var(--gold-light);}
+
+/* INVOCACIONES Y BESTIARIO */
+.creature-card{
+  background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:14px;margin-bottom:12px;position:relative;
+}
+.creature-card .row-del{position:absolute;top:10px;right:10px;}
+.creature-name-input{
+  width:calc(100% - 45px);background:transparent;border:none;border-bottom:1px solid var(--line-strong);
+  color:var(--gold-light);font-family:var(--font-display);font-size:1.05rem;padding:3px 2px;margin-bottom:10px;
+}
+.creature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px 10px;margin-bottom:10px;}
+.creature-field{display:flex;flex-direction:column;gap:2px;}
+.creature-field label{font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;}
+.creature-field input{background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:5px 6px;font-size:.86rem;font-family:var(--font-mono);}
+.creature-notes{
+  width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;
+  padding:8px 10px;font-size:.84rem;font-family:var(--font-body);min-height:50px;resize:vertical;line-height:1.4;
+}
+
+/* LORE */
+.lore-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;position:relative;}
+.lore-card .row-del{position:absolute;top:8px;right:8px;}
+.lore-title-input{width:calc(100% - 38px);background:transparent;border:none;border-bottom:1px solid var(--line-strong);color:var(--gold-light);font-family:var(--font-display);font-size:.95rem;padding:2px;margin-bottom:6px;}
+.lore-text-area{width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:.84rem;min-height:45px;resize:vertical;}
+
+/* MAPA */
+.map-frame{
+  width:100%;min-height:220px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);
+  background:#090605;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:12px;
+  overflow:hidden;
+}
+.map-frame img{width:100%;display:block;}
+.map-frame.empty{color:var(--ink-faint);font-size:.85rem;font-style:italic;padding:40px 10px;text-align:center;}
+
+/* DADOS MODAL */
+.roll-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.85);z-index:80;display:flex;align-items:center;justify-content:center;padding:18px;}
+.roll-overlay.hidden{display:none;}
+.roll-box{
+  background:var(--bg-elev);border:1.5px solid var(--line-strong);border-radius:18px;
+  padding:26px 22px;text-align:center;width:100%;max-width:300px;box-shadow:0 16px 50px rgba(0,0,0,0.7);
+}
+.roll-die-graphic{display:flex;align-items:center;justify-content:center;margin:12px 0;}
+.roll-die-graphic svg{width:86px;height:86px;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.6));}
+.roll-die-graphic.spinning svg{animation:dieSpin .55s cubic-bezier(.34,1.4,.64,1);}
+@keyframes dieSpin{0%{transform:rotate(0deg) scale(.7);}100%{transform:rotate(720deg) scale(1);}}
+.roll-score{font-family:var(--font-mono);font-size:2.9rem;font-weight:700;color:var(--gold-light);line-height:1;}
+.roll-score.crit{color:var(--gold-light);text-shadow:0 0 18px rgba(217,188,133,.85);}
+.roll-score.fumble{color:var(--danger);text-shadow:0 0 18px rgba(192,57,43,.85);}
+.roll-verdict{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;margin-top:4px;}
+.roll-verdict.crit{color:var(--gold-light);}
+.roll-verdict.fumble{color:var(--danger);}
+
+/* HISTORIAL */
+.roll-log{margin-top:8px;}
+.roll-log-item{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;padding:6px 0;border-bottom:1px dashed var(--line);color:var(--ink-dim);}
+.roll-log-item:last-child{border-bottom:none;}
+.roll-log-item .rl-formula{color:var(--ink-faint);font-family:var(--font-mono);font-size:.72rem;}
+.roll-log-item .rl-result{color:var(--gold-light);font-family:var(--font-mono);font-weight:700;}
+.roll-empty{font-size:.78rem;color:var(--ink-faint);font-style:italic;}
+
+/* TABBAR */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:960px;margin:0 auto;
+  background:linear-gradient(0deg, var(--bg-elev) 85%, rgba(28,20,16,0.96));
+  border-top:1.5px solid var(--line-strong);
+  display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.tab-btn{
+  flex:1 0 auto;min-width:62px;background:none;border:none;color:var(--ink-faint);display:flex;flex-direction:column;
+  align-items:center;gap:3px;padding:6px 4px;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;
+}
+.tab-btn.active{color:var(--gold-light);}
+.tab-btn.active::after{content:'';width:20px;height:2px;background:var(--blood-light);border-radius:2px;}
+
+.fab-dice{
+  position:fixed;right:18px;bottom:78px;z-index:41;width:60px;height:60px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, var(--blood-light), var(--blood) 75%);
+  border:1.5px solid var(--gold);color:var(--ink);font-size:1.6rem;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 18px rgba(0,0,0,0.55);
+}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.78);z-index:60;display:flex;align-items:flex-end;justify-content:center;}
+@media(min-width:640px){.modal-overlay{align-items:center;}}
+.modal-overlay.hidden{display:none;}
+.modal{
+  background:var(--bg-elev);border:1.5px solid var(--line-strong);border-radius:16px 16px 0 0;
+  width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+}
+@media(min-width:640px){.modal{border-radius:16px;}}
+.modal h2{font-family:var(--font-display);color:var(--gold-light);font-size:1.15rem;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;}
+.modal h2 button{background:none;border:none;color:var(--ink-faint);font-size:1.4rem;}
+
+.char-list-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--line);margin-bottom:8px;}
+.char-list-item.active{border-color:var(--gold);background:rgba(176,141,87,0.08);}
+.char-list-item .cli-info{flex:1;min-width:0;background:none;border:none;text-align:left;color:var(--ink);padding:0;}
+.char-list-item .cli-name{font-family:var(--font-display);font-size:1.05rem;color:var(--ink);}
+.char-list-item .cli-sub{font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;}
+.theme-swatches{display:flex;gap:6px;margin-top:6px;}
+.swatch{width:18px;height:18px;border-radius:50%;border:1.5px solid transparent;padding:0;flex:none;}
+.swatch.active{border-color:var(--ink);}
+.swatch-default{background:#8C2A34;}
+.swatch-purple{background:#5C3383;}
+.swatch-blue{background:#2C4F79;}
+.swatch-pink{background:#8C3B62;}
+.swatch-green{background:#2B4A22;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--radius-sm);padding:11px 16px;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line-strong);width:100%;margin-top:8px;}
+.btn-primary{background:linear-gradient(180deg,var(--blood-light),var(--blood));color:#fff;border-color:var(--blood);}
+.btn-ghost{background:none;color:var(--ink-dim);}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold-light);}
+.btn-row{display:flex;gap:8px;}
+.btn-row .btn{margin-top:0;}
+
+.dtype-row{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+.dtype-btn{background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:6px;padding:8px 12px;font-family:var(--font-mono);font-size:.9rem;}
+.dtype-btn.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.12);}
+
+/* PANTALLA DE LOGIN DIRECTO */
+.auth-gate-box{
+  background:var(--bg-card);border:1.5px solid var(--line-strong);border-radius:var(--radius);
+  padding:24px 20px;max-width:440px;margin:40px auto;text-align:center;
+}
+.auth-gate-title{font-family:var(--font-display);color:var(--gold-light);font-size:1.3rem;margin-bottom:8px;}
+.auth-gate-sub{font-size:.78rem;color:var(--ink-faint);margin-bottom:18px;line-height:1.4;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar" id="topbar"></header>
+  <nav class="tabbar" id="tabbar"></nav>
+  <main id="main"></main>
+  <button class="fab-dice" id="fabDice" title="Tirar dados">&#9861;</button>
+</div>
+
+<div class="modal-overlay hidden" id="charModalOverlay"><div class="modal" id="charModal"></div></div>
+<div class="modal-overlay hidden" id="diceModalOverlay"><div class="modal" id="diceModal"></div></div>
+<div class="modal-overlay hidden" id="dataModalOverlay"><div class="modal" id="dataModal"></div></div>
+<div class="roll-overlay hidden" id="rollOverlay">
+  <div class="roll-box">
+    <div id="rollLabel" style="font-family:var(--font-display);font-size:.95rem;color:var(--gold-light);"></div>
+    <div class="roll-die-graphic" id="rollDieGraphic"></div>
+    <div id="rollReveal">
+      <div class="roll-score" id="rollScore"></div>
+      <div class="roll-verdict" id="rollVerdict"></div>
+      <div id="rollDetail" style="font-size:.8rem;color:var(--ink-dim);margin-top:6px;line-height:1.4;"></div>
+    </div>
+    <button class="btn-compact" data-action="close-modal" style="width:100%;margin-top:16px;">Cerrar</button>
+  </div>
+</div>
+<input type="file" id="portraitFileInput" accept="image/*" hidden>
+<input type="file" id="mapFileInput" accept="image/*" hidden>
+<input type="file" id="importFileInput" accept="application/json" hidden>
+
+<script>
+(function(){
+"use strict";
+
+var STORAGE_KEY = "krysalisFichasV4";
+var SUPABASE_CONFIG_KEY = "krysalisSupabaseConfig";
+var DEFAULT_SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
+
+var ATTRS = ["fisico","destreza","inteligencia","percepcion","carisma"];
+var ATTR_LABELS = {fisico:"Físico",destreza:"Destreza",inteligencia:"Inteligencia",percepcion:"Percepción",carisma:"Carisma"};
+
+var SKILL_DEFS = [
+  {id:"advertir",name:"Advertir / Notar",attr:"percepcion"},
+  {id:"distancia",name:"Ataque a distancia",attr:"destreza"},
+  {id:"melee",name:"Armas a melé",attr:"fisico"},
+  {id:"atletismo",name:"Atletismo",attr:"fisico"},
+  {id:"buscar",name:"Buscar",attr:"percepcion"},
+  {id:"cabalgar",name:"Cabalgar",attr:"destreza"},
+  {id:"callejeo",name:"Callejeo",attr:"inteligencia"},
+  {id:"comercio",name:"Comercio",attr:"inteligencia"},
+  {id:"disfraz",name:"Disfraz",attr:"carisma"},
+  {id:"escalar",name:"Escalar",attr:"destreza"},
+  {id:"esquivar",name:"Esquivar",attr:"destreza"},
+  {id:"etiqueta",name:"Etiqueta",attr:"carisma"},
+  {id:"fauna",name:"Fauna",attr:"inteligencia"},
+  {id:"leyes",name:"Leyes",attr:"inteligencia"},
+  {id:"musica",name:"Música",attr:"hybrid",hybridOptions:["destreza","carisma"]},
+  {id:"navegar",name:"Navegar",attr:"inteligencia"},
+  {id:"nadar",name:"Nadar",attr:"destreza"},
+  {id:"rastrear",name:"Rastrear",attr:"percepcion"},
+  {id:"reflejos",name:"Reflejos",attr:"percepcion"},
+  {id:"religion",name:"Religión",attr:"inteligencia"},
+  {id:"sigilo",name:"Sigilo",attr:"destreza"},
+  {id:"rumores",name:"Rumores",attr:"hybrid",hybridOptions:["carisma","percepcion"]},
+  {id:"bolsillos",name:"Robar bolsillos",attr:"destreza"},
+  {id:"herboristeria",name:"Herboristería",attr:"inteligencia"},
+  {id:"auxilios",name:"Primeros auxilios",attr:"inteligencia"},
+  {id:"supervivencia",name:"Supervivencia",attr:"inteligencia"},
+  {id:"tradicion",name:"Tradición / Historia",attr:"inteligencia"},
+  {id:"manos",name:"Juego de manos",attr:"destreza"},
+  {id:"carisma_sk",name:"Carisma",attr:"carisma"},
+  {id:"piedras",name:"Piedras mágicas",attr:"inteligencia"}
+];
+
+var THEME_LIST = [
+  {id:"default",label:"Carmesí"},
+  {id:"purple",label:"Morado"},
+  {id:"blue",label:"Azul"},
+  {id:"pink",label:"Rosa"},
+  {id:"green",label:"Verde veneno"}
+];
+
+function uid(){return "id" + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);}
+function esc(s){return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function num(v,d){var n=parseFloat(v);return isNaN(n)?(d||0):n;}
+function rollDie(sides){return Math.floor(Math.random()*sides)+1;}
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+
+var state = null;
+var supabaseClient = null;
+var currentUser = null;
+var currentRole = 'player';
+var isRemoteSyncing = false;
+
+function blankCharacter(name){
+  return {
+    id:uid(),
+    name:name||"Nuevo personaje",
+    theme:"default",
+    portrait:null,
+    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabalho:"", descripcion:"",
+    attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
+    skillBonus:{}, skillHybrid:{}, customSkills:[],
+    combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,manaActual:10,manaMax:10},
+    weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
+    magiaTipo:"", spells:[], stones:[],
+    passivesNeg:[], passivesPos:[],
+    goddessCurses:[], goddessBlessings:[], goddessTable:[],
+    summons:[], buffs:{}, customBuffs:[], attrPoints:0
+  };
+}
+
+function getSeedBestiary(){
+  return [
+    {id:uid(),nombre:"Kimera",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",notas:"Continente: Vetrys. Doma: 5. Nada a mitad de mov."},
+    {id:uid(),nombre:"Anaconda Gigante",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",notas:"Continente: Tryssar. Doma: 5. Carga pesada. Nada con soltura."},
+    {id:uid(),nombre:"Infernal",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",notas:"Continente: Labrys. Doma: 5. Carga pesada. No puede nadar."},
+    {id:uid(),nombre:"Pegaso",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10//12 (T/V)",notas:"Continente: Labrys. Doma: 5. Montura voladora."},
+    {id:uid(),nombre:"Hypocampo",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",notas:"Continente: Labrys. Doma: 5. Montura acuática."},
+    {id:uid(),nombre:"Oso Perro",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",notas:"Continente: Krysalis. Doma: 5. Gran resistencia."},
+    {id:uid(),nombre:"Lobo Ártico",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",notas:"Resistencia al frío. Inteligencia: 3. Doma: 3."},
+    {id:uid(),nombre:"Lobo Entrenado",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",notas:"Lobo de combate. Inteligencia: 4. Doma: 5."}
+  ];
+}
+
+function defaultState(){
+  return {
+    activeId:"", activeTab:"ficha", rollLog:[], characters:[],
+    lore:{pistas:[],npcs:[],objetos:[]}, bestiary:getSeedBestiary(), mapImage:null, mapNote:""
+  };
+}
+
+function migrateState(s){
+  if(!s.rollLog) s.rollLog=[];
+  if(!s.lore) s.lore={pistas:[],npcs:[],objetos:[]};
+  if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
+  if(s.mapImage===undefined) s.mapImage=null;
+  if(s.mapNote===undefined) s.mapNote="";
+  (s.characters||[]).forEach(function(c){
+    if(c.portrait===undefined) c.portrait=null;
+    if(!c.summons) c.summons=[];
+    if(!c.attrs) c.attrs={fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1};
+    if(!c.skillBonus) c.skillBonus={};
+    if(!c.skillHybrid) c.skillHybrid={};
+    if(!c.customSkills) c.customSkills=[];
+    if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,manaActual:10,manaMax:10};
+    if(!c.weapons) c.weapons=[];
+    if(!c.armors) c.armors=[];
+    if(!c.inventory) c.inventory=[];
+    if(!c.spells) c.spells=[];
+    if(!c.stones) c.stones=[];
+    if(!c.passivesNeg) c.passivesNeg=[];
+    if(!c.passivesPos) c.passivesPos=[];
+    if(!c.goddessCurses) c.goddessCurses=[];
+    if(!c.goddessBlessings) c.goddessBlessings=[];
+    if(!c.goddessTable) c.goddessTable=[];
+    if(!c.buffs) c.buffs={};
+    if(!c.customBuffs) c.customBuffs=[];
+    if(c.attrPoints===undefined) c.attrPoints=0;
+  });
+  return s;
+}
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    var parsed = JSON.parse(raw);
+    return parsed ? migrateState(parsed) : defaultState();
+  }catch(e){ return defaultState(); }
+}
+
+var charSyncDebounce = null;
+function saveState(skipRemote){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    var flag=document.getElementById("saveFlag");
+    if(flag){
+      flag.classList.add("show");
+      setTimeout(function(){flag.classList.remove("show");},700);
+    }
+  }catch(e){}
+  if(!skipRemote && supabaseClient && currentUser && !isRemoteSyncing){
+    clearTimeout(charSyncDebounce);
+    charSyncDebounce = setTimeout(pushCurrentCharToSupabase, 400);
+  }
+}
+
+function isGM(){ return currentRole === 'gm'; }
+function activeChar(){
+  var c = state.characters.find(function(x){return x.id===state.activeId;}) || state.characters[0];
+  if(!c){
+    return {
+      id: "empty", name: currentUser ? "Cargando fichas..." : "Sesión requerida",
+      theme: "default", portrait: null, nivel: "1", lugarNacimiento: "", altura: "", peso: "", edad: "", ojos: "", pelo: "", trabajo: "", descripcion: "",
+      attrs: {fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
+      combat: {pvActual:10,pvMax:10,manaActual:10,manaMax:10,iniciativa:0,movilidad:0,defensa:10,defensaMagica:0},
+      skillBonus: {}, skillHybrid: {}, customSkills: [],
+      weapons: [], armors: [], inventory: [], money: {oro:0,plata:0},
+      spells: [], stones: [], passivesNeg: [], passivesPos: [],
+      goddessCurses: [], goddessBlessings: [], goddessTable: [],
+      summons: [], buffs: {}, customBuffs: [], attrPoints: 0
+    };
+  }
+  return c;
+}
+
+function getEffectiveAttr(aKey, c){
+  var base = num(c.attrs[aKey],0);
+  if(aKey==="percepcion" && c.buffs && c.buffs.sangre_perc) base += 2;
+  if(aKey==="destreza" && c.buffs && c.buffs.drogado_dex) base += 1;
+  return base;
+}
+function skillBase(skill, c){
+  var attrKey = skill.attr!=="hybrid" ? skill.attr : (c.skillHybrid[skill.id] || skill.hybridOptions[0]);
+  return getEffectiveAttr(attrKey, c);
+}
+function skillTotal(skill, c){ return skillBase(skill, c) + num(c.skillBonus[skill.id],0); }
+function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
+
+/* MOTOR DE AUDIO WEB-AUDIO */
+var audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+function playDiceRollSound(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  for(var i=0;i<7;i++){
+    var t = now + i*0.055 + Math.random()*0.02;
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(220 + Math.random()*340, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.18, t+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t+0.05);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t+0.06);
+  }
+}
+function playCritSound(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  [523.25, 659.25, 783.99, 1046.50].forEach(function(f, idx){
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(f, now + idx*0.04);
+    gain.gain.setValueAtTime(0.001, now + idx*0.04);
+    gain.gain.exponentialRampToValueAtTime(0.24, now + idx*0.04 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.04 + 0.55);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now + idx*0.04); osc.stop(now + idx*0.04 + 0.6);
+  });
+}
+function playFumbleSound(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  [311.13, 293.66, 277.18, 220].forEach(function(f, idx){
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(f, now + idx*0.07);
+    gain.gain.setValueAtTime(0.001, now + idx*0.07);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + idx*0.07 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.07 + 0.35);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now + idx*0.07); osc.stop(now + idx*0.07 + 0.4);
+  });
+}
+
+function getDieSvg(sides){
+  var stroke = "var(--gold)", fill = "var(--bg-card)", txt = "var(--gold-light)";
+  if(sides===4){
+    return '<svg viewBox="0 0 100 100"><polygon points="50,15 90,82 10,82" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><line x1="50" y1="15" x2="50" y2="82" stroke="'+stroke+'" stroke-width="2"/><text x="50" y="65" font-family="var(--font-mono)" font-size="20" font-weight="700" fill="'+txt+'" text-anchor="middle">d4</text></svg>';
+  }
+  if(sides===8){
+    return '<svg viewBox="0 0 100 100"><polygon points="50,12 88,50 50,88 12,50" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><line x1="50" y1="12" x2="50" y2="88" stroke="'+stroke+'" stroke-width="2"/><line x1="12" y1="50" x2="88" y2="50" stroke="'+stroke+'" stroke-width="2"/><text x="50" y="57" font-family="var(--font-mono)" font-size="20" font-weight="700" fill="'+txt+'" text-anchor="middle">d8</text></svg>';
+  }
+  if(sides===10){
+    return '<svg viewBox="0 0 100 100"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><line x1="50" y1="10" x2="50" y2="88" stroke="'+stroke+'" stroke-width="1.5"/><text x="50" y="58" font-family="var(--font-mono)" font-size="22" font-weight="700" fill="'+txt+'" text-anchor="middle">d10</text></svg>';
+  }
+  if(sides===12){
+    return '<svg viewBox="0 0 100 100"><polygon points="50,12 85,24 95,60 68,90 32,90 5,60 15,24" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><circle cx="50" cy="52" r="24" fill="none" stroke="'+stroke+'" stroke-width="1.5"/><text x="50" y="59" font-family="var(--font-mono)" font-size="18" font-weight="700" fill="'+txt+'" text-anchor="middle">d12</text></svg>';
+  }
+  if(sides===20){
+    return '<svg viewBox="0 0 100 100"><polygon points="50,10 90,32 90,75 50,94 10,75 10,32" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><polygon points="50,28 78,72 22,72" fill="none" stroke="'+stroke+'" stroke-width="1.8"/><text x="50" y="60" font-family="var(--font-mono)" font-size="18" font-weight="700" fill="'+txt+'" text-anchor="middle">d20</text></svg>';
+  }
+  if(sides===100){
+    return '<div style="display:flex;gap:6px;"><svg viewBox="0 0 100 100" style="width:50px;height:50px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">00</text></svg><svg viewBox="0 0 100 100" style="width:50px;height:50px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">0</text></svg></div>';
+  }
+  return '<svg viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" rx="10" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><circle cx="32" cy="32" r="5" fill="'+stroke+'"/><circle cx="68" cy="32" r="5" fill="'+stroke+'"/><circle cx="50" cy="50" r="5" fill="'+stroke+'"/><circle cx="32" cy="68" r="5" fill="'+stroke+'"/><circle cx="68" cy="68" r="5" fill="'+stroke+'"/></svg>';
+}
+
+function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble){
+  document.getElementById("rollLabel").textContent = label;
+  var container = document.getElementById("rollDieGraphic");
+  var reveal = document.getElementById("rollReveal");
+  var scoreEl = document.getElementById("rollScore");
+  var verdictEl = document.getElementById("rollVerdict");
+  container.innerHTML = getDieSvg(sides);
+  scoreEl.textContent = scoreText;
+  scoreEl.className = "roll-score" + (isCrit?" crit":isFumble?" fumble":"");
+  verdictEl.textContent = isCrit ? "¡CRÍTICO!" : (isFumble ? "¡PIFIA!" : "");
+  verdictEl.className = "roll-verdict" + (isCrit?" crit":isFumble?" fumble":"");
+  document.getElementById("rollDetail").innerHTML = detailHtml;
+  reveal.style.opacity = "0";
+  container.classList.remove("spinning");
+  void container.offsetWidth;
+  container.classList.add("spinning");
+  document.getElementById("rollOverlay").classList.remove("hidden");
+  playDiceRollSound();
+  setTimeout(function(){
+    container.classList.remove("spinning");
+    reveal.style.opacity = "1";
+    if(isCrit) playCritSound();
+    else if(isFumble) playFumbleSound();
+  }, 480);
+}
+
+function performD10Roll(charName, label, mod){
+  var c = activeChar();
+  var extraMod = 0;
+  if(c.buffs && c.buffs.sangre_ataque && (label.includes("melé") || label.includes("distancia"))){
+    extraMod += 1;
+  }
+  var d = rollDie(10);
+  var total = d + num(mod,0) + extraMod;
+  var detail = "1d10 ("+d+") + "+(num(mod,0)+extraMod);
+  var isCrit = d===10, isFumble = d===1;
+  state.rollLog.unshift({id:uid(), charName:charName, label:label, total:total, formulaText:detail, ts:Date.now()});
+  if(state.rollLog.length>20) state.rollLog.length=20;
+  saveState();
+  openRollModal(label, total, "<div>"+esc(detail)+"</div>", 10, isCrit, isFumble);
+  renderTab();
+}
+
+function performWeaponRoll(charName, weaponName, formulaRaw){
+  var m = String(formulaRaw||"").match(/(\d+)\s*[dD]\s*(\d+)/);
+  if(!m){ alert("Fórmula de daño no válida (ej: 1D6+3)"); return; }
+  var qty = parseInt(m[1],10), sides = parseInt(m[2],10);
+  var rest = String(formulaRaw).slice(m.index + m[0].length);
+  var modM = rest.match(/^\s*([+-]\s*\d+)/);
+  var mod = modM ? parseInt(modM[1].replace(/\s+/g,""),10) : 0;
+  var rolls=[], sum=0;
+  for(var i=0;i<qty;i++){ var r=rollDie(sides); rolls.push(r); sum+=r; }
+  var isCrit = rolls.every(function(r){return r===sides;});
+  var isFumble = rolls.every(function(r){return r===1;});
+  var total = sum + mod;
+  var detail = qty+"d"+sides+" ("+rolls.join("+")+")"+(mod?(mod>0?" + "+mod:" - "+Math.abs(mod)):"");
+  openRollModal("Daño — "+weaponName, total, "<div>"+esc(detail)+"</div>", sides, isCrit, isFumble);
+}
+
+function renderTopbar(){
+  var c = activeChar();
+  document.body.setAttribute("data-theme", c.theme||"default");
+  var maxHp = Math.max(1, num(c.combat.pvMax, 1));
+  var maxMana = Math.max(1, num(c.combat.manaMax, 1));
+  var hpPct = clamp(Math.round((num(c.combat.pvActual,0)/maxHp)*100), 0, 100);
+  var manaPct = clamp(Math.round((num(c.combat.manaActual,0)/maxMana)*100), 0, 100);
+  var initial = (c.name||"?").trim().charAt(0).toUpperCase();
+  var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
+
+  var rolePill = '<span class="role-badge">Local</span>';
+  if(supabaseClient && currentUser){
+    rolePill = isGM() ? '<span class="role-badge gm">★ Máster</span>' : '<span class="role-badge player">Jugador</span>';
+  }
+
+  document.getElementById("topbar").innerHTML =
+    '<div class="topbar-row">'+
+      '<button class="char-switch" data-action="open-char-modal">'+
+        '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(initial))+'</span>'+
+        '<span class="char-meta">'+
+          '<div class="char-name">'+esc(c.name)+'</div>'+
+          '<div class="char-sub">Nivel '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"—")+'</div>'+
+        '</span>'+
+      '</button>'+
+      '<div style="display:flex;align-items:center;gap:6px;">'+
+        rolePill+
+        '<span class="save-flag" id="saveFlag">Guardado</span>'+
+        '<button class="icon-btn" data-action="open-data-modal">&#9881;</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="gauges">'+
+      '<div class="gauge-wrap">'+
+        '<div class="gauge-label"><b>Vida</b><span class="gauge-nums">'+num(c.combat.pvActual,0)+' / '+maxHp+'</span></div>'+
+        '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%"></div></div>'+
+        '<div class="gauge-adjust">'+
+          '<button data-action="hp-delta" data-delta="-5">-5</button>'+
+          '<button data-action="hp-delta" data-delta="-1">-1</button>'+
+          '<button data-action="hp-delta" data-delta="1">+1</button>'+
+          '<button data-action="hp-delta" data-delta="5">+5</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="gauge-wrap">'+
+        '<div class="gauge-label"><b>Maná</b><span class="gauge-nums">'+num(c.combat.manaActual,0)+' / '+maxMana+'</span></div>'+
+        '<div class="gauge"><div class="gauge-fill mana" style="width:'+manaPct+'%"></div></div>'+
+        '<div class="gauge-adjust">'+
+          '<button data-action="mana-delta" data-delta="-5">-5</button>'+
+          '<button data-action="mana-delta" data-delta="-1">-1</button>'+
+          '<button data-action="mana-delta" data-delta="1">+1</button>'+
+          '<button data-action="mana-delta" data-delta="5">+5</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+}
+
+var TABS = [
+  {id:"ficha",label:"Ficha"},
+  {id:"habilidades",label:"Habilidades"},
+  {id:"combate",label:"Combate"},
+  {id:"inventario",label:"Inventario"},
+  {id:"magia",label:"Magia"},
+  {id:"invocaciones",label:"Invocaciones"},
+  {id:"bestiario",label:"Bestiario"},
+  {id:"extra",label:"Extra"},
+  {id:"mundo",label:"Mundo"}
+];
+
+function renderTabbar(){
+  document.getElementById("tabbar").innerHTML = TABS.map(function(t){
+    return '<button class="tab-btn'+(state.activeTab===t.id?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'">'+t.label+'</button>';
+  }).join('');
+}
+
+function renderTab(){
+  var main = document.getElementById("main");
+  if(!currentUser && supabaseClient){
+    main.innerHTML = tplAuthGate();
+    return;
+  }
+  var c = activeChar();
+  if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
+  else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
+  else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
+  else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
+  else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
+  else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
+  else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
+  else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
+  else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
+}
+
+function tplAuthGate(){
+  return '<div class="auth-gate-box">'+
+    '<div class="auth-gate-title">Krysalis Rol</div>'+
+    '<div class="auth-gate-sub">Inicia sesión con tu cuenta para acceder a tu ficha y sincronizar con la partida.</div>'+
+    '<div class="field" style="text-align:left;"><label>Correo electrónico</label><input type="email" id="gateEmail" placeholder="tu-email@gmail.com"></div>'+
+    '<div class="field" style="text-align:left;margin-top:10px;"><label>Contraseña</label><input type="password" id="gatePass"></div>'+
+    '<div class="btn-row" style="margin-top:16px;">'+
+      '<button class="btn btn-primary" data-action="gate-login">Entrar</button>'+
+      '<button class="btn btn-ghost" data-action="gate-signup">Registrarse</button>'+
+    '</div>'+
+    '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">'+
+      '<button class="btn-compact" data-action="open-data-modal" style="width:100%;">Configurar Supabase / Modo Local</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function tplFicha(c){
+  var pStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
+  var attrPoolHtml = "";
+  if(num(c.attrPoints,0) > 0){
+    attrPoolHtml = '<div class="level-pool-banner"><span>Puntos disponibles para subir stats: <b>'+c.attrPoints+'</b></span></div>';
+  }
+
+  var attrCards = ATTRS.map(function(a){
+    return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label>'+
+      '<div class="attr-stepper">'+
+        '<button class="attr-step" data-action="attr-sub" data-attr="'+a+'">&minus;</button>'+
+        '<input type="number" data-bind="attrs.'+a+'" value="'+num(c.attrs[a],0)+'">'+
+        '<button class="attr-step" data-action="attr-add" data-attr="'+a+'">+</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  return ''+
+  '<div class="section">'+
+    '<div class="section-title"><span>Retrato y Datos</span></div>'+
+    '<div class="portrait-container">'+
+      '<div class="portrait-avatar"'+pStyle+'>'+(c.portrait?'':'&#127917;')+'</div>'+
+      '<div class="portrait-ctrls">'+
+        '<button class="btn-compact" data-action="upload-portrait">Cambiar foto</button>'+
+        (c.portrait ? '<button class="btn-compact" data-action="remove-portrait">Quitar</button>' : '')+
+      '</div>'+
+    '</div>'+
+    '<div class="field-grid">'+
+      field("Nombre","name",c.name,"text")+
+      '<div class="field"><label>Nivel</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'">'+(isGM()||!supabaseClient?'<button class="btn-compact" data-action="grant-level">+ Nivel (4 pts)</button>':'')+'</div></div>'+
+      field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text")+
+      field("Trabajo / Rol","trabajo",c.trabajo,"text")+
+      field("Altura","altura",c.altura,"text")+
+      field("Peso","peso",c.peso,"text")+
+      field("Edad","edad",c.edad,"text")+
+      field("Color de Ojos","ojos",c.ojos,"text")+
+      field("Color de Pelo","pelo",c.pelo,"text")+
+    '</div>'+
+    '<div class="field-grid wide" style="margin-top:8px;">'+
+      fieldArea("Descripción Física / Notas","descripcion",c.descripcion)+
+    '</div>'+
+  '</div>'+
+  '<div class="section">'+
+    '<div class="section-title"><span>Atributos</span></div>'+
+    attrPoolHtml+
+    '<div class="attr-grid">'+attrCards+'</div>'+
+  '</div>';
+}
+
+function field(label,bind,val,type){
+  return '<div class="field"><label>'+esc(label)+'</label><input type="'+type+'" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
+}
+function fieldArea(label,bind,val){
+  return '<div class="field"><label>'+esc(label)+'</label><textarea data-bind="'+bind+'">'+esc(val)+'</textarea></div>';
+}
+
+function tplHabilidades(c){
+  var groups = {}; ATTRS.forEach(function(a){groups[a]=[];});
+  var hybrids = [];
+  SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
+
+  var html = '<div class="section"><div class="section-title"><span>Habilidades Generales</span></div>';
+  ATTRS.forEach(function(a){
+    html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
+    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
+    groups[a].forEach(function(s){ html += skillRowHtml(s,c); });
+    html += '</div>';
+  });
+  html += '<div class="attr-group"><div class="attr-group-title">Híbridas</div>';
+  html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
+  hybrids.forEach(function(s){ html += skillRowHtml(s,c,true); });
+  html += '</div>';
+
+  if(c.customSkills && c.customSkills.length){
+    html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
+    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
+    c.customSkills.forEach(function(cs){
+      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span><span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span><span class="skill-bonus"><input type="number" data-bind="customSkills.'+cs.id+'.bonus" value="'+num(cs.bonus,0)+'"></span><span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'">&#127922;</button></div>';
+    });
+    html += '</div>';
+  }
+  html += '<button class="add-row-btn" data-action="add-custom-skill">+ Añadir habilidad personalizada</button></div>';
+  html += rollLogHtml();
+  return html;
+}
+
+function skillRowHtml(s,c,isHybrid){
+  var base = skillBase(s,c);
+  var total = skillTotal(s,c);
+  var hybridSel = "";
+  if(isHybrid){
+    var chosen = c.skillHybrid[s.id] || s.hybridOptions[0];
+    hybridSel = '<div><select class="skill-hybrid-select" data-bind="skillHybrid.'+s.id+'">'+
+      s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+ATTR_LABELS[o].slice(0,3)+'</option>';}).join('')+
+      '</select></div>';
+  }
+  return '<div class="skill-row">'+
+    '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
+    '<span class="skill-base">'+base+'</span>'+
+    '<span class="skill-bonus"><input type="number" data-bind="skillBonus.'+s.id+'" value="'+num(c.skillBonus[s.id],0)+'"></span>'+
+    '<span class="skill-total">'+total+'</span>'+
+    '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'">&#127922;</button>'+
+  '</div>';
+}
+
+function tplCombate(c){
+  var cb = c.combat||{};
+  var buffs = c.buffs||{};
+
+  var quickBtns = ["melee","distancia","esquivar","atletismo"].map(function(sid){
+    var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
+    return '<button class="combat-quick-btn" data-action="roll-skill" data-id="'+sid+'"><span class="cq-label">'+sdef.name+'</span><span class="cq-total">'+skillTotal(sdef,c)+'</span></button>';
+  }).join('');
+
+  var html = '<div class="section"><div class="section-title"><span>Buffs y Modificadores Activos</span></div>'+
+    '<div class="buffs-container">'+
+      '<div class="buff-pill '+(buffs.sangre_ataque?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque">🩸 Sangre (+1 Melé/Dist)</div>'+
+      '<div class="buff-pill '+(buffs.sangre_perc?'active':'')+'" data-action="toggle-buff" data-buff="sangre_perc">🩸 Sangre (+2 Percepción)</div>'+
+      '<div class="buff-pill '+(buffs.drogado_dex?'active':'')+'" data-action="toggle-buff" data-buff="drogado_dex">🍄 Veneno (+1 Destreza)</div>'+
+      '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ Mono (-1 a todo)</div>'+
+      '<div class="buff-pill debuff '+(buffs.sol?'active':'')+'" data-action="toggle-buff" data-buff="sol">☀️ Sol (Mitad vida)</div>'+
+    '</div>';
+
+  if(c.customBuffs && c.customBuffs.length){
+    html += '<div style="margin-top:6px;"><div style="font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;">Buffs Propios / Temporales</div>';
+    c.customBuffs.forEach(function(cbuff){
+      html += '<div class="list-row text-row">'+
+        '<input type="text" placeholder="Efecto (ej: +2 Armadura mágica)" data-bind="customBuffs.'+cbuff.id+'.name" value="'+esc(cbuff.name)+'">'+
+        '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'">✕</button>'+
+      '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<button class="btn-compact" data-action="add-custom-buff">+ Añadir buff temporal</button></div>';
+
+  html += '<div class="section"><div class="section-title"><span>Tiradas de Combate</span></div><div class="combat-quick-grid">'+quickBtns+'</div></div>';
+  html += '<div class="section"><div class="section-title"><span>Estadísticas</span></div>'+
+    '<div class="combat-grid">'+
+      combatStat("Iniciativa","iniciativa",cb.iniciativa,true)+
+      combatStat("Movilidad","movilidad",cb.movilidad,false)+
+      combatStat("Defensa","defensa",cb.defensa,false)+
+      combatStat("Def. Mágica","defensaMagica",cb.defensaMagica,false)+
+    '</div>'+
+    '<div class="pv-mana-block">'+
+      '<div class="stat-box"><label>Puntos de Vida</label><div class="pv-mana-inline"><input type="number" data-bind="combat.pvActual" value="'+num(cb.pvActual,0)+'"><span>/</span><input type="number" data-bind="combat.pvMax" value="'+num(cb.pvMax,0)+'"></div></div>'+
+      '<div class="stat-box"><label>Maná / Energía</label><div class="pv-mana-inline"><input type="number" data-bind="combat.manaActual" value="'+num(cb.manaActual,0)+'"><span>/</span><input type="number" data-bind="combat.manaMax" value="'+num(cb.manaMax,0)+'"></div></div>'+
+    '</div>'+
+  '</div>';
+
+  html += '<div class="section"><div class="section-title"><span>Armas</span></div>';
+  (c.weapons||[]).forEach(function(w){
+    html += '<div class="list-row weapons-row">'+
+      '<input type="text" placeholder="Arma" data-bind="weapons.'+w.id+'.name" value="'+esc(w.name)+'">'+
+      '<input type="text" placeholder="Daño" data-bind="weapons.'+w.id+'.dano" value="'+esc(w.dano)+'">'+
+      '<input type="text" placeholder="Alcance" data-bind="weapons.'+w.id+'.alcance" value="'+esc(w.alcance)+'">'+
+      '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'">&#127922;</button>'+
+      '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'">✕</button>'+
+    '</div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-weapon">+ Añadir arma</button></div>';
+
+  html += '<div class="section"><div class="section-title"><span>Armaduras</span></div>';
+  (c.armors||[]).forEach(function(a){
+    html += '<div class="list-row armor-row">'+
+      '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'">'+
+      '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'">'+
+      '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'">'+
+      '<button class="row-del" data-action="del-armor" data-id="'+a.id+'">✕</button>'+
+    '</div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-armor">+ Añadir armadura</button></div>';
+
+  html += rollLogHtml();
+  return html;
+}
+
+function combatStat(label,bind,val,rollable){
+  return '<div class="combat-stat"><label>'+esc(label)+'</label>'+
+    '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'">'+
+    (rollable?'<button class="mini-roll" data-action="roll-init">&#127922;</button>':'')+
+  '</div>';
+}
+
+function tplInventario(c){
+  var html = '<div class="section"><div class="section-title"><span>Dinero</span></div>'+
+    '<div class="money-row">'+
+      '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" value="'+num(c.money.oro,0)+'"></div>'+
+      '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" value="'+num(c.money.plata,0)+'"></div>'+
+    '</div></div>';
+
+  html += '<div class="section"><div class="section-title"><span>Equipo e Inventario</span></div>';
+  (c.inventory||[]).forEach(function(it){
+    html += '<div class="list-row inv-row">'+
+      '<input type="text" placeholder="Objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'">'+
+      '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'">'+
+      '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'">✕</button>'+
+    '</div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-inventory">+ Añadir objeto</button></div>';
+  return html;
+}
+
+function tplMagia(c){
+  var html = '<div class="section"><div class="section-title"><span>Magia</span></div>'+
+    '<div class="field" style="margin-bottom:10px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'"></div>';
+  (c.spells||[]).forEach(function(s){
+    html += '<div class="list-row spell-row">'+
+      '<input type="text" placeholder="Nombre" data-bind="spells.'+s.id+'.name" value="'+esc(s.name)+'">'+
+      '<input type="text" placeholder="Coste" data-bind="spells.'+s.id+'.coste" value="'+esc(s.coste)+'">'+
+      '<input type="text" placeholder="Rango" data-bind="spells.'+s.id+'.rango" value="'+esc(s.rango)+'">'+
+      '<button class="row-del" data-action="del-spell" data-id="'+s.id+'">✕</button>'+
+    '</div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-spell">+ Añadir hechizo</button></div>';
+
+  html += '<div class="section"><div class="section-title"><span>Piedras Mágicas</span></div>';
+  (c.stones||[]).forEach(function(s){
+    html += '<div class="list-row stone-row">'+
+      '<input type="text" placeholder="Color" data-bind="stones.'+s.id+'.color" value="'+esc(s.color)+'">'+
+      '<input type="text" placeholder="Efecto" data-bind="stones.'+s.id+'.efecto" value="'+esc(s.efecto)+'">'+
+      '<button class="row-del" data-action="del-stone" data-id="'+s.id+'">✕</button>'+
+    '</div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-stone">+ Añadir piedra</button></div>';
+  return html;
+}
+
+function tplInvocaciones(c){
+  var html = '<div class="section"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
+  (c.summons||[]).forEach(function(s){
+    html += '<div class="creature-card">'+
+      '<button class="row-del" data-action="del-summon" data-id="'+s.id+'">✕</button>'+
+      '<input type="text" class="creature-name-input" placeholder="Nombre" data-bind="summons.'+s.id+'.name" value="'+esc(s.name)+'">'+
+      '<div class="creature-grid">'+
+        creatureField("Vida","summons."+s.id+".vida",s.vida)+
+        creatureField("Defensa","summons."+s.id+".defensa",s.defensa)+
+        creatureField("Absorción","summons."+s.id+".absorcion",s.absorcion)+
+        creatureField("Daño","summons."+s.id+".dano",s.dano)+
+        creatureField("Movilidad","summons."+s.id+".movilidad",s.movilidad)+
+        creatureField("Inteligencia","summons."+s.id+".inteligencia",s.inteligencia)+
+      '</div>'+
+      '<textarea class="creature-notes" placeholder="Notas" data-bind="summons.'+s.id+'.notas">'+esc(s.notas)+'</textarea>'+
+    '</div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-summon">+ Añadir invocación</button></div>';
+  return html;
+}
+function creatureField(label,bind,val){
+  return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
+}
+
+function tplBestiario(s){
+  var html = '<div class="section"><div class="section-title"><span>Bestiario y Monturas</span></div>';
+  (s.bestiary||[]).forEach(function(b){
+    html += '<div class="creature-card">'+
+      (isGM()||!supabaseClient?'<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'">✕</button>':'')+
+      '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'" '+(isGM()||!supabaseClient?'':'readonly')+'>'+
+      '<div class="creature-grid">'+
+        creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida)+
+        creatureFieldGlobal("Defensa","bestiary."+b.id+".defensa",b.defensa)+
+        creatureFieldGlobal("Absorción","bestiary."+b.id+".absorcion",b.absorcion)+
+        creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano)+
+        creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad)+
+      '</div>'+
+      '<textarea class="creature-notes" data-scope="global" placeholder="Notas" data-bind="bestiary.'+b.id+'.notas" '+(isGM()||!supabaseClient?'':'readonly')+'>'+esc(b.notas)+'</textarea>'+
+    '</div>';
+  });
+  if(isGM()||!supabaseClient){
+    html += '<button class="add-row-btn" data-action="add-bestiary">+ Añadir criatura</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function tplExtra(c){
+  var html = '<div class="section"><div class="section-title"><span>Pasivas Negativas</span></div>';
+  (c.passivesNeg||[]).forEach(function(p){
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'">✕</button></div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-passiveNeg">+ Añadir pasiva negativa</button></div>';
+
+  html += '<div class="section"><div class="section-title"><span>Pasivas Positivas</span></div>';
+  (c.passivesPos||[]).forEach(function(p){
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passivePos" data-id="'+p.id+'">✕</button></div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-passivePos">+ Añadir pasiva positiva</button></div>';
+
+  html += '<div class="section"><div class="section-title"><span>Diosas — Maldiciones y Bendiciones</span></div>';
+  html += '<div style="margin-bottom:12px;"><div style="font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:6px;">Maldiciones</div>';
+  (c.goddessCurses||[]).forEach(function(p){
+    html += '<div class="list-row text-row"><input type="text" data-bind="goddessCurses.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-curse" data-id="'+p.id+'">✕</button></div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-curse">+ Añadir maldición</button></div>';
+
+  html += '<div><div style="font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:6px;">Bendiciones</div>';
+  (c.goddessBlessings||[]).forEach(function(p){
+    html += '<div class="list-row text-row"><input type="text" data-bind="goddessBlessings.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-blessing" data-id="'+p.id+'">✕</button></div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-blessing">+ Añadir bendición</button></div></div>';
+
+  html += '<div class="section"><div class="section-title"><span>Tabla de Diosas</span></div>';
+  (c.goddessTable||[]).forEach(function(g){
+    html += '<div class="list-row god-row">'+
+      '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'">'+
+      '<input type="text" placeholder="Gustos" data-bind="goddessTable.'+g.id+'.gustos" value="'+esc(g.gustos)+'">'+
+      '<input type="text" placeholder="Disgustos" data-bind="goddessTable.'+g.id+'.disgustos" value="'+esc(g.disgustos)+'">'+
+      '<button class="row-del" data-action="del-goddess" data-id="'+g.id+'">✕</button>'+
+    '</div>';
+  });
+  html += '<button class="add-row-btn" data-action="add-goddess">+ Añadir diosa</button></div>';
+
+  return html;
+}
+
+function tplMundo(s){
+  var html = '<div class="section"><div class="section-title"><span>Mapa de Campaña</span></div>';
+  if(s.mapImage){
+    html += '<div class="map-frame"><img src="'+s.mapImage+'" alt="Mapa"></div>';
+  } else {
+    html += '<div class="map-frame empty">Sin mapa cargado.</div>';
+  }
+  if(isGM()||!supabaseClient){
+    html += '<div class="btn-row">'+
+      '<button class="btn-compact" data-action="upload-map">Subir Mapa</button>'+
+      (s.mapImage?'<button class="btn-compact" data-action="remove-map">Quitar</button>':'')+
+    '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="section"><div class="section-title"><span>Lore de Campaña</span></div>';
+  ["pistas","npcs","objetos"].forEach(function(cat){
+    html += '<div style="font-size:.72rem;color:var(--teal-light);text-transform:uppercase;margin:10px 0 4px;">'+cat.toUpperCase()+'</div>';
+    (s.lore[cat]||[]).forEach(function(it){
+      html += '<div class="lore-card">'+
+        (isGM()||!supabaseClient?'<button class="row-del" data-action="del-lore" data-cat="'+cat+'" data-id="'+it.id+'">✕</button>':'')+
+        '<input type="text" class="lore-title-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'">'+
+        '<textarea class="lore-text-area" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text">'+esc(it.text)+'</textarea>'+
+      '</div>';
+    });
+    if(isGM()||!supabaseClient){
+      html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'">+ Añadir a '+cat+'</button>';
+    }
+  });
+  html += '</div>';
+  return html;
+}
+function creatureFieldGlobal(label,bind,val){
+  return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-scope="global" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
+}
+
+function rollLogHtml(){
+  var logs = state.rollLog.slice(0,6);
+  var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span></div>';
+  if(!logs.length){ html += '<div class="roll-empty">Sin tiradas recientes.</div>'; }
+  else {
+    html += '<div class="roll-log">'+logs.map(function(r){
+      return '<div class="roll-log-item"><span>'+esc(r.charName)+' — '+esc(r.label)+'<br><span class="rl-formula">'+esc(r.formulaText)+'</span></span><span class="rl-result">'+r.total+'</span></div>';
+    }).join('')+'</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function setBind(target, path, rawValue, inputType){
+  var parts = path.split(".");
+  var value = inputType==="number" ? num(rawValue,0) : rawValue;
+  if(parts.length===1){ target[parts[0]] = value; return; }
+  if(parts[0]==="attrs"){ target.attrs[parts[1]] = value; return; }
+  if(parts[0]==="combat"){ target.combat[parts[1]] = value; return; }
+  if(parts[0]==="money"){ target.money[parts[1]] = value; return; }
+  if(parts[0]==="skillBonus"){ target.skillBonus[parts[1]] = value; return; }
+  if(parts[0]==="skillHybrid"){ target.skillHybrid[parts[1]] = value; return; }
+  if(parts[0]==="customSkills"){
+    var cs = target.customSkills.find(function(x){return x.id===parts[1];});
+    if(cs) cs[parts[2]] = value;
+    return;
+  }
+  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary"];
+  if(listFields.indexOf(parts[0])!==-1){
+    var arr = target[parts[0]];
+    var item = arr && arr.find(function(x){return x.id===parts[1];});
+    if(item) item[parts[2]] = value;
+    return;
+  }
+  if(parts[0]==="lore"){
+    var loreArr = target.lore[parts[1]];
+    var lItem = loreArr && loreArr.find(function(x){return x.id===parts[2];});
+    if(lItem) lItem[parts[3]] = value;
+    return;
+  }
+  target[path] = value;
+}
+
+function handleChange(e){
+  var el = e.target.closest("[data-bind]"); if(!el) return;
+  var isGlobal = el.getAttribute("data-scope")==="global";
+  var target = isGlobal ? state : activeChar();
+  setBind(target, el.getAttribute("data-bind"), el.value, el.type);
+  saveState();
+  renderTopbar();
+  renderTab();
+}
+
+function handleClick(e){
+  getAudioCtx();
+  var btn = e.target.closest("[data-action]"); if(!btn) return;
+  var action = btn.getAttribute("data-action");
+  var c = activeChar();
+
+  if(action==="gate-login"){
+    var em = document.getElementById("gateEmail").value.trim();
+    var pw = document.getElementById("gatePass").value;
+    supabaseLogin(em, pw);
+    return;
+  }
+  if(action==="gate-signup"){
+    var em2 = document.getElementById("gateEmail").value.trim();
+    var pw2 = document.getElementById("gatePass").value;
+    supabaseSignup(em2, pw2);
+    return;
+  }
+
+  if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
+  if(action==="hp-delta"){
+    var d1 = parseInt(btn.getAttribute("data-delta"),10);
+    c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, 0, Math.max(0,num(c.combat.pvMax,0))||9999);
+    saveState(); renderTopbar(); return;
+  }
+  if(action==="mana-delta"){
+    var d2 = parseInt(btn.getAttribute("data-delta"),10);
+    c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, Math.max(0,num(c.combat.manaMax,0))||9999);
+    saveState(); renderTopbar(); return;
+  }
+  if(action==="attr-add"){
+    var aId = btn.getAttribute("data-attr");
+    if(num(c.attrPoints,0) > 0){ c.attrPoints--; }
+    c.attrs[aId] = num(c.attrs[aId],0)+1;
+    saveState(); renderTab(); return;
+  }
+  if(action==="attr-sub"){
+    var aId2 = btn.getAttribute("data-attr");
+    c.attrs[aId2] = Math.max(0, num(c.attrs[aId2],0)-1);
+    saveState(); renderTab(); return;
+  }
+  if(action==="grant-level"){
+    c.nivel = String(num(c.nivel,1)+1);
+    c.attrPoints = num(c.attrPoints,0) + 4;
+    saveState(); renderTopbar(); renderTab(); return;
+  }
+  if(action==="toggle-buff"){
+    var bName = btn.getAttribute("data-buff");
+    if(!c.buffs) c.buffs={};
+    c.buffs[bName] = !c.buffs[bName];
+    saveState(); renderTab(); return;
+  }
+  if(action==="roll-skill"){
+    var sid = btn.getAttribute("data-id");
+    var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
+    performD10Roll(c.name, sdef.name, skillTotal(sdef,c));
+    return;
+  }
+  if(action==="roll-custom-skill"){
+    var csid = btn.getAttribute("data-id");
+    var cs = (c.customSkills||[]).find(function(x){return x.id===csid;});
+    if(cs) performD10Roll(c.name, cs.name, customSkillTotal(cs,c));
+    return;
+  }
+  if(action==="add-custom-skill"){
+    var nm = prompt("Nombre de la habilidad (ej: Pesca, Doma):");
+    if(!nm) return;
+    var attrChoice = prompt("Atributo base (fisico / destreza / inteligencia / percepcion / carisma):","destreza");
+    if(ATTRS.indexOf(attrChoice)===-1) attrChoice="destreza";
+    if(!c.customSkills) c.customSkills=[];
+    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:0});
+    saveState(); renderTab(); return;
+  }
+  if(action==="add-custom-buff"){
+    if(!c.customBuffs) c.customBuffs=[];
+    c.customBuffs.push({id:uid(),name:""});
+    saveState(); renderTab(); return;
+  }
+  if(action==="del-custom-buff"){
+    c.customBuffs = (c.customBuffs||[]).filter(function(b){return b.id!==btn.getAttribute("data-id");});
+    saveState(); renderTab(); return;
+  }
+  if(action==="roll-init"){ performD10Roll(c.name, "Iniciativa", c.combat.iniciativa); return; }
+  if(action==="roll-weapon"){
+    var wid = btn.getAttribute("data-id");
+    var wpn = (c.weapons||[]).find(function(w){return w.id===wid;});
+    if(wpn) performWeaponRoll(c.name, wpn.name||"Arma", wpn.dano);
+    return;
+  }
+  if(action==="add-weapon"){ c.weapons.push({id:uid(),name:"",dano:"",alcance:""}); saveState(); renderTab(); return; }
+  if(action==="del-weapon"){ c.weapons = c.weapons.filter(function(w){return w.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-armor"){ c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); saveState(); renderTab(); return; }
+  if(action==="del-armor"){ c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-inventory"){ c.inventory.push({id:uid(),name:"",qty:1}); saveState(); renderTab(); return; }
+  if(action==="del-inventory"){ c.inventory = c.inventory.filter(function(i){return i.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-spell"){ c.spells.push({id:uid(),name:"",coste:"",rango:""}); saveState(); renderTab(); return; }
+  if(action==="del-spell"){ c.spells = c.spells.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-stone"){ c.stones.push({id:uid(),color:"",efecto:""}); saveState(); renderTab(); return; }
+  if(action==="del-stone"){ c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-summon"){ c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",notas:""}); saveState(); renderTab(); return; }
+  if(action==="del-summon"){ c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-passiveNeg"){ c.passivesNeg.push({id:uid(),text:""}); saveState(); renderTab(); return; }
+  if(action==="del-passiveNeg"){ c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-passivePos"){ c.passivesPos.push({id:uid(),text:""}); saveState(); renderTab(); return; }
+  if(action==="del-passivePos"){ c.passivesPos = c.passivesPos.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-curse"){ c.goddessCurses.push({id:uid(),text:""}); saveState(); renderTab(); return; }
+  if(action==="del-curse"){ c.goddessCurses = c.goddessCurses.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-blessing"){ c.goddessBlessings.push({id:uid(),text:""}); saveState(); renderTab(); return; }
+  if(action==="del-blessing"){ c.goddessBlessings = c.goddessBlessings.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-goddess"){ c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); saveState(); renderTab(); return; }
+  if(action==="del-goddess"){ c.goddessTable = c.goddessTable.filter(function(g){return g.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-bestiary"){ state.bestiary.push({id:uid(),nombre:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",notas:""}); saveState(); renderTab(); return; }
+  if(action==="del-bestiary"){ state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-lore"){
+    var cat = btn.getAttribute("data-cat");
+    state.lore[cat].push({id:uid(),title:"",text:""});
+    saveState(); renderTab(); return;
+  }
+  if(action==="del-lore"){
+    var cat2 = btn.getAttribute("data-cat");
+    state.lore[cat2] = state.lore[cat2].filter(function(x){return x.id!==btn.getAttribute("data-id");});
+    saveState(); renderTab(); return;
+  }
+  if(action==="upload-map"){ document.getElementById("mapFileInput").click(); return; }
+  if(action==="remove-map"){ state.mapImage=null; saveState(); renderTab(); return; }
+  if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
+  if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
+  if(action==="open-char-modal" || action==="open-data-modal"){ openCharModal(action==="open-data-modal"); return; }
+}
+
+function openCharModal(showDataTools){
+  var overlay = document.getElementById(showDataTools?"dataModalOverlay":"charModalOverlay");
+  var modalId = showDataTools?"dataModal":"charModal";
+  document.getElementById(modalId).innerHTML = charModalHtml(showDataTools);
+  overlay.classList.remove("hidden");
+}
+function closeModals(){
+  ["charModalOverlay","diceModalOverlay","dataModalOverlay","rollOverlay"].forEach(function(id){
+    document.getElementById(id).classList.add("hidden");
+  });
+}
+
+function charModalHtml(showDataTools){
+  var html = '<h2>'+(showDataTools?'Cuenta y Configuración':'Personajes')+'<button data-action="close-modal">&times;</button></h2>';
+  state.characters.forEach(function(c){
+    var curTheme = c.theme||"default";
+    var swatches = THEME_LIST.map(function(t){
+      return '<button class="swatch swatch-'+t.id+(curTheme===t.id?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'"></button>';
+    }).join('');
+    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+'">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<button class="cli-info" data-action="pick-char" data-id="'+c.id+'">'+
+          '<div class="cli-name">'+esc(c.name)+'</div><div class="cli-sub">Nivel '+esc(c.nivel||"1")+'</div>'+
+        '</button>'+
+        '<div class="theme-swatches">'+swatches+'</div>'+
+      '</div>'+
+      '<button class="row-del" data-action="del-char" data-id="'+c.id+'">✕</button>'+
+    '</div>';
+  });
+  html += '<button class="btn btn-ghost" data-action="add-char">+ Nuevo personaje</button>';
+
+  if(showDataTools){
+    var spConfig = getSupabaseConfig();
+    html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">'+
+      '<div class="section-title"><span>Servidor Supabase</span></div>'+
+      '<div class="field"><label>Project URL</label><input type="text" id="cfgSupabaseUrl" value="'+esc(spConfig.url)+'"></div>'+
+      '<div class="field" style="margin-top:6px;"><label>Anon Key</label><input type="password" id="cfgSupabaseKey" value="'+esc(spConfig.key)+'"></div>'+
+      '<button class="btn btn-ghost" data-action="save-supabase-config" style="margin-top:8px;">Guardar Conexión</button>'+
+    '</div>';
+
+    html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">'+
+      '<div class="section-title"><span>Sesión de Usuario</span></div>';
+    if(currentUser){
+      html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:8px;">Conectado: <b>'+esc(currentUser.email)+'</b> ('+currentRole.toUpperCase()+')</div>'+
+        '<button class="btn btn-ghost" data-action="auth-logout">Cerrar Sesión</button>';
+    } else {
+      html += '<div class="field"><label>Email</label><input type="email" id="authEmail"></div>'+
+        '<div class="field" style="margin-top:6px;"><label>Contraseña</label><input type="password" id="authPass"></div>'+
+        '<div class="btn-row" style="margin-top:8px;">'+
+          '<button class="btn btn-primary" data-action="auth-login">Entrar</button>'+
+          '<button class="btn btn-ghost" data-action="auth-signup">Registrarse</button>'+
+        '</div>';
+    }
+    html += '</div>';
+
+    html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">'+
+      '<div class="btn-row">'+
+        '<button class="btn btn-ghost" data-action="export-data">Exportar JSON</button>'+
+        '<button class="btn btn-ghost" data-action="import-data">Importar JSON</button>'+
+      '</div>'+
+    '</div>';
+  }
+  return html;
+}
+
+function modalClick(e){
+  var btn = e.target.closest("[data-action]"); if(!btn) return;
+  var action = btn.getAttribute("data-action");
+  if(action==="close-modal"){ closeModals(); return; }
+  if(action==="pick-char"){ state.activeId = btn.getAttribute("data-id"); saveState(); closeModals(); renderTopbar(); renderTab(); return; }
+  if(action==="add-char"){
+    var nName = prompt("Nombre del personaje:","Nuevo");
+    if(nName){
+      var nc = blankCharacter(nName);
+      state.characters.push(nc); state.activeId = nc.id; saveState(); closeModals(); renderTopbar(); renderTab();
+    }
+    return;
+  }
+  if(action==="del-char"){
+    if(confirm("¿Eliminar este personaje?")){
+      state.characters = state.characters.filter(function(x){return x.id!==btn.getAttribute("data-id");});
+      state.activeId = state.characters[0]?state.characters[0].id:"";
+      saveState(); closeModals(); renderTopbar(); renderTab();
+    }
+    return;
+  }
+  if(action==="set-theme"){
+    var thC = state.characters.find(function(x){return x.id===btn.getAttribute("data-id");});
+    thC.theme = btn.getAttribute("data-theme"); saveState(); renderTopbar(); renderTab(); return;
+  }
+  if(action==="save-supabase-config"){
+    localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({url:document.getElementById("cfgSupabaseUrl").value.trim(), key:document.getElementById("cfgSupabaseKey").value.trim()}));
+    initSupabase(); closeModals(); return;
+  }
+  if(action==="auth-login"){ supabaseLogin(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
+  if(action==="auth-signup"){ supabaseSignup(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
+  if(action==="auth-logout"){ supabaseLogout(); return; }
+  if(action==="export-data"){ exportData(); return; }
+  if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
+}
+
+var diceState = {qty:1, sides:10, mod:0, mode:"normal"};
+function diceModalHtml(){
+  var sidesOpts=[4,6,8,10,12,20,100];
+  return '<h2>Tirador de Dados<button data-action="close-modal">&times;</button></h2>'+
+    '<div class="field"><label>Modalidad</label><select id="diceMode">'+
+      '<option value="normal" '+(diceState.mode==='normal'?'selected':'')+'>Tirada Normal</option>'+
+      '<option value="adv" '+(diceState.mode==='adv'?'selected':'')+'>Ventaja (2 dados, elige mayor)</option>'+
+      '<option value="disadv" '+(diceState.mode==='disadv'?'selected':'')+'>Desventaja (2 dados, elige menor)</option>'+
+    '</select></div>'+
+    (diceState.sides===100?'':'<div class="field" style="margin-top:6px;"><label>Cantidad de dados</label><input type="number" min="1" id="diceQty" value="'+diceState.qty+'"></div>')+
+    '<div class="dtype-row">'+sidesOpts.map(function(s){return '<button class="dtype-btn '+(diceState.sides===s?'active':'')+'" data-action="pick-die" data-sides="'+s+'">'+(s===100?'d%':'d'+s)+'</button>';}).join('')+'</div>'+
+    '<div class="field" style="margin-top:6px;"><label>Modificador numérico</label><input type="number" id="diceMod" value="'+diceState.mod+'"></div>'+
+    '<button class="btn btn-primary" data-action="roll-free">Lanzar Dados</button>';
+}
+function openDiceModal(){
+  document.getElementById("diceModal").innerHTML = diceModalHtml();
+  document.getElementById("diceModalOverlay").classList.remove("hidden");
+}
+function diceModalClick(e){
+  var btn = e.target.closest("[data-action]"); if(!btn) return;
+  var action = btn.getAttribute("data-action");
+  if(action==="close-modal"){ closeModals(); return; }
+  if(action==="pick-die"){ diceState.sides = parseInt(btn.getAttribute("data-sides"),10); openDiceModal(); return; }
+  if(action==="roll-free"){
+    diceState.mod = parseInt(document.getElementById("diceMod").value,10)||0;
+    diceState.mode = document.getElementById("diceMode").value;
+
+    if(diceState.sides===100){
+      var t = (rollDie(10)-1)*10, u = rollDie(10)-1;
+      var pct = t+u === 0 ? 100 : t+u;
+      var tot = pct + diceState.mod;
+      openRollModal("d% (Percentil)", tot, "<div>Decenas "+t+" + Unidades "+u+"</div>", 100, pct===100, pct===1);
+      closeModals(); return;
+    }
+
+    if(diceState.mode==="adv" || diceState.mode==="disadv"){
+      var r1 = rollDie(diceState.sides), r2 = rollDie(diceState.sides);
+      var chosen = diceState.mode==="adv" ? Math.max(r1, r2) : Math.min(r1, r2);
+      var totAdv = chosen + diceState.mod;
+      var lblAdv = "d"+diceState.sides + (diceState.mode==="adv"?" (Ventaja)":" (Desventaja)");
+      var detAdv = "Tiradas: ["+r1+", "+r2+"] → Elegido: "+chosen+(diceState.mod?(diceState.mod>0?" + "+diceState.mod:" - "+Math.abs(diceState.mod)):"");
+      openRollModal(lblAdv, totAdv, "<div>"+detAdv+"</div>", diceState.sides, chosen===diceState.sides, chosen===1);
+      closeModals(); return;
+    }
+
+    diceState.qty = Math.max(1, parseInt(document.getElementById("diceQty").value,10)||1);
+    var rolls=[], sum=0;
+    for(var i=0;i<diceState.qty;i++){ var r=rollDie(diceState.sides); rolls.push(r); sum+=r; }
+    var isCrit = rolls.every(function(r){return r===diceState.sides;});
+    var isFumble = rolls.every(function(r){return r===1;});
+    var total = sum + diceState.mod;
+    openRollModal(diceState.qty+"d"+diceState.sides, total, "<div>("+rolls.join("+")+")"+(diceState.mod?(diceState.mod>0?" + "+diceState.mod:" - "+Math.abs(mod)):"")+"</div>", diceState.sides, isCrit, isFumble);
+    closeModals(); return;
+  }
+}
+
+function exportData(){
+  var blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+  var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "krysalis-backup.json"; a.click();
+}
+function importData(file){
+  var r = new FileReader();
+  r.onload = function(){
+    try{
+      state = migrateState(JSON.parse(r.result));
+      state.activeId = state.characters[0]?state.characters[0].id:"";
+      saveState(); closeModals(); renderTopbar(); renderTabbar(); renderTab();
+    }catch(e){ alert("Archivo no válido."); }
+  };
+  r.readAsText(file);
+}
+
+function resizeImageFile(file, maxDim, quality, callback){
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var img = new Image();
+    img.onload = function(){
+      var scale = Math.min(1, maxDim/Math.max(img.width,img.height));
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width*scale); canvas.height = Math.round(img.height*scale);
+      canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+      callback(canvas.toDataURL("image/jpeg", quality||0.85));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* SUPABASE SINCRO */
+function getSupabaseConfig(){
+  try{
+    var cfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY)) || {};
+    return { url: cfg.url || DEFAULT_SUPABASE_URL, key: cfg.key || "" };
+  }catch(e){ return {url:DEFAULT_SUPABASE_URL, key:""}; }
+}
+function initSupabase(){
+  var cfg = getSupabaseConfig();
+  if(!cfg.url || !cfg.key || !window.supabase) return;
+  try{
+    supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
+    supabaseClient.auth.getSession().then(function(res){
+      if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
+      else { renderTab(); }
+    });
+    supabaseClient.auth.onAuthStateChange(function(e, session){
+      currentUser = session ? session.user : null;
+      if(currentUser) fetchUserProfile(); else { currentRole='player'; renderTopbar(); renderTab(); }
+    });
+  }catch(e){ renderTab(); }
+}
+async function fetchUserProfile(){
+  if(!supabaseClient || !currentUser) return;
+  try{
+    var res = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
+    if(res.data && res.data.role) currentRole = res.data.role;
+    pullAllFromSupabase();
+    supabaseClient.channel('realtime_all').on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(){
+      pullAllFromSupabase();
+    }).subscribe();
+  }catch(e){}
+  renderTopbar();
+}
+async function supabaseLogin(em, pw){
+  var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
+  if(res.error) alert(res.error.message); else closeModals();
+}
+async function supabaseSignup(em, pw){
+  var res = await supabaseClient.auth.signUp({email:em, password:pw});
+  if(res.error) alert(res.error.message); else alert("Registro completado. Ya puedes entrar.");
+}
+async function supabaseLogout(){
+  await supabaseClient.auth.signOut(); currentUser=null; currentRole='player'; closeModals(); renderTopbar(); renderTab();
+}
+async function pullAllFromSupabase(){
+  if(!supabaseClient || !currentUser) return;
+  isRemoteSyncing = true;
+  try{
+    var charRes = await supabaseClient.from('characters').select('*');
+    if(charRes.data && charRes.data.length){
+      state.characters = charRes.data.map(function(r){ var c = r.data; c.db_id = r.id; return c; });
+      if(!state.activeId && state.characters.length) state.activeId = state.characters[0].id;
+    }
+    saveState(true); renderTopbar(); renderTabbar(); renderTab();
+  }catch(e){}
+  isRemoteSyncing = false;
+}
+function pushCurrentCharToSupabase(){
+  if(!supabaseClient || !currentUser) return;
+  var c = activeChar(); if(!c || !c.name || c.id==="empty") return;
+  var payload = {name:c.name, data:c, owner_id:currentUser.id, updated_at:new Date().toISOString()};
+  if(c.db_id) payload.id = c.db_id;
+  supabaseClient.from('characters').upsert(payload).then(function(res){
+    if(res.data && res.data[0]) c.db_id = res.data[0].id;
+  });
+}
+
+function init(){
+  state = loadState();
+  renderTopbar();
+  renderTabbar();
+  renderTab();
+
+  document.getElementById("main").addEventListener("click", handleClick);
+  document.getElementById("main").addEventListener("change", handleChange);
+  document.getElementById("main").addEventListener("input", function(e){
+    var el = e.target.closest("[data-bind]"); if(!el) return;
+    var isGlobal = el.getAttribute("data-scope")==="global";
+    var target = isGlobal ? state : activeChar();
+    setBind(target, el.getAttribute("data-bind"), el.value, el.type);
+    saveState();
+  });
+  document.getElementById("topbar").addEventListener("click", handleClick);
+  document.getElementById("tabbar").addEventListener("click", handleClick);
+  document.getElementById("charModal").addEventListener("click", modalClick);
+  document.getElementById("dataModal").addEventListener("click", modalClick);
+  document.getElementById("diceModal").addEventListener("click", diceModalClick);
+  document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  document.getElementById("rollOverlay").addEventListener("click", function(e){ if(e.target===this||e.target.closest("[data-action='close-modal']")) closeModals(); });
+
+  document.getElementById("fabDice").addEventListener("click", openDiceModal);
+  document.getElementById("portraitFileInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files[0]){
+      resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
+    }
+    e.target.value="";
+  });
+  document.getElementById("mapFileInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files[0]){
+      resizeImageFile(e.target.files[0], 1600, 0.85, function(url){ state.mapImage = url; saveState(); renderTab(); });
+    }
+    e.target.value="";
+  });
+  document.getElementById("importFileInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files[0]) importData(e.target.files[0]);
+    e.target.value="";
+  });
+
+  initSupabase();
+}
+
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+</script>
+</body>
+</html>
