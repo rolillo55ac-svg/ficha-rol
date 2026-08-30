@@ -122,7 +122,6 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 }
 .section-title span{display:flex;align-items:center;gap:6px;}
 .section-title span::before{content:'§';color:var(--blood-light);font-size:1.1rem;}
-.section-note{font-size:.74rem;color:var(--ink-faint);margin:-6px 0 10px;line-height:1.4;}
 
 /* RETRATO Y CAMPOS */
 .portrait-container{display:flex;gap:18px;align-items:center;margin-bottom:14px;}
@@ -248,7 +247,7 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 .spell-row{grid-template-columns:1fr 60px 75px 30px;}
 .stone-row{grid-template-columns:85px 1fr 30px;}
 .text-row{grid-template-columns:1fr 30px;}
-.god-row{grid-template-columns:1fr 1fr 1fr 30px;}
+.pop-row{grid-template-columns:1fr 1fr 1fr 30px;}
 
 .add-row-btn{
   width:100%;margin-top:10px;background:none;border:1px dashed var(--line-strong);
@@ -380,7 +379,6 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 .dtype-btn{background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:6px;padding:8px 12px;font-family:var(--font-mono);font-size:.9rem;}
 .dtype-btn.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.12);}
 
-/* PANTALLA DE LOGIN DIRECTO */
 .auth-gate-box{
   background:var(--bg-card);border:1.5px solid var(--line-strong);border-radius:var(--radius);
   padding:24px 20px;max-width:440px;margin:40px auto;text-align:center;
@@ -420,9 +418,10 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV5";
+var STORAGE_KEY = "krysalisFichasV6";
 var SUPABASE_CONFIG_KEY = "krysalisSupabaseConfig";
 var DEFAULT_SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
+var DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
 var ATTRS = ["fisico","destreza","inteligencia","percepcion","carisma"];
 var ATTR_LABELS = {fisico:"Físico",destreza:"Destreza",inteligencia:"Inteligencia",percepcion:"Percepción",carisma:"Carisma"};
@@ -468,6 +467,8 @@ var THEME_LIST = [
   {id:"green",label:"Verde veneno"}
 ];
 
+var CONTINENTES = ["Todos", "Vetrys", "Tryssar", "Labrys", "Aslan", "Krysalis", "Trysar"];
+
 function uid(){return "id" + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4);}
 function esc(s){return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function num(v,d){var n=parseFloat(v);return isNaN(n)?(d||0):n;}
@@ -479,6 +480,8 @@ var supabaseClient = null;
 var currentUser = null;
 var currentRole = 'player';
 var isRemoteSyncing = false;
+var bestiaryContinentFilter = "Todos";
+var loreContinentFilter = "Todos";
 
 function blankCharacter(name){
   return {
@@ -494,20 +497,20 @@ function blankCharacter(name){
     magiaTipo:"", spells:[], stones:[],
     passivesNeg:[], passivesPos:[],
     goddessCurses:[], goddessBlessings:[], goddessTable:[],
-    summons:[], buffs:{}, customBuffs:[], attrPoints:0
+    summons:[], buffs:{}, customBuffs:[], poisons:[], attrPoints:0
   };
 }
 
 function getSeedBestiary(){
   return [
-    {id:uid(),nombre:"Kimera",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",notas:"Continente: Vetrys. Doma: 5. Nada a mitad de mov."},
-    {id:uid(),nombre:"Anaconda Gigante",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",notas:"Continente: Tryssar. Doma: 5. Carga pesada. Nada con soltura."},
-    {id:uid(),nombre:"Infernal",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",notas:"Continente: Labrys. Doma: 5. Carga pesada. No puede nadar."},
-    {id:uid(),nombre:"Pegaso",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10//12 (T/V)",notas:"Continente: Labrys. Doma: 5. Montura voladora."},
-    {id:uid(),nombre:"Hypocampo",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",notas:"Continente: Labrys. Doma: 5. Montura acuática."},
-    {id:uid(),nombre:"Oso Perro",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",notas:"Continente: Krysalis. Doma: 5. Gran resistencia."},
-    {id:uid(),nombre:"Lobo Ártico",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",notas:"Resistencia al frío. Inteligencia: 3. Doma: 3."},
-    {id:uid(),nombre:"Lobo Entrenado",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",notas:"Lobo de combate. Inteligencia: 4. Doma: 5."}
+    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",notas:"Doma: 5. Nada a mitad de mov."},
+    {id:uid(),nombre:"Anaconda Gigante",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",notas:"Doma: 5. Carga pesada. Nada con soltura."},
+    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",notas:"Doma: 5. Carga pesada. No puede nadar."},
+    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10//12 (T/V)",notas:"Doma: 5. Montura voladora."},
+    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",notas:"Doma: 5. Montura acuática."},
+    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",notas:"Doma: 5. Gran resistencia."},
+    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",notas:"Resistencia al frío. Inteligencia: 3. Doma: 3."},
+    {id:uid(),nombre:"Lobo Entrenado",continente:"Todos",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",notas:"Lobo de combate. Inteligencia: 4. Doma: 5."}
   ];
 }
 
@@ -544,6 +547,7 @@ function migrateState(s){
     if(!c.goddessTable) c.goddessTable=[];
     if(!c.buffs) c.buffs={};
     if(!c.customBuffs) c.customBuffs=[];
+    if(!c.poisons) c.poisons=[];
     if(c.attrPoints===undefined) c.attrPoints=0;
   });
   return s;
@@ -578,17 +582,7 @@ function isGM(){ return currentRole === 'gm'; }
 function activeChar(){
   var c = state.characters.find(function(x){return x.id===state.activeId;}) || state.characters[0];
   if(!c){
-    return {
-      id: "empty", name: currentUser ? "Cargando fichas..." : "Sesión requerida",
-      theme: "default", portrait: null, nivel: "1", lugarNacimiento: "", altura: "", peso: "", edad: "", ojos: "", pelo: "", trabajo: "", descripcion: "",
-      attrs: {fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
-      combat: {pvActual:10,pvMax:10,manaActual:10,manaMax:10,iniciativa:0,movilidad:0,defensa:10,defensaMagica:0},
-      skillBonus: {}, skillHybrid: {}, customSkills: [],
-      weapons: [], armors: [], inventory: [], money: {oro:0,plata:0},
-      spells: [], stones: [], passivesNeg: [], passivesPos: [],
-      goddessCurses: [], goddessBlessings: [], goddessTable: [],
-      summons: [], buffs: {}, customBuffs: [], attrPoints: 0
-    };
+    return blankCharacter("Personaje de prueba");
   }
   return c;
 }
@@ -596,7 +590,7 @@ function activeChar(){
 function getEffectiveAttr(aKey, c){
   var base = num(c.attrs[aKey],0);
   if(aKey==="percepcion" && c.buffs && c.buffs.sangre_perc) base += 2;
-  if(aKey==="destreza" && c.buffs && c.buffs.drogado_dex) base += 1;
+  if(aKey==="destreza" && (c.buffs && c.buffs.drogado_dex)) base += 1;
   return base;
 }
 function skillBase(skill, c){
@@ -713,8 +707,10 @@ function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble){
 function performD10Roll(charName, label, mod){
   var c = activeChar();
   var extraMod = 0;
-  if(c.buffs && c.buffs.sangre_ataque && (label.includes("melé") || label.includes("distancia"))){
-    extraMod += 1;
+  if(c.buffs){
+    if(c.buffs.sangre_ataque_melee && label.includes("melé")) extraMod += 1;
+    if(c.buffs.sangre_ataque_dist && label.includes("distancia")) extraMod += 1;
+    if(c.buffs.mono) extraMod -= 1;
   }
   var d = rollDie(10);
   var total = d + num(mod,0) + extraMod;
@@ -803,6 +799,7 @@ var TABS = [
   {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"},
   {id:"magia",label:"Magia"},
+  {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"},
   {id:"bestiario",label:"Bestiario"},
   {id:"extra",label:"Extra"},
@@ -817,36 +814,17 @@ function renderTabbar(){
 
 function renderTab(){
   var main = document.getElementById("main");
-  if(!currentUser && supabaseClient){
-    main.innerHTML = tplAuthGate();
-    return;
-  }
   var c = activeChar();
   if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
   else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
   else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
   else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
   else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
+  else if(state.activeTab==="alquimia") main.innerHTML = tplAlquimia(c);
   else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
   else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
   else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
   else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
-}
-
-function tplAuthGate(){
-  return '<div class="auth-gate-box">'+
-    '<div class="auth-gate-title">Krysalis Rol</div>'+
-    '<div class="auth-gate-sub">Inicia sesión con tu cuenta para acceder a tu ficha y sincronizar con la partida.</div>'+
-    '<div class="field" style="text-align:left;"><label>Correo electrónico</label><input type="email" id="gateEmail" placeholder="tu-email@gmail.com"></div>'+
-    '<div class="field" style="text-align:left;margin-top:10px;"><label>Contraseña</label><input type="password" id="gatePass"></div>'+
-    '<div class="btn-row" style="margin-top:16px;">'+
-      '<button class="btn btn-primary" data-action="gate-login">Entrar</button>'+
-      '<button class="btn btn-ghost" data-action="gate-signup">Registrarse</button>'+
-    '</div>'+
-    '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">'+
-      '<button class="btn-compact" data-action="open-data-modal" style="width:100%;">Configurar Supabase / Modo Local</button>'+
-    '</div>'+
-  '</div>';
 }
 
 function tplFicha(c){
@@ -957,19 +935,31 @@ function skillRowHtml(s,c,isHybrid){
 function tplCombate(c){
   var cb = c.combat||{};
   var buffs = c.buffs||{};
+  var isVampire = (c.magiaTipo||"").toLowerCase().includes("vampir") || (c.trabajo||"").toLowerCase().includes("vástago");
+  var isToxic = (c.magiaTipo||"").toLowerCase().includes("toxicómano") || (c.name||"").toLowerCase().includes("cherk");
 
   var quickBtns = ["melee","distancia","esquivar","atletismo"].map(function(sid){
     var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
     return '<button class="combat-quick-btn" data-action="roll-skill" data-id="'+sid+'"><span class="cq-label">'+sdef.name+'</span><span class="cq-total">'+skillTotal(sdef,c)+'</span></button>';
   }).join('');
 
-  var html = '<div class="section"><div class="section-title"><span>Buffs y Modificadores Activos</span></div>'+
-    '<div class="buffs-container">'+
-      '<div class="buff-pill '+(buffs.sangre_ataque?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque">🩸 Sangre (+1 Melé/Dist)</div>'+
-      '<div class="buff-pill '+(buffs.sangre_perc?'active':'')+'" data-action="toggle-buff" data-buff="sangre_perc">🩸 Sangre (+2 Percepción)</div>'+
-      '<div class="buff-pill '+(buffs.drogado_dex?'active':'')+'" data-action="toggle-buff" data-buff="drogado_dex">🍄 Veneno (+1 Destreza)</div>'+
-      '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ Mono (-1 a todo)</div>'+
-      '<div class="buff-pill debuff '+(buffs.sol?'active':'')+'" data-action="toggle-buff" data-buff="sol">☀️ Sol (Mitad vida)</div>'+
+  var html = '<div class="section"><div class="section-title"><span>Buffs y Modificadores de Combate</span></div>'+
+    '<div class="buffs-container">';
+
+  if(isVampire){
+    html += '<div class="buff-pill '+(buffs.sangre_ataque_melee?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_melee">🩸 Sangre: +1 Melé</div>'+
+            '<div class="buff-pill '+(buffs.sangre_ataque_dist?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_dist">🩸 Sangre: +1 Distancia</div>'+
+            '<div class="buff-pill '+(buffs.sangre_perc?'active':'')+'" data-action="toggle-buff" data-buff="sangre_perc">🩸 Sangre: +2 Percepción</div>'+
+            '<div class="buff-pill debuff '+(buffs.sol?'active':'')+'" data-action="toggle-buff" data-buff="sol">☀️ Sol (Vida mitad)</div>'+
+            '<div class="buff-pill debuff '+(buffs.plata?'active':'')+'" data-action="toggle-buff" data-buff="plata">⚔️ Plata (1d6 daño)</div>';
+  }
+  if(isToxic){
+    html += '<div class="buff-pill '+(buffs.drogado_dex?'active':'')+'" data-action="toggle-buff" data-buff="drogado_dex">🍄 Drogado: +1 Destreza</div>'+
+            '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ El Mono (-1 a todo)</div>'+
+            '<div class="buff-pill '+(buffs.inmune_veneno?'active':'')+'" data-action="toggle-buff" data-buff="inmune_veneno">🧪 Inmune al veneno</div>';
+  }
+
+  html += '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ Mono (-1 General)</div>'+
     '</div>';
 
   if(c.customBuffs && c.customBuffs.length){
@@ -1030,6 +1020,37 @@ function combatStat(label,bind,val,rollable){
     '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'">'+
     (rollable?'<button class="mini-roll" data-action="roll-init">&#127922;</button>':'')+
   '</div>';
+}
+
+function tplAlquimia(c){
+  var html = '<div class="section"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>'+
+    '<div class="section-note">Gestión de dosis, efectos adversos en enemigos y buffs corporales propios.</div>';
+
+  (c.poisons||[]).forEach(function(p){
+    html += '<div class="creature-card">'+
+      '<button class="row-del" data-action="del-poison" data-id="'+p.id+'">✕</button>'+
+      '<div style="display:flex;gap:8px;margin-bottom:6px;">'+
+        '<input type="text" class="creature-name-input" data-bind="poisons.'+p.id+'.name" value="'+esc(p.name)+'" placeholder="Nombre del veneno" style="margin-bottom:0;width:100%;">'+
+        '<div style="display:flex;gap:4px;align-items:center;flex:none;">'+
+          '<span style="font-size:.7rem;color:var(--ink-faint);">Dosis:</span>'+
+          '<input type="number" style="width:50px;text-align:center;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:4px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'">'+
+        '</div>'+
+      '</div>'+
+      '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:8px;">'+
+        '<div class="creature-field"><label style="color:#E74C3C;">Efecto en Enemigos</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoEnemigo">'+esc(p.efectoEnemigo)+'</textarea></div>'+
+        '<div class="creature-field"><label style="color:var(--teal-light);">Efecto en Cherk (Buff)</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoCherk">'+esc(p.efectoCherk)+'</textarea></div>'+
+      '</div>'+
+      '<div style="margin-top:8px;display:flex;gap:8px;align-items:center;">'+
+        '<select style="font-size:.74rem;background:var(--bg-card);border:1px solid var(--line);padding:3px 8px;border-radius:4px;" data-bind="poisons.'+p.id+'.estado">'+
+          '<option value="descubierto" '+(p.estado==='descubierto'?'selected':'')+'>Descubierto</option>'+
+          '<option value="investigando" '+(p.estado==='investigando'?'selected':'')+'>Investigando...</option>'+
+        '</select>'+
+      '</div>'+
+    '</div>';
+  });
+
+  html += '<button class="add-row-btn" data-action="add-poison">+ Añadir veneno / fórmula</button></div>';
+  return html;
 }
 
 function tplInventario(c){
@@ -1101,11 +1122,28 @@ function creatureField(label,bind,val){
 }
 
 function tplBestiario(s){
-  var html = '<div class="section"><div class="section-title"><span>Bestiario y Monturas</span></div>';
-  (s.bestiary||[]).forEach(function(b){
+  var contOpts = CONTINENTES.map(function(ct){
+    return '<option value="'+ct+'" '+(bestiaryContinentFilter===ct?'selected':'')+'>'+ct+'</option>';
+  }).join('');
+
+  var html = '<div class="section">'+
+    '<div class="section-title"><span>Bestiario y Monturas</span></div>'+
+    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">'+
+      '<label style="font-size:.72rem;color:var(--ink-faint);text-transform:uppercase;">Continente:</label>'+
+      '<select id="bestiaryFilter" style="font-size:.8rem;background:var(--bg-elev);border:1px solid var(--line);padding:4px 8px;border-radius:4px;" data-action="filter-bestiary">'+contOpts+'</select>'+
+    '</div>';
+
+  (s.bestiary||[]).filter(function(b){
+    return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
+  }).forEach(function(b){
     html += '<div class="creature-card">'+
       (isGM()||!supabaseClient?'<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'">✕</button>':'')+
-      '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'" '+(isGM()||!supabaseClient?'':'readonly')+'>'+
+      '<div style="display:flex;gap:8px;margin-bottom:6px;">'+
+        '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'" '+(isGM()||!supabaseClient?'':'readonly')+' style="margin-bottom:0;">'+
+        '<select style="font-size:.74rem;background:var(--bg-card);border:1px solid var(--line);padding:3px 6px;border-radius:4px;flex:none;" data-scope="global" data-bind="bestiary.'+b.id+'.continente">'+
+          CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
+        '</select>'+
+      '</div>'+
       '<div class="creature-grid">'+
         creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida)+
         creatureFieldGlobal("Defensa","bestiary."+b.id+".defensa",b.defensa)+
@@ -1226,7 +1264,7 @@ function setBind(target, path, rawValue, inputType){
     if(cs) cs[parts[2]] = value;
     return;
   }
-  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary"];
+  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons"];
   if(listFields.indexOf(parts[0])!==-1){
     var arr = target[parts[0]];
     var item = arr && arr.find(function(x){return x.id===parts[1];});
@@ -1257,6 +1295,12 @@ function handleClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   var c = activeChar();
+
+  if(action==="filter-bestiary"){
+    bestiaryContinentFilter = document.getElementById("bestiaryFilter").value;
+    renderTab();
+    return;
+  }
 
   if(action==="gate-login"){
     var em = document.getElementById("gateEmail").value.trim();
@@ -1353,6 +1397,8 @@ function handleClick(e){
   if(action==="del-stone"){ c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-summon"){ c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",notas:""}); saveState(); renderTab(); return; }
   if(action==="del-summon"){ c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-poison"){ c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); saveState(); renderTab(); return; }
+  if(action==="del-poison"){ c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-passiveNeg"){ c.passivesNeg.push({id:uid(),text:""}); saveState(); renderTab(); return; }
   if(action==="del-passiveNeg"){ c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-passivePos"){ c.passivesPos.push({id:uid(),text:""}); saveState(); renderTab(); return; }
@@ -1363,7 +1409,7 @@ function handleClick(e){
   if(action==="del-blessing"){ c.goddessBlessings = c.goddessBlessings.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-goddess"){ c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); saveState(); renderTab(); return; }
   if(action==="del-goddess"){ c.goddessTable = c.goddessTable.filter(function(g){return g.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-bestiary"){ state.bestiary.push({id:uid(),nombre:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",notas:""}); saveState(); renderTab(); return; }
+  if(action==="add-bestiary"){ state.bestiary.push({id:uid(),nombre:"",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",notas:""}); saveState(); renderTab(); return; }
   if(action==="del-bestiary"){ state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-lore"){
     var cat = btn.getAttribute("data-cat");
@@ -1534,7 +1580,7 @@ function diceModalClick(e){
     var isCrit = rolls.every(function(r){return r===diceState.sides;});
     var isFumble = rolls.every(function(r){return r===1;});
     var total = sum + diceState.mod;
-    openRollModal(diceState.qty+"d"+diceState.sides, total, "<div>("+rolls.join("+")+")"+(diceState.mod?(diceState.mod>0?" + "+diceState.mod:" - "+Math.abs(mod)):"")+"</div>", diceState.sides, isCrit, isFumble);
+    openRollModal(diceState.qty+"d"+diceState.sides, total, "<div>("+rolls.join("+")+")"+(diceState.mod?(diceState.mod>0?" + "+diceState.mod:" - "+Math.abs(diceState.mod)):"")+"</div>", diceState.sides, isCrit, isFumble);
     closeModals(); return;
   }
 }
@@ -1575,8 +1621,8 @@ function resizeImageFile(file, maxDim, quality, callback){
 function getSupabaseConfig(){
   try{
     var cfg = JSON.parse(localStorage.getItem(SUPABASE_CONFIG_KEY)) || {};
-    return { url: cfg.url || DEFAULT_SUPABASE_URL, key: cfg.key || "" };
-  }catch(e){ return {url:DEFAULT_SUPABASE_URL, key:""}; }
+    return { url: cfg.url || DEFAULT_SUPABASE_URL, key: cfg.key || DEFAULT_SUPABASE_KEY };
+  }catch(e){ return {url:DEFAULT_SUPABASE_URL, key:DEFAULT_SUPABASE_KEY}; }
 }
 function initSupabase(){
   var cfg = getSupabaseConfig();
