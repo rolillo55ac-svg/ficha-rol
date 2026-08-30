@@ -1623,7 +1623,7 @@ function diceModalClick(e){
   if(action==="pick-die"){ diceConfig.sides = parseInt(btn.getAttribute("data-sides"),10); openDiceModal(); return; }
   if(action==="roll-dice-btn"){
     diceConfig.mod = parseInt(document.getElementById("diceMod").value,10)||0;
-    diceConfig.mode = document.getElementById("diceMode".value);
+    diceConfig.mode = document.getElementById("diceMode").value;
     document.getElementById("diceModalOverlay").classList.add("hidden");
 
     if(diceConfig.sides===100){
@@ -1868,7 +1868,7 @@ function init(){
   document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this, e.target===this) closeModals(); });
+  document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("rollOverlay").addEventListener("click", function(e){
     if(e.target===this || e.target.closest("[data-action='close-roll-modal']")) this.classList.add("hidden");
   });
