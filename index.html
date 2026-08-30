@@ -1088,7 +1088,7 @@ function tplInvocaciones(c){
         creatureField("Movilidad","summons."+s.id+".movilidad",s.movilidad)+
         creatureField("Inteligencia","summons."+s.id+".inteligencia",s.inteligencia)+
       '</div>'+
-      '<textarea class="creature-notes" placeholder="Notas y habilidades..." data-bind="summons.'+s.id+".notas">'+esc(s.notas)+'</textarea>'+
+      '<textarea class="creature-notes" placeholder="Notas y habilidades..." data-bind="summons.'+s.id+'.notas">'+esc(s.notas)+'</textarea>'+
     '</div>';
   });
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-summon">+ Añadir invocación</button></div>';
