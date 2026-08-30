@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v0.98 Pre-1.0</title>
+<title>Krysalis · Fichas de Rol v0.99 Pre-1.0</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -431,7 +431,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV098";
+var STORAGE_KEY = "krysalisFichasV099";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -740,7 +740,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span style="min-width:0;">'+
-          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v0.98 Pre-1.0</span></div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v0.99 Pre-1.0</span></div>'+
           '<div class="char-sub">Nv. '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -883,7 +883,7 @@ function tplHabilidades(c){
       if(!c.skillProgress) c.skillProgress = {};
       var prog = num(c.skillProgress[cs.id],0);
       var costNeeded = bonusVal + 1;
-      var canSub = prog > 0; // REGLA: Nunca se puede des-subir un nivel consolidado, solo restar progreso parcial en curso.
+      var canSub = prog > 0;
       var canAdd = unlocked && bonusVal < 8 && num(c.skillPoints,0) >= 1 && bonusVal > 0;
       
       html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span>'+
@@ -908,7 +908,7 @@ function skillRowHtml(s, c, unlocked){
   var bonusVal = num(c.skillBonus[s.id],0);
   if(!c.skillProgress) c.skillProgress = {};
   var prog = num(c.skillProgress[s.id],0);
-  var costNeeded = bonusVal + 1; // Subir de N a N+1 cuesta N+1 puntos
+  var costNeeded = bonusVal + 1;
 
   var hybridSel = "";
   if(s.attr==="hybrid"){
@@ -918,8 +918,8 @@ function skillRowHtml(s, c, unlocked){
       '</select></div>';
   }
 
-  var canSub = prog > 0; // REGLA: Únicamente se puede restar si hay progreso parcial en curso. No se puede des-subir un nivel consolidado.
-  var canAdd = unlocked && bonusVal < 8 && num(c.skillPoints,0) >= 1 && bonusVal > 0; // REGLA: Nivel > 0 requerido para sumar
+  var canSub = prog > 0;
+  var canAdd = unlocked && bonusVal < 8 && num(c.skillPoints,0) >= 1 && bonusVal > 0;
 
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
@@ -1348,21 +1348,24 @@ function handleClick(e){
     saveState(); renderTopbar(); return;
   }
 
-  /* SISTEMA DE SUBIDA DE NIVEL (SEGÚN TRAMOS) Y HABILIDADES GENERALES */
+  /* SISTEMA DE SUBIDA DE NIVEL SEGÚN TRAMOS (VIDA = FÍSICO / 2 redondeado hacia arriba, MANÁ +5 c/4 niv) */
   if(action==="grant-level"){
     var curNv = num(c.nivel, 1);
     var nextNv = curNv + 1;
     c.nivel = String(nextNv);
     
-    // Puntos según tramos de nivel
+    // Puntos según tramo de nivel
     var ptsToAdd = 4;
     if(nextNv > 20) ptsToAdd = 8;
     else if(nextNv > 10) ptsToAdd = 6;
     c.skillPoints = num(c.skillPoints, 0) + ptsToAdd;
 
-    // Vida siempre +2
-    c.combat.pvMax = num(c.combat.pvMax, 10) + 2;
-    c.combat.pvActual = num(c.combat.pvMax, 10); // Opcional rellenar vida al subir
+    // Subida de Vida: Mitad del atributo Físico, redondeando hacia arriba
+    var fisicoVal = num(c.attrs.fisico, 0);
+    var hpGain = Math.ceil(fisicoVal / 2);
+    if(hpGain < 1) hpGain = 1; // Mínimo 1 de vida por nivel por seguridad
+    c.combat.pvMax = num(c.combat.pvMax, 10) + hpGain;
+    c.combat.pvActual = num(c.combat.pvMax, 10);
 
     // Maná sube +5 cada 4 niveles (niveles 4, 8, 12, 16, 20, 24, 28...)
     if(nextNv % 4 === 0){
@@ -1406,7 +1409,6 @@ function handleClick(e){
     if(!c.skillProgress) c.skillProgress = {};
     var prog2 = num(c.skillProgress[sId2], 0);
 
-    // REGLA ESTRICTA: Solo se permite restar el progreso parcial en curso. Nunca des-subir un nivel consolidado.
     if(prog2 > 0){
       prog2--;
       c.skillProgress[sId2] = prog2;
