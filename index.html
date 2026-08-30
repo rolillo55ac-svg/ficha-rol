@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v1.3.0</title>
+<title>Krysalis · Fichas de Rol v1.4.0</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -22,6 +22,8 @@
   --gold-light:#DEC392;
   --teal:#3D6E60;
   --teal-light:#76AC9D;
+  --shield:#2E6F7E;
+  --shield-light:#5FA3B3;
   --danger:#C0392B;
   --radius:10px;
   --radius-sm:6px;
@@ -34,7 +36,7 @@ body[data-theme="blue"]{--blood:#284B76;--blood-light:#5B91C8;--accent-rgb:40,75
 body[data-theme="pink"]{--blood:#88345C;--blood-light:#D47FA7;--accent-rgb:136,52,92;}
 body[data-theme="green"]{--blood:#26461F;--blood-light:#6CA03C;--accent-rgb:38,70,31;}
 *{box-sizing:border-box;}
-html{font-size:17px;}
+html{font-size:16px;}
 html,body{margin:0;padding:0;min-height:100%;}
 body{
   background:
@@ -63,27 +65,27 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 /* TOPBAR */
 .topbar{
   position:sticky;top:0;z-index:30;
-  background:linear-gradient(180deg, var(--bg-elev) 85%, rgba(27,19,14,0.96));
+  background:linear-gradient(180deg, var(--bg-elev) 88%, rgba(27,19,14,0.96));
   border-bottom:1.5px solid var(--line-strong);
-  padding:12px 16px 14px;
+  padding:10px 14px 12px;
   backdrop-filter:blur(6px);
 }
-.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.char-switch{display:flex;align-items:center;gap:12px;background:none;border:none;color:var(--ink);padding:0;text-align:left;flex:1;min-width:0;}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.char-switch{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--ink);padding:0;text-align:left;flex:1;min-width:0;}
 .char-crest{
-  width:46px;height:46px;border-radius:50%;flex:none;
+  width:44px;height:44px;border-radius:50%;flex:none;
   background:radial-gradient(circle at 35% 30%, var(--blood-light), var(--blood) 75%);
   border:1.5px solid var(--gold);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-display);font-size:1.25rem;color:var(--ink);
+  font-family:var(--font-display);font-size:1.2rem;color:var(--ink);
   background-size:cover;background-position:center;
 }
-.char-name{font-family:var(--font-display);font-size:1.15rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.char-sub{font-size:.74rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;}
+.char-name{font-family:var(--font-display);font-size:1.1rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.char-sub{font-size:.72rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;}
 
 .role-badge{
   font-size:.62rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;
-  padding:3px 8px;border-radius:12px;border:1px solid var(--line);color:var(--ink-faint);background:var(--bg-card);
+  padding:2px 7px;border-radius:12px;border:1px solid var(--line);color:var(--ink-faint);background:var(--bg-card);
 }
 .role-badge.gm{border-color:var(--blood-light);color:var(--gold-light);background:rgba(140,37,47,0.3);}
 .role-badge.player{border-color:var(--teal);color:var(--teal-light);}
@@ -94,216 +96,220 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .sync-status.synced{color:var(--teal-light);border-color:var(--teal);}
 .sync-status.saving{color:var(--gold-light);border-color:var(--gold);}
-
-.version-tag{font-size:.58rem;font-family:var(--font-mono);color:var(--ink-faint);margin-left:2px;}
+.version-tag{font-size:.56rem;font-family:var(--font-mono);color:var(--ink-faint);margin-left:3px;}
 
 .icon-btn{
   background:none;border:1px solid var(--line);color:var(--ink-dim);
-  width:40px;height:40px;border-radius:50%;flex:none;font-size:1.1rem;
+  width:38px;height:38px;border-radius:50%;flex:none;font-size:1.05rem;
   display:flex;align-items:center;justify-content:center;transition:.15s;
 }
 .icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
 
-.gauges{display:flex;gap:12px;margin-top:10px;}
-.gauge-wrap{flex:1;min-width:0;}
-.gauge-label{display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
-.gauge-nums{font-family:var(--font-mono);color:var(--ink-dim);font-size:.74rem;}
-.gauge{height:14px;border-radius:7px;background:var(--bg-card);border:1px solid var(--line-strong);overflow:hidden;}
+/* MEDIDORES DE VIDA, ESCUDO Y MANÁ */
+.gauges{display:grid;grid-template-columns:1fr 100px 1fr;gap:8px;margin-top:8px;}
+@media(max-width:580px){.gauges{grid-template-columns:1fr 1fr;}}
+.gauge-wrap{min-width:0;}
+.gauge-label{display:flex;justify-content:space-between;font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:2px;}
+.gauge-nums{font-family:var(--font-mono);color:var(--ink-dim);font-size:.7rem;}
+.gauge{height:12px;border-radius:6px;background:var(--bg-card);border:1px solid var(--line-strong);overflow:hidden;}
 .gauge-fill{height:100%;transition:width .3s ease;}
 .gauge-fill.hp{background:linear-gradient(90deg,var(--blood),var(--blood-light));}
+.gauge-fill.shield{background:linear-gradient(90deg,var(--shield),var(--shield-light));}
 .gauge-fill.mana{background:linear-gradient(90deg,#2D4B60,#5E8EA8);}
-.gauge-adjust{display:flex;gap:5px;margin-top:6px;}
+.gauge-adjust{display:flex;gap:3px;margin-top:4px;}
 .gauge-adjust button{
   flex:1;background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
-  border-radius:var(--radius-sm);padding:4px 0;font-size:.76rem;font-family:var(--font-mono);
+  border-radius:var(--radius-sm);padding:3px 0;font-size:.72rem;font-family:var(--font-mono);
 }
 .gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);}
 
-/* CONTENIDO */
-main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
-.section{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;}
+/* CONTENIDO PRINCIPAL */
+main{flex:1;padding:14px 14px 140px;overflow-y:auto;}
+.section{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;}
 .section-title{
-  font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-size:.82rem;
-  color:var(--gold-light);border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:12px;
+  font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-size:.8rem;
+  color:var(--gold-light);border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:10px;
   display:flex;align-items:center;justify-content:space-between;
 }
 .section-title span{display:flex;align-items:center;gap:6px;}
-.section-title span::before{content:'§';color:var(--blood-light);font-size:1.1rem;}
+.section-title span::before{content:'§';color:var(--blood-light);font-size:1rem;}
+.section-note{font-size:.72rem;color:var(--ink-faint);margin:-4px 0 8px;line-height:1.4;}
 
-/* RETRATO Y CAMPOS */
-.portrait-container{display:flex;gap:18px;align-items:center;margin-bottom:14px;}
-.portrait-avatar{
-  width:115px;height:115px;border-radius:12px;border:1.5px solid var(--gold);
+/* RETRATO Y FICHA REDISEÑADA (SIN HUECOS) */
+.hero-card{display:flex;gap:14px;align-items:flex-start;margin-bottom:10px;}
+.hero-portrait-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;}
+.hero-avatar{
+  width:95px;height:95px;border-radius:10px;border:1.5px solid var(--gold);
   background:var(--bg-elev);background-size:cover;background-position:center;
-  display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:2.2rem;flex:none;
-  box-shadow:0 4px 14px rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:2rem;
+  box-shadow:0 4px 12px rgba(0,0,0,.45);
 }
-.portrait-ctrls{display:flex;flex-direction:column;gap:6px;}
-.btn-compact{padding:6px 12px;font-size:.74rem;text-transform:uppercase;border-radius:4px;border:1px solid var(--line);background:none;color:var(--ink-dim);}
-.btn-compact:hover{border-color:var(--gold);color:var(--gold-light);}
+.hero-avatar-btns{display:flex;gap:4px;}
+.btn-mini{padding:3px 7px;font-size:.64rem;text-transform:uppercase;border-radius:4px;border:1px solid var(--line);background:none;color:var(--ink-dim);}
+.btn-mini:hover{border-color:var(--gold);color:var(--gold-light);}
+.hero-fields-col{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;}
 
-.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;}
 .field-grid.wide{grid-template-columns:1fr;}
-.field{display:flex;flex-direction:column;gap:3px;}
-.field label{font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
+.field{display:flex;flex-direction:column;gap:2px;}
+.field label{font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
 .field input, .field textarea, .field select{
   background:transparent;border:none;border-bottom:1px solid var(--line-strong);
-  color:var(--ink);padding:5px 2px;font-size:.95rem;border-radius:0;width:100%;
+  color:var(--ink);padding:4px 2px;font-size:.9rem;border-radius:0;width:100%;
 }
 .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-bottom-color:var(--teal-light);}
-.field textarea{resize:vertical;min-height:55px;line-height:1.4;}
+.field textarea{resize:vertical;min-height:50px;line-height:1.4;}
 
 /* ATRIBUTOS */
-.attr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
-.attr-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 4px;text-align:center;}
-.attr-card label{display:block;font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:5px;}
-.attr-stepper{display:flex;align-items:center;justify-content:center;gap:2px;}
-.attr-card input{width:40px;text-align:center;background:transparent;border:none;color:var(--gold-light);font-family:var(--font-mono);font-size:1.35rem;font-weight:700;}
-.attr-step{
-  background:var(--bg-card);border:1px solid var(--line);color:var(--gold-light);
-  width:24px;height:24px;border-radius:4px;font-family:var(--font-mono);font-size:.95rem;
-  display:flex;align-items:center;justify-content:center;padding:0;
-}
-.attr-step:hover{border-color:var(--gold);background:rgba(176,141,87,0.15);}
-.level-pool-banner{
-  background:rgba(222,195,146,0.12);border:1px solid var(--gold);border-radius:var(--radius-sm);
-  padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:var(--gold-light);display:flex;justify-content:space-between;align-items:center;
+.attr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.attr-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 4px;text-align:center;}
+.attr-card label{display:block;font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
+.attr-val-box{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--gold-light);}
+
+.skill-pool-banner{
+  background:rgba(222,195,146,0.14);border:1.5px solid var(--gold);border-radius:var(--radius-sm);
+  padding:8px 12px;margin-bottom:10px;font-size:.8rem;color:var(--gold-light);display:flex;justify-content:space-between;align-items:center;
 }
 
 /* TABLA DE HABILIDADES */
-.attr-group{margin-bottom:16px;}
+.attr-group{margin-bottom:14px;}
 .attr-group-title{
-  font-family:var(--font-mono);font-size:.76rem;color:var(--teal-light);text-transform:uppercase;
-  letter-spacing:.06em;margin-bottom:4px;padding-left:2px;
+  font-family:var(--font-mono);font-size:.74rem;color:var(--teal-light);text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:3px;padding-left:2px;
 }
 .skill-col-headers{
-  display:grid;grid-template-columns:1fr 38px 48px 46px 36px;gap:6px;
-  font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;
-  padding-bottom:5px;margin-bottom:2px;border-bottom:1px solid var(--line-strong);
+  display:grid;grid-template-columns:1fr 34px 58px 44px 34px;gap:4px;
+  font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;
+  padding-bottom:4px;margin-bottom:2px;border-bottom:1px solid var(--line-strong);
 }
 .skill-col-headers span{text-align:center;}
 .skill-col-headers span:first-child{text-align:left;}
 
 .skill-row{
-  display:grid;grid-template-columns:1fr 38px 48px 46px 36px;gap:6px;align-items:center;
-  padding:7px 0;border-bottom:1px dashed var(--line);
+  display:grid;grid-template-columns:1fr 34px 58px 44px 34px;gap:4px;align-items:center;
+  padding:6px 0;border-bottom:1px dashed var(--line);
 }
 .skill-row:last-child{border-bottom:none;}
-.skill-name{font-size:.9rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.skill-name{font-size:.86rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .skill-hybrid-select{
-  font-size:.65rem;background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);
-  border-radius:4px;padding:2px 3px;margin-top:1px;
+  font-size:.62rem;background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);
+  border-radius:4px;padding:1px 2px;margin-top:1px;
 }
-.skill-base{font-family:var(--font-mono);font-size:.84rem;color:var(--ink-faint);text-align:center;}
-.skill-bonus input{
-  width:100%;background:var(--bg-elev);border:1px solid var(--line);border-radius:4px;
-  text-align:center;font-family:var(--font-mono);font-size:.88rem;padding:4px 0;color:var(--ink);
+.skill-base{font-family:var(--font-mono);font-size:.82rem;color:var(--ink-faint);text-align:center;}
+.skill-bonus-ctrl{display:flex;align-items:center;justify-content:center;gap:2px;}
+.skill-bonus-ctrl span{font-family:var(--font-mono);font-size:.86rem;min-width:16px;text-align:center;}
+.skill-bonus-ctrl button{
+  width:18px;height:18px;background:var(--bg-elev);border:1px solid var(--line);border-radius:3px;
+  font-size:.72rem;color:var(--gold-light);display:flex;align-items:center;justify-content:center;padding:0;
 }
-.skill-total{font-family:var(--font-mono);font-weight:700;font-size:1rem;color:var(--gold-light);text-align:center;}
+.skill-total{font-family:var(--font-mono);font-weight:700;font-size:.95rem;color:var(--gold-light);text-align:center;}
 .dice-btn{
   background:none;border:1px solid var(--line);border-radius:6px;color:var(--ink-faint);
-  font-size:1.05rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  font-size:1rem;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
 }
 .dice-btn:hover{border-color:var(--blood-light);color:var(--blood-light);}
 
 /* COMBATE Y BUFFS */
-.buffs-container{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.buffs-container{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 .buff-pill{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:20px;
-  padding:6px 12px;font-size:.76rem;color:var(--ink-dim);cursor:pointer;user-select:none;transition:.15s;
-  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;font-size:.72rem;color:var(--ink-dim);cursor:pointer;user-select:none;transition:.15s;
+  display:flex;align-items:center;gap:5px;
 }
 .buff-pill.active{border-color:var(--teal-light);color:var(--teal-light);background:rgba(61,110,96,0.3);}
 .buff-pill.debuff.active{border-color:var(--danger);color:#E74C3C;background:rgba(192,57,43,0.3);}
 
-.combat-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.combat-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
 .combat-quick-btn{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:12px 10px;display:flex;flex-direction:column;gap:3px;align-items:center;
+  padding:10px 8px;display:flex;flex-direction:column;gap:2px;align-items:center;
 }
 .combat-quick-btn:hover{border-color:var(--blood-light);}
-.combat-quick-btn .cq-label{font-size:.74rem;color:var(--ink-dim);text-transform:uppercase;}
-.combat-quick-btn .cq-total{font-family:var(--font-mono);font-size:1.4rem;font-weight:700;color:var(--gold-light);}
+.combat-quick-btn .cq-label{font-size:.7rem;color:var(--ink-dim);text-transform:uppercase;}
+.combat-quick-btn .cq-total{font-family:var(--font-mono);font-size:1.35rem;font-weight:700;color:var(--gold-light);}
 
-.combat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
-.combat-stat{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 6px;text-align:center;position:relative;}
-.combat-stat label{display:block;font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
-.combat-stat input{width:100%;background:none;border:none;text-align:center;font-family:var(--font-mono);font-size:1.15rem;color:var(--ink);}
-.combat-stat .mini-roll{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--ink-faint);font-size:.9rem;padding:0;}
+.combat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
+.combat-stat{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 4px;text-align:center;position:relative;}
+.combat-stat label{display:block;font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
+.combat-stat input{width:100%;background:none;border:none;text-align:center;font-family:var(--font-mono);font-size:1.1rem;color:var(--ink);}
+.combat-stat .mini-roll{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--ink-faint);font-size:.85rem;padding:0;}
 .combat-stat .mini-roll:hover{color:var(--blood-light);}
 
-.pv-mana-block{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
-.pv-mana-block .stat-box{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;}
-.pv-mana-block label{display:block;font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;}
-.pv-mana-inline{display:flex;align-items:center;gap:6px;}
-.pv-mana-inline input{width:100%;background:none;border:none;text-align:center;font-family:var(--font-mono);font-size:1.05rem;color:var(--ink);border-bottom:1px solid var(--line-strong);padding:2px;}
-.pv-mana-inline span{color:var(--ink-faint);font-family:var(--font-mono);}
-
 /* FILAS DINÁMICAS */
-.list-row{display:grid;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);}
+.list-row{display:grid;gap:6px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);}
 .list-row:last-child{border-bottom:none;}
-.list-row input{background:var(--bg-elev);border:1px solid var(--line);border-radius:4px;padding:7px 9px;font-size:.9rem;}
+.list-row input{background:var(--bg-elev);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:.85rem;}
 .row-del{
   background:none;border:1px solid var(--line);color:var(--ink-faint);border-radius:6px;
-  width:30px;height:30px;font-size:.95rem;flex:none;display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;font-size:.9rem;flex:none;display:flex;align-items:center;justify-content:center;
 }
 .row-del:hover{border-color:var(--danger);color:var(--danger);}
-.weapons-row{grid-template-columns:1fr 75px 55px 34px 30px;}
-.armor-row{grid-template-columns:1fr 65px 65px 30px;}
-.inv-row{grid-template-columns:1fr 55px 30px;}
-.spell-row{grid-template-columns:1fr 60px 75px 30px;}
-.stone-row{grid-template-columns:85px 1fr 30px;}
-.text-row{grid-template-columns:1fr 30px;}
-.pop-row{grid-template-columns:1fr 1fr 1fr 30px;}
+.weapons-row{grid-template-columns:1fr 70px 50px 30px 28px;}
+.armor-row{grid-template-columns:1fr 60px 60px 28px;}
+.inv-row{grid-template-columns:1fr 50px 28px;}
+.spell-row{grid-template-columns:1fr 55px 70px 28px;}
+.stone-row{grid-template-columns:80px 1fr 28px;}
+.text-row{grid-template-columns:1fr 28px;}
+.pop-row{grid-template-columns:1fr 1fr 1fr 28px;}
 
 .add-row-btn{
-  width:100%;margin-top:10px;background:none;border:1px dashed var(--line-strong);
-  color:var(--ink-dim);border-radius:var(--radius-sm);padding:9px 0;font-size:.8rem;
+  width:100%;margin-top:8px;background:none;border:1px dashed var(--line-strong);
+  color:var(--ink-dim);border-radius:var(--radius-sm);padding:8px 0;font-size:.76rem;
   text-transform:uppercase;letter-spacing:.05em;
 }
 .add-row-btn:hover{border-color:var(--gold);color:var(--gold-light);}
 
-.money-row{display:flex;gap:14px;}
-.money-field{flex:1;background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;}
-.money-field label{display:block;font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
-.money-field input{width:100%;background:none;border:none;font-family:var(--font-mono);font-size:1.15rem;color:var(--gold-light);}
+.money-row{display:flex;gap:12px;}
+.money-field{flex:1;background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;}
+.money-field label{display:block;font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:2px;}
+.money-field input{width:100%;background:none;border:none;font-family:var(--font-mono);font-size:1.1rem;color:var(--gold-light);}
 
-/* INVOCACIONES Y CRIATURAS */
+/* INVOCACIONES Y ALQUIMIA (SIN COLISIONES) */
 .creature-card{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:14px;margin-bottom:12px;position:relative;
+  padding:12px;margin-bottom:10px;position:relative;
 }
-.creature-card .row-del{position:absolute;top:10px;right:10px;}
+.creature-card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
 .creature-name-input{
-  width:calc(100% - 45px);background:transparent;border:none;border-bottom:1px solid var(--line-strong);
-  color:var(--gold-light);font-family:var(--font-display);font-size:1.05rem;padding:3px 2px;margin-bottom:10px;
+  flex:1;min-width:0;background:transparent;border:none;border-bottom:1px solid var(--line-strong);
+  color:var(--gold-light);font-family:var(--font-display);font-size:1rem;padding:2px;
 }
-.creature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px 10px;margin-bottom:10px;}
+.creature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px 8px;margin-bottom:8px;}
 .creature-field{display:flex;flex-direction:column;gap:2px;}
-.creature-field label{font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;}
-.creature-field input{background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:5px 6px;font-size:.86rem;font-family:var(--font-mono);}
+.creature-field label{font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;}
+.creature-field input{background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-size:.82rem;font-family:var(--font-mono);}
 .creature-notes{
   width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;
-  padding:8px 10px;font-size:.84rem;font-family:var(--font-body);min-height:50px;resize:vertical;line-height:1.4;
+  padding:6px 8px;font-size:.8rem;font-family:var(--font-body);min-height:45px;resize:vertical;line-height:1.4;
 }
 
-/* LORE Y HERBORISTERÍA CARD MEJORADA */
-.lore-nav-tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:6px;}
+/* LORE & HERBORISTERÍA CARDS CON COLORES DE RAREZA */
+.item-card{
+  background:var(--bg-elev);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;
+  border-left:4px solid var(--line);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+}
+.item-card.rarity-comun{border-left-color:#A89F91;}
+.item-card.rarity-rara{border-left-color:#60A5FA;}
+.item-card.rarity-muyrara{border-left-color:#C084FC;}
+.item-card.rarity-legendaria{border-left-color:#FDE047;}
+
+.item-badge{
+  font-size:.58rem;font-family:var(--font-mono);font-weight:700;text-transform:uppercase;
+  padding:1px 5px;border-radius:4px;letter-spacing:.04em;
+}
+.badge-comun{background:rgba(168,159,145,0.15);color:#C2B196;border:1px solid rgba(168,159,145,0.4);}
+.badge-rara{background:rgba(96,165,250,0.15);color:#93C5FD;border:1px solid rgba(96,165,250,0.4);}
+.badge-muyrara{background:rgba(192,132,252,0.15);color:#D8B4FE;border:1px solid rgba(192,132,252,0.4);}
+.badge-legendaria{background:rgba(253,224,71,0.15);color:#FEF08A;border:1px solid rgba(253,224,71,0.4);}
+
+.lore-nav-tabs{display:flex;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:6px;}
 .lore-subtab-btn{
-  background:none;border:none;color:var(--ink-faint);font-size:.78rem;text-transform:uppercase;
-  padding:4px 10px;border-radius:4px;font-family:var(--font-display);
+  background:none;border:none;color:var(--ink-faint);font-size:.76rem;text-transform:uppercase;
+  padding:4px 8px;border-radius:4px;font-family:var(--font-display);
 }
 .lore-subtab-btn.active{color:var(--gold-light);background:rgba(176,141,87,0.18);font-weight:700;}
 
-.lore-card{
-  background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:12px 14px;margin-bottom:10px;position:relative;
-}
-.lore-card .row-del{position:absolute;top:8px;right:8px;}
-.lore-title-input{width:calc(100% - 38px);background:transparent;border:none;border-bottom:1px solid var(--line-strong);color:var(--gold-light);font-family:var(--font-display);font-size:.95rem;padding:2px;margin-bottom:6px;}
-.lore-text-area{width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:.84rem;min-height:45px;resize:vertical;}
-
-/* MAPA INTERACTIVO Y MARCADORES */
+/* MAPA */
 .map-viewer{position:relative;width:100%;min-height:260px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);overflow:hidden;background:#090605;cursor:crosshair;}
 .map-viewer img{width:100%;display:block;user-select:none;}
 .map-pin{position:absolute;transform:translate(-50%,-100%);text-align:center;cursor:pointer;z-index:2;}
@@ -314,12 +320,11 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 .pin-poi .pin-glyph{background:var(--teal);}
 .pin-peligro .pin-glyph{background:var(--danger);}
 
-/* BARRA DE FILTROS POR CONTINENTE */
-.continent-pills{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none;}
+.continent-pills{display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none;}
 .continent-pills::-webkit-scrollbar{display:none;}
 .c-pill{
-  background:var(--bg-elev);border:1px solid var(--line);border-radius:16px;
-  padding:5px 12px;font-size:.74rem;color:var(--ink-dim);white-space:nowrap;cursor:pointer;flex:none;
+  background:var(--bg-elev);border:1px solid var(--line);border-radius:14px;
+  padding:4px 10px;font-size:.72rem;color:var(--ink-dim);white-space:nowrap;cursor:pointer;flex:none;
 }
 .c-pill.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.18);}
 
@@ -328,55 +333,54 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 .roll-overlay.hidden{display:none;}
 .roll-box{
   background:var(--bg-elev);border:1.5px solid var(--line-strong);border-radius:18px;
-  padding:26px 22px;text-align:center;width:100%;max-width:320px;box-shadow:0 16px 50px rgba(0,0,0,0.7);
+  padding:24px 20px;text-align:center;width:100%;max-width:320px;box-shadow:0 16px 50px rgba(0,0,0,0.7);
 }
-.roll-die-graphic{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0;}
-.roll-die-graphic svg{width:80px;height:80px;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.6));}
+.roll-die-graphic{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;}
+.roll-die-graphic svg{width:76px;height:76px;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.6));}
 .roll-die-graphic.spinning svg{animation:dieSpin .55s cubic-bezier(.34,1.4,.64,1);}
 @keyframes dieSpin{0%{transform:rotate(0deg) scale(.7);}100%{transform:rotate(720deg) scale(1);}}
-.roll-score{font-family:var(--font-mono);font-size:2.9rem;font-weight:700;color:var(--gold-light);line-height:1;}
+.roll-score{font-family:var(--font-mono);font-size:2.8rem;font-weight:700;color:var(--gold-light);line-height:1;}
 .roll-score.crit{color:var(--gold-light);text-shadow:0 0 18px rgba(217,188,133,.85);}
 .roll-score.fumble{color:var(--danger);text-shadow:0 0 18px rgba(192,57,43,.85);}
-.roll-verdict{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;margin-top:4px;}
+.roll-verdict{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;margin-top:3px;}
 .roll-verdict.crit{color:var(--gold-light);}
 .roll-verdict.fumble{color:var(--danger);}
 
-/* DADOS ADV / DISADV BOXES */
-.adv-dice-wrap{display:flex;justify-content:center;gap:12px;margin:8px 0;}
+.adv-dice-wrap{display:flex;justify-content:center;gap:10px;margin:6px 0;}
 .adv-die-card{
   background:var(--bg-card);border:1.5px solid var(--line);border-radius:8px;
-  padding:8px 14px;font-family:var(--font-mono);font-size:1.4rem;color:var(--ink-dim);
+  padding:6px 12px;font-family:var(--font-mono);font-size:1.3rem;color:var(--ink-dim);
 }
 .adv-die-card.chosen{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.2);box-shadow:0 0 10px rgba(176,141,87,0.3);}
-.adv-die-card.discarded{opacity:0.4;text-decoration:line-through;border-color:var(--danger);}
+.adv-die-card.discarded{opacity:0.35;text-decoration:line-through;border-color:var(--danger);}
 
 /* HISTORIAL */
 .roll-log{margin-top:8px;}
-.roll-log-item{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;padding:6px 0;border-bottom:1px dashed var(--line);color:var(--ink-dim);}
+.roll-log-item{display:flex;justify-content:space-between;gap:8px;font-size:.76rem;padding:5px 0;border-bottom:1px dashed var(--line);color:var(--ink-dim);}
 .roll-log-item:last-child{border-bottom:none;}
-.roll-log-item .rl-formula{color:var(--ink-faint);font-family:var(--font-mono);font-size:.72rem;}
+.roll-log-item .rl-formula{color:var(--ink-faint);font-family:var(--font-mono);font-size:.7rem;}
 .roll-log-item .rl-result{color:var(--gold-light);font-family:var(--font-mono);font-weight:700;}
-.roll-empty{font-size:.78rem;color:var(--ink-faint);font-style:italic;}
+.roll-empty{font-size:.76rem;color:var(--ink-faint);font-style:italic;}
 
 /* TABBAR */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:960px;margin:0 auto;
   background:linear-gradient(0deg, var(--bg-elev) 85%, rgba(27,19,14,0.96));
   border-top:1.5px solid var(--line-strong);
-  display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  display:flex;padding:6px 2px calc(6px + env(safe-area-inset-bottom));
   overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
 }
 .tab-btn{
-  flex:1 0 auto;min-width:62px;background:none;border:none;color:var(--ink-faint);display:flex;flex-direction:column;
-  align-items:center;gap:3px;padding:6px 4px;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;
+  flex:1 0 auto;min-width:58px;background:none;border:none;color:var(--ink-faint);display:flex;flex-direction:column;
+  align-items:center;gap:2px;padding:5px 3px;font-size:.65rem;text-transform:uppercase;letter-spacing:.02em;
 }
 .tab-btn.active{color:var(--gold-light);}
-.tab-btn.active::after{content:'';width:20px;height:2px;background:var(--blood-light);border-radius:2px;}
+.tab-btn.active::after{content:'';width:18px;height:2px;background:var(--blood-light);border-radius:2px;}
 
 .fab-dice{
-  position:fixed;right:18px;bottom:84px;z-index:41;width:56px;height:56px;border-radius:50%;
+  position:fixed;right:16px;bottom:78px;z-index:41;width:52px;height:52px;border-radius:50%;
   background:radial-gradient(circle at 35% 30%, var(--blood-light), var(--blood) 75%);
-  border:1.5px solid var(--gold);color:var(--ink);font-size:1.5rem;display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--gold);color:var(--ink);font-size:1.4rem;display:flex;align-items:center;justify-content:center;
   box-shadow:0 6px 18px rgba(0,0,0,0.55);
 }
 
@@ -385,19 +389,19 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 .modal-overlay.hidden{display:none;}
 .modal{
   background:var(--bg-elev);border:1.5px solid var(--line-strong);border-radius:16px 16px 0 0;
-  width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+  width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom));
 }
 @media(min-width:640px){.modal{border-radius:16px;}}
-.modal h2{font-family:var(--font-display);color:var(--gold-light);font-size:1.15rem;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;}
-.modal h2 button{background:none;border:none;color:var(--ink-faint);font-size:1.4rem;}
+.modal h2{font-family:var(--font-display);color:var(--gold-light);font-size:1.1rem;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;}
+.modal h2 button{background:none;border:none;color:var(--ink-faint);font-size:1.3rem;}
 
-.char-list-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--line);margin-bottom:8px;}
+.char-list-item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--line);margin-bottom:6px;}
 .char-list-item.active{border-color:var(--gold);background:rgba(176,141,87,0.08);}
 .char-list-item .cli-info{flex:1;min-width:0;background:none;border:none;text-align:left;color:var(--ink);padding:0;}
-.char-list-item .cli-name{font-family:var(--font-display);font-size:1.05rem;color:var(--ink);}
-.char-list-item .cli-sub{font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;}
-.theme-swatches{display:flex;gap:6px;margin-top:6px;}
-.swatch{width:18px;height:18px;border-radius:50%;border:1.5px solid transparent;padding:0;flex:none;}
+.char-list-item .cli-name{font-family:var(--font-display);font-size:1rem;color:var(--ink);}
+.char-list-item .cli-sub{font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;}
+.theme-swatches{display:flex;gap:5px;margin-top:5px;}
+.swatch{width:16px;height:16px;border-radius:50%;border:1.5px solid transparent;padding:0;flex:none;}
 .swatch.active{border-color:var(--ink);}
 .swatch-default{background:#8C2A34;}
 .swatch-purple{background:#5C3383;}
@@ -405,21 +409,21 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 .swatch-pink{background:#8C3B62;}
 .swatch-green{background:#2B4A22;}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--radius-sm);padding:11px 16px;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line-strong);width:100%;margin-top:8px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--radius-sm);padding:10px 14px;font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--line-strong);width:100%;margin-top:8px;}
 .btn-primary{background:linear-gradient(180deg,var(--blood-light),var(--blood));color:#fff;border-color:var(--blood);}
 .btn-ghost{background:none;color:var(--ink-dim);}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold-light);}
-.btn-row{display:flex;gap:8px;}
+.btn-row{display:flex;gap:6px;}
 .btn-row .btn{margin-top:0;}
 
-.dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0;}
+.dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;}
 .dtype-card{
-  background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:8px;
-  padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;
+  background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:6px;
+  padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
 }
 .dtype-card.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.18);}
-.dtype-card svg{width:36px;height:36px;}
-.dtype-card span{font-family:var(--font-mono);font-size:.75rem;font-weight:700;}
+.dtype-card svg{width:32px;height:32px;}
+.dtype-card span{font-family:var(--font-mono);font-size:.72rem;font-weight:700;}
 </style>
 </head>
 <body>
@@ -444,7 +448,7 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
       <div class="roll-verdict" id="rollVerdict"></div>
       <div id="rollDetail" style="font-size:.8rem;color:var(--ink-dim);margin-top:6px;line-height:1.4;"></div>
     </div>
-    <button class="btn btn-primary" id="btnRollClose" style="width:100%;margin-top:16px;">Cerrar</button>
+    <button class="btn btn-primary" id="btnRollClose" style="width:100%;margin-top:14px;">Cerrar</button>
   </div>
 </div>
 <input type="file" id="portraitFileInput" accept="image/*" hidden>
@@ -455,7 +459,7 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV9";
+var STORAGE_KEY = "krysalisFichasV10";
 var DEFAULT_SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -530,12 +534,12 @@ function blankCharacter(name){
     nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
     skillBonus:{}, skillHybrid:{}, customSkills:[],
-    combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,manaActual:10,manaMax:10},
+    combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
     weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
     magiaTipo:"", spells:[], stones:[],
     passivesNeg:[], passivesPos:[],
     goddessCurses:[], goddessBlessings:[], goddessTable:[],
-    summons:[], buffs:{}, customBuffs:[], poisons:[], attrPoints:0
+    summons:[], buffs:{}, customBuffs:[], poisons:[], skillPoints:0
   };
 }
 
@@ -555,20 +559,20 @@ function getSeedBestiary(){
 function getSeedLore(){
   return {
     pistas:[
-      {id:uid(),title:"Santuario de las Diosas",text:"Lugar de comunión con Luna y los Elementos.",continent:"Krysalis"}
+      {id:uid(),title:"Santuario de las Diosas",text:"Lugar de comunión con Luna y los Elementos. Requiere respeto ritual.",continent:"Krysalis",rarity:"Muy rara",type:"Lugar"}
     ],
     npcs:[
-      {id:uid(),title:"Emisario de Asland",text:"Representante diplomático del reino.",continent:"Aslan"}
+      {id:uid(),title:"Emisario de Asland",text:"Representante diplomático del reino.",continent:"Aslan",rarity:"Común",type:"Aliado"}
     ],
     objetos:[
-      {id:uid(),title:"Veneno: Seta del sueño",text:"Efecto: Sueño / Paralización | Terreno: Bosque | Rareza: Común",continent:"Todos"},
-      {id:uid(),title:"Veneno: Seta terrosa",text:"Efecto: Entumecer (+ Mitad Movilidad para Cherk) | Terreno: Minas/Cuevas | Rareza: Común",continent:"Todos"},
-      {id:uid(),title:"Veneno: Nenúfar de Pantano",text:"Efecto: Reduce Percepción rival (+2 Percepción Cherk) | Terreno: Pantano | Rareza: Común",continent:"Todos"},
-      {id:uid(),title:"Veneno: Nenúfar de Manglar",text:"Efecto: Daño directo (+3 vida falsa Cherk) | Terreno: Manglar | Rareza: Común",continent:"Todos"},
-      {id:uid(),title:"Poción: Flor de Lirio P",text:"Efecto: Cura venenos | Terreno: Pantano | Rareza: Muy rara",continent:"Todos"},
-      {id:uid(),title:"Poción: Flor del Rey",text:"Efecto: +Defensa mágica | Terreno: Bosque/Pradera | Rareza: Muy rara",continent:"Todos"},
-      {id:uid(),title:"Ungüento: Margarita",text:"Efecto: Curación básica | Terreno: Praderas | Rareza: Común",continent:"Todos"},
-      {id:uid(),title:"Ungüento: Flor de Hestia",text:"Efecto: Resistencia al frío extremo | Terreno: Desierto de cobre | Rareza: Rara",continent:"Aslan"}
+      {id:uid(),title:"Veneno: Seta del sueño",text:"Efecto: Sueño / Paralización",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno"},
+      {id:uid(),title:"Veneno: Seta terrosa",text:"Efecto: Entumecer (+ Mitad Movilidad para Cherk)",terrain:"Minas / Cuevas",rarity:"Común",continent:"Todos",type:"Veneno"},
+      {id:uid(),title:"Veneno: Nenúfar de Pantano",text:"Efecto: Reduce Percepción rival (+2 Percepción Cherk)",terrain:"Pantano",rarity:"Común",continent:"Todos",type:"Veneno"},
+      {id:uid(),title:"Veneno: Nenúfar de Manglar",text:"Efecto: Daño directo (+3 vida falsa Cherk)",terrain:"Manglar",rarity:"Común",continent:"Todos",type:"Veneno"},
+      {id:uid(),title:"Poción: Flor de Lirio P",text:"Efecto: Cura venenos y toxinas",terrain:"Pantano",rarity:"Muy rara",continent:"Todos",type:"Poción"},
+      {id:uid(),title:"Poción: Flor del Rey",text:"Efecto: +Defensa mágica temporal",terrain:"Bosque / Pradera",rarity:"Muy rara",continent:"Todos",type:"Poción"},
+      {id:uid(),title:"Ungüento: Margarita",text:"Efecto: Curación básica de heridas",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Ungüento"},
+      {id:uid(),title:"Ungüento: Flor de Hestia",text:"Efecto: Resistencia al frío extremo",terrain:"Desierto de cobre",rarity:"Rara",continent:"Aslan",type:"Ungüento"}
     ]
   };
 }
@@ -595,7 +599,8 @@ function migrateState(s){
     if(!c.skillBonus) c.skillBonus={};
     if(!c.skillHybrid) c.skillHybrid={};
     if(!c.customSkills) c.customSkills=[];
-    if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,manaActual:10,manaMax:10};
+    if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10};
+    if(c.combat.escudoActual===undefined) c.combat.escudoActual=0;
     if(!c.weapons) c.weapons=[];
     if(!c.armors) c.armors=[];
     if(!c.inventory) c.inventory=[];
@@ -609,7 +614,7 @@ function migrateState(s){
     if(!c.buffs) c.buffs={};
     if(!c.customBuffs) c.customBuffs=[];
     if(!c.poisons) c.poisons=[];
-    if(c.attrPoints===undefined) c.attrPoints=0;
+    if(c.skillPoints===undefined) c.skillPoints=0;
   });
   return s;
 }
@@ -669,7 +674,7 @@ function skillBase(skill, c){
 function skillTotal(skill, c){ return skillBase(skill, c) + num(c.skillBonus[skill.id],0); }
 function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
 
-/* MOTOR DE AUDIO */
+/* AUDIO */
 var audioCtx = null;
 function getAudioCtx(){
   if(!audioCtx){
@@ -742,7 +747,7 @@ function getDieSvg(sides){
     return '<svg viewBox="0 0 100 100"><polygon points="50,10 90,32 90,75 50,94 10,75 10,32" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><polygon points="50,28 78,72 22,72" fill="none" stroke="'+stroke+'" stroke-width="1.8"/><text x="50" y="60" font-family="var(--font-mono)" font-size="18" font-weight="700" fill="'+txt+'" text-anchor="middle">d20</text></svg>';
   }
   if(sides===100){
-    return '<div style="display:flex;gap:4px;"><svg viewBox="0 0 100 100" style="width:44px;height:44px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">00</text></svg><svg viewBox="0 0 100 100" style="width:44px;height:44px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">0</text></svg></div>';
+    return '<div style="display:flex;gap:4px;"><svg viewBox="0 0 100 100" style="width:38px;height:38px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">00</text></svg><svg viewBox="0 0 100 100" style="width:38px;height:38px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">0</text></svg></div>';
   }
   return '<svg viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" rx="10" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><circle cx="32" cy="32" r="5" fill="'+stroke+'"/><circle cx="68" cy="32" r="5" fill="'+stroke+'"/><circle cx="50" cy="50" r="5" fill="'+stroke+'"/><circle cx="32" cy="68" r="5" fill="'+stroke+'"/><circle cx="68" cy="68" r="5" fill="'+stroke+'"/></svg>';
 }
@@ -832,7 +837,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(initial))+'</span>'+
         '<span class="char-meta">'+
-          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.3.0</span></div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.4.0</span></div>'+
           '<div class="char-sub">Nivel '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"—")+'</div>'+
         '</span>'+
       '</button>'+
@@ -851,6 +856,16 @@ function renderTopbar(){
           '<button data-action="hp-delta" data-delta="-1">-1</button>'+
           '<button data-action="hp-delta" data-delta="1">+1</button>'+
           '<button data-action="hp-delta" data-delta="5">+5</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="gauge-wrap">'+
+        '<div class="gauge-label"><b style="color:var(--shield-light);">🛡️ Escudo</b><span class="gauge-nums">'+num(c.combat.escudoActual,0)+'</span></div>'+
+        '<div class="gauge"><div class="gauge-fill shield" style="width:'+clamp(num(c.combat.escudoActual,0)*5,0,100)+'%"></div></div>'+
+        '<div class="gauge-adjust">'+
+          '<button data-action="shield-delta" data-delta="-3">-3</button>'+
+          '<button data-action="shield-delta" data-delta="-1">-1</button>'+
+          '<button data-action="shield-delta" data-delta="1">+1</button>'+
+          '<button data-action="shield-delta" data-delta="3">+3</button>'+
         '</div>'+
       '</div>'+
       '<div class="gauge-wrap">'+
@@ -902,36 +917,32 @@ function renderTab(){
 
 function tplFicha(c){
   var pStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
-  var attrPoolHtml = "";
-  if(num(c.attrPoints,0) > 0){
-    attrPoolHtml = '<div class="level-pool-banner"><span>Puntos disponibles para subir stats: <b>'+c.attrPoints+'</b></span></div>';
-  }
 
   var attrCards = ATTRS.map(function(a){
     return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label>'+
-      '<div class="attr-stepper">'+
-        '<button class="attr-step" data-action="attr-sub" data-attr="'+a+'">&minus;</button>'+
-        '<input type="number" data-bind="attrs.'+a+'" value="'+num(c.attrs[a],0)+'">'+
-        '<button class="attr-step" data-action="attr-add" data-attr="'+a+'">+</button>'+
-      '</div>'+
+      '<div class="attr-val-box">'+num(c.attrs[a],0)+'</div>'+
     '</div>';
   }).join('');
 
   return ''+
   '<div class="section">'+
-    '<div class="section-title"><span>Retrato y Datos</span></div>'+
-    '<div class="portrait-container">'+
-      '<div class="portrait-avatar"'+pStyle+'>'+(c.portrait?'':'&#127917;')+'</div>'+
-      '<div class="portrait-ctrls">'+
-        '<button class="btn-compact" data-action="upload-portrait">Cambiar foto</button>'+
-        (c.portrait ? '<button class="btn-compact" data-action="remove-portrait">Quitar</button>' : '')+
+    '<div class="section-title"><span>Datos del Personaje</span></div>'+
+    '<div class="hero-card">'+
+      '<div class="hero-portrait-col">'+
+        '<div class="hero-avatar"'+pStyle+'>'+(c.portrait?'':'&#127917;')+'</div>'+
+        '<div class="hero-avatar-btns">'+
+          '<button class="btn-mini" data-action="upload-portrait">Foto</button>'+
+          (c.portrait ? '<button class="btn-mini" data-action="remove-portrait">✕</button>' : '')+
+        '</div>'+
+      '</div>'+
+      '<div class="hero-fields-col">'+
+        field("Nombre","name",c.name,"text")+
+        '<div class="field"><label>Nivel</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" readonly>'+(isGM()||!supabaseClient?'<button class="btn-mini" data-action="grant-level" style="flex:none;">+ Nivel (4 pts)</button>':'')+'</div></div>'+
+        field("Trabajo / Rol","trabajo",c.trabajo,"text")+
+        field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text")+
       '</div>'+
     '</div>'+
-    '<div class="field-grid">'+
-      field("Nombre","name",c.name,"text")+
-      '<div class="field"><label>Nivel</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'"><button class="btn-compact" data-action="grant-level">+ Nivel (4 pts)</button></div></div>'+
-      field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text")+
-      field("Trabajo / Rol","trabajo",c.trabajo,"text")+
+    '<div class="field-grid" style="margin-top:6px;">'+
       field("Altura","altura",c.altura,"text")+
       field("Peso","peso",c.peso,"text")+
       field("Edad","edad",c.edad,"text")+
@@ -943,8 +954,7 @@ function tplFicha(c){
     '</div>'+
   '</div>'+
   '<div class="section">'+
-    '<div class="section-title"><span>Atributos</span></div>'+
-    attrPoolHtml+
+    '<div class="section-title"><span>Atributos Base (Bloqueados)</span></div>'+
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>';
 }
@@ -961,7 +971,12 @@ function tplHabilidades(c){
   var hybrids = [];
   SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
 
-  var html = '<div class="section"><div class="section-title"><span>Habilidades Generales</span></div>';
+  var skillBanner = "";
+  if(num(c.skillPoints,0) > 0){
+    skillBanner = '<div class="skill-pool-banner"><span>Puntos de habilidad disponibles: <b>'+c.skillPoints+'</b></span></div>';
+  }
+
+  var html = '<div class="section"><div class="section-title"><span>Habilidades Generales</span></div>'+skillBanner;
   ATTRS.forEach(function(a){
     html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
@@ -977,7 +992,13 @@ function tplHabilidades(c){
     html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
     c.customSkills.forEach(function(cs){
-      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span><span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span><span class="skill-bonus"><input type="number" data-bind="customSkills.'+cs.id+'.bonus" value="'+num(cs.bonus,0)+'"></span><span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'">&#127922;</button></div>';
+      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span><span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
+        '<span class="skill-bonus-ctrl">'+
+          '<button data-action="skill-sub-custom" data-id="'+cs.id+'">-</button>'+
+          '<span>'+num(cs.bonus,0)+'</span>'+
+          '<button data-action="skill-add-custom" data-id="'+cs.id+'">+</button>'+
+        '</span>'+
+        '<span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'">&#127922;</button></div>';
     });
     html += '</div>';
   }
@@ -999,7 +1020,11 @@ function skillRowHtml(s,c,isHybrid){
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
     '<span class="skill-base">'+base+'</span>'+
-    '<span class="skill-bonus"><input type="number" data-bind="skillBonus.'+s.id+'" value="'+num(c.skillBonus[s.id],0)+'"></span>'+
+    '<span class="skill-bonus-ctrl">'+
+      '<button data-action="skill-sub" data-id="'+s.id+'">-</button>'+
+      '<span>'+num(c.skillBonus[s.id],0)+'</span>'+
+      '<button data-action="skill-add" data-id="'+s.id+'">+</button>'+
+    '</span>'+
     '<span class="skill-total">'+total+'</span>'+
     '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'">&#127922;</button>'+
   '</div>';
@@ -1036,7 +1061,7 @@ function tplCombate(c){
   html += '</div>';
 
   if(c.customBuffs && c.customBuffs.length){
-    html += '<div style="margin-top:6px;"><div style="font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;">Buffs Propios / Temporales</div>';
+    html += '<div style="margin-top:6px;"><div style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;">Buffs Propios / Temporales</div>';
     c.customBuffs.forEach(function(cbuff){
       html += '<div class="list-row text-row">'+
         '<input type="text" placeholder="Efecto (ej: +2 Armadura mágica)" data-bind="customBuffs.'+cbuff.id+'.name" value="'+esc(cbuff.name)+'">'+
@@ -1054,10 +1079,6 @@ function tplCombate(c){
       combatStat("Movilidad","movilidad",cb.movilidad,false)+
       combatStat("Defensa","defensa",cb.defensa,false)+
       combatStat("Def. Mágica","defensaMagica",cb.defensaMagica,false)+
-    '</div>'+
-    '<div class="pv-mana-block">'+
-      '<div class="stat-box"><label>Puntos de Vida</label><div class="pv-mana-inline"><input type="number" data-bind="combat.pvActual" value="'+num(cb.pvActual,0)+'"><span>/</span><input type="number" data-bind="combat.pvMax" value="'+num(cb.pvMax,0)+'"></div></div>'+
-      '<div class="stat-box"><label>Maná / Energía</label><div class="pv-mana-inline"><input type="number" data-bind="combat.manaActual" value="'+num(cb.manaActual,0)+'"><span>/</span><input type="number" data-bind="combat.manaMax" value="'+num(cb.manaMax,0)+'"></div></div>'+
     '</div>'+
   '</div>';
 
@@ -1101,20 +1122,20 @@ function tplAlquimia(c){
 
   (c.poisons||[]).forEach(function(p){
     html += '<div class="creature-card">'+
-      '<button class="row-del" data-action="del-poison" data-id="'+p.id+'">✕</button>'+
-      '<div style="display:flex;gap:8px;margin-bottom:6px;">'+
-        '<input type="text" class="creature-name-input" data-bind="poisons.'+p.id+'.name" value="'+esc(p.name)+'" placeholder="Nombre del veneno" style="margin-bottom:0;width:100%;">'+
-        '<div style="display:flex;gap:4px;align-items:center;flex:none;">'+
-          '<span style="font-size:.7rem;color:var(--ink-faint);">Dosis:</span>'+
-          '<input type="number" style="width:50px;text-align:center;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:4px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'">'+
+      '<div class="creature-card-header">'+
+        '<input type="text" class="creature-name-input" data-bind="poisons.'+p.id+'.name" value="'+esc(p.name)+'" placeholder="Nombre del veneno">'+
+        '<div style="display:flex;align-items:center;gap:4px;">'+
+          '<span style="font-size:.65rem;color:var(--ink-faint);">Dosis:</span>'+
+          '<input type="number" style="width:40px;text-align:center;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:3px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'">'+
+          '<button class="row-del" data-action="del-poison" data-id="'+p.id+'">✕</button>'+
         '</div>'+
       '</div>'+
-      '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:8px;">'+
+      '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:6px;">'+
         '<div class="creature-field"><label style="color:#E74C3C;">Efecto en Enemigos</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoEnemigo">'+esc(p.efectoEnemigo)+'</textarea></div>'+
         '<div class="creature-field"><label style="color:var(--teal-light);">Efecto en Cherk (Buff)</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoCherk">'+esc(p.efectoCherk)+'</textarea></div>'+
       '</div>'+
-      '<div style="margin-top:8px;display:flex;gap:8px;align-items:center;">'+
-        '<select style="font-size:.74rem;background:var(--bg-card);border:1px solid var(--line);padding:3px 8px;border-radius:4px;" data-bind="poisons.'+p.id+'.estado">'+
+      '<div style="margin-top:6px;display:flex;gap:6px;align-items:center;">'+
+        '<select style="font-size:.72rem;background:var(--bg-card);border:1px solid var(--line);padding:2px 6px;border-radius:4px;" data-bind="poisons.'+p.id+'.estado">'+
           '<option value="descubierto" '+(p.estado==='descubierto'?'selected':'')+'>Descubierto</option>'+
           '<option value="investigando" '+(p.estado==='investigando'?'selected':'')+'>Investigando...</option>'+
         '</select>'+
@@ -1147,7 +1168,7 @@ function tplInventario(c){
 
 function tplMagia(c){
   var html = '<div class="section"><div class="section-title"><span>Magia</span></div>'+
-    '<div class="field" style="margin-bottom:10px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'"></div>';
+    '<div class="field" style="margin-bottom:8px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'"></div>';
   (c.spells||[]).forEach(function(s){
     html += '<div class="list-row spell-row">'+
       '<input type="text" placeholder="Nombre" data-bind="spells.'+s.id+'.name" value="'+esc(s.name)+'">'+
@@ -1174,8 +1195,10 @@ function tplInvocaciones(c){
   var html = '<div class="section"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
   (c.summons||[]).forEach(function(s){
     html += '<div class="creature-card">'+
-      '<button class="row-del" data-action="del-summon" data-id="'+s.id+'">✕</button>'+
-      '<input type="text" class="creature-name-input" placeholder="Nombre" data-bind="summons.'+s.id+'.name" value="'+esc(s.name)+'">'+
+      '<div class="creature-card-header">'+
+        '<input type="text" class="creature-name-input" placeholder="Nombre" data-bind="summons.'+s.id+'.name" value="'+esc(s.name)+'">'+
+        '<button class="row-del" data-action="del-summon" data-id="'+s.id+'">✕</button>'+
+      '</div>'+
       '<div class="creature-grid">'+
         creatureField("Vida","summons."+s.id+".vida",s.vida)+
         creatureField("Defensa","summons."+s.id+".defensa",s.defensa)+
@@ -1207,12 +1230,14 @@ function tplBestiario(s){
     return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
   }).forEach(function(b){
     html += '<div class="creature-card">'+
-      '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'">✕</button>'+
-      '<div style="display:flex;gap:8px;margin-bottom:6px;">'+
-        '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'" style="margin-bottom:0;">'+
-        '<select style="font-size:.74rem;background:var(--bg-card);border:1px solid var(--line);padding:3px 6px;border-radius:4px;flex:none;" data-scope="global" data-bind="bestiary.'+b.id+'.continente">'+
-          CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
-        '</select>'+
+      '<div class="creature-card-header">'+
+        '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">'+
+        '<div style="display:flex;gap:4px;align-items:center;">'+
+          '<select style="font-size:.72rem;background:var(--bg-card);border:1px solid var(--line);padding:2px 4px;border-radius:4px;" data-scope="global" data-bind="bestiary.'+b.id+'.continente">'+
+            CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
+          '</select>'+
+          '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'">✕</button>'+
+        '</div>'+
       '</div>'+
       '<div class="creature-grid">'+
         creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida)+
@@ -1242,13 +1267,13 @@ function tplExtra(c){
   html += '<button class="add-row-btn" data-action="add-passivePos">+ Añadir pasiva positiva</button></div>';
 
   html += '<div class="section"><div class="section-title"><span>Diosas — Maldiciones y Bendiciones</span></div>';
-  html += '<div style="margin-bottom:12px;"><div style="font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:6px;">Maldiciones</div>';
+  html += '<div style="margin-bottom:10px;"><div style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;">Maldiciones</div>';
   (c.goddessCurses||[]).forEach(function(p){
     html += '<div class="list-row text-row"><input type="text" data-bind="goddessCurses.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-curse" data-id="'+p.id+'">✕</button></div>';
   });
   html += '<button class="add-row-btn" data-action="add-curse">+ Añadir maldición</button></div>';
 
-  html += '<div><div style="font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:6px;">Bendiciones</div>';
+  html += '<div><div style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;">Bendiciones</div>';
   (c.goddessBlessings||[]).forEach(function(p){
     html += '<div class="list-row text-row"><input type="text" data-bind="goddessBlessings.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-blessing" data-id="'+p.id+'">✕</button></div>';
   });
@@ -1285,9 +1310,9 @@ function tplMundo(s){
       }).join('')+
     '</div>';
   } else {
-    html += '<div class="map-viewer" style="display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:.85rem;padding:40px 10px;">Sin mapa cargado. Pulsa abajo para subirlo.</div>';
+    html += '<div class="map-viewer" style="display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:.82rem;padding:36px 10px;">Sin mapa cargado. Pulsa abajo para subirlo.</div>';
   }
-  html += '<div class="btn-row" style="margin-top:10px;">'+
+  html += '<div class="btn-row" style="margin-top:8px;">'+
     '<button class="btn-compact" data-action="upload-map">Subir / Cambiar Mapa</button>'+
     (s.mapImage?'<button class="btn-compact" data-action="remove-map">Quitar Mapa</button>':'')+
   '</div>';
@@ -1307,10 +1332,21 @@ function tplMundo(s){
   });
 
   items.forEach(function(it){
-    html += '<div class="lore-card">'+
-      '<button class="row-del" data-action="del-lore" data-cat="'+cat+'" data-id="'+it.id+'">✕</button>'+
-      '<input type="text" class="lore-title-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Título">'+
-      '<textarea class="lore-text-area" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción">'+esc(it.text)+'</textarea>'+
+    var rName = it.rarity || "Común";
+    var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
+    var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
+
+    html += '<div class="item-card '+rClass+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'+
+        '<div style="display:flex;gap:4px;align-items:center;">'+
+          '<span class="item-badge '+bClass+'">'+rName+'</span>'+
+          (it.type ? '<span style="font-size:.62rem;color:var(--teal-light);text-transform:uppercase;">· '+esc(it.type)+'</span>' : '')+
+          (it.terrain ? '<span style="font-size:.62rem;color:var(--ink-faint);">· '+esc(it.terrain)+'</span>' : '')+
+        '</div>'+
+        '<button class="row-del" data-action="del-lore" data-cat="'+cat+'" data-id="'+it.id+'">✕</button>'+
+      '</div>'+
+      '<input type="text" class="lore-title-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Nombre">'+
+      '<textarea class="lore-text-area" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Efectos / Descripción">'+esc(it.text)+'</textarea>'+
     '</div>';
   });
 
@@ -1403,25 +1439,41 @@ function handleClick(e){
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, 0, Math.max(0,num(c.combat.pvMax,0))||9999);
     saveState(); renderTopbar(); return;
   }
+  if(action==="shield-delta"){
+    var ds = parseInt(btn.getAttribute("data-delta"),10);
+    c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
+    saveState(); renderTopbar(); return;
+  }
   if(action==="mana-delta"){
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, Math.max(0,num(c.combat.manaMax,0))||9999);
     saveState(); renderTopbar(); return;
   }
-  if(action==="attr-add"){
-    var aId = btn.getAttribute("data-attr");
-    if(num(c.attrPoints,0) > 0){ c.attrPoints--; }
-    c.attrs[aId] = num(c.attrs[aId],0)+1;
-    saveState(); renderTab(); return;
+  if(action==="skill-add"){
+    var sId = btn.getAttribute("data-id");
+    if(num(c.skillPoints,0) > 0){ c.skillPoints--; c.skillBonus[sId] = num(c.skillBonus[sId],0)+1; saveState(); renderTab(); }
+    return;
   }
-  if(action==="attr-sub"){
-    var aId2 = btn.getAttribute("data-attr");
-    c.attrs[aId2] = Math.max(0, num(c.attrs[aId2],0)-1);
-    saveState(); renderTab(); return;
+  if(action==="skill-sub"){
+    var sId2 = btn.getAttribute("data-id");
+    if(num(c.skillBonus[sId2],0) > 0){ c.skillPoints = num(c.skillPoints,0)+1; c.skillBonus[sId2] = num(c.skillBonus[sId2],0)-1; saveState(); renderTab(); }
+    return;
+  }
+  if(action==="skill-add-custom"){
+    var csId = btn.getAttribute("data-id");
+    var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
+    if(csk && num(c.skillPoints,0) > 0){ c.skillPoints--; csk.bonus = num(csk.bonus,0)+1; saveState(); renderTab(); }
+    return;
+  }
+  if(action==="skill-sub-custom"){
+    var csId2 = btn.getAttribute("data-id");
+    var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
+    if(csk2 && num(csk2.bonus,0) > 0){ c.skillPoints = num(c.skillPoints,0)+1; csk2.bonus = num(csk2.bonus,0)-1; saveState(); renderTab(); }
+    return;
   }
   if(action==="grant-level"){
     c.nivel = String(num(c.nivel,1)+1);
-    c.attrPoints = num(c.attrPoints,0) + 4;
+    c.skillPoints = num(c.skillPoints,0) + 4;
     saveState(); renderTopbar(); renderTab(); return;
   }
   if(action==="toggle-buff"){
@@ -1495,7 +1547,8 @@ function handleClick(e){
   if(action==="del-bestiary"){ state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-lore"){
     var cat = btn.getAttribute("data-cat");
-    state.lore[cat].push({id:uid(),title:"",text:"",continent:"Todos"});
+    var rChoice = prompt("Rareza (Común / Rara / Muy rara / Legendaria):", "Común");
+    state.lore[cat].push({id:uid(),title:"",text:"",rarity:rChoice||"Común",continent:loreContinentFilter||"Todos"});
     saveState(); renderTab(); return;
   }
   if(action==="del-lore"){
@@ -1504,7 +1557,7 @@ function handleClick(e){
     saveState(); renderTab(); return;
   }
   if(action==="upload-map"){ document.getElementById("mapFileInput").click(); return; }
-  if(action==="remove-map"){ state.mapImage=null; state.mapMarkers=[]; saveState(); renderTab(); return; }
+  if(action==="remove-map"){ state.mapImage=null; state.mapMarkers=[]; saveState(); pushMapToSupabase(); renderTab(); return; }
   if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="open-char-modal" || action==="open-data-modal"){ openCharModal(action==="open-data-modal"); return; }
@@ -1554,12 +1607,12 @@ function pinModalClick(e){
     pData.kind = document.getElementById("pinKind").value;
     pData.notes = document.getElementById("pinNotes").value;
     if(!existing) state.mapMarkers.push(pData);
-    saveState(); closeModals(); renderTab(); return;
+    saveState(); pushMapToSupabase(); closeModals(); renderTab(); return;
   }
   if(action==="del-pin"){
     var pId2 = btn.getAttribute("data-id");
     state.mapMarkers = state.mapMarkers.filter(function(p){return p.id!==pId2;});
-    saveState(); closeModals(); renderTab(); return;
+    saveState(); pushMapToSupabase(); closeModals(); renderTab(); return;
   }
 }
 
@@ -1671,7 +1724,7 @@ function diceModalHtml(){
     '<div class="dtype-grid">'+diceCards+'</div>'+
     (diceState.sides===100?'':'<div class="field" style="margin-top:6px;"><label>Cantidad de dados</label><input type="number" min="1" id="diceQty" value="'+diceState.qty+'"></div>')+
     '<div class="field" style="margin-top:6px;"><label>Modificador numérico (+ / -)</label><input type="number" id="diceMod" value="'+diceState.mod+'"></div>'+
-    '<button class="btn btn-primary" data-action="roll-free" style="margin-top:12px;">Lanzar Dados</button>';
+    '<button class="btn btn-primary" data-action="roll-free" style="margin-top:10px;">Lanzar Dados</button>';
 }
 function openDiceModal(){
   document.getElementById("diceModal").innerHTML = diceModalHtml();
@@ -1746,14 +1799,14 @@ function resizeImageFile(file, maxDim, quality, callback){
       var canvas = document.createElement("canvas");
       canvas.width = Math.round(img.width*scale); canvas.height = Math.round(img.height*scale);
       canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
-      callback(canvas.toDataURL("image/jpeg", quality||0.85));
+      callback(canvas.toDataURL("image/jpeg", quality||0.75));
     };
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-/* SUPABASE SINCRO COMPLETA (PERSONAJES + MAPA) */
+/* SUPABASE SYNC */
 function initSupabase(){
   if(!window.supabase) return;
   try{
@@ -1880,7 +1933,7 @@ function init(){
   });
   document.getElementById("mapFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
-      resizeImageFile(e.target.files[0], 1600, 0.85, function(url){
+      resizeImageFile(e.target.files[0], 1200, 0.75, function(url){
         state.mapImage = url;
         saveState();
         pushMapToSupabase();
