@@ -35,11 +35,11 @@ body[data-theme="purple"]{--blood:#5A2F82;--blood-light:#9B69D4;--accent-rgb:90,
 body[data-theme="blue"]{--blood:#284B76;--blood-light:#5B91C8;--accent-rgb:40,75,118;}
 body[data-theme="pink"]{--blood:#88345C;--blood-light:#D47FA7;--accent-rgb:136,52,92;}
 body[data-theme="green"]{--blood:#26461F;--blood-light:#6CA03C;--accent-rgb:38,70,31;}
-
+ 
 *{box-sizing:border-box;margin:0;padding:0;}
 html{font-size:16px;}
 html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
-
+ 
 input, textarea, select, button {
   font-family:inherit;
   color:var(--ink);
@@ -49,7 +49,7 @@ input, textarea, select, button {
 }
 input:focus, textarea:focus, select:focus { border-color:var(--teal-light); }
 select option { background:var(--bg-elev); color:var(--ink); }
-
+ 
 body{
   background:
     radial-gradient(ellipse 900px 500px at 50% -10%, rgba(var(--accent-rgb),0.22), transparent 65%),
@@ -66,9 +66,9 @@ body{
 *{scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--bg-elev);}
 input[type=number]{-moz-appearance:textfield;}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
-
+ 
 #app{max-width:1040px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
-
+ 
 /* TOPBAR */
 .topbar{
   position:sticky;top:0;z-index:30;
@@ -89,14 +89,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .char-name{font-family:var(--font-display);font-size:1.15rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .char-sub{font-size:.72rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;}
-
+ 
 .role-badge{
   font-size:.62rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;
   padding:3px 7px;border-radius:12px;border:1px solid var(--line);color:var(--ink-faint);background:var(--bg-card);
 }
 .role-badge.gm{border-color:var(--blood-light);color:var(--gold-light);background:rgba(140,37,47,0.3);}
 .role-badge.player{border-color:var(--teal);color:var(--teal-light);}
-
+ 
 .sync-status{
   font-size:.62rem;font-family:var(--font-mono);padding:3px 6px;border-radius:8px;
   border:1px solid var(--line);color:var(--ink-faint);white-space:nowrap;
@@ -104,14 +104,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .sync-status.synced{color:var(--teal-light);border-color:var(--teal);}
 .sync-status.saving{color:var(--gold-light);border-color:var(--gold);}
 .version-tag{font-size:.6rem;font-family:var(--font-mono);background:rgba(176,141,87,0.2);color:var(--gold-light);padding:2px 5px;border-radius:4px;margin-left:6px;border:1px solid var(--line);}
-
+ 
 .icon-btn{
   background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
   width:36px;height:36px;border-radius:50%;flex:none;font-size:1.05rem;
   display:flex;align-items:center;justify-content:center;transition:.15s;cursor:pointer;
 }
 .icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
-
+ 
 /* GAUGES */
 .gauges{display:grid;grid-template-columns:1fr 110px 1fr;gap:8px;margin-top:8px;}
 @media(max-width:600px){.gauges{grid-template-columns:1fr 1fr;}}
@@ -129,7 +129,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   border-radius:var(--radius-sm);padding:3px 0;font-size:.72rem;font-family:var(--font-mono);cursor:pointer;
 }
 .gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);}
-
+ 
 /* MAIN */
 main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .section{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;}
@@ -140,7 +140,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 }
 .section-title span{display:flex;align-items:center;gap:6px;}
 .section-title span::before{content:'§';color:var(--blood-light);font-size:1.05rem;}
-
+ 
 /* HERO PROFILE */
 .ficha-layout{display:grid;grid-template-columns:220px 1fr;gap:16px;}
 @media(max-width:680px){.ficha-layout{grid-template-columns:1fr;}}
@@ -159,18 +159,18 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   color:var(--ink);padding:4px 2px;font-size:.9rem;border-radius:0;width:100%;
 }
 .field textarea{resize:vertical;min-height:50px;line-height:1.4;border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px;}
-
+ 
 /* ATRIBUTOS */
 .attr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
 .attr-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 4px;text-align:center;}
 .attr-card label{display:block;font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:2px;}
 .attr-val-box{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--gold-light);}
-
+ 
 .skill-pool-banner{
   background:rgba(176,141,87,0.14);border:1px solid var(--gold);border-radius:var(--radius-sm);
   padding:8px 12px;margin-bottom:12px;font-size:.8rem;color:var(--gold-light);display:flex;justify-content:space-between;align-items:center;
 }
-
+ 
 /* HABILIDADES */
 .attr-group{margin-bottom:14px;}
 .attr-group-title{
@@ -184,7 +184,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 }
 .skill-col-headers span{text-align:center;}
 .skill-col-headers span:first-child{text-align:left;}
-
+ 
 .skill-row{
   display:grid;grid-template-columns:1fr 36px 64px 44px 34px;gap:4px;align-items:center;
   padding:6px 0;border-bottom:1px dashed var(--line);
@@ -209,7 +209,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   font-size:1rem;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;
 }
 .dice-btn:hover{border-color:var(--blood-light);color:var(--blood-light);}
-
+ 
 /* COMBATE */
 .buffs-container{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 .buff-pill{
@@ -219,7 +219,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 }
 .buff-pill.active{border-color:var(--teal-light);color:var(--teal-light);background:rgba(61,110,96,0.3);}
 .buff-pill.debuff.active{border-color:var(--danger);color:#E74C3C;background:rgba(192,57,43,0.3);}
-
+ 
 .combat-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
 .combat-quick-btn{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
@@ -228,13 +228,13 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .combat-quick-btn:hover{border-color:var(--blood-light);}
 .combat-quick-btn .cq-label{font-size:.7rem;color:var(--ink-dim);text-transform:uppercase;}
 .combat-quick-btn .cq-total{font-family:var(--font-mono);font-size:1.35rem;font-weight:700;color:var(--gold-light);}
-
+ 
 .combat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;}
 .combat-stat{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 4px;text-align:center;position:relative;}
 .combat-stat label{display:block;font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;}
 .combat-stat input{width:100%;background:none;border:none;text-align:center;font-family:var(--font-mono);font-size:1.1rem;color:var(--ink);}
 .combat-stat .mini-roll{position:absolute;top:3px;right:3px;background:none;border:none;color:var(--ink-faint);font-size:.85rem;cursor:pointer;}
-
+ 
 /* FILAS DINÁMICAS */
 .list-row{display:grid;gap:6px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);}
 .list-row:last-child{border-bottom:none;}
@@ -251,12 +251,12 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .stone-row{grid-template-columns:85px 1fr 28px;}
 .text-row{grid-template-columns:1fr 28px;}
 .god-row{grid-template-columns:1fr 1fr 1fr 28px;}
-
+ 
 .money-row{display:flex;gap:12px;}
 .money-field{flex:1;background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;}
 .money-field label{display:block;font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:2px;}
 .money-field input{width:100%;background:none;border:none;font-family:var(--font-mono);font-size:1.1rem;color:var(--gold-light);}
-
+ 
 /* CRIATURAS Y ALQUIMIA */
 .creature-card{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
@@ -275,7 +275,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;
   padding:6px 8px;font-size:.8rem;font-family:var(--font-body);min-height:45px;resize:vertical;line-height:1.4;
 }
-
+ 
 /* LORE & HERBORISTERÍA */
 .item-card{
   background:var(--bg-elev);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;
@@ -285,13 +285,13 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .item-card.rarity-rara{border-left-color:#60A5FA;}
 .item-card.rarity-muyrara{border-left-color:#C084FC;}
 .item-card.rarity-legendaria{border-left-color:#FDE047;}
-
+ 
 .item-badge{font-size:.58rem;font-family:var(--font-mono);font-weight:700;text-transform:uppercase;padding:2px 5px;border-radius:4px;}
 .badge-comun{background:rgba(168,159,145,0.15);color:#C2B196;border:1px solid rgba(168,159,145,0.4);}
 .badge-rara{background:rgba(96,165,250,0.15);color:#93C5FD;border:1px solid rgba(96,165,250,0.4);}
 .badge-muyrara{background:rgba(192,132,252,0.15);color:#D8B4FE;border:1px solid rgba(192,132,252,0.4);}
 .badge-legendaria{background:rgba(253,224,71,0.15);color:#FEF08A;border:1px solid rgba(253,224,71,0.4);}
-
+ 
 .filter-section{margin-bottom:8px;}
 .filter-label{font-size:.62rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
 .filter-pills{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
@@ -301,7 +301,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   padding:3px 8px;font-size:.68rem;color:var(--ink-dim);white-space:nowrap;cursor:pointer;flex:none;
 }
 .f-pill.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.18);}
-
+ 
 /* MAPA */
 .map-viewer{position:relative;width:100%;min-height:260px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);overflow:hidden;background:#090605;cursor:crosshair;}
 .map-viewer img{width:100%;display:block;user-spec:none;}
@@ -312,13 +312,13 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .pin-ciudad .pin-glyph{background:var(--blood);}
 .pin-poi .pin-glyph{background:var(--teal);}
 .pin-peligro .pin-glyph{background:var(--danger);}
-
+ 
 /* BOTONES Y GENERAL */
 .btn-compact{padding:5px 10px;font-size:.72rem;text-transform:uppercase;border-radius:4px;border:1px solid var(--line);background:var(--bg-card);color:var(--ink-dim);cursor:pointer;}
 .btn-compact:hover{border-color:var(--gold);color:var(--gold-light);}
 .btn-solid-gold{background:var(--gold);color:#120D0A;font-weight:700;border:none;padding:5px 10px;font-size:.72rem;text-transform:uppercase;border-radius:var(--radius-sm);cursor:pointer;}
 .btn-solid-gold:hover{background:var(--gold-light);}
-
+ 
 /* TABBAR */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:1040px;margin:0 auto;
@@ -333,7 +333,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 }
 .tab-btn.active{color:var(--gold-light);font-weight:700;}
 .tab-btn.active::after{content:'';width:16px;height:2px;background:var(--blood-light);border-radius:2px;}
-
+ 
 /* FAB DICE FLOTANTE */
 .fab-dice{
   position:fixed;right:18px;bottom:72px;z-index:9999;width:52px;height:52px;border-radius:50%;
@@ -341,7 +341,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   border:1.5px solid var(--gold);color:var(--ink);font-size:1.4rem;display:flex;align-items:center;justify-content:center;
   box-shadow:0 6px 18px rgba(0,0,0,0.65);cursor:pointer;pointer-events:auto;
 }
-
+ 
 /* MODALES */
 .roll-overlay{  position:fixed; inset:0; z-index:10000;  display:flex; align-items:center; justify-content:center;  background:rgba(8,5,4,0.82); padding:16px;}.roll-overlay.hidden{ display:none; }
 .roll-box{
@@ -355,7 +355,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .adv-die-card{background:var(--bg-card);border:1.5px solid var(--line);border-radius:6px;padding:6px 10px;font-family:var(--font-mono);font-size:1.2rem;color:var(--ink-dim);}
 .adv-die-card.chosen{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.2);}
 .adv-die-card.discarded{opacity:0.35;text-decoration:line-through;border-color:var(--danger);}
-
+ 
 .modal-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.78);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;}
 .modal-overlay.hidden{display:none;}
 .modal{
@@ -364,7 +364,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 }
 .modal h2{font-family:var(--font-display);color:var(--gold-light);font-size:1.1rem;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;}
 .modal h2 button{background:none;border:none;color:var(--ink-faint);font-size:1.3rem;cursor:pointer;}
-
+ 
 .char-list-item{
   display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);
   border:1px solid var(--line);background:var(--bg-card);margin-bottom:8px;cursor:pointer;
@@ -387,7 +387,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
 .swatch-blue{background:#2C4F79;}
 .swatch-pink{background:#8C3B62;}
 .swatch-green{background:#2B4A22;}
-
+ 
 .dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;}
 .dtype-card{
   background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:6px;
@@ -405,7 +405,7 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
   <main id="main"></main>
   <button class="fab-dice" id="fabDice" title="Lanzar dados">&#9861;</button>
 </div>
-
+ 
 <div class="modal-overlay hidden" id="charModalOverlay"><div class="modal" id="charModal"></div></div>
 <div class="modal-overlay hidden" id="diceModalOverlay"><div class="modal" id="diceModal"></div></div>
 <div class="modal-overlay hidden" id="dataModalOverlay"><div class="modal" id="dataModal"></div></div>
@@ -421,22 +421,22 @@ main{flex:1;padding:14px 14px 100px;overflow-y:auto;}
     <button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:7px;" data-action="close-roll-modal">Cerrar</button>
   </div>
 </div>
-
+ 
 <input type="file" id="portraitFileInput" accept="image/*" hidden>
 <input type="file" id="mapFileInput" accept="image/*" hidden>
 <input type="file" id="importFileInput" accept="application/json" hidden>
-
+ 
 <script>
 (function(){
 "use strict";
-
+ 
 var STORAGE_KEY = "krysalisFichasV095";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
-
+ 
 var ATTRS = ["fisico","destreza","inteligencia","percepcion","carisma"];
 var ATTR_LABELS = {fisico:"Físico",destreza:"Destreza",inteligencia:"Inteligencia",percepcion:"Percepción",carisma:"Carisma"};
-
+ 
 var SKILL_DEFS = [
   {id:"advertir",name:"Advertir / Notar",attr:"percepcion"},
   {id:"distancia",name:"Ataque a distancia",attr:"destreza"},
@@ -469,35 +469,35 @@ var SKILL_DEFS = [
   {id:"carisma_sk",name:"Carisma",attr:"carisma"},
   {id:"piedras",name:"Piedras mágicas",attr:"inteligencia"}
 ];
-
+ 
 var THEME_LIST = [
   {id:"default",label:"Carmesí"}, {id:"purple",label:"Morado"},
   {id:"blue",label:"Azul"}, {id:"pink",label:"Rosa"}, {id:"green",label:"Verde"}
 ];
-
+ 
 var CONTINENTES = ["Todos", "Vetrys", "Tryssar", "Labrys", "Aslan", "Krysalis"];
 var TIPOS_OBJETO = ["Todos", "Veneno", "Poción", "Ungüento"];
 var TERRENOS = ["Todos", "Bosque", "Minas / Cuevas", "Pantano", "Manglar", "Praderas", "Desierto", "Montañas"];
-
+ 
 function uid(){ return "id" + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
 function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function num(v,d){ var n=parseFloat(v); return isNaN(n)?(d||0):n; }
 function rollDie(sides){ return Math.floor(Math.random()*sides)+1; }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
-
+ 
 var state = null;
 var supabaseClient = null;
 var currentUser = null;
 var currentRole = 'player';
 var isRemoteSyncing = false;
 var realtimeChannel = null;
-
+ 
 var bestiaryContinentFilter = "Todos";
 var loreContinentFilter = "Todos";
 var loreTypeFilter = "Todos";
 var loreTerrainFilter = "Todos";
 var currentLoreSubtab = "objetos";
-
+ 
 function blankCharacter(name){
   return {
     id:uid(), name:name||"Nuevo Personaje", theme:"default", portrait:null,
@@ -510,7 +510,7 @@ function blankCharacter(name){
     summons:[], buffs:{}, customBuffs:[], poisons:[], skillPoints:0
   };
 }
-
+ 
 function getSeedBestiary(){
   return [
     {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",notas:"Doma: 5. Nada a mitad de mov."},
@@ -522,7 +522,7 @@ function getSeedBestiary(){
     {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",notas:"Resistencia al frío."}
   ];
 }
-
+ 
 function getSeedLore(){
   return {
     pistas:[
@@ -543,7 +543,7 @@ function getSeedLore(){
     ]
   };
 }
-
+ 
 function defaultState(){
   return {
     activeId:"", activeTab:"ficha", rollLog:[], characters:[],
@@ -552,7 +552,7 @@ function defaultState(){
     activeMapId:"world_main"
   };
 }
-
+ 
 function migrateState(s){
   if(!s.rollLog) s.rollLog=[];
   if(!s.lore || !s.lore.objetos) s.lore=getSeedLore();
@@ -570,7 +570,7 @@ function migrateState(s){
   });
   return s;
 }
-
+ 
 function loadState(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
@@ -579,7 +579,7 @@ function loadState(){
     return parsed ? migrateState(parsed) : defaultState();
   }catch(e){ return defaultState(); }
 }
-
+ 
 var syncDebounceTimer = null;
 function saveState(skipRemote){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
@@ -592,7 +592,7 @@ function saveState(skipRemote){
     }, 400);
   }
 }
-
+ 
 function updateSyncBadge(st){
   var el = document.getElementById("syncBadge");
   if(!el) return;
@@ -600,12 +600,12 @@ function updateSyncBadge(st){
   else if(st==="saving"){ el.className="sync-status saving"; el.textContent="⏳ Guardando..."; }
   else { el.className="sync-status"; el.textContent="○ Local"; }
 }
-
+ 
 function isGM(){ return currentRole==='gm'; }
 function activeChar(){
   return state.characters.find(function(x){return x.id===state.activeId;}) || state.characters[0] || blankCharacter("Sin Personaje");
 }
-
+ 
 function getEffectiveAttr(aKey, c){
   var base = num(c.attrs[aKey],0);
   if(aKey==="percepcion" && c.buffs && c.buffs.sangre_perc) base += 2;
@@ -618,7 +618,7 @@ function skillBase(skill, c){
 }
 function skillTotal(skill, c){ return skillBase(skill, c) + num(c.skillBonus[skill.id],0); }
 function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
-
+ 
 /* WEB AUDIO */
 var audioCtx = null;
 function getAudioCtx(){
@@ -660,7 +660,7 @@ function playDiceAudio(type){
     });
   }
 }
-
+ 
 function getDieSvg(sides){
   var stroke = "var(--gold)", fill = "var(--bg-card)", txt = "var(--gold-light)";
   if(sides===4) return '<svg viewBox="0 0 100 100"><polygon points="50,15 90,82 10,82" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><text x="50" y="65" font-family="var(--font-mono)" font-size="20" font-weight="700" fill="'+txt+'" text-anchor="middle">d4</text></svg>';
@@ -671,7 +671,7 @@ function getDieSvg(sides){
   if(sides===100) return '<div style="display:flex;gap:4px;"><svg viewBox="0 0 100 100" style="width:36px;height:36px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">00</text></svg><svg viewBox="0 0 100 100" style="width:36px;height:36px;"><polygon points="50,10 88,38 74,88 26,88 12,38" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3"/><text x="50" y="56" font-family="var(--font-mono)" font-size="16" font-weight="700" fill="'+txt+'" text-anchor="middle">0</text></svg></div>';
   return '<svg viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" rx="10" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><text x="50" y="60" font-family="var(--font-mono)" font-size="24" font-weight="700" fill="'+txt+'" text-anchor="middle">d6</text></svg>';
 }
-
+ 
 function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, advCardsHtml){
   document.getElementById("rollLabel").textContent = label;
   document.getElementById("rollDieGraphic").innerHTML = getDieSvg(sides);
@@ -687,7 +687,7 @@ function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, ad
   if(isCrit) setTimeout(function(){ playDiceAudio("crit"); }, 400);
   else if(isFumble) setTimeout(function(){ playDiceAudio("fumble"); }, 400);
 }
-
+ 
 function performD10Roll(charName, label, mod){
   var c = activeChar();
   var extra = 0;
@@ -705,7 +705,7 @@ function performD10Roll(charName, label, mod){
   openRollModal(label, total, formula, 10, d===10, d===1);
   renderTab();
 }
-
+ 
 function performWeaponRoll(charName, weaponName, formulaRaw){
   var reg = new RegExp('(\\d+)\\s*[dD]\\s*(\\d+)');
   var m = String(formulaRaw||"").match(reg);
@@ -720,7 +720,7 @@ function performWeaponRoll(charName, weaponName, formulaRaw){
   var detail = qty + "d" + sides + " [" + rolls.join(", ") + "]" + (mod ? (mod>0?" + "+mod:" - "+Math.abs(mod)) : "");
   openRollModal("Daño — "+weaponName, total, detail, sides, rolls.every(function(x){return x===sides;}), rolls.every(function(x){return x===1;}));
 }
-
+ 
 /* RENDER VISTAS */
 function renderTopbar(){
   var c = activeChar();
@@ -730,7 +730,7 @@ function renderTopbar(){
   var hpPct = clamp(Math.round((num(c.combat.pvActual,0)/maxHp)*100), 0, 100);
   var manaPct = clamp(Math.round((num(c.combat.manaActual,0)/maxMana)*100), 0, 100);
   var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
-
+ 
   document.getElementById("topbar").innerHTML =
     '<div class="topbar-row">'+
       '<button class="char-switch" data-action="open-char-modal">'+
@@ -773,19 +773,19 @@ function renderTopbar(){
       '</div>'+
     '</div>';
 }
-
+ 
 var TABS = [
   {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
-
+ 
 function renderTabbar(){
   document.getElementById("tabbar").innerHTML = TABS.map(function(t){
     return '<button class="tab-btn'+(state.activeTab===t.id?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'">'+t.label+'</button>';
   }).join('');
 }
-
+ 
 function renderTab(){
   var main = document.getElementById("main");
   var c = activeChar();
@@ -800,13 +800,13 @@ function renderTab(){
   else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
   else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
 }
-
+ 
 function tplFicha(c){
   var pStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
   var attrCards = ATTRS.map(function(a){
     return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div></div>';
   }).join('');
-
+ 
   return '<div class="section">'+
     '<div class="section-title"><span>Datos del Personaje</span></div>'+
     '<div class="ficha-layout">'+
@@ -840,19 +840,19 @@ function tplFicha(c){
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>';
 }
-
+ 
 function field(label,bind,val,type){
   return '<div class="field"><label>'+esc(label)+'</label><input type="'+type+'" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
 }
 function fieldArea(label,bind,val){
   return '<div class="field"><label>'+esc(label)+'</label><textarea data-bind="'+bind+'">'+esc(val)+'</textarea></div>';
 }
-
+ 
 function tplHabilidades(c){
   var groups = {}; ATTRS.forEach(function(a){groups[a]=[];});
   var hybrids = [];
   SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
-
+ 
   var banner = "";
   if(num(c.skillPoints,0) > 0){
     banner = '<div class="skill-pool-banner">'+
@@ -860,7 +860,7 @@ function tplHabilidades(c){
       '<button class="btn-solid-gold" data-action="confirm-skills">Confirmar Asignación</button>'+
     '</div>';
   }
-
+ 
   var html = '<div class="section"><div class="section-title"><span>Habilidades Generales</span></div>'+banner;
   ATTRS.forEach(function(a){
     html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
@@ -872,7 +872,7 @@ function tplHabilidades(c){
   html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
   hybrids.forEach(function(s){ html += skillRowHtml(s,c,true); });
   html += '</div>';
-
+ 
   if(c.customSkills && c.customSkills.length){
     html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono</span><span>Total</span><span></span></div>';
@@ -891,7 +891,7 @@ function tplHabilidades(c){
   html += rollLogHtml();
   return html;
 }
-
+ 
 function skillRowHtml(s,c,isHybrid){
   var base = skillBase(s,c);
   var total = skillTotal(s,c);
@@ -902,7 +902,7 @@ function skillRowHtml(s,c,isHybrid){
       s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+ATTR_LABELS[o].slice(0,3)+'</option>';}).join('')+
       '</select></div>';
   }
-
+ 
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
     '<span class="skill-base">'+base+'</span>'+
@@ -915,18 +915,18 @@ function skillRowHtml(s,c,isHybrid){
     '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'">&#127922;</button>'+
   '</div>';
 }
-
+ 
 function tplCombate(c){
   var cb = c.combat||{};
   var buffs = c.buffs||{};
   var isVamp = (c.magiaTipo||"").toLowerCase().includes("vampir") || (c.trabajo||"").toLowerCase().includes("vástago");
   var isTox = (c.magiaTipo||"").toLowerCase().includes("toxicómano") || (c.name||"").toLowerCase().includes("cherk");
-
+ 
   var quickBtns = ["melee","distancia","esquivar","atletismo"].map(function(sid){
     var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
     return '<button class="combat-quick-btn" data-action="roll-skill" data-id="' + sid + '"><span class="cq-label">' + sdef.name + '</span><span class="cq-total">' + skillTotal(sdef, c) + '</span></button>';
   }).join('');
-
+ 
   var html = '<div class="section"><div class="section-title"><span>Buffs y Modificadores de Combate</span></div><div class="buffs-container">';
   if(isVamp){
     html += '<div class="buff-pill '+(buffs.sangre_ataque_melee?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_melee">🩸 Sangre: +1 Melé</div>'+
@@ -942,7 +942,7 @@ function tplCombate(c){
     html += '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono">⚠️ Debuff -1 a todo</div>';
   }
   html += '</div>';
-
+ 
   if(c.customBuffs && c.customBuffs.length){
     c.customBuffs.forEach(function(cbuff){
       html += '<div class="list-row text-row">'+
@@ -952,7 +952,7 @@ function tplCombate(c){
     });
   }
   html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-custom-buff">+ Añadir buff temporal</button></div>';
-
+ 
   html += '<div class="section"><div class="section-title"><span>Tiradas de Combate</span></div><div class="combat-quick-grid">'+quickBtns+'</div></div>';
   html += '<div class="section"><div class="section-title"><span>Estadísticas de Combate</span></div>'+
     '<div class="combat-grid">'+
@@ -962,7 +962,7 @@ function tplCombate(c){
       combatStat("Def. Mágica","defensaMagica",cb.defensaMagica,false)+
     '</div>'+
   '</div>';
-
+ 
   html += '<div class="section"><div class="section-title"><span>Armas</span></div>';
   (c.weapons||[]).forEach(function(w){
     html += '<div class="list-row weapons-row">'+
@@ -974,7 +974,7 @@ function tplCombate(c){
     '</div>';
   });
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma</button></div>';
-
+ 
   html += '<div class="section"><div class="section-title"><span>Armaduras</span></div>';
   (c.armors||[]).forEach(function(a){
     html += '<div class="list-row armor-row">'+
@@ -985,18 +985,18 @@ function tplCombate(c){
     '</div>';
   });
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-armor">+ Añadir armadura</button></div>';
-
+ 
   html += rollLogHtml();
   return html;
 }
-
+ 
 function combatStat(label,bind,val,rollable){
   return '<div class="combat-stat"><label>'+esc(label)+'</label>'+
     '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'">'+
     (rollable?'<button class="mini-roll" data-action="roll-init">&#127922;</button>':'')+
   '</div>';
 }
-
+ 
 function tplMagia(c){
   var html = '<div class="section"><div class="section-title"><span>Grimorio y Artes Mágicas</span></div>'+
     '<div class="field" style="margin-bottom:10px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'"></div>'+
@@ -1012,7 +1012,7 @@ function tplMagia(c){
     '</div>';
   });
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-spell">+ Añadir hechizo</button></div>';
-
+ 
   html += '<div class="section"><div class="section-title"><span>Piedras Mágicas</span></div>';
   (c.stones||[]).forEach(function(s){
     html += '<div class="list-row stone-row">'+
@@ -1024,7 +1024,7 @@ function tplMagia(c){
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-stone">+ Añadir piedra</button></div>';
   return html;
 }
-
+ 
 function tplAlquimia(c){
   var html = '<div class="section"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>';
   (c.poisons||[]).forEach(function(p){
@@ -1052,14 +1052,14 @@ function tplAlquimia(c){
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-poison">+ Añadir veneno / fórmula</button></div>';
   return html;
 }
-
+ 
 function tplInventario(c){
   var html = '<div class="section"><div class="section-title"><span>Dinero</span></div>'+
     '<div class="money-row">'+
       '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" value="'+num(c.money.oro,0)+'"></div>'+
       '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" value="'+num(c.money.plata,0)+'"></div>'+
     '</div></div>';
-
+ 
   html += '<div class="section"><div class="section-title"><span>Equipo e Inventario</span></div>';
   (c.inventory||[]).forEach(function(it){
     html += '<div class="list-row inv-row">'+
@@ -1071,7 +1071,7 @@ function tplInventario(c){
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-inventory">+ Añadir objeto</button></div>';
   return html;
 }
-
+ 
 function tplInvocaciones(c){
   var html = '<div class="section"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
   (c.summons||[]).forEach(function(s){
@@ -1097,16 +1097,16 @@ function tplInvocaciones(c){
 function creatureField(label,bind,val){
   return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
 }
-
+ 
 function tplBestiario(s){
   var pills = CONTINENTES.map(function(ct){
     return '<button class="f-pill '+(bestiaryContinentFilter===ct?'active':'')+'" data-action="set-bestiary-continent" data-continent="'+ct+'">'+ct+'</button>';
   }).join('');
-
+ 
   var html = '<div class="section">'+
     '<div class="section-title"><span>Bestiario y Monturas</span></div>'+
     '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+pills+'</div></div>';
-
+ 
   (s.bestiary||[]).filter(function(b){
     return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
   }).forEach(function(b){
@@ -1133,20 +1133,20 @@ function tplBestiario(s){
   html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-bestiary">+ Añadir criatura</button></div>';
   return html;
 }
-
+ 
 function tplExtra(c){
   var html = '<div class="section"><div class="section-title"><span>Pasivas Negativas</span></div>';
   (c.passivesNeg||[]).forEach(function(p){
     html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'">✕</button></div>';
   });
   html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passiveNeg">+ Añadir pasiva negativa</button></div>';
-
+ 
   html += '<div class="section"><div class="section-title"><span>Pasivas Positivas</span></div>';
   (c.passivesPos||[]).forEach(function(p){
     html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passivePos" data-id="'+p.id+'">✕</button></div>';
   });
   html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passivePos">+ Añadir pasiva positiva</button></div>';
-
+ 
   html += '<div class="section"><div class="section-title"><span>Tabla de Diosas</span></div>';
   (c.goddessTable||[]).forEach(function(g){
     html += '<div class="list-row god-row">'+
@@ -1159,15 +1159,15 @@ function tplExtra(c){
   html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-goddess">+ Añadir diosa</button></div>';
   return html;
 }
-
+ 
 function tplMundo(s){
   var curMap = (s.maps||[]).find(function(m){return m.id===s.activeMapId;}) || s.maps[0];
   if(!curMap){ curMap={id:"world_main",name:"Mapa de Campaña",image:null,markers:[]}; s.maps=[curMap]; s.activeMapId=curMap.id; }
-
+ 
   var mapTabs = (s.maps||[]).map(function(m){
     return '<button class="f-pill '+(s.activeMapId===m.id?'active':'')+'" data-action="switch-map" data-id="'+m.id+'">'+esc(m.name)+'</button>';
   }).join('');
-
+ 
   var html = '<div class="section"><div class="section-title">'+
     '<span>Cartografía y Mapas</span>'+
     '<div style="display:flex;gap:6px;">'+
@@ -1176,7 +1176,7 @@ function tplMundo(s){
     '</div>'+
   '</div>'+
   '<div class="filter-pills" style="margin-bottom:10px;">'+mapTabs+'</div>';
-
+ 
   if(curMap.image){
     html += '<div class="map-viewer" data-action="map-click">'+
       '<img src="'+curMap.image+'" alt="Mapa">'+
@@ -1196,12 +1196,12 @@ function tplMundo(s){
     (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map">Borrar Mapa</button>':'')+
   '</div>'+
   '</div>';
-
+ 
   /* HERBORISTERIA FILTROS */
   var contPills = CONTINENTES.map(function(c){return '<button class="f-pill '+(loreContinentFilter===c?'active':'')+'" data-action="set-lore-continent" data-val="'+c+'">'+c+'</button>';}).join('');
   var typePills = TIPOS_OBJETO.map(function(t){return '<button class="f-pill '+(loreTypeFilter===t?'active':'')+'" data-action="set-lore-type" data-val="'+t+'">'+t+'</button>';}).join('');
   var terrPills = TERRENOS.map(function(tr){return '<button class="f-pill '+(loreTerrainFilter===tr?'active':'')+'" data-action="set-lore-terrain" data-val="'+tr+'">'+tr+'</button>';}).join('');
-
+ 
   html += '<div class="section"><div class="section-title"><span>Compendio de Lore, Fauna y Flora</span></div>'+
     '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+contPills+'</div></div>'+
     (currentLoreSubtab==="objetos"?
@@ -1212,7 +1212,7 @@ function tplMundo(s){
       '<button class="f-pill '+(currentLoreSubtab==='pistas'?'active':'')+'" data-action="set-lore-subtab" data-val="pistas">📜 Pistas</button>'+
       '<button class="f-pill '+(currentLoreSubtab==='npcs'?'active':'')+'" data-action="set-lore-subtab" data-val="npcs">👤 NPCs</button>'+
     '</div>';
-
+ 
   var cat = currentLoreSubtab;
   var items = (s.lore[cat]||[]).filter(function(it){
     var matchC = (loreContinentFilter==="Todos" || (it.continent||"Todos")===loreContinentFilter || (it.continent||"Todos")==="Todos");
@@ -1220,12 +1220,12 @@ function tplMundo(s){
     var matchTr = (loreTerrainFilter==="Todos" || (it.terrain||"").includes(loreTerrainFilter));
     return matchC && (cat!=="objetos" || (matchT && matchTr));
   });
-
+ 
   items.forEach(function(it){
     var rName = it.rarity || "Común";
     var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
     var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
-
+ 
     html += '<div class="item-card '+rClass+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'+
         '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'+
@@ -1239,7 +1239,7 @@ function tplMundo(s){
       '<textarea style="width:100%;font-size:.82rem;min-height:45px;" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción...">'+esc(it.text)+'</textarea>'+
     '</div>';
   });
-
+ 
   html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'" style="margin-top:6px;">+ Añadir a '+cat+'</button>';
   html += '</div>';
   return html;
@@ -1247,7 +1247,7 @@ function tplMundo(s){
 function creatureFieldGlobal(label,bind,val){
   return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-scope="global" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
 }
-
+ 
 function rollLogHtml(){
   var logs = state.rollLog.slice(0,5);
   var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span></div>';
@@ -1260,7 +1260,7 @@ function rollLogHtml(){
   html += '</div>';
   return html;
 }
-
+ 
 function setBind(target, path, rawValue, inputType){
   var parts = path.split(".");
   var value = inputType==="number" ? num(rawValue,0) : rawValue;
@@ -1290,7 +1290,7 @@ function setBind(target, path, rawValue, inputType){
   }
   target[path] = value;
 }
-
+ 
 function handleChange(e){
   var el = e.target.closest("[data-bind]"); if(!el) return;
   var isGlobal = el.getAttribute("data-scope")==="global";
@@ -1300,19 +1300,19 @@ function handleChange(e){
   renderTopbar();
   renderTab();
 }
-
+ 
 function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   var c = activeChar();
-
+ 
   if(action==="set-bestiary-continent"){ bestiaryContinentFilter = btn.getAttribute("data-continent"); renderTab(); return; }
   if(action==="set-lore-continent"){ loreContinentFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-terrain"){ loreTerrainFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
-
+ 
   if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
   if(action==="hp-mod"){
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
@@ -1329,7 +1329,7 @@ function handleClick(e){
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
     saveState(); renderTopbar(); return;
   }
-
+ 
   /* SISTEMA DE SUBIDA DE NIVEL Y PUNTOS */
   if(action==="grant-level"){
     c.nivel = String(num(c.nivel,1)+1);
@@ -1378,7 +1378,7 @@ function handleClick(e){
     c.skillPoints = 0;
     saveState(); renderTab(); return;
   }
-
+ 
   if(action==="toggle-buff"){
     var bName = btn.getAttribute("data-buff");
     if(!c.buffs) c.buffs={};
@@ -1457,7 +1457,7 @@ function handleClick(e){
     state.lore[cat2] = state.lore[cat2].filter(function(x){return x.id!==btn.getAttribute("data-id");});
     saveState(); renderTab(); return;
   }
-
+ 
   /* MAPAS */
   if(action==="sync-map-now"){ pullMapFromSupabase(); alert("Mapa sincronizado con la nube."); return; }
   if(action==="switch-map"){ state.activeMapId = btn.getAttribute("data-id"); renderTab(); return; }
@@ -1500,7 +1500,7 @@ function handleClick(e){
     if(curM3) openPinModal(curM3, null, null, btn.getAttribute("data-id"));
     return;
   }
-
+ 
   /* MODALES */
   if(action==="open-char-modal"){ openCharModal(); return; }
   if(action==="open-data-modal"){ openDataModal(); return; }
@@ -1509,7 +1509,7 @@ function handleClick(e){
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
 }
-
+ 
 function openPinModal(mapObj, x, y, pinId){
   var pin = pinId ? (mapObj.markers||[]).find(function(p){return p.id===pinId;}) : {id:uid(), x:x, y:y, name:"", kind:"Ciudad", notes:""};
   document.getElementById("pinModal").innerHTML =
@@ -1525,7 +1525,7 @@ function openPinModal(mapObj, x, y, pinId){
     '</div>';
   document.getElementById("pinModalOverlay").classList.remove("hidden");
 }
-
+ 
 function pinModalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
@@ -1546,7 +1546,7 @@ function pinModalClick(e){
     saveState(); pushMapsData(); closeModals(); renderTab(); return;
   }
 }
-
+ 
 function openCharModal(){
   var html = '<h2>Selección de Personaje<button data-action="close-modal">&times;</button></h2>';
   (state.characters||[]).forEach(function(c){
@@ -1554,7 +1554,7 @@ function openCharModal(){
       return '<button class="swatch swatch-'+t.id+((c.theme||"default")===t.id?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'"></button>';
     }).join('');
     var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
-
+ 
     html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+'" data-action="pick-char" data-id="'+c.id+'">'+
       '<div class="char-list-avatar"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
       '<div class="cli-info">'+
@@ -1568,7 +1568,7 @@ function openCharModal(){
   document.getElementById("charModal").innerHTML = html;
   document.getElementById("charModalOverlay").classList.remove("hidden");
 }
-
+ 
 function openDataModal(){
   var html = '<h2>Ajustes y Sesión<button data-action="close-modal">&times;</button></h2>';
   if(currentUser){
@@ -1591,7 +1591,7 @@ function openDataModal(){
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 }
-
+ 
 var diceConfig = {qty:1, sides:10, mod:0, mode:"normal"};
 function openDiceModal(){
   var sidesList = [4, 6, 8, 10, 12, 20, 100];
@@ -1601,7 +1601,7 @@ function openDiceModal(){
       '<span>'+(s===100?'d%':'d'+s)+'</span>'+
     '</div>';
   }).join('');
-
+ 
   document.getElementById("diceModal").innerHTML =
     '<h2>Lanzador de Dados<button data-action="close-modal">&times;</button></h2>'+
     '<div class="field"><label>Modalidad de Tirada</label><select id="diceMode">'+
@@ -1615,7 +1615,7 @@ function openDiceModal(){
     '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:8px;" data-action="roll-dice-btn">Lanzar Dados</button>';
   document.getElementById("diceModalOverlay").classList.remove("hidden");
 }
-
+ 
 function diceModalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
@@ -1625,7 +1625,7 @@ function diceModalClick(e){
     diceConfig.mod = parseInt(document.getElementById("diceMod").value,10)||0;
     diceConfig.mode = document.getElementById("diceMode").value;
     document.getElementById("diceModalOverlay").classList.add("hidden");
-
+ 
     if(diceConfig.sides===100){
       var dTens = (rollDie(10)-1)*10, dUnits = rollDie(10)-1;
       var pct = dTens + dUnits === 0 ? 100 : dTens + dUnits;
@@ -1633,7 +1633,7 @@ function diceModalClick(e){
       openRollModal("d% Percentil", tot, "Decenas: " + dTens + " | Unidades: " + dUnits, 100, pct===100, pct===1);
       return;
     }
-
+ 
     if(diceConfig.mode==="adv" || diceConfig.mode==="disadv"){
       var r1 = rollDie(diceConfig.sides), r2 = rollDie(diceConfig.sides);
       var chosen = diceConfig.mode==="adv" ? Math.max(r1, r2) : Math.min(r1, r2);
@@ -1646,7 +1646,7 @@ function diceModalClick(e){
       openRollModal(lblAdv, totalAdv, "Modificador: " + (diceConfig.mod>=0?"+"+diceConfig.mod:diceConfig.mod), diceConfig.sides, chosen===diceConfig.sides, chosen===1, advHtml);
       return;
     }
-
+ 
     diceConfig.qty = Math.max(1, parseInt((document.getElementById("diceQty")||{}).value,10)||1);
     var rolls=[], sum=0;
     for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
@@ -1655,7 +1655,7 @@ function diceModalClick(e){
     return;
   }
 }
-
+ 
 function modalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
@@ -1689,13 +1689,13 @@ function modalClick(e){
   if(action==="export-data"){ exportData(); return; }
   if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
 }
-
+ 
 function closeModals(){
   ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay"].forEach(function(id){
     document.getElementById(id).classList.add("hidden");
   });
 }
-
+ 
 function exportData(){
   var blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
   var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "krysalis-backup.json"; a.click();
@@ -1711,7 +1711,7 @@ function importData(file){
   };
   r.readAsText(file);
 }
-
+ 
 function resizeImageFile(file, maxDim, quality, callback){
   var reader = new FileReader();
   reader.onload = function(ev){
@@ -1727,7 +1727,7 @@ function resizeImageFile(file, maxDim, quality, callback){
   };
   reader.readAsDataURL(file);
 }
-
+ 
 /* SUPABASE SINCRO AUTOMÁTICA EN TIEMPO REAL */
 function initSupabase(){
   if(!window.supabase) return;
@@ -1735,7 +1735,7 @@ function initSupabase(){
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     
     if(!realtimeChannel){
-      realtimeChannel = supabaseClient.channel('realtime_map_changes')
+      realtimeChannel = supabaseClient.channel('realtime_app_changes')
         .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(payload){
           if(payload && payload.new){
             var remoteMaps = payload.new.data || payload.new.markers;
@@ -1747,22 +1747,25 @@ function initSupabase(){
             }
           }
         })
+        .on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(payload){
+          handleRemoteCharacterChange(payload);
+        })
         .subscribe();
     }
-
+ 
     pullMapFromSupabase();
-
+ 
     supabaseClient.auth.getSession().then(function(res){
       if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
     }).catch(function(e){ console.error('Supabase error:', e); });
-
+ 
     supabaseClient.auth.onAuthStateChange(function(e, session){
       currentUser = session ? session.user : null;
       if(currentUser){ fetchUserProfile(); } else { currentRole='player'; updateSyncBadge("local"); renderTopbar(); renderTab(); }
     });
   }catch(e){ console.error('Supabase error:', e); }
 }
-
+ 
 async function fetchUserProfile(){
   if(!supabaseClient || !currentUser) return;
   try{
@@ -1773,7 +1776,7 @@ async function fetchUserProfile(){
   }catch(e){ console.error('Supabase error:', e); }
   renderTopbar();
 }
-
+ 
 async function supabaseLogin(em, pw){
   var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
   if(res.error) alert(res.error.message); else closeModals();
@@ -1790,6 +1793,43 @@ async function supabaseLogout(){
   }
   currentUser=null; currentRole='player'; closeModals(); updateSyncBadge("local"); renderTopbar(); renderTab();
 }
+function handleRemoteCharacterChange(payload){
+  if(!payload) return;
+  var eventType = payload.eventType || payload.event;
+ 
+  if(eventType === "DELETE"){
+    var oldRow = payload.old;
+    if(!oldRow || oldRow.id===undefined) return;
+    state.characters = state.characters.filter(function(x){return x.db_id!==oldRow.id;});
+    if(!state.characters.find(function(x){return x.id===state.activeId;})){
+      state.activeId = state.characters[0] ? state.characters[0].id : "";
+    }
+    saveState(true);
+    renderTopbar(); renderTabbar(); renderTab();
+    return;
+  }
+ 
+  var row = payload.new;
+  if(!row || !row.data) return;
+  var incoming = row.data;
+  incoming.db_id = row.id;
+ 
+  var idx = state.characters.findIndex(function(x){return x.db_id===row.id;});
+  var wasActive = idx!==-1 && state.characters[idx].id===state.activeId;
+ 
+  if(idx!==-1){
+    // Preserve local id linkage; replace with the freshest remote copy.
+    state.characters[idx] = incoming;
+  } else {
+    state.characters.push(incoming);
+    if(!state.activeId) state.activeId = incoming.id;
+  }
+ 
+  saveState(true);
+  renderTopbar();
+  if(wasActive || !state.activeId) renderTab();
+}
+ 
 async function pullAllFromSupabase(){
   if(!supabaseClient || !currentUser) return;
   isRemoteSyncing = true;
@@ -1809,7 +1849,7 @@ function pushActiveChar(){
   var c = activeChar(); if(!c || !c.name || c.id==="empty") return;
   var payload = {name:c.name, data:c, owner_id:currentUser.id, updated_at:new Date().toISOString()};
   if(c.db_id) payload.id = c.db_id;
-  supabaseClient.from('characters').upsert(payload).then(function(res){
+  supabaseClient.from('characters').upsert(payload).select().then(function(res){
     if(res.error) { console.error('Supabase error:', res.error); return; }
     if(res.data && res.data[0]) c.db_id = res.data[0].id;
     updateSyncBadge("synced");
@@ -1843,13 +1883,13 @@ function pushMapsData(){
     updateSyncBadge("synced");
   }).catch(function(e){ console.error('Supabase error:', e); });
 }
-
+ 
 function init(){
   state = loadState();
   renderTopbar();
   renderTabbar();
   renderTab();
-
+ 
   document.getElementById("main").addEventListener("click", handleClick);
   document.getElementById("main").addEventListener("change", handleChange);
   document.getElementById("main").addEventListener("input", function(e){
@@ -1872,9 +1912,9 @@ function init(){
   document.getElementById("rollOverlay").addEventListener("click", function(e){
     if(e.target===this || e.target.closest("[data-action='close-roll-modal']")) this.classList.add("hidden");
   });
-
+ 
   document.getElementById("fabDice").addEventListener("click", openDiceModal);
-
+ 
   document.getElementById("portraitFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
       resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
@@ -1894,12 +1934,13 @@ function init(){
     if(e.target.files && e.target.files[0]) importData(e.target.files[0]);
     e.target.value="";
   });
-
+ 
   initSupabase();
 }
-
+ 
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 </script>
 </body>
 </html>
+ 
