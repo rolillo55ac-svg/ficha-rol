@@ -38,7 +38,7 @@ body[data-theme="green"]{--blood:#26461F;--blood-light:#6CA03C;--accent-rgb:38,7
 
 *{box-sizing:border-box;margin:0;padding:0;}
 html{font-size:16px;}
-html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
+html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;touch-action:manipulation;}
 
 input, textarea, select, button {
   font-family:inherit;
@@ -107,8 +107,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 .icon-btn{
   background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
-  width:36px;height:36px;border-radius:50%;flex:none;font-size:1.05rem;
+  width:42px;height:42px;border-radius:50%;flex:none;font-size:1.2rem;
   display:flex;align-items:center;justify-content:center;transition:.15s;cursor:pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
 
@@ -501,7 +502,7 @@ var currentLoreSubtab = "objetos";
 function blankCharacter(name){
   return {
     id:uid(), name:name||"Nuevo Personaje", theme:"default", portrait:null,
-    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabalho:"", descripcion:"",
+    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
     skillBonus:{}, skillHybrid:{}, customSkills:[],
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
@@ -1589,7 +1590,7 @@ function openDataModal(){
     '</div>'+
   '</div>';
   document.getElementById("dataModal").innerHTML = html;
-  document.getElementById("dataModalOverlay").classList.add("hidden");
+  document.getElementById("dataModalOverlay").classList.remove("hidden");
 }
 
 var diceConfig = {qty:1, sides:10, mod:0, mode:"normal"};
