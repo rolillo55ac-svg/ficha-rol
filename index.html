@@ -707,11 +707,12 @@ function performD10Roll(charName, label, mod){
 }
 
 function performWeaponRoll(charName, weaponName, formulaRaw){
-  var m = String(formulaRaw||"").match(/(\d+)\s*[dD]\s*(\d+)/);
+  var reg = new RegExp('(\\d+)\\s*[dD]\\s*(\\d+)');
+  var m = String(formulaRaw||"").match(reg);
   if(!m){ alert("Fórmula de daño no válida (ej: 1D6+3)"); return; }
   var qty = parseInt(m[1],10), sides = parseInt(m[2],10);
   var rest = String(formulaRaw).slice(m.index + m[0].length);
-  var modM = rest.match(/^\s*([+-]\s*\d+)/);
+  var modM = rest.match(new RegExp('^\\s*([+-]\\s*\\d+)'));
   var mod = modM ? parseInt(modM[1].replace(/\s+/g,""),10) : 0;
   var rolls=[], sum=0;
   for(var i=0;i<qty;i++){ var r=rollDie(sides); rolls.push(r); sum+=r; }
@@ -1650,7 +1651,7 @@ function diceModalClick(e){
     var rolls=[], sum=0;
     for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
     var grandTotal = sum + diceConfig.mod;
-    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+mod:" - "+Math.abs(mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
+    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
     return;
   }
 }
