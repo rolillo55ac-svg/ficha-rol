@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol</title>
+<title>Krysalis · Fichas de Rol v1.3.0</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -88,14 +88,21 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .role-badge.gm{border-color:var(--blood-light);color:var(--gold-light);background:rgba(140,37,47,0.3);}
 .role-badge.player{border-color:var(--teal);color:var(--teal-light);}
 
+.sync-status{
+  font-size:.62rem;font-family:var(--font-mono);padding:2px 6px;border-radius:8px;
+  border:1px solid var(--line);color:var(--ink-faint);white-space:nowrap;
+}
+.sync-status.synced{color:var(--teal-light);border-color:var(--teal);}
+.sync-status.saving{color:var(--gold-light);border-color:var(--gold);}
+
+.version-tag{font-size:.58rem;font-family:var(--font-mono);color:var(--ink-faint);margin-left:2px;}
+
 .icon-btn{
   background:none;border:1px solid var(--line);color:var(--ink-dim);
-  width:42px;height:42px;border-radius:50%;flex:none;font-size:1.1rem;
+  width:40px;height:40px;border-radius:50%;flex:none;font-size:1.1rem;
   display:flex;align-items:center;justify-content:center;transition:.15s;
 }
 .icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
-.save-flag{font-size:.68rem;color:var(--teal-light);opacity:0;transition:opacity .3s;text-transform:uppercase;}
-.save-flag.show{opacity:1;}
 
 .gauges{display:flex;gap:12px;margin-top:10px;}
 .gauge-wrap{flex:1;min-width:0;}
@@ -112,7 +119,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);}
 
-/* CONTENIDO PRINCIPAL */
+/* CONTENIDO */
 main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 .section{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;}
 .section-title{
@@ -280,14 +287,24 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
   padding:8px 10px;font-size:.84rem;font-family:var(--font-body);min-height:50px;resize:vertical;line-height:1.4;
 }
 
-/* LORE */
-.lore-card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;position:relative;}
+/* LORE Y HERBORISTERÍA CARD MEJORADA */
+.lore-nav-tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:6px;}
+.lore-subtab-btn{
+  background:none;border:none;color:var(--ink-faint);font-size:.78rem;text-transform:uppercase;
+  padding:4px 10px;border-radius:4px;font-family:var(--font-display);
+}
+.lore-subtab-btn.active{color:var(--gold-light);background:rgba(176,141,87,0.18);font-weight:700;}
+
+.lore-card{
+  background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:12px 14px;margin-bottom:10px;position:relative;
+}
 .lore-card .row-del{position:absolute;top:8px;right:8px;}
 .lore-title-input{width:calc(100% - 38px);background:transparent;border:none;border-bottom:1px solid var(--line-strong);color:var(--gold-light);font-family:var(--font-display);font-size:.95rem;padding:2px;margin-bottom:6px;}
 .lore-text-area{width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:.84rem;min-height:45px;resize:vertical;}
 
 /* MAPA INTERACTIVO Y MARCADORES */
-.map-viewer{position:relative;width:100%;min-height:240px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);overflow:hidden;background:#090605;cursor:crosshair;}
+.map-viewer{position:relative;width:100%;min-height:260px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);overflow:hidden;background:#090605;cursor:crosshair;}
 .map-viewer img{width:100%;display:block;user-select:none;}
 .map-pin{position:absolute;transform:translate(-50%,-100%);text-align:center;cursor:pointer;z-index:2;}
 .pin-glyph{width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);margin:0 auto 2px;border:1.5px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.6);}
@@ -307,7 +324,7 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 .c-pill.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.18);}
 
 /* DADOS MODAL */
-.roll-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.85);z-index:80;display:flex;align-items:center;justify-content:center;padding:18px;}
+.roll-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.85);z-index:90;display:flex;align-items:center;justify-content:center;padding:18px;}
 .roll-overlay.hidden{display:none;}
 .roll-box{
   background:var(--bg-elev);border:1.5px solid var(--line-strong);border-radius:18px;
@@ -427,7 +444,7 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
       <div class="roll-verdict" id="rollVerdict"></div>
       <div id="rollDetail" style="font-size:.8rem;color:var(--ink-dim);margin-top:6px;line-height:1.4;"></div>
     </div>
-    <button class="btn-compact" data-action="close-roll-overlay" style="width:100%;margin-top:16px;">Cerrar</button>
+    <button class="btn btn-primary" id="btnRollClose" style="width:100%;margin-top:16px;">Cerrar</button>
   </div>
 </div>
 <input type="file" id="portraitFileInput" accept="image/*" hidden>
@@ -438,7 +455,7 @@ main{flex:1;padding:16px 16px 140px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV8";
+var STORAGE_KEY = "krysalisFichasV9";
 var DEFAULT_SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -499,8 +516,10 @@ var supabaseClient = null;
 var currentUser = null;
 var currentRole = 'player';
 var isRemoteSyncing = false;
+var syncState = "local";
 var bestiaryContinentFilter = "Todos";
 var loreContinentFilter = "Todos";
+var currentLoreSubtab = "objetos";
 
 function blankCharacter(name){
   return {
@@ -536,10 +555,10 @@ function getSeedBestiary(){
 function getSeedLore(){
   return {
     pistas:[
-      {id:uid(),title:"Santuario de las Diosas",text:"Lugar de comunión con Luna y los Elementos. Requiere respeto ritual.",continent:"Krysalis"}
+      {id:uid(),title:"Santuario de las Diosas",text:"Lugar de comunión con Luna y los Elementos.",continent:"Krysalis"}
     ],
     npcs:[
-      {id:uid(),title:"Emisario Real",text:"Representante diplomático del reino de Asland.",continent:"Aslan"}
+      {id:uid(),title:"Emisario de Asland",text:"Representante diplomático del reino.",continent:"Aslan"}
     ],
     objetos:[
       {id:uid(),title:"Veneno: Seta del sueño",text:"Efecto: Sueño / Paralización | Terreno: Bosque | Rareza: Común",continent:"Todos"},
@@ -608,16 +627,24 @@ var charSyncDebounce = null;
 function saveState(skipRemote){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    var flag=document.getElementById("saveFlag");
-    if(flag){
-      flag.classList.add("show");
-      setTimeout(function(){flag.classList.remove("show");},700);
-    }
   }catch(e){}
   if(!skipRemote && supabaseClient && currentUser && !isRemoteSyncing){
+    setSyncStatus("saving");
     clearTimeout(charSyncDebounce);
-    charSyncDebounce = setTimeout(pushCurrentCharToSupabase, 400);
+    charSyncDebounce = setTimeout(function(){
+      pushCurrentCharToSupabase();
+      pushMapToSupabase();
+    }, 450);
   }
+}
+
+function setSyncStatus(st){
+  syncState = st;
+  var el = document.getElementById("syncBadge");
+  if(!el) return;
+  if(st==="synced"){ el.className="sync-status synced"; el.textContent="● En la nube"; }
+  else if(st==="saving"){ el.className="sync-status saving"; el.textContent="⏳ Guardando..."; }
+  else { el.className="sync-status"; el.textContent="○ Local"; }
 }
 
 function isGM(){ return currentRole === 'gm'; }
@@ -805,13 +832,13 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(initial))+'</span>'+
         '<span class="char-meta">'+
-          '<div class="char-name">'+esc(c.name)+'</div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.3.0</span></div>'+
           '<div class="char-sub">Nivel '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"—")+'</div>'+
         '</span>'+
       '</button>'+
       '<div style="display:flex;align-items:center;gap:6px;">'+
+        '<span id="syncBadge" class="sync-status">'+(currentUser?'● En la nube':'○ Local')+'</span>'+
         rolePill+
-        '<span class="save-flag" id="saveFlag">Guardado</span>'+
         '<button class="icon-btn" data-action="open-data-modal">&#9881;</button>'+
       '</div>'+
     '</div>'+
@@ -1266,22 +1293,28 @@ function tplMundo(s){
   '</div>';
   html += '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Lore, Fauna y Flora</span></div>'+
-    '<div class="continent-pills">'+pills+'</div>';
+  html += '<div class="section"><div class="section-title"><span>Compendio de Lore, Fauna y Flora</span></div>'+
+    '<div class="continent-pills">'+pills+'</div>'+
+    '<div class="lore-nav-tabs">'+
+      '<button class="lore-subtab-btn '+(currentLoreSubtab==='objetos'?'active':'')+'" data-action="set-lore-subtab" data-subtab="objetos">🌿 Herboristería / Objetos</button>'+
+      '<button class="lore-subtab-btn '+(currentLoreSubtab==='pistas'?'active':'')+'" data-action="set-lore-subtab" data-subtab="pistas">📜 Pistas</button>'+
+      '<button class="lore-subtab-btn '+(currentLoreSubtab==='npcs'?'active':'')+'" data-action="set-lore-subtab" data-subtab="npcs">👤 NPCs</button>'+
+    '</div>';
 
-  ["pistas","npcs","objetos"].forEach(function(cat){
-    html += '<div style="font-size:.74rem;color:var(--teal-light);text-transform:uppercase;margin:12px 0 6px;">'+cat.toUpperCase()+'</div>';
-    (s.lore[cat]||[]).filter(function(it){
-      return loreContinentFilter==="Todos" || (it.continent||"Todos")===loreContinentFilter || (it.continent||"Todos")==="Todos";
-    }).forEach(function(it){
-      html += '<div class="lore-card">'+
-        '<button class="row-del" data-action="del-lore" data-cat="'+cat+'" data-id="'+it.id+'">✕</button>'+
-        '<input type="text" class="lore-title-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Título">'+
-        '<textarea class="lore-text-area" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción">'+esc(it.text)+'</textarea>'+
-      '</div>';
-    });
-    html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'">+ Añadir a '+cat+'</button>';
+  var cat = currentLoreSubtab;
+  var items = (s.lore[cat]||[]).filter(function(it){
+    return loreContinentFilter==="Todos" || (it.continent||"Todos")===loreContinentFilter || (it.continent||"Todos")==="Todos";
   });
+
+  items.forEach(function(it){
+    html += '<div class="lore-card">'+
+      '<button class="row-del" data-action="del-lore" data-cat="'+cat+'" data-id="'+it.id+'">✕</button>'+
+      '<input type="text" class="lore-title-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Título">'+
+      '<textarea class="lore-text-area" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción">'+esc(it.text)+'</textarea>'+
+    '</div>';
+  });
+
+  html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'" style="margin-top:6px;">+ Añadir a '+cat+'</button>';
   html += '</div>';
   return html;
 }
@@ -1355,6 +1388,11 @@ function handleClick(e){
   }
   if(action==="set-lore-continent"){
     loreContinentFilter = btn.getAttribute("data-continent");
+    renderTab();
+    return;
+  }
+  if(action==="set-lore-subtab"){
+    currentLoreSubtab = btn.getAttribute("data-subtab");
     renderTab();
     return;
   }
@@ -1470,7 +1508,6 @@ function handleClick(e){
   if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="open-char-modal" || action==="open-data-modal"){ openCharModal(action==="open-data-modal"); return; }
-  if(action==="close-roll-overlay"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
 
   // MAPA PINS
   if(action==="map-click"){
@@ -1716,7 +1753,7 @@ function resizeImageFile(file, maxDim, quality, callback){
   reader.readAsDataURL(file);
 }
 
-/* SUPABASE SINCRO */
+/* SUPABASE SINCRO COMPLETA (PERSONAJES + MAPA) */
 function initSupabase(){
   if(!window.supabase) return;
   try{
@@ -1726,7 +1763,7 @@ function initSupabase(){
     }).catch(function(){});
     supabaseClient.auth.onAuthStateChange(function(e, session){
       currentUser = session ? session.user : null;
-      if(currentUser) fetchUserProfile(); else { currentRole='player'; renderTopbar(); renderTab(); }
+      if(currentUser){ fetchUserProfile(); } else { currentRole='player'; setSyncStatus("local"); renderTopbar(); renderTab(); }
     });
   }catch(e){}
 }
@@ -1736,9 +1773,11 @@ async function fetchUserProfile(){
     var res = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
     if(res.data && res.data.role) currentRole = res.data.role;
     pullAllFromSupabase();
-    supabaseClient.channel('realtime_all').on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(){
-      pullAllFromSupabase();
-    }).subscribe();
+    pullMapFromSupabase();
+    supabaseClient.channel('realtime_all')
+      .on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(){ pullAllFromSupabase(); })
+      .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(){ pullMapFromSupabase(); })
+      .subscribe();
   }catch(e){}
   renderTopbar();
 }
@@ -1751,7 +1790,7 @@ async function supabaseSignup(em, pw){
   if(res.error) alert(res.error.message); else alert("Registro completado. Ya puedes entrar.");
 }
 async function supabaseLogout(){
-  await supabaseClient.auth.signOut(); currentUser=null; currentRole='player'; closeModals(); renderTopbar(); renderTab();
+  await supabaseClient.auth.signOut(); currentUser=null; currentRole='player'; closeModals(); setSyncStatus("local"); renderTopbar(); renderTab();
 }
 async function pullAllFromSupabase(){
   if(!supabaseClient || !currentUser) return;
@@ -1761,6 +1800,7 @@ async function pullAllFromSupabase(){
     if(charRes.data && charRes.data.length){
       state.characters = charRes.data.map(function(r){ var c = r.data; c.db_id = r.id; return c; });
       if(!state.activeId && state.characters.length) state.activeId = state.characters[0].id;
+      setSyncStatus("synced");
     }
     saveState(true); renderTopbar(); renderTabbar(); renderTab();
   }catch(e){}
@@ -1773,7 +1813,29 @@ function pushCurrentCharToSupabase(){
   if(c.db_id) payload.id = c.db_id;
   supabaseClient.from('characters').upsert(payload).then(function(res){
     if(res.data && res.data[0]) c.db_id = res.data[0].id;
+    setSyncStatus("synced");
   });
+}
+async function pullMapFromSupabase(){
+  if(!supabaseClient) return;
+  try{
+    var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'main_map').maybeSingle();
+    if(res.data){
+      if(res.data.image_url) state.mapImage = res.data.image_url;
+      if(res.data.markers) state.mapMarkers = res.data.markers;
+      saveState(true);
+      if(state.activeTab==="mundo") renderTab();
+    }
+  }catch(e){}
+}
+function pushMapToSupabase(){
+  if(!supabaseClient || !currentUser) return;
+  supabaseClient.from('campaign_map').upsert({
+    id: 'main_map',
+    image_url: state.mapImage,
+    markers: state.mapMarkers||[],
+    updated_at: new Date().toISOString()
+  }).then(function(){ setSyncStatus("synced"); });
 }
 
 function init(){
@@ -1801,6 +1863,13 @@ function init(){
   document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  
+  document.getElementById("btnRollClose").addEventListener("click", function(){
+    document.getElementById("rollOverlay").classList.add("hidden");
+  });
+  document.getElementById("rollOverlay").addEventListener("click", function(e){
+    if(e.target===this) this.classList.add("hidden");
+  });
 
   document.getElementById("fabDice").addEventListener("click", openDiceModal);
   document.getElementById("portraitFileInput").addEventListener("change", function(e){
@@ -1811,7 +1880,12 @@ function init(){
   });
   document.getElementById("mapFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
-      resizeImageFile(e.target.files[0], 1600, 0.85, function(url){ state.mapImage = url; saveState(); renderTab(); });
+      resizeImageFile(e.target.files[0], 1600, 0.85, function(url){
+        state.mapImage = url;
+        saveState();
+        pushMapToSupabase();
+        renderTab();
+      });
     }
     e.target.value="";
   });
