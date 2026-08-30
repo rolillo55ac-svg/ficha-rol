@@ -420,7 +420,7 @@ main{flex:1;padding:16px 16px 100px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV4";
+var STORAGE_KEY = "krysalisFichasV5";
 var SUPABASE_CONFIG_KEY = "krysalisSupabaseConfig";
 var DEFAULT_SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 
@@ -486,7 +486,7 @@ function blankCharacter(name){
     name:name||"Nuevo personaje",
     theme:"default",
     portrait:null,
-    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabalho:"", descripcion:"",
+    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
     skillBonus:{}, skillHybrid:{}, customSkills:[],
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,manaActual:10,manaMax:10},
@@ -1580,13 +1580,16 @@ function getSupabaseConfig(){
 }
 function initSupabase(){
   var cfg = getSupabaseConfig();
-  if(!cfg.url || !cfg.key || !window.supabase) return;
+  if(!cfg.url || !cfg.key || !window.supabase) {
+    renderTab();
+    return;
+  }
   try{
     supabaseClient = window.supabase.createClient(cfg.url, cfg.key);
     supabaseClient.auth.getSession().then(function(res){
       if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
       else { renderTab(); }
-    });
+    }).catch(function(){ renderTab(); });
     supabaseClient.auth.onAuthStateChange(function(e, session){
       currentUser = session ? session.user : null;
       if(currentUser) fetchUserProfile(); else { currentRole='player'; renderTopbar(); renderTab(); }
