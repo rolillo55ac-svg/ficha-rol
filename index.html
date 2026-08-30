@@ -1481,7 +1481,7 @@ function handleClick(e){
   if(action==="upload-map"){ document.getElementById("mapFileInput").click(); return; }
   if(action==="remove-map"){
     var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-    if(curM){ curM.image=null; curM.markers=[]; saveState(); pushMapsData(); renderTab(); }
+    if(curM){ curM.image = null; curM.markers = []; saveState(); pushMapsData(); renderTab(); }
     return;
   }
   if(action==="map-click"){
@@ -1623,7 +1623,7 @@ function diceModalClick(e){
   if(action==="pick-die"){ diceConfig.sides = parseInt(btn.getAttribute("data-sides"),10); openDiceModal(); return; }
   if(action==="roll-dice-btn"){
     diceConfig.mod = parseInt(document.getElementById("diceMod").value,10)||0;
-    diceConfig.mode = document.getElementById("diceMode").value;
+    diceConfig.mode = document.getElementById("diceMode".value);
     document.getElementById("diceModalOverlay").classList.add("hidden");
 
     if(diceConfig.sides===100){
@@ -1651,7 +1651,7 @@ function diceModalClick(e){
     var rolls=[], sum=0;
     for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
     var grandTotal = sum + diceConfig.mod;
-    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
+    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
     return;
   }
 }
@@ -1868,7 +1868,7 @@ function init(){
   document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this, e.target===this) closeModals(); });
   document.getElementById("rollOverlay").addEventListener("click", function(e){
     if(e.target===this || e.target.closest("[data-action='close-roll-modal']")) this.classList.add("hidden");
   });
