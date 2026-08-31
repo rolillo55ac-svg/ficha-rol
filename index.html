@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v1.01</title>
+<title>Krysalis · Fichas de Rol v1.02 (BG3 Style)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -218,7 +218,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
-/* HABILIDADES MÓVIL OPTIMIZADAS */
+/* HABILIDADES */
 .attr-group{margin-bottom:14px;}
 .attr-group-title{
   font-family:var(--font-mono);font-size:.72rem;color:var(--teal-light);text-transform:uppercase;
@@ -383,7 +383,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .btn-solid-gold:hover{background:linear-gradient(160deg, #F0DBAE, var(--gold-light));box-shadow:0 4px 14px -3px rgba(176,141,87,0.75), inset 0 1px 0 rgba(255,255,255,0.4);}
 .btn-solid-gold:active{transform:scale(.97);}
 
-/* TABBAR ESTILO BG3 (Iconos limpios y centrados) */
+/* TABBAR ESTILO BG3 (Iconos apilados y perfectamente centrados) */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:1040px;margin:0 auto;
   background:linear-gradient(0deg, var(--bg-elev) 82%, rgba(26,18,13,0.97));
@@ -395,12 +395,13 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .tabbar::-webkit-scrollbar{display:none;}
 .tab-btn{
-  flex:0 0 auto;min-width:62px;background:none;border:none;color:var(--ink-faint);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:2px;padding:4px 3px;font-size:.58rem;text-transform:uppercase;letter-spacing:.02em;cursor:pointer;
+  flex:0 0 auto;min-width:62px;background:none;border:none;color:var(--ink-faint);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:4px 3px;font-size:.56rem;text-transform:uppercase;letter-spacing:.02em;cursor:pointer;
   border-radius:8px;transition:color .15s ease;
 }
 .tab-btn span{display:block;width:100%;text-align:center;}
-.tab-btn::before{display:block;font-size:1.1rem;line-height:1.2;text-align:center;filter:grayscale(.4) opacity(.7);transition:filter .15s ease, transform .15s ease;}
+.tab-btn::before{display:block;font-size:1.15rem;line-height:1.1;text-align:center;filter:grayscale(.4) opacity(.7);transition:filter .15s ease, transform .15s ease;}
 .tab-btn[data-tab="ficha"]::before{content:'📜';}
 .tab-btn[data-tab="habilidades"]::before{content:'🎯';}
 .tab-btn[data-tab="combate"]::before{content:'⚔️';}
@@ -438,7 +439,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .fab-dice:active{transform:scale(.94) rotate(-10deg);}
 
-/* MODAL DE DADOS Y TIRADAS ESTILO BG3 */
+/* MODALES Y MENÚ DE DADOS ESTILO BALDUR'S GATE 3 */
 @keyframes rollPop{
   0%{opacity:0;transform:scale(.85) translateY(10px);}
   100%{opacity:1;transform:scale(1) translateY(0);}
@@ -591,7 +592,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV101";
+var STORAGE_KEY = "krysalisFichasV102";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -900,7 +901,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.01</span></div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.02</span></div>'+
           '<div class="char-sub">Nv. '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1514,20 +1515,17 @@ function handleClick(e){
     var nextNv = curNv + 1;
     c.nivel = String(nextNv);
     
-    // Puntos según tramo de nivel
     var ptsToAdd = 4;
     if(nextNv > 20) ptsToAdd = 8;
     else if(nextNv > 10) ptsToAdd = 6;
     c.skillPoints = num(c.skillPoints, 0) + ptsToAdd;
 
-    // Subida de Vida: Mitad del atributo Físico, redondeando hacia arriba
     var fisicoVal = num(c.attrs.fisico, 0);
     var hpGain = Math.ceil(fisicoVal / 2);
     if(hpGain < 1) hpGain = 1;
     c.combat.pvMax = num(c.combat.pvMax, 10) + hpGain;
     c.combat.pvActual = num(c.combat.pvMax, 10);
 
-    // Maná sube +5 cada 4 niveles (niveles 4, 8, 12, 16, 20, 24, 28...)
     if(nextNv % 4 === 0){
       c.combat.manaMax = num(c.combat.manaMax, 10) + 5;
     }
