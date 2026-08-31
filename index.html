@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.07</title>
+<title>Krysalis · Fichas de Rol v3.05 (BG3 Style)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -624,7 +624,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV307";
+var STORAGE_KEY = "krysalisFichasV305";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -988,7 +988,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.07</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.04</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
