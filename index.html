@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.06</title>
+<title>Krysalis · Fichas de Rol v3.07</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -468,11 +468,9 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="bestiario"]::before{content:'🐾';}
 .tab-btn[data-tab="extra"]::before{content:'🔮';}
 .tab-btn[data-tab="mundo"]::before{content:'🗺️';}
-.tab-btn.gm-tab{color:var(--ink-faint);}
 .tab-btn:hover{color:var(--ink-dim);background:rgba(176,141,87,0.05);}
 .tab-btn:hover::before{filter:grayscale(.2) opacity(.9);}
 .tab-btn.active{color:var(--gold-light);font-weight:700;background:rgba(176,141,87,0.08);}
-.tab-btn.active.gm-tab{color:var(--gold-light);background:rgba(176,141,87,0.08);}
 .tab-btn.active::before{filter:none;transform:translateY(-1px);}
 .tab-btn.active::after{content:'';display:block;width:16px;height:2px;background:linear-gradient(90deg,transparent,var(--blood-light),transparent);border-radius:2px;margin:2px auto 0;box-shadow:0 0 6px var(--blood-light);}
 
@@ -626,7 +624,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV306";
+var STORAGE_KEY = "krysalisFichasV307";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -723,7 +721,7 @@ function blankCharacter(name, isNPC){
     isNPC:!!isNPC,
     owner_id:null,
     ownerEmail:"",
-    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabalho:"", descripcion:"",
+    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
     skillBonus:{}, skillProgress:{}, skillPointsUnlocked:false,
     skillHybrid:{}, customSkills:[],
@@ -990,7 +988,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.06</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.07</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
