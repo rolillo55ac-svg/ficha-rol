@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v1.003</title>
+<title>Krysalis · Fichas de Rol v1.03 (BG3 Style)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -294,13 +294,13 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 /* FILAS DINÁMICAS */
 .list-row{display:grid;gap:6px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);}
 .list-row:last-child{border-bottom:none;}
-.list-row input{background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;padding:7px 9px;font-size:.85rem;}
+.list-row input, .list-row select{background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;padding:7px 9px;font-size:.85rem;}
 .row-del{
   background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);border-radius:7px;
   width:28px;height:28px;font-size:.85rem;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s ease;
 }
 .row-del:hover{border-color:var(--danger);color:var(--danger);background:rgba(192,57,43,0.1);}
-.weapons-row{grid-template-columns:1fr 75px 55px 34px 28px;}
+.weapons-row{grid-template-columns:1fr 34px 28px;}
 .armor-row{grid-template-columns:1fr 65px 65px 28px;}
 .inv-row{grid-template-columns:1fr 55px 28px;}
 .spell-row{grid-template-columns:1fr 75px 85px 28px;}
@@ -383,7 +383,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .btn-solid-gold:hover{background:linear-gradient(160deg, #F0DBAE, var(--gold-light));box-shadow:0 4px 14px -3px rgba(176,141,87,0.75), inset 0 1px 0 rgba(255,255,255,0.4);}
 .btn-solid-gold:active{transform:scale(.97);}
 
-/* TABBAR ESTILO BG3 (Iconos arriba, texto abajo, perfecto en PC y móvil) */
+/* TABBAR ESTILO BG3 (Iconos arriba, texto abajo, perfecto y alineado) */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:1040px;margin:0 auto;
   background:linear-gradient(0deg, var(--bg-elev) 82%, rgba(26,18,13,0.97));
@@ -592,7 +592,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV102";
+var STORAGE_KEY = "krysalisFichasV103";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -660,6 +660,14 @@ var loreTypeFilter = "Todos";
 var loreTerrainFilter = "Todos";
 var currentLoreSubtab = "objetos";
 
+function getSeedWeaponsCatalog(){
+  return [
+    {id:uid(), name:"Espada Larga", dano:"1d8+2", alcance:"Melé", critico:"Doble daño en dados y sangrado leve.", desc:"Espada equilibrada de hoja recta."},
+    {id:uid(), name:"Arco Largo", dano:"1d8", alcance:"150m", critico:"Ignora 2 puntos de absorción de armadura.", desc:"Arco de gran tensión para combate a distancia."},
+    {id:uid(), name:"Daga Mordaz", dano:"1d4+1", alcance:"Melé / Arrojadiza", critico:"Envenena automáticamente al objetivo.", desc:"Arma ligera con filo envenenado."}
+  ];
+}
+
 function blankCharacter(name){
   return {
     id:uid(), name:name||"Nuevo Personaje", theme:"default", portrait:null,
@@ -710,6 +718,7 @@ function getSeedLore(){
 function defaultState(){
   return {
     activeId:"", activeTab:"ficha", rollLog:[], characters:[],
+    weaponsCatalog: getSeedWeaponsCatalog(),
     lore:getSeedLore(), bestiary:getSeedBestiary(),
     maps:[{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }],
     activeMapId:"world_main"
@@ -718,6 +727,7 @@ function defaultState(){
 
 function migrateState(s){
   if(!s.rollLog) s.rollLog=[];
+  if(!s.weaponsCatalog || !s.weaponsCatalog.length) s.weaponsCatalog = getSeedWeaponsCatalog();
   if(!s.lore || !s.lore.objetos) s.lore=getSeedLore();
   if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
   if(!s.maps || !s.maps.length){
@@ -901,7 +911,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.02</span></div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.03</span></div>'+
           '<div class="char-sub">Nv. '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1142,17 +1152,25 @@ function tplCombate(c){
     '</div>'+
   '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Armas</span></div>';
+  html += '<div class="section"><div class="section-title"><span>Armas del Personaje</span></div>';
+  var catalog = state.weaponsCatalog || [];
   (c.weapons||[]).forEach(function(w){
-    html += '<div class="list-row weapons-row">'+
-      '<input type="text" placeholder="Arma" data-bind="weapons.'+w.id+'.name" value="'+esc(w.name)+'">'+
-      '<input type="text" placeholder="Daño" data-bind="weapons.'+w.id+'.dano" value="'+esc(w.dano)+'">'+
-      '<input type="text" placeholder="Alcance" data-bind="weapons.'+w.id+'.alcance" value="'+esc(w.alcance)+'">'+
-      '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'">&#127922;</button>'+
+    var selectedCatItem = catalog.find(function(catItem){ return catItem.name === w.name || catItem.id === w.catalogId; });
+    var infoText = selectedCatItem ? ('Daño: ' + selectedCatItem.dano + ' | Alcance: ' + selectedCatItem.alcance) : 'Selecciona un arma del compendio';
+
+    html += '<div class="list-row weapons-row" style="grid-template-columns:1fr 34px 28px;">'+
+      '<select data-action="select-weapon-catalog" data-id="'+w.id+'">'+
+        '<option value="">-- Seleccionar Arma del Compendio --</option>'+
+        catalog.map(function(catItem){
+          return '<option value="'+catItem.id+'" '+(selectedCatItem && selectedCatItem.id===catItem.id?'selected':'')+'>'+esc(catItem.name)+' ('+esc(catItem.dano)+')</option>';
+        }).join('')+
+      '</select>'+
+      '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño">&#127922;</button>'+
       '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'">✕</button>'+
-    '</div>';
+    '</div>'+
+    '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
   });
-  html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma</button></div>';
+  html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma al equipo</button></div>';
 
   html += '<div class="section"><div class="section-title"><span>Armaduras</span></div>';
   (c.armors||[]).forEach(function(a){
@@ -1339,7 +1357,29 @@ function tplExtra(c){
   return html;
 }
 
+var currentWorldSubtab = "mapas"; // mapas, armas, lore
+
 function tplMundo(s){
+  var subtab = currentWorldSubtab || "mapas";
+  var html = '<div class="section" style="margin-bottom:10px;">'+
+    '<div class="filter-pills">'+
+      '<button class="f-pill '+(subtab==='mapas'?'active':'')+'" data-action="set-world-subtab" data-val="mapas">🗺️ Mapas</button>'+
+      '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">⚔️ Catálogo de Armas</button>'+
+      '<button class="f-pill '+(subtab==='lore'?'active':'')+'" data-action="set-world-subtab" data-val="lore">📜 Lore y Flora</button>'+
+    '</div>'+
+  '</div>';
+
+  if(subtab === "mapas"){
+    html += tplMundoMapas(s);
+  } else if(subtab === "armas"){
+    html += tplMundoArmas(s);
+  } else {
+    html += tplMundoLore(s);
+  }
+  return html;
+}
+
+function tplMundoMapas(s){
   var curMap = (s.maps||[]).find(function(m){return m.id===s.activeMapId;}) || s.maps[0];
   if(!curMap){ curMap={id:"world_main",name:"Mapa de Campaña",image:null,markers:[]}; s.maps=[curMap]; s.activeMapId=curMap.id; }
 
@@ -1375,13 +1415,36 @@ function tplMundo(s){
     (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map">Borrar Mapa</button>':'')+
   '</div>'+
   '</div>';
+  return html;
+}
 
-  /* HERBORISTERIA FILTROS */
+function tplMundoArmas(s){
+  var catalog = s.weaponsCatalog || [];
+  var html = '<div class="section"><div class="section-title"><span>Catálogo Global de Armas (Compendio)</span></div>';
+  catalog.forEach(function(w){
+    html += '<div class="creature-card">'+
+      '<div class="creature-card-header">'+
+        '<input type="text" class="creature-name-input" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.name" value="'+esc(w.name)+'" placeholder="Nombre del arma">'+
+        '<button class="row-del" data-action="del-global-weapon" data-id="'+w.id+'">✕</button>'+
+      '</div>'+
+      '<div class="creature-grid" style="grid-template-columns:1fr 1fr;">'+
+        '<div class="creature-field"><label>Daño Base</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.dano" value="'+esc(w.dano)+'"></div>'+
+        '<div class="creature-field"><label>Alcance</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.alcance" value="'+esc(w.alcance)+'"></div>'+
+      '</div>'+
+      '<div class="creature-field" style="margin-bottom:6px;"><label style="color:#FDE047;">Efecto en Crítico</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.critico" value="'+esc(w.critico)+'" placeholder="Ej: Doble daño / Sangrado"></div>'+
+      '<div class="creature-field"><label>Descripción / Lore</label><textarea class="creature-notes" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.desc">'+esc(w.desc)+'</textarea></div>'+
+    '</div>';
+  });
+  html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-global-weapon">+ Añadir nueva arma al compendio global</button></div>';
+  return html;
+}
+
+function tplMundoLore(s){
   var contPills = CONTINENTES.map(function(c){return '<button class="f-pill '+(loreContinentFilter===c?'active':'')+'" data-action="set-lore-continent" data-val="'+c+'">'+c+'</button>';}).join('');
   var typePills = TIPOS_OBJETO.map(function(t){return '<button class="f-pill '+(loreTypeFilter===t?'active':'')+'" data-action="set-lore-type" data-val="'+t+'">'+t+'</button>';}).join('');
   var terrPills = TERRENOS.map(function(tr){return '<button class="f-pill '+(loreTerrainFilter===tr?'active':'')+'" data-action="set-lore-terrain" data-val="'+tr+'">'+tr+'</button>';}).join('');
 
-  html += '<div class="section"><div class="section-title"><span>Compendio de Lore, Fauna y Flora</span></div>'+
+  var html = '<div class="section"><div class="section-title"><span>Compendio de Lore, Fauna y Flora</span></div>'+
     '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+contPills+'</div></div>'+
     (currentLoreSubtab==="objetos"?
       '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills">'+typePills+'</div></div>'+
@@ -1454,6 +1517,11 @@ function setBind(target, path, rawValue, inputType){
     if(cs) cs[parts[2]] = value;
     return;
   }
+  if(parts[0]==="weaponsCatalog"){
+    var wItem = (target.weaponsCatalog||[]).find(function(x){return x.id===parts[1];});
+    if(wItem) wItem[parts[2]] = value;
+    return;
+  }
   var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons"];
   if(listFields.indexOf(parts[0])!==-1){
     var arr = target[parts[0]];
@@ -1486,6 +1554,7 @@ function handleClick(e){
   var action = btn.getAttribute("data-action");
   var c = activeChar();
 
+  if(action==="set-world-subtab"){ currentWorldSubtab = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-bestiary-continent"){ bestiaryContinentFilter = btn.getAttribute("data-continent"); renderTab(); return; }
   if(action==="set-lore-continent"){ loreContinentFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
@@ -1666,10 +1735,38 @@ function handleClick(e){
   if(action==="roll-weapon"){
     var wid = btn.getAttribute("data-id");
     var wpn = (c.weapons||[]).find(function(w){return w.id===wid;});
-    if(wpn) performWeaponRoll(c.name, wpn.name||"Arma", wpn.dano);
+    if(wpn){
+      var catItem = (state.weaponsCatalog||[]).find(function(ci){ return ci.name === wpn.name || ci.id === wpn.catalogId; });
+      var formula = catItem ? catItem.dano : "1d6";
+      performWeaponRoll(c.name, wpn.name||"Arma", formula);
+    }
     return;
   }
-  if(action==="add-weapon"){ c.weapons.push({id:uid(),name:"",dano:"",alcance:""}); saveState(); renderTab(); return; }
+  if(action==="select-weapon-catalog"){
+    var selEl = e.target;
+    var wid = btn.getAttribute("data-id");
+    var catId = selEl.value;
+    var catItem = (state.weaponsCatalog||[]).find(function(ci){ return ci.id === catId; });
+    var wpnObj = (c.weapons||[]).find(function(w){ return w.id === wid; });
+    if(wpnObj && catItem){
+      wpnObj.name = catItem.name;
+      wpnObj.dano = catItem.dano;
+      wpnObj.alcance = catItem.alcance;
+      wpnObj.catalogId = catItem.id;
+      saveState(); renderTab();
+    }
+    return;
+  }
+  if(action==="add-global-weapon"){
+    if(!state.weaponsCatalog) state.weaponsCatalog = [];
+    state.weaponsCatalog.push({id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción"});
+    saveState(); renderTab(); return;
+  }
+  if(action==="del-global-weapon"){
+    state.weaponsCatalog = (state.weaponsCatalog||[]).filter(function(w){ return w.id !== btn.getAttribute("data-id"); });
+    saveState(); renderTab(); return;
+  }
+  if(action==="add-weapon"){ c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); saveState(); renderTab(); return; }
   if(action==="del-weapon"){ c.weapons = c.weapons.filter(function(w){return w.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-armor"){ c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); saveState(); renderTab(); return; }
   if(action==="del-armor"){ c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
