@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v2.1</title>
+<title>Krysalis · Fichas de Rol v3.0</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -89,44 +89,19 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 #app{max-width:1040px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
 
 /* TOAST NOTIFICATIONS */
-.toast-container{
-  position:fixed;
-  top:70px;
-  right:16px;
-  z-index:10001;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  pointer-events:none;
-  max-width:calc(100vw - 32px);
-}
+.toast-container{position:fixed;top:70px;right:16px;z-index:10001;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:calc(100vw - 32px);}
 .toast{
-  pointer-events:auto;
-  background:var(--bg-card);
-  border:1px solid var(--line-strong);
-  border-radius:var(--radius-sm);
-  padding:12px 16px;
-  min-width:200px;
-  max-width:100%;
-  box-shadow:0 8px 24px rgba(0,0,0,0.6);
-  animation:toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
-  font-size:0.85rem;
-  color:var(--ink);
+  pointer-events:auto;background:var(--bg-card);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  padding:12px 16px;min-width:200px;max-width:100%;box-shadow:0 8px 24px rgba(0,0,0,0.6);
+  animation:toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;font-size:0.85rem;color:var(--ink);
 }
 .toast.success{border-left:4px solid var(--success);}
 .toast.error{border-left:4px solid var(--danger);}
 .toast.warning{border-left:4px solid var(--warning);}
 .toast.info{border-left:4px solid var(--teal);}
 .toast.gm{border-left:4px solid var(--gm-light);}
-
-@keyframes toastIn{
-  from{opacity:0;transform:translateX(100%);}
-  to{opacity:1;transform:translateX(0);}
-}
-@keyframes toastOut{
-  from{opacity:1;transform:translateX(0);}
-  to{opacity:0;transform:translateX(100%);}
-}
+@keyframes toastIn{from{opacity:0;transform:translateX(100%);}to{opacity:1;transform:translateX(0);}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(100%);}}
 
 /* TOPBAR */
 .topbar{
@@ -134,8 +109,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   background:linear-gradient(180deg, var(--bg-elev) 82%, rgba(26,18,13,0.97));
   border-bottom:1px solid var(--line);
   box-shadow:0 1px 0 var(--line-strong), 0 10px 24px -12px rgba(0,0,0,0.7);
-  padding:10px 10px 12px;
-  backdrop-filter:blur(10px) saturate(1.1);
+  padding:10px 10px 12px;backdrop-filter:blur(10px) saturate(1.1);
 }
 .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
 .char-switch{display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--ink);padding:0;text-align:left;flex:1;min-width:0;cursor:pointer;border-radius:8px;}
@@ -144,17 +118,12 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .char-crest{
   width:40px;height:40px;border-radius:50%;flex:none;
   background:radial-gradient(circle at 32% 28%, var(--blood-light), var(--blood) 78%);
-  border:2px solid var(--gold);
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 3px 8px rgba(0,0,0,0.5);
+  border:2px solid var(--gold);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 3px 8px rgba(0,0,0,0.5);
   display:flex;align-items:center;justify-content:center;
   font-family:var(--font-display);font-size:1.1rem;color:var(--ink);
-  background-size:cover;background-position:center;
-  transition:box-shadow var(--transition-fast);
+  background-size:cover;background-position:center;transition:box-shadow var(--transition-fast);
 }
-.char-crest.npc{
-  border-color:var(--gm-light);
-  background:radial-gradient(circle at 32% 28%, var(--gm-light), var(--gm-color) 78%);
-}
+.char-crest.npc{border-color:var(--gm-light);background:radial-gradient(circle at 32% 28%, var(--gm-light), var(--gm-color) 78%);}
 .char-info-box{min-width:0;flex:1;}
 .char-name{font-family:var(--font-display);font-size:1.05rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px rgba(0,0,0,.6);}
 .char-name.npc-name{color:var(--gm-light);}
@@ -166,7 +135,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .role-badge.gm{border-color:var(--gm-light);color:var(--gm-light);background:linear-gradient(135deg, rgba(139,69,19,0.35), rgba(210,105,30,0.15));box-shadow:0 0 10px -2px rgba(210,105,30,0.6);}
 .role-badge.player{border-color:var(--teal);color:var(--teal-light);}
-
 .sync-status{
   font-size:.58rem;font-family:var(--font-mono);padding:2px 6px;border-radius:20px;
   border:1px solid var(--line);color:var(--ink-faint);white-space:nowrap;
@@ -177,13 +145,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .version-tag{font-size:.55rem;font-family:var(--font-mono);background:rgba(176,141,87,0.18);color:var(--gold-light);padding:1px 4px;border-radius:3px;margin-left:4px;border:1px solid var(--line);letter-spacing:.03em;}
 
 .icon-btn{
-  background:linear-gradient(160deg, var(--bg-card), var(--bg-elev));
-  border:1px solid var(--line);color:var(--ink-dim);
+  background:linear-gradient(160deg, var(--bg-card), var(--bg-elev));border:1px solid var(--line);color:var(--ink-dim);
   width:38px;height:38px;border-radius:50%;flex:none;font-size:1.1rem;
   display:flex;align-items:center;justify-content:center;
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.4);
-  transition:all var(--transition-fast);cursor:pointer;
-  -webkit-tap-highlight-color: transparent;
+  transition:all var(--transition-fast);cursor:pointer;-webkit-tap-highlight-color: transparent;
 }
 .icon-btn:hover{border-color:var(--gold);color:var(--gold-light);box-shadow:0 0 0 3px rgba(176,141,87,0.15), 0 2px 8px rgba(0,0,0,0.5);}
 .icon-btn:active{transform:scale(.94);}
@@ -203,8 +169,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .gauge-adjust{display:flex;gap:3px;margin-top:5px;}
 .gauge-adjust button{
   flex:1;background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
-  border-radius:var(--radius-sm);padding:8px 0;font-size:.72rem;font-family:var(--font-mono);cursor:pointer;
-  min-height:36px;
+  border-radius:var(--radius-sm);padding:8px 0;font-size:.72rem;font-family:var(--font-mono);cursor:pointer;min-height:36px;
 }
 .gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.1);}
 .gauge-adjust button:active{transform:scale(.93);}
@@ -212,33 +177,21 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 /* MAIN */
 main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .section{
-  position:relative;
-  background:linear-gradient(155deg, rgba(255,255,255,0.02), transparent 42%), var(--bg-card);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  padding:var(--spacing-md) var(--spacing-md) var(--spacing-lg);
-  margin-bottom:var(--spacing-md);
+  position:relative;background:linear-gradient(155deg, rgba(255,255,255,0.02), transparent 42%), var(--bg-card);
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:var(--spacing-md) var(--spacing-md) var(--spacing-lg);margin-bottom:var(--spacing-md);
   box-shadow:0 10px 26px -18px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.03);
 }
-.section.gm-section{
-  border-color:var(--gm-color);
-  background:linear-gradient(155deg, rgba(139,69,19,0.05), transparent 42%), var(--bg-card);
-}
-.section::before,.section::after{
-  content:'';position:absolute;width:10px;height:10px;
-  border:2px solid var(--gold);opacity:.55;pointer-events:none;
-}
-.section.gm-section::before,.section.gm-section::after{
-  border-color:var(--gm-light);
-}
+.section.gm-section{border-color:var(--gm-color);background:linear-gradient(155deg, rgba(139,69,19,0.05), transparent 42%), var(--bg-card);}
+.section::before,.section::after{content:'';position:absolute;width:10px;height:10px;border:2px solid var(--gold);opacity:.55;pointer-events:none;}
+.section.gm-section::before,.section.gm-section::after{border-color:var(--gm-light);}
 .section::before{top:-1px;left:-1px;border-right:none;border-bottom:none;border-top-left-radius:4px;}
 .section::after{bottom:-1px;right:-1px;border-left:none;border-top:none;border-bottom-right-radius:4px;}
 .section-title{
   font-family:var(--font-display);text-transform:uppercase;letter-spacing:.08em;font-size:.82rem;
   color:var(--gold-light);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px;
   display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;
-  text-shadow:0 1px 2px rgba(0,0,0,.6);
-  flex-wrap:wrap;
+  text-shadow:0 1px 2px rgba(0,0,0,.6);flex-wrap:wrap;
 }
 .section.gm-section .section-title{color:var(--gm-light);}
 .section-title::after{content:'';position:absolute;left:0;bottom:-1px;height:1px;width:64px;background:linear-gradient(90deg,var(--gold),transparent);}
@@ -306,7 +259,6 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .skill-col-headers span{text-align:center;}
 .skill-col-headers span:first-child{text-align:left;}
-
 .skill-row{
   display:grid;grid-template-columns:1fr 32px 72px 40px 32px;gap:3px;align-items:center;
   padding:6px 0;border-bottom:1px dashed var(--line);border-radius:4px;
@@ -315,18 +267,14 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .skill-row:hover{background:rgba(176,141,87,0.04);}
 .skill-row:last-child{border-bottom:none;}
 .skill-name{font-size:.82rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.skill-hybrid-select{
-  font-size:.6rem;background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);
-  border-radius:4px;padding:1px;margin-top:1px;
-}
+.skill-hybrid-select{font-size:.6rem;background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);border-radius:4px;padding:1px;margin-top:1px;}
 .skill-base{font-family:var(--font-mono);font-size:.8rem;color:var(--ink-faint);text-align:center;}
 .skill-bonus-ctrl{display:flex;align-items:center;justify-content:center;gap:1px;}
 .skill-bonus-ctrl span{font-family:var(--font-mono);font-size:.75rem;min-width:20px;text-align:center;color:var(--gold-light);}
 .skill-bonus-ctrl button{
   width:28px;height:28px;background:var(--bg-elev);border:1px solid var(--line);border-radius:3px;
   font-size:.68rem;color:var(--gold-light);display:flex;align-items:center;justify-content:center;cursor:pointer;
-  min-width:28px;min-height:28px;
-  transition:all var(--transition-fast);
+  min-width:28px;min-height:28px;transition:all var(--transition-fast);
 }
 .skill-bonus-ctrl button:hover:not(:disabled){border-color:var(--gold);background:rgba(176,141,87,0.15);}
 .skill-bonus-ctrl button:disabled{opacity:0.25;cursor:not-allowed;border-color:transparent;}
@@ -345,9 +293,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .buff-pill{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:20px;
   padding:8px 14px;font-size:.72rem;color:var(--ink-dim);cursor:pointer;user-select:none;
-  display:flex;align-items:center;gap:5px;
-  transition:all var(--transition-fast);
-  min-height:36px;
+  display:flex;align-items:center;gap:5px;transition:all var(--transition-fast);min-height:36px;
 }
 .buff-pill:hover{border-color:var(--line-strong);transform:translateY(-1px);}
 .buff-pill:active{transform:scale(0.95);}
@@ -359,9 +305,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .combat-quick-btn{
   background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:14px 8px;display:flex;flex-direction:column;gap:3px;align-items:center;cursor:pointer;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
-  transition:all var(--transition-fast);
-  min-height:60px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);transition:all var(--transition-fast);min-height:60px;
 }
 .combat-quick-btn:hover{border-color:var(--blood-light);box-shadow:0 0 12px -3px rgba(var(--accent-rgb),0.5);transform:translateY(-2px);}
 .combat-quick-btn:active{transform:scale(.97);}
@@ -383,8 +327,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .row-del{
   background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);border-radius:7px;
   width:36px;height:36px;font-size:.85rem;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
-  min-width:36px;min-height:36px;
-  transition:all var(--transition-fast);
+  min-width:36px;min-height:36px;transition:all var(--transition-fast);
 }
 .row-del:hover{border-color:var(--danger);color:var(--danger);background:rgba(192,57,43,0.1);}
 .row-del:active{transform:scale(0.9);}
@@ -395,7 +338,6 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .stone-row{grid-template-columns:85px 1fr 36px;}
 .text-row{grid-template-columns:1fr 36px;}
 .god-row{grid-template-columns:1fr 1fr 1fr 36px;}
-
 @media(max-width:480px){
   .armor-row{grid-template-columns:1fr 1fr 36px;}
   .spell-row{grid-template-columns:1fr 1fr 36px;}
@@ -418,8 +360,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .creature-card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;flex-wrap:wrap;}
 .creature-name-input{
   flex:1;min-width:0;background:transparent;border:none;border-bottom:1px solid var(--line-strong);
-  color:var(--gold-light);font-family:var(--font-display);font-size:1.02rem;padding:3px;min-height:36px;
-  width:100%;
+  color:var(--gold-light);font-family:var(--font-display);font-size:1.02rem;padding:3px;min-height:36px;width:100%;
 }
 .creature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px 9px;margin-bottom:9px;}
 .creature-field{display:flex;flex-direction:column;gap:2px;min-width:0;}
@@ -434,15 +375,13 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .item-card{
   position:relative;background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border-radius:var(--radius-sm);padding:11px 13px;margin-bottom:9px;
   border-left:4px solid var(--line);border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
-  box-shadow:0 6px 16px -12px rgba(0,0,0,0.7);
-  transition:transform var(--transition-fast);
+  box-shadow:0 6px 16px -12px rgba(0,0,0,0.7);transition:transform var(--transition-fast);
 }
 .item-card:hover{transform:translateX(2px);}
 .item-card.rarity-comun{border-left-color:#A89F91;}
 .item-card.rarity-rara{border-left-color:#60A5FA;box-shadow:0 6px 16px -12px rgba(0,0,0,0.7), -3px 0 14px -8px rgba(96,165,250,0.4);}
 .item-card.rarity-muyrara{border-left-color:#C084FC;box-shadow:0 6px 16px -12px rgba(0,0,0,0.7), -3px 0 14px -8px rgba(192,132,252,0.45);}
 .item-card.rarity-legendaria{border-left-color:#FDE047;box-shadow:0 6px 16px -12px rgba(0,0,0,0.7), -3px 0 18px -6px rgba(253,224,71,0.5);}
-
 .item-badge{font-size:.56rem;font-family:var(--font-mono);font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:20px;letter-spacing:.03em;}
 .badge-comun{background:rgba(168,159,145,0.15);color:#C2B196;border:1px solid rgba(168,159,145,0.4);}
 .badge-rara{background:rgba(96,165,250,0.15);color:#93C5FD;border:1px solid rgba(96,165,250,0.4);}
@@ -456,8 +395,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .f-pill{
   background:var(--bg-elev);border:1px solid var(--line);border-radius:14px;
   padding:6px 12px;font-size:.68rem;color:var(--ink-dim);white-space:nowrap;cursor:pointer;flex:none;
-  transition:all var(--transition-fast);
-  min-height:36px;
+  transition:all var(--transition-fast);min-height:36px;
 }
 .f-pill:hover{border-color:var(--line-strong);transform:translateY(-1px);}
 .f-pill:active{transform:scale(0.95);}
@@ -479,9 +417,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .btn-compact{
   padding:8px 14px;font-size:.72rem;text-transform:uppercase;letter-spacing:.02em;border-radius:5px;
   border:1px solid var(--line);background:var(--bg-card);color:var(--ink-dim);cursor:pointer;
-  transition:all var(--transition-fast);
-  min-height:36px;
-  white-space:nowrap;
+  transition:all var(--transition-fast);min-height:36px;white-space:nowrap;
 }
 .btn-compact:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.08);transform:translateY(-1px);}
 .btn-compact:active{transform:scale(.97);}
@@ -489,9 +425,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   background:linear-gradient(160deg, var(--gold-light), var(--gold));color:#1A1207;font-weight:700;border:1px solid rgba(0,0,0,0.2);
   padding:8px 14px;font-size:.72rem;text-transform:uppercase;letter-spacing:.02em;border-radius:var(--radius-sm);cursor:pointer;
   box-shadow:0 3px 10px -3px rgba(176,141,87,0.6), inset 0 1px 0 rgba(255,255,255,0.35);
-  transition:all var(--transition-fast);
-  min-height:36px;
-  white-space:nowrap;
+  transition:all var(--transition-fast);min-height:36px;white-space:nowrap;
 }
 .btn-solid-gold:hover{background:linear-gradient(160deg, #F0DBAE, var(--gold-light));box-shadow:0 4px 14px -3px rgba(176,141,87,0.75), inset 0 1px 0 rgba(255,255,255,0.4);transform:translateY(-1px);}
 .btn-solid-gold:active{transform:scale(.97);}
@@ -499,14 +433,12 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   background:linear-gradient(160deg, var(--gm-light), var(--gm-color));color:#FFF;font-weight:700;border:1px solid rgba(0,0,0,0.2);
   padding:8px 14px;font-size:.72rem;text-transform:uppercase;letter-spacing:.02em;border-radius:var(--radius-sm);cursor:pointer;
   box-shadow:0 3px 10px -3px rgba(210,105,30,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
-  transition:all var(--transition-fast);
-  min-height:36px;
-  white-space:nowrap;
+  transition:all var(--transition-fast);min-height:36px;white-space:nowrap;
 }
 .btn-gm:hover{background:linear-gradient(160deg, #E8842C, var(--gm-light));box-shadow:0 4px 14px -3px rgba(210,105,30,0.75), inset 0 1px 0 rgba(255,255,255,0.3);transform:translateY(-1px);}
 .btn-gm:active{transform:scale(.97);}
 
-/* TABBAR - CENTRADO EN PC, SCROLL EN MOVIL */
+/* TABBAR */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:1040px;margin:0 auto;
   background:linear-gradient(0deg, var(--bg-elev) 82%, rgba(26,18,13,0.97));
@@ -514,20 +446,15 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   box-shadow:0 -1px 0 var(--line-strong), 0 -10px 24px -14px rgba(0,0,0,0.7);
   display:flex;padding:7px 4px calc(7px + env(safe-area-inset-bottom));
   overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
-  backdrop-filter:blur(10px);
-  justify-content:center;
+  backdrop-filter:blur(10px);justify-content:center;
 }
 .tabbar::-webkit-scrollbar{display:none;}
-@media(max-width:768px){
-  .tabbar{justify-content:flex-start;}
-}
+@media(max-width:768px){.tabbar{justify-content:flex-start;}}
 .tab-btn{
   flex:0 0 auto;min-width:62px;background:none;border:none;color:var(--ink-faint);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;padding:4px 3px;font-size:.56rem;text-transform:uppercase;letter-spacing:.02em;cursor:pointer;
-  border-radius:8px;transition:color var(--transition-fast);
-  min-height:48px;
-  position:relative;
+  border-radius:8px;transition:color var(--transition-fast);min-height:48px;position:relative;
 }
 .tab-btn span{display:block;width:100%;text-align:center;pointer-events:none;}
 .tab-btn::before{display:block;font-size:1.15rem;line-height:1.1;text-align:center;filter:grayscale(.4) opacity(.7);transition:filter var(--transition-fast), transform var(--transition-fast);pointer-events:none;}
@@ -539,7 +466,6 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="alquimia"]::before{content:'🧪';}
 .tab-btn[data-tab="invocaciones"]::before{content:'🐉';}
 .tab-btn[data-tab="bestiario"]::before{content:'🐾';}
-.tab-btn[data-tab="npcs"]::before{content:'👥';}
 .tab-btn[data-tab="extra"]::before{content:'🔮';}
 .tab-btn[data-tab="mundo"]::before{content:'🗺️';}
 .tab-btn.gm-tab{color:var(--gm-light);}
@@ -550,58 +476,33 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn.active.gm-tab{color:var(--gm-light);background:rgba(210,105,30,0.1);}
 .tab-btn.active::before{filter:none;transform:translateY(-1px);}
 .tab-btn.active::after{content:'';display:block;width:16px;height:2px;background:linear-gradient(90deg,transparent,var(--blood-light),transparent);border-radius:2px;margin:2px auto 0;box-shadow:0 0 6px var(--blood-light);}
-.tab-btn.active.gm-tab::after{content:'GM';position:absolute;top:2px;right:2px;width:auto;height:auto;background:none;font-size:.45rem;color:var(--gm-light);}
 
 /* FAB DICE */
 .fab-dice{
   position:fixed;right:16px;bottom:74px;z-index:9999;width:58px;height:58px;border-radius:50%;
-  background:linear-gradient(135deg, #2b1f14, #120d0a);
-  border:2.5px solid var(--gold);
-  color:var(--gold-light);
-  font-size:1.6rem;
-  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg, #2b1f14, #120d0a);border:2.5px solid var(--gold);color:var(--gold-light);
+  font-size:1.6rem;display:flex;align-items:center;justify-content:center;
   box-shadow:0 8px 24px rgba(0,0,0,0.8), inset 0 0 12px rgba(176,141,87,0.35), 0 0 0 3px rgba(18,13,10,0.8);
   cursor:pointer;pointer-events:auto;
   transition:transform var(--transition-normal) cubic-bezier(.3,1.5,.5,1), box-shadow var(--transition-normal), border-color var(--transition-normal);
 }
-.fab-dice::before{
-  content:'';position:absolute;inset:3px;border-radius:50%;
-  border:1px dashed rgba(176,141,87,0.45);pointer-events:none;
-}
-.fab-dice:hover{
-  border-color:var(--gold-light);
-  transform:scale(1.08) rotate(4deg);
-  box-shadow:0 12px 30px rgba(0,0,0,0.85), inset 0 0 16px rgba(222,195,146,0.5), 0 0 0 4px rgba(176,141,87,0.3);
-}
+.fab-dice::before{content:'';position:absolute;inset:3px;border-radius:50%;border:1px dashed rgba(176,141,87,0.45);pointer-events:none;}
+.fab-dice:hover{border-color:var(--gold-light);transform:scale(1.08) rotate(4deg);box-shadow:0 12px 30px rgba(0,0,0,0.85), inset 0 0 16px rgba(222,195,146,0.5), 0 0 0 4px rgba(176,141,87,0.3);}
 .fab-dice:active{transform:scale(.94) rotate(-10deg);}
 
-/* MODALES Y MENÚ DE DADOS */
-@keyframes rollPop{
-  0%{opacity:0;transform:scale(.85) translateY(10px);}
-  100%{opacity:1;transform:scale(1) translateY(0);}
-}
-@keyframes rollGlowPulse{
-  0%,100%{opacity:.5;}
-  50%{opacity:1;}
-}
+/* MODALES */
+@keyframes rollPop{0%{opacity:0;transform:scale(.85) translateY(10px);}100%{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes rollGlowPulse{0%,100%{opacity:.5;}50%{opacity:1;}}
 .roll-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(8,5,4,0.88);padding:16px;backdrop-filter:blur(4px);}
 .roll-overlay.hidden{display:none;}
 .roll-box{
-  position:relative;
-  background:linear-gradient(165deg, #1d140e, #120d0a);
-  border:2px solid var(--gold);
-  border-radius:24px;
+  position:relative;background:linear-gradient(165deg, #1d140e, #120d0a);border:2px solid var(--gold);border-radius:24px;
   padding:28px 22px 24px;text-align:center;width:100%;max-width:320px;
   box-shadow:0 25px 70px rgba(0,0,0,0.9), inset 0 0 25px rgba(176,141,87,0.25), 0 0 0 4px rgba(10,7,5,0.9);
   animation:rollPop .28s cubic-bezier(.2,.9,.3,1.2);
 }
-.roll-box::before{
-  content:'';position:absolute;inset:6px;border:1px solid rgba(176,141,87,0.3);border-radius:18px;pointer-events:none;
-}
-.roll-box::after{
-  content:'◆';position:absolute;top:-12px;left:50%;transform:translateX(-50%);
-  background:#120D0A;color:var(--gold);padding:0 10px;font-size:.8rem;letter-spacing:.1em;
-}
+.roll-box::before{content:'';position:absolute;inset:6px;border:1px solid rgba(176,141,87,0.3);border-radius:18px;pointer-events:none;}
+.roll-box::after{content:'◆';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#120D0A;color:var(--gold);padding:0 10px;font-size:.8rem;letter-spacing:.1em;}
 .roll-score{font-family:var(--font-display);font-size:3.4rem;font-weight:700;color:var(--gold-light);line-height:1;margin:10px 0;text-shadow:0 0 20px rgba(176,141,87,0.6), 0 2px 4px rgba(0,0,0,0.9);}
 .roll-score.crit{color:#FDE047;text-shadow:0 0 25px rgba(253,224,71,0.95), 0 2px 4px rgba(0,0,0,0.9);animation:rollGlowPulse 1s ease-in-out infinite;}
 .roll-score.fumble{color:var(--danger);text-shadow:0 0 25px rgba(192,57,43,0.95), 0 2px 4px rgba(0,0,0,0.9);}
@@ -610,38 +511,20 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .adv-die-card.chosen{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.2);box-shadow:0 0 10px -2px rgba(176,141,87,0.5);}
 .adv-die-card.discarded{opacity:0.35;text-decoration:line-through;border-color:var(--danger);}
 
-/* DADOS EN MENÚ LIBRE */
 .dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
 @media(max-width:360px){.dtype-grid{grid-template-columns:repeat(3,1fr);}}
 .dtype-card{
-  background:linear-gradient(145deg, #1f1610, #140e0a);
-  border:1.5px solid var(--line);
-  color:var(--ink-dim);
-  border-radius:10px;
-  padding:10px 4px;
-  display:flex;flex-direction:column;align-items:center;gap:5px;
-  cursor:pointer;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 3px 8px rgba(0,0,0,0.4);
-  transition:all var(--transition-fast);
-  min-height:70px;
+  background:linear-gradient(145deg, #1f1610, #140e0a);border:1.5px solid var(--line);color:var(--ink-dim);
+  border-radius:10px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:5px;
+  cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 3px 8px rgba(0,0,0,0.4);
+  transition:all var(--transition-fast);min-height:70px;
 }
-.dtype-card:hover{
-  border-color:var(--gold);
-  color:var(--gold-light);
-  transform:translateY(-2px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 5px 12px rgba(0,0,0,0.5);
-}
+.dtype-card:hover{border-color:var(--gold);color:var(--gold-light);transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 5px 12px rgba(0,0,0,0.5);}
 .dtype-card:active{transform:scale(0.95);}
-.dtype-card.active{
-  border-color:var(--gold-light);
-  color:var(--gold-light);
-  background:linear-gradient(145deg, #322319, #1a120d);
-  box-shadow:0 0 14px -2px rgba(176,141,87,0.6), inset 0 0 8px rgba(176,141,87,0.25);
-}
+.dtype-card.active{border-color:var(--gold-light);color:var(--gold-light);background:linear-gradient(145deg, #322319, #1a120d);box-shadow:0 0 14px -2px rgba(176,141,87,0.6), inset 0 0 8px rgba(176,141,87,0.25);}
 .dtype-card svg{width:36px;height:36px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));}
 .dtype-card span{font-family:var(--font-mono);font-size:.78rem;font-weight:700;letter-spacing:.05em;}
 
-/* HISTORIAL DE TIRADAS */
 .roll-log{display:flex;flex-direction:column;gap:6px;}
 .roll-log-item{
   display:flex;justify-content:space-between;align-items:center;gap:10px;
@@ -652,15 +535,11 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .roll-log-item .rl-result{font-family:var(--font-mono);font-weight:700;font-size:1.05rem;color:var(--gold-light);flex:none;}
 .roll-empty{font-size:.8rem;color:var(--ink-faint);font-style:italic;padding:6px 2px;}
 
-@keyframes modalPop{
-  0%{opacity:0;transform:scale(.94) translateY(8px);}
-  100%{opacity:1;transform:scale(1) translateY(0);}
-}
+@keyframes modalPop{0%{opacity:0;transform:scale(.94) translateY(8px);}100%{opacity:1;transform:scale(1) translateY(0);}}
 .modal-overlay{position:fixed;inset:0;background:rgba(8,5,4,0.82);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);}
 .modal-overlay.hidden{display:none;}
 .modal{
-  position:relative;
-  background:linear-gradient(165deg, var(--bg-elev), var(--bg-card));border:1.5px solid var(--line-strong);border-radius:16px;
+  position:relative;background:linear-gradient(165deg, var(--bg-elev), var(--bg-card));border:1.5px solid var(--line-strong);border-radius:16px;
   width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px;
   box-shadow:0 20px 60px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(176,141,87,0.08);
   animation:modalPop .22s ease;
@@ -687,10 +566,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.1rem;color:var(--ink);
   background-size:cover;background-position:center;box-shadow:0 3px 8px rgba(0,0,0,0.5);
 }
-.char-list-avatar.npc-avatar{
-  border-color:var(--gm-light);
-  background:radial-gradient(circle at 32% 26%, var(--gm-light), var(--gm-color) 78%);
-}
+.char-list-avatar.npc-avatar{border-color:var(--gm-light);background:radial-gradient(circle at 32% 26%, var(--gm-light), var(--gm-color) 78%);}
 .char-list-item .cli-info{flex:1;min-width:0;background:none;border:none;text-align:left;color:var(--ink);padding:0;}
 .char-list-item .cli-name{font-family:var(--font-display);font-size:1.05rem;color:var(--gold-light);}
 .char-list-item .cli-name.npc-name{color:var(--gm-light);}
@@ -705,43 +581,13 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .swatch-pink{background:#8C3B62;}
 .swatch-green{background:#2B4A22;}
 
-/* SWIPE GESTURE INDICATOR */
 .swipe-indicator{
-  position:fixed;
-  bottom:80px;
-  left:50%;
-  transform:translateX(-50%);
-  background:rgba(18,13,10,0.9);
-  border:1px solid var(--line);
-  border-radius:20px;
-  padding:4px 12px;
-  font-size:.6rem;
-  color:var(--ink-faint);
-  pointer-events:none;
-  opacity:0;
-  transition:opacity var(--transition-normal);
-  z-index:50;
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  background:rgba(18,13,10,0.9);border:1px solid var(--line);border-radius:20px;
+  padding:4px 12px;font-size:.6rem;color:var(--ink-faint);pointer-events:none;
+  opacity:0;transition:opacity var(--transition-normal);z-index:50;
 }
 .swipe-indicator.visible{opacity:1;}
-
-/* NPC VIEW BANNER */
-.npc-banner{
-  background:linear-gradient(135deg, rgba(210,105,30,0.2), rgba(139,69,19,0.1));
-  border:1px solid var(--gm-light);
-  border-radius:var(--radius-sm);
-  padding:8px 12px;
-  margin-bottom:12px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.npc-banner span{
-  font-size:.75rem;
-  color:var(--gm-light);
-  font-weight:700;
-}
 </style>
 </head>
 <body>
@@ -779,7 +625,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV210";
+var STORAGE_KEY = "krysalisFichasV300";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -834,7 +680,6 @@ function num(v,d){ var n=parseFloat(v); return isNaN(n)?(d||0):n; }
 function rollDie(sides){ return Math.floor(Math.random()*sides)+1; }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
-// TOAST SYSTEM
 function showToast(message, type){
   type = type || "info";
   var container = document.getElementById("toastContainer");
@@ -843,9 +688,7 @@ function showToast(message, type){
   toast.setAttribute("role", "alert");
   toast.textContent = message;
   container.appendChild(toast);
-  setTimeout(function(){
-    if(toast.parentNode) toast.parentNode.removeChild(toast);
-  }, 3300);
+  setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3300);
 }
 
 var state = null;
@@ -860,11 +703,6 @@ var loreContinentFilter = "Todos";
 var loreTypeFilter = "Todos";
 var loreTerrainFilter = "Todos";
 var currentLoreSubtab = "objetos";
-var npcFilter = "Todos";
-
-// VIEW MODE: 'character' o 'npc'
-var viewMode = 'character';
-var activeNPCId = null;
 
 function getSeedWeaponsCatalog(){
   return [
@@ -924,7 +762,7 @@ function getSeedLore(){
 
 function defaultState(){
   return {
-    activeId:"", activeTab:"ficha", rollLog:[], characters:[], npcs:[],
+    activeId:"", activeTab:"ficha", rollLog:[], characters:[],
     weaponsCatalog: getSeedWeaponsCatalog(),
     lore:getSeedLore(), bestiary:getSeedBestiary(),
     maps:[{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }],
@@ -941,9 +779,6 @@ function migrateState(s){
     s.maps = [{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }];
     s.activeMapId = "world_main";
   }
-  if(!s.npcs) s.npcs=[];
-  
-  // Ensure visible property exists
   (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });
   (s.bestiary||[]).forEach(function(b){ if(b.visible===undefined) b.visible=true; });
   ["pistas","npcs","objetos"].forEach(function(cat){
@@ -951,7 +786,6 @@ function migrateState(s){
       s.lore[cat].forEach(function(item){ if(item.visible===undefined) item.visible=true; });
     }
   });
-  
   (s.characters||[]).forEach(function(c){
     if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10};
     if(c.combat.escudoActual===undefined) c.combat.escudoActual=0;
@@ -960,16 +794,6 @@ function migrateState(s){
     if(!c.poisons) c.poisons=[];
     if(!c.skillProgress) c.skillProgress={};
     if(c.skillPointsUnlocked===undefined) c.skillPointsUnlocked=false;
-  });
-  (s.npcs||[]).forEach(function(n){
-    if(!n.combat) n.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10};
-    if(n.combat.escudoActual===undefined) n.combat.escudoActual=0;
-    if(!n.customSkills) n.customSkills=[];
-    if(n.skillPoints===undefined) n.skillPoints=0;
-    if(!n.poisons) n.poisons=[];
-    if(!n.skillProgress) n.skillProgress={};
-    if(n.skillPointsUnlocked===undefined) n.skillPointsUnlocked=false;
-    n.isNPC = true;
   });
   return s;
 }
@@ -1005,17 +829,16 @@ function updateSyncBadge(st){
 }
 
 function isGM(){ return currentRole==='gm'; }
+function getUserCharacters(){
+  if(isGM()) return state.characters;
+  if(!currentUser) return state.characters.filter(function(c){ return !c.isNPC; });
+  return state.characters.filter(function(c){ 
+    return c.owner_id === currentUser.id || (!c.owner_id && !c.isNPC);
+  });
+}
 function activeChar(){
-  return state.characters.find(function(x){return x.id===state.activeId;}) || state.characters[0] || blankCharacter("Sin Personaje");
-}
-function activeNPC(){
-  return state.npcs.find(function(x){return x.id===activeNPCId;});
-}
-function getCurrentEntity(){
-  if(viewMode==='npc' && activeNPC()){
-    return activeNPC();
-  }
-  return activeChar();
+  var chars = getUserCharacters();
+  return chars.find(function(x){return x.id===state.activeId;}) || chars[0] || blankCharacter("Sin Personaje");
 }
 
 function getEffectiveAttr(aKey, c){
@@ -1031,15 +854,10 @@ function skillBase(skill, c){
 function skillTotal(skill, c){ return skillBase(skill, c) + num(c.skillBonus[skill.id],0); }
 function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
 
-/* WEB AUDIO */
 var audioCtx = null;
 function getAudioCtx(){
-  if(!audioCtx){
-    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
-  }
-  if(audioCtx && audioCtx.state==='suspended'){
-    audioCtx.resume();
-  }
+  if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
   return audioCtx;
 }
 function playDiceAudio(type){
@@ -1101,7 +919,7 @@ function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, ad
 }
 
 function performD10Roll(charName, label, mod){
-  var c = getCurrentEntity();
+  var c = activeChar();
   var extra = 0;
   if(c.buffs){
     if(c.buffs.sangre_ataque_melee && label.includes("melé")) extra += 1;
@@ -1135,7 +953,7 @@ function performWeaponRoll(charName, weaponName, formulaRaw){
 
 /* RENDER VISTAS */
 function renderTopbar(){
-  var c = getCurrentEntity();
+  var c = activeChar();
   document.body.setAttribute("data-theme", c.theme||"default");
   var maxHp = Math.max(1, num(c.combat.pvMax, 1));
   var maxMana = Math.max(1, num(c.combat.manaMax, 1));
@@ -1145,14 +963,13 @@ function renderTopbar(){
   var isNPC = !!c.isNPC;
   var crestClass = isNPC ? 'char-crest npc' : 'char-crest';
   var nameClass = isNPC ? 'char-name npc-name' : 'char-name';
-  var switchAction = isNPC ? 'open-npc-list' : 'open-char-modal';
 
   document.getElementById("topbar").innerHTML =
     '<div class="topbar-row">'+
-      '<button class="char-switch" data-action="'+switchAction+'" aria-label="Cambiar personaje">'+
+      '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v2.1</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.0</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1193,14 +1010,14 @@ function renderTopbar(){
 var PLAYER_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
-  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}
+  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"mundo",label:"Mundo"}
 ];
 
 var GM_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
-  {id:"npcs",label:"NPCs",gm:true}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo",gm:true}
+  {id:"extra",label:"Extra",gm:true}, {id:"mundo",label:"Mundo"}
 ];
 
 function renderTabbar(){
@@ -1214,36 +1031,18 @@ function renderTabbar(){
 
 function renderTab(){
   var main = document.getElementById("main");
-  var c = getCurrentEntity();
+  var c = activeChar();
   
-  if(viewMode==='npc' && activeNPC()){
-    // NPC view with banner
-    var npcBanner = '<div class="npc-banner"><span>👥 Modo NPC: '+esc(activeNPC().name)+'</span><button class="btn-compact" data-action="exit-npc-mode">← Volver a mi personaje</button></div>';
-    
-    if(state.activeTab==="ficha") main.innerHTML = npcBanner + tplFicha(c);
-    else if(state.activeTab==="habilidades") main.innerHTML = npcBanner + tplHabilidades(c);
-    else if(state.activeTab==="combate") main.innerHTML = npcBanner + tplCombate(c);
-    else if(state.activeTab==="inventario") main.innerHTML = npcBanner + tplInventario(c);
-    else if(state.activeTab==="magia") main.innerHTML = npcBanner + tplMagia(c);
-    else if(state.activeTab==="alquimia") main.innerHTML = npcBanner + tplAlquimia(c);
-    else if(state.activeTab==="invocaciones") main.innerHTML = npcBanner + tplInvocaciones(c);
-    else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
-    else if(state.activeTab==="extra") main.innerHTML = npcBanner + tplExtra(c);
-    else if(state.activeTab==="mundo" && isGM()) main.innerHTML = tplMundo(state);
-    else main.innerHTML = npcBanner + tplNPCList(state);
-  } else {
-    if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
-    else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
-    else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
-    else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
-    else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
-    else if(state.activeTab==="alquimia") main.innerHTML = tplAlquimia(c);
-    else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
-    else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
-    else if(state.activeTab==="npcs" && isGM()) main.innerHTML = tplNPCList(state);
-    else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
-    else if(state.activeTab==="mundo" && isGM()) main.innerHTML = tplMundo(state);
-  }
+  if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
+  else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
+  else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
+  else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
+  else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
+  else if(state.activeTab==="alquimia") main.innerHTML = tplAlquimia(c);
+  else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
+  else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
+  else if(state.activeTab==="extra" && isGM()) main.innerHTML = tplExtra(c);
+  else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
   
   main.scrollTop = 0;
   window.scrollTo(0, 0);
@@ -1292,40 +1091,6 @@ function tplFicha(c){
     '<div class="section-title"><span>Atributos Base</span></div>'+
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>';
-}
-
-function tplNPCList(s){
-  var html = '<div class="section gm-section">'+
-    '<div class="section-title"><span>Gestión de NPCs (Solo GM)</span></div>'+
-    '<div class="filter-pills" style="margin-bottom:10px;">'+
-      '<button class="f-pill '+(npcFilter==="Todos"?'active':'')+'" data-action="set-npc-filter" data-val="Todos">Todos</button>'+
-      '<button class="f-pill '+(npcFilter==="Aliado"?'active':'')+'" data-action="set-npc-filter" data-val="Aliado">Aliados</button>'+
-      '<button class="f-pill '+(npcFilter==="Neutral"?'active':'')+'" data-action="set-npc-filter" data-val="Neutral">Neutrales</button>'+
-      '<button class="f-pill '+(npcFilter==="Enemigo"?'active':'')+'" data-action="set-npc-filter" data-val="Enemigo">Enemigos</button>'+
-    '</div>';
-
-  var filteredNPCs = (s.npcs||[]).filter(function(n){
-    return npcFilter==="Todos" || (n.trabajo||"Neutral")===npcFilter;
-  });
-
-  if(filteredNPCs.length===0){
-    html += '<div class="roll-empty">No hay NPCs creados. Crea uno nuevo para gestionar tus personajes no jugadores.</div>';
-  } else {
-    filteredNPCs.forEach(function(n){
-      var crestStyle = n.portrait ? ' style="background-image:url(\''+n.portrait+'\')"' : '';
-      html += '<div class="char-list-item npc-item" data-action="open-npc" data-id="'+n.id+'">'+
-        '<div class="char-list-avatar npc-avatar"'+crestStyle+'>'+(n.portrait?'':esc(n.name.charAt(0).toUpperCase()))+'</div>'+
-        '<div class="cli-info">'+
-          '<div class="cli-name npc-name">'+esc(n.name)+'</div>'+
-          '<div class="cli-sub">Nivel '+esc(n.nivel||"1")+' · '+esc(n.trabajo||"Neutral")+'</div>'+
-        '</div>'+
-        '<button class="row-del" data-action="del-npc" data-id="'+n.id+'" onclick="event.stopPropagation()" aria-label="Eliminar NPC">✕</button>'+
-      '</div>';
-    });
-  }
-
-  html += '<button class="btn-gm" style="width:100%;margin-top:10px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button></div>';
-  return html;
 }
 
 function field(label,bind,val,type){
@@ -1721,7 +1486,7 @@ var currentWorldSubtab = "mapas";
 
 function tplMundo(s){
   var subtab = currentWorldSubtab || "mapas";
-  var html = '<div class="section gm-section" style="margin-bottom:10px;">'+
+  var html = '<div class="section" style="margin-bottom:10px;">'+
     '<div class="filter-pills">'+
       '<button class="f-pill '+(subtab==='mapas'?'active':'')+'" data-action="set-world-subtab" data-val="mapas">🗺️ Mapas</button>'+
       '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">⚔️ Catálogo de Armas</button>'+
@@ -1747,58 +1512,68 @@ function tplMundoMapas(s){
     return '<button class="f-pill '+(s.activeMapId===m.id?'active':'')+'" data-action="switch-map" data-id="'+m.id+'">'+esc(m.name)+'</button>';
   }).join('');
 
-  var html = '<div class="section gm-section"><div class="section-title">'+
-    '<span>Cartografía y Mapas (GM)</span>'+
-    '<div style="display:flex;gap:6px;">'+
+  var canEdit = isGM();
+  var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title">'+
+    '<span>'+(canEdit?'Cartografía y Mapas (GM)':'Cartografía y Mapas')+'</span>'+
+    (canEdit?'<div style="display:flex;gap:6px;">'+
       '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga">🔄 Sincronizar Mapa</button>'+
       '<button class="btn-compact" data-action="add-new-map">+ Nuevo Mapa</button>'+
-    '</div>'+
+    '</div>':'')+
   '</div>'+
   '<div class="filter-pills" style="margin-bottom:10px;">'+mapTabs+'</div>';
 
   if(curMap.image){
-    html += '<div class="map-viewer" data-action="map-click">'+
+    html += '<div class="map-viewer" data-action="'+(canEdit?'map-click':'')+'">'+
       '<img src="'+curMap.image+'" alt="Mapa">'+
       (curMap.markers||[]).map(function(m){
         var kindClass = m.kind==="Capital"?"pin-capital":m.kind==="Punto de Interés"?"pin-poi":m.kind==="Peligro"?"pin-peligro":"pin-ciudad";
-        return '<div class="map-pin '+kindClass+'" style="left:'+m.x+'%;top:'+m.y+'%;" data-action="edit-pin" data-id="'+m.id+'">'+
+        return '<div class="map-pin '+kindClass+'" style="left:'+m.x+'%;top:'+m.y+'%;" data-action="'+(canEdit?'edit-pin':'')+'" data-id="'+m.id+'">'+
           '<div class="pin-glyph"></div><div class="pin-tag">'+esc(m.name)+'</div>'+
         '</div>';
       }).join('')+
     '</div>';
   } else {
-    html += '<div class="map-viewer" style="display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:.82rem;padding:40px 10px;">Sin imagen cargada en '+esc(curMap.name)+'. Sube una abajo.</div>';
+    html += '<div class="map-viewer" style="display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:.82rem;padding:40px 10px;">Sin imagen cargada en '+esc(curMap.name)+'.</div>';
   }
-  html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">'+
-    '<button class="btn-compact" data-action="upload-map">Subir / Cambiar Imagen</button>'+
-    (curMap.image?'<button class="btn-compact" data-action="remove-map">Quitar Imagen</button>':'')+
-    (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map">Borrar Mapa</button>':'')+
-  '</div>'+
-  '</div>';
+  
+  if(canEdit){
+    html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">'+
+      '<button class="btn-compact" data-action="upload-map">Subir / Cambiar Imagen</button>'+
+      (curMap.image?'<button class="btn-compact" data-action="remove-map">Quitar Imagen</button>':'')+
+      (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map">Borrar Mapa</button>':'')+
+    '</div>';
+  }
+  html += '</div>';
   return html;
 }
 
 function tplMundoArmas(s){
-  var catalog = s.weaponsCatalog || [];
-  var html = '<div class="section gm-section"><div class="section-title"><span>Catálogo Global de Armas (Compendio GM)</span></div>';
+  var catalog = (s.weaponsCatalog||[]).filter(function(w){ return isGM() || w.visible !== false; });
+  var canEdit = isGM();
+  var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title"><span>'+(canEdit?'Catálogo de Armas (GM)':'Catálogo de Armas')+'</span></div>';
+  
   catalog.forEach(function(w){
     html += '<div class="creature-card">'+
       '<div class="creature-card-header">'+
-        '<input type="text" class="creature-name-input" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.name" value="'+esc(w.name)+'" placeholder="Nombre del arma">'+
-        '<div style="display:flex;gap:4px;align-items:center;">'+
+        (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.name" value="'+esc(w.name)+'" placeholder="Nombre del arma">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(w.name)+'</div>')+
+        (canEdit ? '<div style="display:flex;gap:4px;align-items:center;">'+
           '<button class="btn-compact" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="Mostrar/Ocultar para jugadores">'+(w.visible!==false?'👁️':'🙈')+'</button>'+
           '<button class="row-del" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'+
-        '</div>'+
+        '</div>' : '')+
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr;">'+
-        '<div class="creature-field"><label>Daño Base</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.dano" value="'+esc(w.dano)+'"></div>'+
-        '<div class="creature-field"><label>Alcance</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.alcance" value="'+esc(w.alcance)+'"></div>'+
+        (canEdit ? '<div class="creature-field"><label>Daño Base</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.dano" value="'+esc(w.dano)+'"></div>' : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(w.dano||"-")+'</span></div>')+
+        (canEdit ? '<div class="creature-field"><label>Alcance</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.alcance" value="'+esc(w.alcance)+'"></div>' : '<div class="creature-field"><label>Alcance</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(w.alcance||"-")+'</span></div>')+
       '</div>'+
-      '<div class="creature-field" style="margin-bottom:6px;"><label style="color:#FDE047;">Efecto en Crítico</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.critico" value="'+esc(w.critico)+'" placeholder="Ej: Doble daño / Sangrado"></div>'+
-      '<div class="creature-field"><label>Descripción / Lore</label><textarea class="creature-notes" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.desc">'+esc(w.desc)+'</textarea></div>'+
+      (canEdit ? '<div class="creature-field" style="margin-bottom:6px;"><label style="color:#FDE047;">Efecto en Crítico</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.critico" value="'+esc(w.critico)+'" placeholder="Ej: Doble daño / Sangrado"></div>' : (w.critico?'<p style="font-size:.75rem;color:#FDE047;margin-bottom:6px;"><b>Crítico:</b> '+esc(w.critico)+'</p>':''))+
+      (canEdit ? '<div class="creature-field"><label>Descripción / Lore</label><textarea class="creature-notes" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.desc">'+esc(w.desc)+'</textarea></div>' : (w.desc?'<p style="font-size:.78rem;color:var(--ink-dim);">'+esc(w.desc)+'</p>':''))+
     '</div>';
   });
-  html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-global-weapon">+ Añadir nueva arma al compendio global</button></div>';
+  
+  if(canEdit){
+    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-global-weapon">+ Añadir nueva arma al compendio global</button>';
+  }
+  html += '</div>';
   return html;
 }
 
@@ -1807,7 +1582,8 @@ function tplMundoLore(s){
   var typePills = TIPOS_OBJETO.map(function(t){return '<button class="f-pill '+(loreTypeFilter===t?'active':'')+'" data-action="set-lore-type" data-val="'+t+'">'+t+'</button>';}).join('');
   var terrPills = TERRENOS.map(function(tr){return '<button class="f-pill '+(loreTerrainFilter===tr?'active':'')+'" data-action="set-lore-terrain" data-val="'+tr+'">'+tr+'</button>';}).join('');
 
-  var html = '<div class="section gm-section"><div class="section-title"><span>Compendio de Lore, Fauna y Flora (GM)</span></div>'+
+  var canEdit = isGM();
+  var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title"><span>'+(canEdit?'Compendio de Lore, Fauna y Flora (GM)':'Compendio de Lore, Fauna y Flora')+'</span></div>'+
     '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+contPills+'</div></div>'+
     (currentLoreSubtab==="objetos"?
       '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills">'+typePills+'</div></div>'+
@@ -1820,7 +1596,7 @@ function tplMundoLore(s){
 
   var cat = currentLoreSubtab;
   var items = (s.lore[cat]||[]).filter(function(it){
-    if(!isGM() && it.visible===false) return false;
+    if(!canEdit && it.visible===false) return false;
     var matchC = (loreContinentFilter==="Todos" || (it.continent||"Todos")===loreContinentFilter || (it.continent||"Todos")==="Todos");
     var matchT = (loreTypeFilter==="Todos" || (it.type||"")===loreTypeFilter);
     var matchTr = (loreTerrainFilter==="Todos" || (it.terrain||"").includes(loreTerrainFilter));
@@ -1831,7 +1607,6 @@ function tplMundoLore(s){
     var rName = it.rarity || "Común";
     var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
     var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
-    var canEdit = isGM();
 
     html += '<div class="item-card '+rClass+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'+
@@ -1850,7 +1625,7 @@ function tplMundoLore(s){
     '</div>';
   });
 
-  if(isGM()){
+  if(canEdit){
     html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'" style="margin-top:6px;">+ Añadir a '+cat+'</button>';
   }
   html += '</div>';
@@ -1911,12 +1686,7 @@ function setBind(target, path, rawValue, inputType){
 function handleChange(e){
   var el = e.target.closest("[data-bind]"); if(!el) return;
   var isGlobal = el.getAttribute("data-scope")==="global";
-  var target;
-  if(isGlobal){
-    target = state;
-  } else {
-    target = getCurrentEntity();
-  }
+  var target = isGlobal ? state : activeChar();
   setBind(target, el.getAttribute("data-bind"), el.value, el.type);
   saveState();
   renderTopbar();
@@ -1927,7 +1697,7 @@ function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
-  var c = getCurrentEntity();
+  var c = activeChar();
 
   if(action==="set-world-subtab"){ currentWorldSubtab = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-bestiary-continent"){ bestiaryContinentFilter = btn.getAttribute("data-continent"); renderTab(); return; }
@@ -1935,16 +1705,8 @@ function handleClick(e){
   if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-terrain"){ loreTerrainFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
-  if(action==="set-npc-filter"){ npcFilter = btn.getAttribute("data-val"); renderTab(); return; }
 
-  if(action==="switch-tab"){ 
-    state.activeTab = btn.getAttribute("data-tab"); 
-    if(state.activeTab!=="npcs"){
-      // Exit NPC mode when switching to non-NPC tabs
-      viewMode = 'character';
-    }
-    saveState(); renderTabbar(); renderTab(); return; 
-  }
+  if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
   if(action==="hp-mod"){
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, 0, num(c.combat.pvMax,0)||999);
@@ -2158,7 +1920,7 @@ function handleClick(e){
     if(!isGM()) return;
     var wid2 = btn.getAttribute("data-id");
     var w = (state.weaponsCatalog||[]).find(function(x){return x.id===wid2;});
-    if(w){ w.visible = w.visible===false ? true : false; saveState(); renderTab(); }
+    if(w){ w.visible = w.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
     return;
   }
   if(action==="add-global-weapon"){
@@ -2233,45 +1995,6 @@ function handleClick(e){
     return;
   }
 
-  if(action==="add-npc"){
-    if(!isGM()) return;
-    var nName = prompt("Nombre del NPC:");
-    if(nName){
-      var nn = blankCharacter(nName, true);
-      nn.trabajo = "Neutral";
-      state.npcs.push(nn);
-      activeNPCId = nn.id;
-      viewMode = 'npc';
-      saveState(); renderTopbar(); renderTab();
-      showToast("NPC creado: " + nName, "success");
-    }
-    return;
-  }
-  if(action==="open-npc"){
-    if(!isGM()) return;
-    activeNPCId = btn.getAttribute("data-id");
-    viewMode = 'npc';
-    saveState(); renderTopbar(); renderTab();
-    return;
-  }
-  if(action==="del-npc"){
-    if(!isGM()) return;
-    if(confirm("¿Eliminar este NPC?")){
-      state.npcs = state.npcs.filter(function(n){return n.id!==btn.getAttribute("data-id");});
-      if(activeNPCId===btn.getAttribute("data-id")){ activeNPCId = null; viewMode = 'character'; }
-      saveState(); renderTopbar(); renderTab();
-      showToast("NPC eliminado", "info");
-    }
-    return;
-  }
-  if(action==="exit-npc-mode"){
-    viewMode = 'character';
-    activeNPCId = null;
-    state.activeTab = 'ficha';
-    saveState(); renderTopbar(); renderTabbar(); renderTab();
-    return;
-  }
-
   if(action==="sync-map-now"){ pullMapFromSupabase(); showToast("Mapa sincronizado con la nube", "success"); return; }
   if(action==="switch-map"){ state.activeMapId = btn.getAttribute("data-id"); renderTab(); return; }
   if(action==="add-new-map"){
@@ -2322,12 +2045,6 @@ function handleClick(e){
   }
 
   if(action==="open-char-modal"){ openCharModal(); return; }
-  if(action==="open-npc-list"){ 
-    state.activeTab = 'npcs';
-    viewMode = 'character';
-    saveState(); renderTabbar(); renderTab(); 
-    return; 
-  }
   if(action==="open-data-modal"){ openDataModal(); return; }
   if(action==="open-free-dice"){ openDiceModal(); return; }
   if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
@@ -2377,23 +2094,29 @@ function pinModalClick(e){
 }
 
 function openCharModal(){
+  var chars = getUserCharacters();
   var html = '<h2>Selección de Personaje<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
-  (state.characters||[]).forEach(function(c){
+  chars.forEach(function(c){
     var swatches = THEME_LIST.map(function(t){
       return '<button class="swatch swatch-'+t.id+((c.theme||"default")===t.id?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" aria-label="Tema '+t.label+'"></button>';
     }).join('');
     var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
+    var isNPC = !!c.isNPC;
 
-    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+'" data-action="pick-char" data-id="'+c.id+'" role="button" tabindex="0">'+
-      '<div class="char-list-avatar"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
+    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'" data-action="pick-char" data-id="'+c.id+'" role="button" tabindex="0">'+
+      '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
       '<div class="cli-info">'+
-        '<div class="cli-name">'+esc(c.name)+'</div><div class="cli-sub">Nv. '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"Aventurero")+'</div>'+
+        '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+'</div>'+
+        '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '<div class="theme-swatches" onclick="event.stopPropagation()">'+swatches+'</div>'+
       '</div>'+
-      '<button class="row-del" data-action="del-char" data-id="'+c.id+'" onclick="event.stopPropagation()" aria-label="Eliminar personaje">✕</button>'+
+      (isGM()?'<button class="row-del" data-action="del-char" data-id="'+c.id+'" onclick="event.stopPropagation()" aria-label="Eliminar personaje">✕</button>':'')+
     '</div>';
   });
-  html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>';
+  if(isGM()){
+    html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>'+
+            '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button>';
+  }
   document.getElementById("charModal").innerHTML = html;
   document.getElementById("charModalOverlay").classList.remove("hidden");
 }
@@ -2489,26 +2212,33 @@ function modalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
-  if(action==="pick-char"){ 
-    state.activeId = btn.getAttribute("data-id"); 
-    viewMode = 'character';
-    activeNPCId = null;
-    saveState(); closeModals(); renderTopbar(); renderTab(); 
-    return; 
-  }
+  if(action==="pick-char"){ state.activeId = btn.getAttribute("data-id"); saveState(); closeModals(); renderTopbar(); renderTab(); return; }
   if(action==="add-char"){
+    if(!isGM()) return;
     var nName = prompt("Nombre del nuevo personaje:");
     if(nName){
       var nc = blankCharacter(nName);
       state.characters.push(nc); state.activeId = nc.id;
-      viewMode = 'character';
-      activeNPCId = null;
       saveState(); closeModals(); renderTopbar(); renderTab();
       showToast("Personaje creado: " + nName, "success");
     }
     return;
   }
+  if(action==="add-npc"){
+    if(!isGM()) return;
+    var nName = prompt("Nombre del NPC:");
+    if(nName){
+      var nn = blankCharacter(nName, true);
+      nn.trabajo = "Neutral";
+      state.characters.push(nn);
+      state.activeId = nn.id;
+      saveState(); closeModals(); renderTopbar(); renderTab();
+      showToast("NPC creado: " + nName, "success");
+    }
+    return;
+  }
   if(action==="del-char"){
+    if(!isGM()) return;
     if(confirm("¿Eliminar este personaje?")){
       state.characters = state.characters.filter(function(x){return x.id!==btn.getAttribute("data-id");});
       state.activeId = state.characters[0]?state.characters[0].id:"";
@@ -2798,9 +2528,6 @@ function handleTouchEnd(e){
     
     if(newIndex !== currentTabIndex){
       state.activeTab = tabs[newIndex].id;
-      if(state.activeTab!=="npcs"){
-        viewMode = 'character';
-      }
       saveState();
       renderTabbar();
       renderTab();
@@ -2833,12 +2560,7 @@ function init(){
   document.getElementById("main").addEventListener("input", function(e){
     var el = e.target.closest("[data-bind]"); if(!el) return;
     var isGlobal = el.getAttribute("data-scope")==="global";
-    var target;
-    if(isGlobal){
-      target = state;
-    } else {
-      target = getCurrentEntity();
-    }
+    var target = isGlobal ? state : activeChar();
     setBind(target, el.getAttribute("data-bind"), el.value, el.type);
     saveState();
   });
@@ -2868,13 +2590,7 @@ function init(){
 
   document.getElementById("portraitFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
-      resizeImageFile(e.target.files[0], 400, 0.85, function(url){ 
-        var target = getCurrentEntity();
-        target.portrait = url; 
-        saveState(); 
-        renderTopbar(); 
-        renderTab(); 
-      });
+      resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
     }
     e.target.value="";
   });
@@ -2882,7 +2598,7 @@ function init(){
     if(e.target.files && e.target.files[0]){
       resizeImageFile(e.target.files[0], 900, 0.65, function(url){
         var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-        if(curM){ curM.image = url; saveState(); pushMapsData(); renderTab(); }
+        if(curM){ curM.image = url; saveState(); pushSharedData(); renderTab(); }
       });
     }
     e.target.value="";
