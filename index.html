@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.01 </title>
+<title>Krysalis · Fichas de Rol v3.02 (BG3 Style)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -625,7 +625,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV301";
+var STORAGE_KEY = "krysalisFichasV302";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -973,7 +973,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.01</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.02</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -2313,20 +2313,29 @@ function initSupabase(){
       realtimeChannel = supabaseClient.channel('realtime_all_changes')
         .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(payload){
           if(payload && payload.new){
-            var remoteMaps = payload.new.data || payload.new.markers;
-            if(Array.isArray(remoteMaps) && remoteMaps.length){
-              state.maps = remoteMaps;
-              if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
-              saveState(true);
-              if(state.activeTab==="mundo") renderTab();
+            var row = payload.new;
+            if(row.id === 'main_map'){
+              var remoteMaps = row.data || row.markers;
+              if(Array.isArray(remoteMaps) && remoteMaps.length){
+                state.maps = remoteMaps;
+                if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
+                saveState(true);
+                if(state.activeTab==="mundo") renderTab();
+              }
+            } else if(row.id === 'world_compendium'){
+              var comp = row.data;
+              if(comp){
+                if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
+                if(comp.bestiary) state.bestiary = comp.bestiary;
+                if(comp.lore) state.lore = comp.lore;
+                saveState(true);
+                renderTab();
+              }
             }
           }
         })
         .on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(payload){
           handleRemoteCharacterChange(payload);
-        })
-        .on('postgres_changes', {event:'*', schema:'public', table:'shared_data'}, function(payload){
-          handleRemoteSharedDataChange(payload);
         })
         .subscribe();
     }
@@ -2372,16 +2381,6 @@ function handleRemoteCharacterChange(payload){
       saveState(true); renderTopbar(); renderTabbar(); renderTab();
     }
   }
-}
-
-function handleRemoteSharedDataChange(payload){
-  if(!payload || !payload.new || !payload.new.data) return;
-  var sharedData = payload.new.data;
-  if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
-  if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
-  if(sharedData.lore) state.lore = sharedData.lore;
-  saveState(true);
-  renderTab();
 }
 
 async function fetchUserProfile(){
@@ -2469,30 +2468,32 @@ function pushMapsData(){
   }).catch(function(e){ console.error('Supabase error:', e); });
 }
 
-function pullSharedDataFromSupabase(){
+async function pullSharedDataFromSupabase(){
   if(!supabaseClient) return;
-  supabaseClient.from('shared_data').select('*').eq('id', 'main').maybeSingle().then(function(res){
+  try{
+    var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'world_compendium').maybeSingle();
     if(res.error) { console.error('Supabase error:', res.error); return; }
     if(res.data && res.data.data){
-      var sharedData = res.data.data;
-      if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
-      if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
-      if(sharedData.lore) state.lore = sharedData.lore;
+      var comp = res.data.data;
+      if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
+      if(comp.bestiary) state.bestiary = comp.bestiary;
+      if(comp.lore) state.lore = comp.lore;
       saveState(true);
       renderTab();
     }
-  }).catch(function(e){ console.error('Supabase error:', e); });
+  }catch(e){ console.error('Supabase error:', e); }
 }
 
 function pushSharedData(){
   if(!supabaseClient) return;
-  supabaseClient.from('shared_data').upsert({
-    id: 'main',
+  supabaseClient.from('campaign_map').upsert({
+    id: 'world_compendium',
     data: {
       weaponsCatalog: state.weaponsCatalog || [],
       bestiary: state.bestiary || [],
       lore: state.lore || getSeedLore()
     },
+    markers: [],
     updated_at: new Date().toISOString()
   }).select().then(function(res){
     if(res.error) { console.error('Supabase error:', res.error); return; }
