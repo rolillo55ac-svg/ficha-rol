@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v2.0 GM/Player</title>
+<title>Krysalis · Fichas de Rol v2.1</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -98,6 +98,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   flex-direction:column;
   gap:8px;
   pointer-events:none;
+  max-width:calc(100vw - 32px);
 }
 .toast{
   pointer-events:auto;
@@ -106,7 +107,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   border-radius:var(--radius-sm);
   padding:12px 16px;
   min-width:200px;
-  max-width:320px;
+  max-width:100%;
   box-shadow:0 8px 24px rgba(0,0,0,0.6);
   animation:toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
   font-size:0.85rem;
@@ -237,6 +238,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   color:var(--gold-light);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px;
   display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;
   text-shadow:0 1px 2px rgba(0,0,0,.6);
+  flex-wrap:wrap;
 }
 .section.gm-section .section-title{color:var(--gm-light);}
 .section-title::after{content:'';position:absolute;left:0;bottom:-1px;height:1px;width:64px;background:linear-gradient(90deg,var(--gold),transparent);}
@@ -260,7 +262,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .portrait-img:hover{transform:scale(1.02);box-shadow:0 12px 28px rgba(0,0,0,0.65), inset 0 0 0 4px rgba(18,13,10,0.5), inset 0 0 0 5px rgba(176,141,87,0.35);}
 .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;}
 @media(max-width:360px){.field-grid{grid-template-columns:1fr;}}
-.field{display:flex;flex-direction:column;gap:3px;}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0;}
 .field label{font-size:.64rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;}
 .field input, .field textarea, .field select{
   background:rgba(0,0,0,0.14);border:none;border-bottom:1px solid var(--line-strong);
@@ -377,7 +379,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 /* FILAS DINÁMICAS */
 .list-row{display:grid;gap:6px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);}
 .list-row:last-child{border-bottom:none;}
-.list-row input, .list-row select{background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;padding:10px 9px;font-size:.85rem;min-height:40px;}
+.list-row input, .list-row select{background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;padding:10px 9px;font-size:.85rem;min-height:40px;width:100%;min-width:0;}
 .row-del{
   background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);border-radius:7px;
   width:36px;height:36px;font-size:.85rem;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
@@ -386,13 +388,20 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .row-del:hover{border-color:var(--danger);color:var(--danger);background:rgba(192,57,43,0.1);}
 .row-del:active{transform:scale(0.9);}
-.weapons-row{grid-template-columns:1fr 34px 28px;}
-.armor-row{grid-template-columns:1fr 65px 65px 28px;}
-.inv-row{grid-template-columns:1fr 55px 28px;}
-.spell-row{grid-template-columns:1fr 75px 85px 28px;}
-.stone-row{grid-template-columns:85px 1fr 28px;}
-.text-row{grid-template-columns:1fr 28px;}
-.god-row{grid-template-columns:1fr 1fr 1fr 28px;}
+.weapons-row{grid-template-columns:1fr 36px 36px;}
+.armor-row{grid-template-columns:1fr 65px 65px 36px;}
+.inv-row{grid-template-columns:1fr 55px 36px;}
+.spell-row{grid-template-columns:1fr 75px 85px 36px;}
+.stone-row{grid-template-columns:85px 1fr 36px;}
+.text-row{grid-template-columns:1fr 36px;}
+.god-row{grid-template-columns:1fr 1fr 1fr 36px;}
+
+@media(max-width:480px){
+  .armor-row{grid-template-columns:1fr 1fr 36px;}
+  .spell-row{grid-template-columns:1fr 1fr 36px;}
+  .god-row{grid-template-columns:1fr 1fr 36px;}
+  .stone-row{grid-template-columns:1fr 36px;}
+}
 
 .money-row{display:flex;gap:12px;}
 .money-field{flex:1;background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 11px;}
@@ -410,11 +419,12 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .creature-name-input{
   flex:1;min-width:0;background:transparent;border:none;border-bottom:1px solid var(--line-strong);
   color:var(--gold-light);font-family:var(--font-display);font-size:1.02rem;padding:3px;min-height:36px;
+  width:100%;
 }
 .creature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px 9px;margin-bottom:9px;}
-.creature-field{display:flex;flex-direction:column;gap:2px;}
+.creature-field{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .creature-field label{font-size:.58rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.02em;}
-.creature-field input{background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:8px 6px;font-size:.8rem;font-family:var(--font-mono);min-height:36px;}
+.creature-field input{background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:8px 6px;font-size:.8rem;font-family:var(--font-mono);min-height:36px;width:100%;}
 .creature-notes{
   width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:5px;
   padding:8px 9px;font-size:.8rem;font-family:var(--font-body);min-height:45px;resize:vertical;line-height:1.5;
@@ -452,7 +462,6 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .f-pill:hover{border-color:var(--line-strong);transform:translateY(-1px);}
 .f-pill:active{transform:scale(0.95);}
 .f-pill.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.2);box-shadow:0 0 8px -2px rgba(176,141,87,0.5);}
-.f-pill.gm-active{border-color:var(--gm-light);color:var(--gm-light);background:rgba(210,105,30,0.2);box-shadow:0 0 8px -2px rgba(210,105,30,0.5);}
 
 /* MAPA */
 .map-viewer{position:relative;width:100%;min-height:260px;border-radius:var(--radius-sm);border:2px solid var(--line-strong);overflow:hidden;background:#090605;cursor:crosshair;box-shadow:inset 0 0 40px rgba(0,0,0,0.5), 0 10px 26px -16px rgba(0,0,0,0.85);}
@@ -460,7 +469,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .map-pin{position:absolute;transform:translate(-50%,-100%);text-align:center;cursor:pointer;z-index:2;transition:transform var(--transition-fast);}
 .map-pin:hover{transform:translate(-50%,-110%);}
 .pin-glyph{width:17px;height:17px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);margin:0 auto 3px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.7);}
-.pin-tag{font-size:.62rem;background:rgba(15,10,8,0.94);color:var(--gold-light);padding:2px 6px;border-radius:4px;border:1px solid var(--line);white-space:nowrap;}
+.pin-tag{font-size:.62rem;background:rgba(15,10,8,0.94);color:var(--gold-light);padding:2px 6px;border-radius:4px;border:1px solid var(--line);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
 .pin-capital .pin-glyph{background:var(--gold);}
 .pin-ciudad .pin-glyph{background:var(--blood);}
 .pin-poi .pin-glyph{background:var(--teal);}
@@ -472,6 +481,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   border:1px solid var(--line);background:var(--bg-card);color:var(--ink-dim);cursor:pointer;
   transition:all var(--transition-fast);
   min-height:36px;
+  white-space:nowrap;
 }
 .btn-compact:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.08);transform:translateY(-1px);}
 .btn-compact:active{transform:scale(.97);}
@@ -481,6 +491,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   box-shadow:0 3px 10px -3px rgba(176,141,87,0.6), inset 0 1px 0 rgba(255,255,255,0.35);
   transition:all var(--transition-fast);
   min-height:36px;
+  white-space:nowrap;
 }
 .btn-solid-gold:hover{background:linear-gradient(160deg, #F0DBAE, var(--gold-light));box-shadow:0 4px 14px -3px rgba(176,141,87,0.75), inset 0 1px 0 rgba(255,255,255,0.4);transform:translateY(-1px);}
 .btn-solid-gold:active{transform:scale(.97);}
@@ -490,11 +501,12 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   box-shadow:0 3px 10px -3px rgba(210,105,30,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
   transition:all var(--transition-fast);
   min-height:36px;
+  white-space:nowrap;
 }
 .btn-gm:hover{background:linear-gradient(160deg, #E8842C, var(--gm-light));box-shadow:0 4px 14px -3px rgba(210,105,30,0.75), inset 0 1px 0 rgba(255,255,255,0.3);transform:translateY(-1px);}
 .btn-gm:active{transform:scale(.97);}
 
-/* TABBAR ESTILO BG3 */
+/* TABBAR - CENTRADO EN PC, SCROLL EN MOVIL */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:1040px;margin:0 auto;
   background:linear-gradient(0deg, var(--bg-elev) 82%, rgba(26,18,13,0.97));
@@ -503,8 +515,12 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   display:flex;padding:7px 4px calc(7px + env(safe-area-inset-bottom));
   overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
   backdrop-filter:blur(10px);
+  justify-content:center;
 }
 .tabbar::-webkit-scrollbar{display:none;}
+@media(max-width:768px){
+  .tabbar{justify-content:flex-start;}
+}
 .tab-btn{
   flex:0 0 auto;min-width:62px;background:none;border:none;color:var(--ink-faint);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -707,6 +723,25 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   z-index:50;
 }
 .swipe-indicator.visible{opacity:1;}
+
+/* NPC VIEW BANNER */
+.npc-banner{
+  background:linear-gradient(135deg, rgba(210,105,30,0.2), rgba(139,69,19,0.1));
+  border:1px solid var(--gm-light);
+  border-radius:var(--radius-sm);
+  padding:8px 12px;
+  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.npc-banner span{
+  font-size:.75rem;
+  color:var(--gm-light);
+  font-weight:700;
+}
 </style>
 </head>
 <body>
@@ -744,7 +779,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV200";
+var STORAGE_KEY = "krysalisFichasV210";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -827,11 +862,15 @@ var loreTerrainFilter = "Todos";
 var currentLoreSubtab = "objetos";
 var npcFilter = "Todos";
 
+// VIEW MODE: 'character' o 'npc'
+var viewMode = 'character';
+var activeNPCId = null;
+
 function getSeedWeaponsCatalog(){
   return [
-    {id:uid(), name:"Espada Larga", dano:"1d8+2", alcance:"Melé", critico:"Doble daño en dados y sangrado leve.", desc:"Espada equilibrada de hoja recta."},
-    {id:uid(), name:"Arco Largo", dano:"1d8", alcance:"150m", critico:"Ignora 2 puntos de absorción de armadura.", desc:"Arco de gran tensión para combate a distancia."},
-    {id:uid(), name:"Daga Mordaz", dano:"1d4+1", alcance:"Melé / Arrojadiza", critico:"Envenena automáticamente al objetivo.", desc:"Arma ligera con filo envenenado."}
+    {id:uid(), name:"Espada Larga", dano:"1d8+2", alcance:"Melé", critico:"Doble daño en dados y sangrado leve.", desc:"Espada equilibrada de hoja recta.", visible:true},
+    {id:uid(), name:"Arco Largo", dano:"1d8", alcance:"150m", critico:"Ignora 2 puntos de absorción de armadura.", desc:"Arco de gran tensión para combate a distancia.", visible:true},
+    {id:uid(), name:"Daga Mordaz", dano:"1d4+1", alcance:"Melé / Arrojadiza", critico:"Envenena automáticamente al objetivo.", desc:"Arma ligera con filo envenenado.", visible:true}
   ];
 }
 
@@ -852,33 +891,33 @@ function blankCharacter(name, isNPC){
 
 function getSeedBestiary(){
   return [
-    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",notas:"Doma: 5. Nada a mitad de mov."},
-    {id:uid(),nombre:"Anaconda Gigante",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",notas:"Doma: 5. Carga pesada."},
-    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",notas:"Doma: 5. No puede nadar."},
-    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10//12 (T/V)",notas:"Doma: 5. Montura voladora."},
-    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",notas:"Doma: 5. Acuático."},
-    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",notas:"Doma: 5. Alta resistencia."},
-    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",notas:"Resistencia al frío."}
+    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",notas:"Doma: 5. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Anaconda Gigante",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",notas:"Doma: 5. Carga pesada.",visible:true},
+    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",notas:"Doma: 5. No puede nadar.",visible:true},
+    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10//12 (T/V)",notas:"Doma: 5. Montura voladora.",visible:true},
+    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",notas:"Doma: 5. Acuático.",visible:true},
+    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",notas:"Doma: 5. Alta resistencia.",visible:true},
+    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",notas:"Resistencia al frío.",visible:true}
   ];
 }
 
 function getSeedLore(){
   return {
     pistas:[
-      {id:uid(),title:"Santuario de las Diosas",text:"Lugar de comunión con Luna y los Elementos.",continent:"Krysalis",rarity:"Muy rara",type:"Lugar"}
+      {id:uid(),title:"Santuario de las Diosas",text:"Lugar de comunión con Luna y los Elementos.",continent:"Krysalis",rarity:"Muy rara",type:"Lugar",visible:true}
     ],
     npcs:[
-      {id:uid(),title:"Emisario de Asland",text:"Representante diplomático del reino.",continent:"Aslan",rarity:"Común",type:"Aliado"}
+      {id:uid(),title:"Emisario de Asland",text:"Representante diplomático del reino.",continent:"Aslan",rarity:"Común",type:"Aliado",visible:true}
     ],
     objetos:[
-      {id:uid(),title:"Veneno: Seta del sueño",text:"Efecto: Sueño / Paralización",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno"},
-      {id:uid(),title:"Veneno: Seta terrosa",text:"Efecto: Entumecer (+ Mitad Movilidad para Cherk)",terrain:"Minas / Cuevas",rarity:"Común",continent:"Todos",type:"Veneno"},
-      {id:uid(),title:"Veneno: Nenúfar de Pantano",text:"Efecto: Reduce Percepción rival (+2 Percepción Cherk)",terrain:"Pantano",rarity:"Común",continent:"Todos",type:"Veneno"},
-      {id:uid(),title:"Veneno: Nenúfar de Manglar",text:"Efecto: Daño continuo (+3 vida falsa Cherk)",terrain:"Manglar",rarity:"Común",continent:"Todos",type:"Veneno"},
-      {id:uid(),title:"Poción: Flor de Lirio P",text:"Efecto: Cura venenos y toxinas",terrain:"Pantano",rarity:"Muy rara",continent:"Todos",type:"Poción"},
-      {id:uid(),title:"Poción: Flor del Rey",text:"Efecto: +Defensa mágica temporal",terrain:"Bosque",rarity:"Muy rara",continent:"Todos",type:"Poción"},
-      {id:uid(),title:"Ungüento: Margarita",text:"Efecto: Curación básica de heridas",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Ungüento"},
-      {id:uid(),title:"Ungüento: Flor de Hestia",text:"Efecto: Resistencia al frío extremo",terrain:"Desierto",rarity:"Rara",continent:"Aslan",type:"Ungüento"}
+      {id:uid(),title:"Veneno: Seta del sueño",text:"Efecto: Sueño / Paralización",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Seta terrosa",text:"Efecto: Entumecer (+ Mitad Movilidad para Cherk)",terrain:"Minas / Cuevas",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Nenúfar de Pantano",text:"Efecto: Reduce Percepción rival (+2 Percepción Cherk)",terrain:"Pantano",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Nenúfar de Manglar",text:"Efecto: Daño continuo (+3 vida falsa Cherk)",terrain:"Manglar",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Poción: Flor de Lirio P",text:"Efecto: Cura venenos y toxinas",terrain:"Pantano",rarity:"Muy rara",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Flor del Rey",text:"Efecto: +Defensa mágica temporal",terrain:"Bosque",rarity:"Muy rara",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Ungüento: Margarita",text:"Efecto: Curación básica de heridas",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Flor de Hestia",text:"Efecto: Resistencia al frío extremo",terrain:"Desierto",rarity:"Rara",continent:"Aslan",type:"Ungüento",visible:true}
     ]
   };
 }
@@ -903,6 +942,16 @@ function migrateState(s){
     s.activeMapId = "world_main";
   }
   if(!s.npcs) s.npcs=[];
+  
+  // Ensure visible property exists
+  (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });
+  (s.bestiary||[]).forEach(function(b){ if(b.visible===undefined) b.visible=true; });
+  ["pistas","npcs","objetos"].forEach(function(cat){
+    if(s.lore && s.lore[cat]){
+      s.lore[cat].forEach(function(item){ if(item.visible===undefined) item.visible=true; });
+    }
+  });
+  
   (s.characters||[]).forEach(function(c){
     if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10};
     if(c.combat.escudoActual===undefined) c.combat.escudoActual=0;
@@ -942,7 +991,7 @@ function saveState(skipRemote){
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){
       pushActiveChar();
-      pushMapsData();
+      pushSharedData();
     }, 400);
   }
 }
@@ -960,10 +1009,13 @@ function activeChar(){
   return state.characters.find(function(x){return x.id===state.activeId;}) || state.characters[0] || blankCharacter("Sin Personaje");
 }
 function activeNPC(){
-  return state.npcs.find(function(x){return x.id===state.activeNPCId;});
+  return state.npcs.find(function(x){return x.id===activeNPCId;});
 }
-function isCurrentNPC(){
-  return state.activeTab==="npcs" && activeNPC();
+function getCurrentEntity(){
+  if(viewMode==='npc' && activeNPC()){
+    return activeNPC();
+  }
+  return activeChar();
 }
 
 function getEffectiveAttr(aKey, c){
@@ -1049,10 +1101,7 @@ function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, ad
 }
 
 function performD10Roll(charName, label, mod){
-  var c = activeChar();
-  if(state.activeTab==="npcs" && activeNPC()){
-    c = activeNPC();
-  }
+  var c = getCurrentEntity();
   var extra = 0;
   if(c.buffs){
     if(c.buffs.sangre_ataque_melee && label.includes("melé")) extra += 1;
@@ -1086,8 +1135,7 @@ function performWeaponRoll(charName, weaponName, formulaRaw){
 
 /* RENDER VISTAS */
 function renderTopbar(){
-  var isNPCView = state.activeTab==="npcs" && activeNPC();
-  var c = isNPCView ? activeNPC() : activeChar();
+  var c = getCurrentEntity();
   document.body.setAttribute("data-theme", c.theme||"default");
   var maxHp = Math.max(1, num(c.combat.pvMax, 1));
   var maxMana = Math.max(1, num(c.combat.manaMax, 1));
@@ -1097,14 +1145,14 @@ function renderTopbar(){
   var isNPC = !!c.isNPC;
   var crestClass = isNPC ? 'char-crest npc' : 'char-crest';
   var nameClass = isNPC ? 'char-name npc-name' : 'char-name';
-  var switchAction = isNPC ? 'open-npc-modal' : 'open-char-modal';
+  var switchAction = isNPC ? 'open-npc-list' : 'open-char-modal';
 
   document.getElementById("topbar").innerHTML =
     '<div class="topbar-row">'+
       '<button class="char-switch" data-action="'+switchAction+'" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v2.0</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v2.1</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1145,13 +1193,13 @@ function renderTopbar(){
 var PLAYER_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
-  {id:"invocaciones",label:"Invocaciones"}
+  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}
 ];
 
 var GM_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
-  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario",gm:true},
+  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
   {id:"npcs",label:"NPCs",gm:true}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo",gm:true}
 ];
 
@@ -1166,29 +1214,37 @@ function renderTabbar(){
 
 function renderTab(){
   var main = document.getElementById("main");
-  var isNPCView = state.activeTab==="npcs" && activeNPC();
-  var c = isNPCView ? activeNPC() : activeChar();
+  var c = getCurrentEntity();
   
-  if(isGM() && state.activeTab==="npcs"){
-    if(activeNPC()){
-      // Show NPC ficha
-      main.innerHTML = tplNPCFicha(activeNPC());
-    } else {
-      // Show NPC list
-      main.innerHTML = tplNPCList(state);
-    }
-  } else if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
-  else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
-  else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
-  else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
-  else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
-  else if(state.activeTab==="alquimia") main.innerHTML = tplAlquimia(c);
-  else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
-  else if(state.activeTab==="bestiario" && isGM()) main.innerHTML = tplBestiario(state);
-  else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
-  else if(state.activeTab==="mundo" && isGM()) main.innerHTML = tplMundo(state);
+  if(viewMode==='npc' && activeNPC()){
+    // NPC view with banner
+    var npcBanner = '<div class="npc-banner"><span>👥 Modo NPC: '+esc(activeNPC().name)+'</span><button class="btn-compact" data-action="exit-npc-mode">← Volver a mi personaje</button></div>';
+    
+    if(state.activeTab==="ficha") main.innerHTML = npcBanner + tplFicha(c);
+    else if(state.activeTab==="habilidades") main.innerHTML = npcBanner + tplHabilidades(c);
+    else if(state.activeTab==="combate") main.innerHTML = npcBanner + tplCombate(c);
+    else if(state.activeTab==="inventario") main.innerHTML = npcBanner + tplInventario(c);
+    else if(state.activeTab==="magia") main.innerHTML = npcBanner + tplMagia(c);
+    else if(state.activeTab==="alquimia") main.innerHTML = npcBanner + tplAlquimia(c);
+    else if(state.activeTab==="invocaciones") main.innerHTML = npcBanner + tplInvocaciones(c);
+    else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
+    else if(state.activeTab==="extra") main.innerHTML = npcBanner + tplExtra(c);
+    else if(state.activeTab==="mundo" && isGM()) main.innerHTML = tplMundo(state);
+    else main.innerHTML = npcBanner + tplNPCList(state);
+  } else {
+    if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
+    else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
+    else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
+    else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
+    else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
+    else if(state.activeTab==="alquimia") main.innerHTML = tplAlquimia(c);
+    else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
+    else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
+    else if(state.activeTab==="npcs" && isGM()) main.innerHTML = tplNPCList(state);
+    else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
+    else if(state.activeTab==="mundo" && isGM()) main.innerHTML = tplMundo(state);
+  }
   
-  // Scroll to top on tab change
   main.scrollTop = 0;
   window.scrollTo(0, 0);
 }
@@ -1204,11 +1260,11 @@ function tplFicha(c){
     levelControl = '<button class="btn-solid-gold" data-action="grant-level">+ Nivel</button>';
   }
 
-  return '<div class="section">'+
-    '<div class="section-title"><span>Datos del Personaje</span></div>'+
+  return '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
+    '<div class="section-title"><span>'+(c.isNPC?'Ficha de NPC (Solo GM)':'Datos del Personaje')+'</span></div>'+
     '<div class="ficha-layout">'+
       '<div class="portrait-box">'+
-        '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':'&#127917;')+'</div>'+
+        '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':'👤')+'</div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+
           '<button class="btn-compact" data-action="upload-portrait">Foto</button>'+
           (c.portrait ? '<button class="btn-compact" data-action="remove-portrait">✕</button>' : '')+
@@ -1216,8 +1272,8 @@ function tplFicha(c){
       '</div>'+
       '<div>'+
         '<div class="field-grid">'+
-          field("Nombre","name",c.name,"text")+
-          '<div class="field"><label>Nivel</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" readonly>'+levelControl+'</div></div>'+
+          field("Nombre", "name", c.name, "text")+
+          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(c.isNPC?'':'readonly')+'>'+levelControl+'</div></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text")+
           field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text")+
           field("Altura","altura",c.altura,"text")+
@@ -1232,49 +1288,8 @@ function tplFicha(c){
       '</div>'+
     '</div>'+
   '</div>'+
-  '<div class="section">'+
+  '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
     '<div class="section-title"><span>Atributos Base</span></div>'+
-    '<div class="attr-grid">'+attrCards+'</div>'+
-  '</div>';
-}
-
-function tplNPCFicha(npc){
-  var pStyle = npc.portrait ? ' style="background-image:url(\''+npc.portrait+'\')"' : '';
-  var attrCards = ATTRS.map(function(a){
-    return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(npc.attrs[a],0)+'</div></div>';
-  }).join('');
-
-  return '<div class="section gm-section">'+
-    '<div class="section-title"><span>Ficha de NPC (Solo GM)</span>'+
-    '<button class="btn-compact" data-action="back-to-npc-list">← Volver a la lista</button></div>'+
-    '<div class="ficha-layout">'+
-      '<div class="portrait-box">'+
-        '<div class="portrait-img"'+pStyle+'>'+(npc.portrait?'':'👤')+'</div>'+
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+
-          '<button class="btn-compact" data-action="upload-npc-portrait">Foto</button>'+
-          (npc.portrait ? '<button class="btn-compact" data-action="remove-npc-portrait">✕</button>' : '')+
-        '</div>'+
-      '</div>'+
-      '<div>'+
-        '<div class="field-grid">'+
-          field("Nombre del NPC","name",npc.name,"text")+
-          field("Nivel / CR","nivel",npc.nivel,"text")+
-          field("Rol / Ocupación","trabajo",npc.trabajo,"text")+
-          field("Lugar","lugarNacimiento",npc.lugarNacimiento,"text")+
-          field("Altura","altura",npc.altura,"text")+
-          field("Peso","peso",npc.peso,"text")+
-          field("Edad","edad",npc.edad,"text")+
-          field("Color de Ojos","ojos",npc.ojos,"text")+
-          field("Color de Pelo","pelo",npc.pelo,"text")+
-        '</div>'+
-        '<div style="margin-top:10px;">'+
-          fieldArea("Descripción y Notas","descripcion",npc.descripcion)+
-        '</div>'+
-      '</div>'+
-    '</div>'+
-  '</div>'+
-  '<div class="section gm-section">'+
-    '<div class="section-title"><span>Atributos del NPC</span></div>'+
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>';
 }
@@ -1334,7 +1349,7 @@ function tplHabilidades(c){
     '</div>';
   }
 
-  var html = '<div class="section"><div class="section-title"><span>Habilidades Generales</span></div>'+banner;
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Habilidades Generales</span></div>'+banner;
   ATTRS.forEach(function(a){
     html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
@@ -1419,7 +1434,7 @@ function tplCombate(c){
     return '<button class="combat-quick-btn" data-action="roll-skill" data-id="' + sid + '"><span class="cq-label">' + sdef.name + '</span><span class="cq-total">' + skillTotal(sdef, c) + '</span></button>';
   }).join('');
 
-  var html = '<div class="section"><div class="section-title"><span>Buffs y Modificadores de Combate</span></div><div class="buffs-container">';
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Buffs y Modificadores de Combate</span></div><div class="buffs-container">';
   if(isVamp){
     html += '<div class="buff-pill '+(buffs.sangre_ataque_melee?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_melee" role="button" tabindex="0">🩸 Sangre: +1 Melé</div>'+
             '<div class="buff-pill '+(buffs.sangre_ataque_dist?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_dist" role="button" tabindex="0">🩸 Sangre: +1 Distancia</div>'+
@@ -1448,8 +1463,8 @@ function tplCombate(c){
   }
   html += '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Tiradas de Combate</span></div><div class="combat-quick-grid">'+quickBtns+'</div></div>';
-  html += '<div class="section"><div class="section-title"><span>Estadísticas de Combate</span></div>'+
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Tiradas de Combate</span></div><div class="combat-quick-grid">'+quickBtns+'</div></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Estadísticas de Combate</span></div>'+
     '<div class="combat-grid">'+
       combatStat("Iniciativa","iniciativa",cb.iniciativa,true)+
       combatStat("Movilidad","movilidad",cb.movilidad,false)+
@@ -1458,7 +1473,7 @@ function tplCombate(c){
     '</div>'+
   '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Armas del Personaje</span></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Armas del Personaje</span></div>';
   var catalog = state.weaponsCatalog || [];
   (c.weapons||[]).forEach(function(w){
     var selectedCatItem = catalog.find(function(catItem){ return catItem.name === w.name || catItem.id === w.catalogId; });
@@ -1481,7 +1496,7 @@ function tplCombate(c){
   }
   html += '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Armaduras</span></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Armaduras</span></div>';
   (c.armors||[]).forEach(function(a){
     html += '<div class="list-row armor-row">'+
       '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura">'+
@@ -1507,7 +1522,7 @@ function combatStat(label,bind,val,rollable){
 }
 
 function tplMagia(c){
-  var html = '<div class="section"><div class="section-title"><span>Grimorio y Artes Mágicas</span></div>'+
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Grimorio y Artes Mágicas</span></div>'+
     '<div class="field" style="margin-bottom:10px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'"></div>'+
     '<div style="display:grid;grid-template-columns:1fr 75px 85px 28px;gap:6px;font-size:0.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;padding-bottom:2px;border-bottom:1px solid var(--line);">'+
       '<span>Hechizo / Habilidad</span><span>Coste (Maná)</span><span>Rango</span><span></span>'+
@@ -1525,7 +1540,7 @@ function tplMagia(c){
   }
   html += '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Piedras Mágicas</span></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Piedras Mágicas</span></div>';
   (c.stones||[]).forEach(function(s){
     html += '<div class="list-row stone-row">'+
       '<input type="text" placeholder="Color" data-bind="stones.'+s.id+'.color" value="'+esc(s.color)+'">'+
@@ -1541,7 +1556,7 @@ function tplMagia(c){
 }
 
 function tplAlquimia(c){
-  var html = '<div class="section"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>';
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>';
   (c.poisons||[]).forEach(function(p){
     html += '<div class="creature-card">'+
       '<div class="creature-card-header">'+
@@ -1572,13 +1587,13 @@ function tplAlquimia(c){
 }
 
 function tplInventario(c){
-  var html = '<div class="section"><div class="section-title"><span>Dinero</span></div>'+
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
     '<div class="money-row">'+
       '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" value="'+num(c.money.oro,0)+'"></div>'+
       '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" value="'+num(c.money.plata,0)+'"></div>'+
     '</div></div>';
 
-  html += '<div class="section"><div class="section-title"><span>Equipo e Inventario</span></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Equipo e Inventario</span></div>';
   (c.inventory||[]).forEach(function(it){
     html += '<div class="list-row inv-row">'+
       '<input type="text" placeholder="Objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'">'+
@@ -1594,7 +1609,7 @@ function tplInventario(c){
 }
 
 function tplInvocaciones(c){
-  var html = '<div class="section"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
   (c.summons||[]).forEach(function(s){
     html += '<div class="creature-card">' +
       '<div class="creature-card-header">' +
@@ -1627,39 +1642,48 @@ function tplBestiario(s){
     return '<button class="f-pill '+(bestiaryContinentFilter===ct?'active':'')+'" data-action="set-bestiary-continent" data-continent="'+ct+'">'+ct+'</button>';
   }).join('');
 
-  var html = '<div class="section gm-section">'+
-    '<div class="section-title"><span>Bestiario y Monturas (GM)</span></div>'+
+  var visibleBestiary = (s.bestiary||[]).filter(function(b){
+    if(isGM()) return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
+    return b.visible !== false && (bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter);
+  });
+
+  var html = '<div class="section'+(isGM()?' gm-section':'')+'">'+
+    '<div class="section-title"><span>'+(isGM()?'Bestiario y Monturas (GM)':'Bestiario y Monturas')+'</span></div>'+
     '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+pills+'</div></div>';
 
-  (s.bestiary||[]).filter(function(b){
-    return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
-  }).forEach(function(b){
+  visibleBestiary.forEach(function(b){
+    var canEdit = isGM();
     html += '<div class="creature-card">'+
       '<div class="creature-card-header">'+
-        '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">'+
+        (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.nombre)+'</div>')+
         '<div style="display:flex;gap:4px;align-items:center;">'+
-          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;" data-scope="global" data-bind="bestiary.'+b.id+'.continente">'+
+          (canEdit ? '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;" data-scope="global" data-bind="bestiary.'+b.id+'.continente">'+
             CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
-          '</select>'+
-          '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'" aria-label="Eliminar criatura">✕</button>'+
+          '</select>' : '<span style="font-size:.7rem;color:var(--ink-dim);">'+esc(b.continente||"Todos")+'</span>')+
+          (canEdit ? '<button class="btn-compact" data-action="toggle-bestiary-visibility" data-id="'+b.id+'" title="Mostrar/Ocultar para jugadores">'+(b.visible!==false?'👁️':'🙈')+'</button>' : '')+
+          (canEdit ? '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'" aria-label="Eliminar criatura">✕</button>' : '')+
         '</div>'+
       '</div>'+
       '<div class="creature-grid">'+
-        creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida)+
-        creatureFieldGlobal("Defensa","bestiary."+b.id+".defensa",b.defensa)+
-        creatureFieldGlobal("Absorción","bestiary."+b.id+".absorcion",b.absorcion)+
-        creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano)+
-        creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad)+
+        (canEdit ? creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida) : '<div class="creature-field"><label>Vida</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.vida||"-")+'</span></div>')+
+        (canEdit ? creatureFieldGlobal("Defensa","bestiary."+b.id+".defensa",b.defensa) : '<div class="creature-field"><label>Defensa</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.defensa||"-")+'</span></div>')+
+        (canEdit ? creatureFieldGlobal("Absorción","bestiary."+b.id+".absorcion",b.absorcion) : '<div class="creature-field"><label>Absorción</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.absorcion||"-")+'</span></div>')+
+        (canEdit ? creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano) : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.dano||"-")+'</span></div>')+
+        (canEdit ? creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad) : '<div class="creature-field"><label>Movilidad</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.movilidad||"-")+'</span></div>')+
       '</div>'+
-      '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.notas">'+esc(b.notas)+'</textarea>'+
+      (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.notas">'+esc(b.notas)+'</textarea>' : (b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:6px;">'+esc(b.notas)+'</p>':''))+
     '</div>';
   });
-  html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-bestiary">+ Añadir criatura</button></div>';
+  
+  if(isGM()){
+    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-bestiary">+ Añadir criatura</button>';
+  }
+  html += '</div>';
   return html;
 }
 
 function tplExtra(c){
-  var html = '<div class="section"><div class="section-title"><span>Pasivas Negativas</span></div>';
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Negativas</span></div>';
   (c.passivesNeg||[]).forEach(function(p){
     html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button></div>';
   });
@@ -1668,7 +1692,7 @@ function tplExtra(c){
   }
   html += '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Pasivas Positivas</span></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Positivas</span></div>';
   (c.passivesPos||[]).forEach(function(p){
     html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button></div>';
   });
@@ -1677,7 +1701,7 @@ function tplExtra(c){
   }
   html += '</div>';
 
-  html += '<div class="section"><div class="section-title"><span>Tabla de Diosas</span></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Tabla de Diosas</span></div>';
   (c.goddessTable||[]).forEach(function(g){
     html += '<div class="list-row god-row">'+
       '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'">'+
@@ -1761,7 +1785,10 @@ function tplMundoArmas(s){
     html += '<div class="creature-card">'+
       '<div class="creature-card-header">'+
         '<input type="text" class="creature-name-input" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.name" value="'+esc(w.name)+'" placeholder="Nombre del arma">'+
-        '<button class="row-del" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'+
+        '<div style="display:flex;gap:4px;align-items:center;">'+
+          '<button class="btn-compact" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="Mostrar/Ocultar para jugadores">'+(w.visible!==false?'👁️':'🙈')+'</button>'+
+          '<button class="row-del" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'+
+        '</div>'+
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr;">'+
         '<div class="creature-field"><label>Daño Base</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.dano" value="'+esc(w.dano)+'"></div>'+
@@ -1793,6 +1820,7 @@ function tplMundoLore(s){
 
   var cat = currentLoreSubtab;
   var items = (s.lore[cat]||[]).filter(function(it){
+    if(!isGM() && it.visible===false) return false;
     var matchC = (loreContinentFilter==="Todos" || (it.continent||"Todos")===loreContinentFilter || (it.continent||"Todos")==="Todos");
     var matchT = (loreTypeFilter==="Todos" || (it.type||"")===loreTypeFilter);
     var matchTr = (loreTerrainFilter==="Todos" || (it.terrain||"").includes(loreTerrainFilter));
@@ -1803,6 +1831,7 @@ function tplMundoLore(s){
     var rName = it.rarity || "Común";
     var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
     var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
+    var canEdit = isGM();
 
     html += '<div class="item-card '+rClass+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'+
@@ -1811,14 +1840,19 @@ function tplMundoLore(s){
           (it.type ? '<span style="font-size:.62rem;color:var(--teal-light);font-weight:700;">['+esc(it.type)+']</span>' : '')+
           (it.terrain ? '<span style="font-size:.62rem;color:var(--ink-faint);">📍 '+esc(it.terrain)+'</span>' : '')+
         '</div>'+
-        '<button class="row-del" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">✕</button>'+
+        '<div style="display:flex;gap:4px;">'+
+          (canEdit ? '<button class="btn-compact" data-action="toggle-lore-visibility" data-cat="' + cat + '" data-id="' + it.id + '" title="Mostrar/Ocultar para jugadores">'+(it.visible!==false?'👁️':'🙈')+'</button>' : '')+
+          (canEdit ? '<button class="row-del" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">✕</button>' : '')+
+        '</div>'+
       '</div>'+
-      '<input type="text" style="width:100%;font-family:var(--font-display);color:var(--gold-light);font-size:.95rem;margin-bottom:4px;" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Nombre">'+
-      '<textarea style="width:100%;font-size:.82rem;min-height:45px;" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción...">'+esc(it.text)+'</textarea>'+
+      (canEdit ? '<input type="text" style="width:100%;font-family:var(--font-display);color:var(--gold-light);font-size:.95rem;margin-bottom:4px;" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Nombre">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:.95rem;margin-bottom:4px;">'+esc(it.title)+'</div>')+
+      (canEdit ? '<textarea style="width:100%;font-size:.82rem;min-height:45px;" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción...">'+esc(it.text)+'</textarea>' : '<p style="font-size:.82rem;color:var(--ink-dim);">'+esc(it.text)+'</p>')+
     '</div>';
   });
 
-  html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'" style="margin-top:6px;">+ Añadir a '+cat+'</button>';
+  if(isGM()){
+    html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'" style="margin-top:6px;">+ Añadir a '+cat+'</button>';
+  }
   html += '</div>';
   return html;
 }
@@ -1880,10 +1914,8 @@ function handleChange(e){
   var target;
   if(isGlobal){
     target = state;
-  } else if(state.activeTab==="npcs" && activeNPC()){
-    target = activeNPC();
   } else {
-    target = activeChar();
+    target = getCurrentEntity();
   }
   setBind(target, el.getAttribute("data-bind"), el.value, el.type);
   saveState();
@@ -1895,10 +1927,7 @@ function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
-  var c = activeChar();
-  if(state.activeTab==="npcs" && activeNPC()){
-    c = activeNPC();
-  }
+  var c = getCurrentEntity();
 
   if(action==="set-world-subtab"){ currentWorldSubtab = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-bestiary-continent"){ bestiaryContinentFilter = btn.getAttribute("data-continent"); renderTab(); return; }
@@ -1908,7 +1937,14 @@ function handleClick(e){
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-npc-filter"){ npcFilter = btn.getAttribute("data-val"); renderTab(); return; }
 
-  if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
+  if(action==="switch-tab"){ 
+    state.activeTab = btn.getAttribute("data-tab"); 
+    if(state.activeTab!=="npcs"){
+      // Exit NPC mode when switching to non-NPC tabs
+      viewMode = 'character';
+    }
+    saveState(); renderTabbar(); renderTab(); return; 
+  }
   if(action==="hp-mod"){
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, 0, num(c.combat.pvMax,0)||999);
@@ -1926,6 +1962,7 @@ function handleClick(e){
   }
 
   if(action==="grant-level"){
+    if(!isGM() || c.isNPC) return;
     var curNv = num(c.nivel, 1);
     var nextNv = curNv + 1;
     c.nivel = String(nextNv);
@@ -2117,18 +2154,25 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="toggle-weapon-visibility"){
+    if(!isGM()) return;
+    var wid2 = btn.getAttribute("data-id");
+    var w = (state.weaponsCatalog||[]).find(function(x){return x.id===wid2;});
+    if(w){ w.visible = w.visible===false ? true : false; saveState(); renderTab(); }
+    return;
+  }
   if(action==="add-global-weapon"){
     if(!isGM()) return;
     if(!state.weaponsCatalog) state.weaponsCatalog = [];
-    state.weaponsCatalog.push({id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción"});
-    saveState(); renderTab();
+    state.weaponsCatalog.push({id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción", visible:true});
+    saveState(); pushSharedData(); renderTab();
     showToast("Arma añadida al catálogo", "success");
     return;
   }
   if(action==="del-global-weapon"){
     if(!isGM()) return;
     state.weaponsCatalog = (state.weaponsCatalog||[]).filter(function(w){ return w.id !== btn.getAttribute("data-id"); });
-    saveState(); renderTab();
+    saveState(); pushSharedData(); renderTab();
     showToast("Arma eliminada del catálogo", "info");
     return;
   }
@@ -2152,16 +2196,31 @@ function handleClick(e){
   if(action==="del-passivePos"){ if(!isGM()) return; c.passivesPos = c.passivesPos.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-goddess"){ if(!isGM()) return; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); saveState(); renderTab(); return; }
   if(action==="del-goddess"){ if(!isGM()) return; c.goddessTable = c.goddessTable.filter(function(g){return g.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",notas:""}); saveState(); renderTab(); return; }
-  if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="toggle-bestiary-visibility"){
+    if(!isGM()) return;
+    var bid = btn.getAttribute("data-id");
+    var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
+    if(b){ b.visible = b.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    return;
+  }
+  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",notas:"",visible:true}); saveState(); pushSharedData(); renderTab(); return; }
+  if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); pushSharedData(); renderTab(); return; }
+  if(action==="toggle-lore-visibility"){
+    if(!isGM()) return;
+    var lcat = btn.getAttribute("data-cat");
+    var lid = btn.getAttribute("data-id");
+    var li = (state.lore[lcat]||[]).find(function(x){return x.id===lid;});
+    if(li){ li.visible = li.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    return;
+  }
   if(action==="add-lore"){
     if(!isGM()) return;
     var cat = btn.getAttribute("data-cat");
     var rOpt = prompt("Rareza (Común / Rara / Muy rara / Legendaria):","Común");
     var tOpt = cat==="objetos" ? prompt("Tipo (Veneno / Poción / Ungüento):","Veneno") : "";
     var trOpt = cat==="objetos" ? prompt("Terreno (Bosque / Pantano / Desierto / etc):","Bosque") : "";
-    state.lore[cat].push({id:uid(),title:"",text:"",rarity:rOpt||"Común",type:tOpt,terrain:trOpt,continent:loreContinentFilter||"Todos"});
-    saveState(); renderTab();
+    state.lore[cat].push({id:uid(),title:"",text:"",rarity:rOpt||"Común",type:tOpt,terrain:trOpt,continent:loreContinentFilter||"Todos",visible:true});
+    saveState(); pushSharedData(); renderTab();
     showToast("Entrada de lore añadida", "success");
     return;
   }
@@ -2169,7 +2228,7 @@ function handleClick(e){
     if(!isGM()) return;
     var cat2 = btn.getAttribute("data-cat");
     state.lore[cat2] = state.lore[cat2].filter(function(x){return x.id!==btn.getAttribute("data-id");});
-    saveState(); renderTab();
+    saveState(); pushSharedData(); renderTab();
     showToast("Entrada eliminada", "info");
     return;
   }
@@ -2181,7 +2240,8 @@ function handleClick(e){
       var nn = blankCharacter(nName, true);
       nn.trabajo = "Neutral";
       state.npcs.push(nn);
-      state.activeNPCId = nn.id;
+      activeNPCId = nn.id;
+      viewMode = 'npc';
       saveState(); renderTopbar(); renderTab();
       showToast("NPC creado: " + nName, "success");
     }
@@ -2189,7 +2249,8 @@ function handleClick(e){
   }
   if(action==="open-npc"){
     if(!isGM()) return;
-    state.activeNPCId = btn.getAttribute("data-id");
+    activeNPCId = btn.getAttribute("data-id");
+    viewMode = 'npc';
     saveState(); renderTopbar(); renderTab();
     return;
   }
@@ -2197,24 +2258,17 @@ function handleClick(e){
     if(!isGM()) return;
     if(confirm("¿Eliminar este NPC?")){
       state.npcs = state.npcs.filter(function(n){return n.id!==btn.getAttribute("data-id");});
-      if(state.activeNPCId===btn.getAttribute("data-id")) delete state.activeNPCId;
+      if(activeNPCId===btn.getAttribute("data-id")){ activeNPCId = null; viewMode = 'character'; }
       saveState(); renderTopbar(); renderTab();
       showToast("NPC eliminado", "info");
     }
     return;
   }
-  if(action==="back-to-npc-list"){
-    delete state.activeNPCId;
-    renderTopbar(); renderTab();
-    return;
-  }
-  if(action==="upload-npc-portrait"){
-    document.getElementById("portraitFileInput").click();
-    document.getElementById("portraitFileInput").dataset.npc = "1";
-    return;
-  }
-  if(action==="remove-npc-portrait"){
-    if(activeNPC()){ activeNPC().portrait=null; saveState(); renderTopbar(); renderTab(); }
+  if(action==="exit-npc-mode"){
+    viewMode = 'character';
+    activeNPCId = null;
+    state.activeTab = 'ficha';
+    saveState(); renderTopbar(); renderTabbar(); renderTab();
     return;
   }
 
@@ -2226,7 +2280,7 @@ function handleClick(e){
     if(mn){
       var nMap = {id:uid(), name:mn, image:null, markers:[]};
       state.maps.push(nMap); state.activeMapId = nMap.id;
-      saveState(); pushMapsData(); renderTab();
+      saveState(); pushSharedData(); renderTab();
       showToast("Mapa creado: " + mn, "success");
     }
     return;
@@ -2236,7 +2290,7 @@ function handleClick(e){
     if(confirm("¿Eliminar este mapa y sus pines?")){
       state.maps = state.maps.filter(function(m){return m.id!==state.activeMapId;});
       state.activeMapId = state.maps[0]?state.maps[0].id:"";
-      saveState(); pushMapsData(); renderTab();
+      saveState(); pushSharedData(); renderTab();
       showToast("Mapa eliminado", "info");
     }
     return;
@@ -2245,7 +2299,7 @@ function handleClick(e){
   if(action==="remove-map"){
     if(!isGM()) return;
     var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-    if(curM){ curM.image = null; curM.markers = []; saveState(); pushMapsData(); renderTab(); }
+    if(curM){ curM.image = null; curM.markers = []; saveState(); pushSharedData(); renderTab(); }
     return;
   }
   if(action==="map-click"){
@@ -2268,10 +2322,15 @@ function handleClick(e){
   }
 
   if(action==="open-char-modal"){ openCharModal(); return; }
-  if(action==="open-npc-modal"){ openNPCModal(); return; }
+  if(action==="open-npc-list"){ 
+    state.activeTab = 'npcs';
+    viewMode = 'character';
+    saveState(); renderTabbar(); renderTab(); 
+    return; 
+  }
   if(action==="open-data-modal"){ openDataModal(); return; }
   if(action==="open-free-dice"){ openDiceModal(); return; }
-  if(action==="upload-portrait"){ document.getElementById("portraitFileInput").dataset.npc = "0"; document.getElementById("portraitFileInput").click(); return; }
+  if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
 }
@@ -2305,13 +2364,13 @@ function pinModalClick(e){
     pData.kind = document.getElementById("pinInputKind").value;
     pData.notes = document.getElementById("pinInputNotes").value;
     if(!existing){ if(!curM.markers) curM.markers=[]; curM.markers.push(pData); }
-    saveState(); pushMapsData(); closeModals(); renderTab();
+    saveState(); pushSharedData(); closeModals(); renderTab();
     showToast("Marcador guardado", "success");
     return;
   }
   if(action==="del-pin" && curM){
     curM.markers = (curM.markers||[]).filter(function(p){return p.id!==btn.getAttribute("data-id");});
-    saveState(); pushMapsData(); closeModals(); renderTab();
+    saveState(); pushSharedData(); closeModals(); renderTab();
     showToast("Marcador eliminado", "info");
     return;
   }
@@ -2335,24 +2394,6 @@ function openCharModal(){
     '</div>';
   });
   html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>';
-  document.getElementById("charModal").innerHTML = html;
-  document.getElementById("charModalOverlay").classList.remove("hidden");
-}
-
-function openNPCModal(){
-  if(!isGM()) return;
-  var html = '<h2>Selección de NPC (GM)<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
-  (state.npcs||[]).forEach(function(n){
-    var crestStyle = n.portrait ? ' style="background-image:url(\''+n.portrait+'\')"' : '';
-    html += '<div class="char-list-item npc-item'+(n.id===state.activeNPCId?' active':'')+'" data-action="open-npc-from-modal" data-id="'+n.id+'" role="button" tabindex="0">'+
-      '<div class="char-list-avatar npc-avatar"'+crestStyle+'>'+(n.portrait?'':esc(n.name.charAt(0).toUpperCase()))+'</div>'+
-      '<div class="cli-info">'+
-        '<div class="cli-name npc-name">'+esc(n.name)+'</div>'+
-        '<div class="cli-sub">Nivel '+esc(n.nivel||"1")+' · '+esc(n.trabajo||"Neutral")+'</div>'+
-      '</div>'+
-    '</div>';
-  });
-  html += '<button class="btn-gm" style="width:100%;margin-top:10px;padding:8px;" data-action="add-npc-from-modal">+ Crear Nuevo NPC</button>';
   document.getElementById("charModal").innerHTML = html;
   document.getElementById("charModalOverlay").classList.remove("hidden");
 }
@@ -2448,12 +2489,20 @@ function modalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
-  if(action==="pick-char"){ state.activeId = btn.getAttribute("data-id"); saveState(); closeModals(); renderTopbar(); renderTab(); return; }
+  if(action==="pick-char"){ 
+    state.activeId = btn.getAttribute("data-id"); 
+    viewMode = 'character';
+    activeNPCId = null;
+    saveState(); closeModals(); renderTopbar(); renderTab(); 
+    return; 
+  }
   if(action==="add-char"){
     var nName = prompt("Nombre del nuevo personaje:");
     if(nName){
       var nc = blankCharacter(nName);
       state.characters.push(nc); state.activeId = nc.id;
+      viewMode = 'character';
+      activeNPCId = null;
       saveState(); closeModals(); renderTopbar(); renderTab();
       showToast("Personaje creado: " + nName, "success");
     }
@@ -2471,27 +2520,6 @@ function modalClick(e){
   if(action==="set-theme"){
     var thC = state.characters.find(function(x){return x.id===btn.getAttribute("data-id");});
     if(thC){ thC.theme = btn.getAttribute("data-theme"); saveState(); renderTopbar(); renderTab(); }
-    return;
-  }
-  if(action==="open-npc-from-modal"){
-    if(!isGM()) return;
-    state.activeNPCId = btn.getAttribute("data-id");
-    state.activeTab = "npcs";
-    saveState(); closeModals(); renderTopbar(); renderTabbar(); renderTab();
-    return;
-  }
-  if(action==="add-npc-from-modal"){
-    if(!isGM()) return;
-    var nName = prompt("Nombre del NPC:");
-    if(nName){
-      var nn = blankCharacter(nName, true);
-      nn.trabajo = "Neutral";
-      state.npcs.push(nn);
-      state.activeNPCId = nn.id;
-      state.activeTab = "npcs";
-      saveState(); closeModals(); renderTopbar(); renderTabbar(); renderTab();
-      showToast("NPC creado: " + nName, "success");
-    }
     return;
   }
   if(action==="auth-login"){ supabaseLogin(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
@@ -2563,10 +2591,14 @@ function initSupabase(){
         .on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(payload){
           handleRemoteCharacterChange(payload);
         })
+        .on('postgres_changes', {event:'*', schema:'public', table:'shared_data'}, function(payload){
+          handleRemoteSharedDataChange(payload);
+        })
         .subscribe();
     }
 
     pullMapFromSupabase();
+    pullSharedDataFromSupabase();
 
     supabaseClient.auth.getSession().then(function(res){
       if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
@@ -2608,6 +2640,16 @@ function handleRemoteCharacterChange(payload){
   }
 }
 
+function handleRemoteSharedDataChange(payload){
+  if(!payload || !payload.new || !payload.new.data) return;
+  var sharedData = payload.new.data;
+  if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
+  if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
+  if(sharedData.lore) state.lore = sharedData.lore;
+  saveState(true);
+  renderTab();
+}
+
 async function fetchUserProfile(){
   if(!supabaseClient || !currentUser) return;
   try{
@@ -2615,6 +2657,7 @@ async function fetchUserProfile(){
     if(res.data && res.data.role) currentRole = res.data.role;
     pullAllFromSupabase();
     pullMapFromSupabase();
+    pullSharedDataFromSupabase();
   }catch(e){ console.error('Supabase error:', e); }
   renderTopbar();
   renderTabbar();
@@ -2692,6 +2735,37 @@ function pushMapsData(){
   }).catch(function(e){ console.error('Supabase error:', e); });
 }
 
+function pullSharedDataFromSupabase(){
+  if(!supabaseClient) return;
+  supabaseClient.from('shared_data').select('*').eq('id', 'main').maybeSingle().then(function(res){
+    if(res.error) { console.error('Supabase error:', res.error); return; }
+    if(res.data && res.data.data){
+      var sharedData = res.data.data;
+      if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
+      if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
+      if(sharedData.lore) state.lore = sharedData.lore;
+      saveState(true);
+      renderTab();
+    }
+  }).catch(function(e){ console.error('Supabase error:', e); });
+}
+
+function pushSharedData(){
+  if(!supabaseClient) return;
+  supabaseClient.from('shared_data').upsert({
+    id: 'main',
+    data: {
+      weaponsCatalog: state.weaponsCatalog || [],
+      bestiary: state.bestiary || [],
+      lore: state.lore || getSeedLore()
+    },
+    updated_at: new Date().toISOString()
+  }).select().then(function(res){
+    if(res.error) { console.error('Supabase error:', res.error); return; }
+    updateSyncBadge("synced");
+  }).catch(function(e){ console.error('Supabase error:', e); });
+}
+
 // SWIPE GESTURE SUPPORT
 var touchStartX = null;
 var touchStartY = null;
@@ -2724,6 +2798,9 @@ function handleTouchEnd(e){
     
     if(newIndex !== currentTabIndex){
       state.activeTab = tabs[newIndex].id;
+      if(state.activeTab!=="npcs"){
+        viewMode = 'character';
+      }
       saveState();
       renderTabbar();
       renderTab();
@@ -2759,10 +2836,8 @@ function init(){
     var target;
     if(isGlobal){
       target = state;
-    } else if(state.activeTab==="npcs" && activeNPC()){
-      target = activeNPC();
     } else {
-      target = activeChar();
+      target = getCurrentEntity();
     }
     setBind(target, el.getAttribute("data-bind"), el.value, el.type);
     saveState();
@@ -2793,15 +2868,15 @@ function init(){
 
   document.getElementById("portraitFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
-      var isNPCUpload = e.target.dataset.npc === "1";
-      if(isNPCUpload && activeNPC()){
-        resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeNPC().portrait = url; saveState(); renderTopbar(); renderTab(); });
-      } else {
-        resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
-      }
+      resizeImageFile(e.target.files[0], 400, 0.85, function(url){ 
+        var target = getCurrentEntity();
+        target.portrait = url; 
+        saveState(); 
+        renderTopbar(); 
+        renderTab(); 
+      });
     }
     e.target.value="";
-    delete e.target.dataset.npc;
   });
   document.getElementById("mapFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
