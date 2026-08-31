@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v0.999</title>
+<title>Krysalis · Fichas de Rol v1.01</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -383,7 +383,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .btn-solid-gold:hover{background:linear-gradient(160deg, #F0DBAE, var(--gold-light));box-shadow:0 4px 14px -3px rgba(176,141,87,0.75), inset 0 1px 0 rgba(255,255,255,0.4);}
 .btn-solid-gold:active{transform:scale(.97);}
 
-/* TABBAR ESTILO BG3 */
+/* TABBAR ESTILO BG3 (Iconos limpios y centrados) */
 .tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:1040px;margin:0 auto;
   background:linear-gradient(0deg, var(--bg-elev) 82%, rgba(26,18,13,0.97));
@@ -396,10 +396,11 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tabbar::-webkit-scrollbar{display:none;}
 .tab-btn{
   flex:0 0 auto;min-width:62px;background:none;border:none;color:var(--ink-faint);display:flex;flex-direction:column;
-  align-items:center;gap:3px;padding:5px 3px;font-size:.58rem;text-transform:uppercase;letter-spacing:.02em;cursor:pointer;
+  align-items:center;justify-content:center;gap:2px;padding:4px 3px;font-size:.58rem;text-transform:uppercase;letter-spacing:.02em;cursor:pointer;
   border-radius:8px;transition:color .15s ease;
 }
-.tab-btn::before{font-size:1.05rem;line-height:1;filter:grayscale(.4) opacity(.7);transition:filter .15s ease, transform .15s ease;}
+.tab-btn span{display:block;width:100%;text-align:center;}
+.tab-btn::before{display:block;font-size:1.1rem;line-height:1.2;text-align:center;filter:grayscale(.4) opacity(.7);transition:filter .15s ease, transform .15s ease;}
 .tab-btn[data-tab="ficha"]::before{content:'📜';}
 .tab-btn[data-tab="habilidades"]::before{content:'🎯';}
 .tab-btn[data-tab="combate"]::before{content:'⚔️';}
@@ -412,7 +413,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="mundo"]::before{content:'🗺️';}
 .tab-btn.active{color:var(--gold-light);font-weight:700;background:rgba(176,141,87,0.08);}
 .tab-btn.active::before{filter:none;transform:translateY(-1px);}
-.tab-btn.active::after{content:'';width:16px;height:2px;background:linear-gradient(90deg,transparent,var(--blood-light),transparent);border-radius:2px;margin-top:2px;box-shadow:0 0 6px var(--blood-light);}
+.tab-btn.active::after{content:'';display:block;width:16px;height:2px;background:linear-gradient(90deg,transparent,var(--blood-light),transparent);border-radius:2px;margin:2px auto 0;box-shadow:0 0 6px var(--blood-light);}
 
 /* FAB DICE TIPO BALDUR'S GATE 3 */
 .fab-dice{
@@ -437,7 +438,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .fab-dice:active{transform:scale(.94) rotate(-10deg);}
 
-/* MODALES ESTILO BALDUR'S GATE 3 */
+/* MODAL DE DADOS Y TIRADAS ESTILO BG3 */
 @keyframes rollPop{
   0%{opacity:0;transform:scale(.85) translateY(10px);}
   100%{opacity:1;transform:scale(1) translateY(0);}
@@ -470,6 +471,35 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .adv-die-card{background:var(--bg-card);border:1.5px solid var(--line);border-radius:7px;padding:7px 11px;font-family:var(--font-mono);font-size:1.2rem;color:var(--ink-dim);}
 .adv-die-card.chosen{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.2);box-shadow:0 0 10px -2px rgba(176,141,87,0.5);}
 .adv-die-card.discarded{opacity:0.35;text-decoration:line-through;border-color:var(--danger);}
+
+/* ESTETICA DE DADOS EN EL MENÚ LIBRE (TIPO BG3) */
+.dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
+@media(max-width:360px){.dtype-grid{grid-template-columns:repeat(3,1fr);}}
+.dtype-card{
+  background:linear-gradient(145deg, #1f1610, #140e0a);
+  border:1.5px solid var(--line);
+  color:var(--ink-dim);
+  border-radius:10px;
+  padding:10px 4px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.05), 0 3px 8px rgba(0,0,0,0.4);
+  transition:all .18s ease;
+}
+.dtype-card:hover{
+  border-color:var(--gold);
+  color:var(--gold-light);
+  transform:translateY(-2px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 5px 12px rgba(0,0,0,0.5);
+}
+.dtype-card.active{
+  border-color:var(--gold-light);
+  color:var(--gold-light);
+  background:linear-gradient(145deg, #322319, #1a120d);
+  box-shadow:0 0 14px -2px rgba(176,141,87,0.6), inset 0 0 8px rgba(176,141,87,0.25);
+}
+.dtype-card svg{width:36px;height:36px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6));}
+.dtype-card span{font-family:var(--font-mono);font-size:.78rem;font-weight:700;letter-spacing:.05em;}
 
 /* HISTORIAL DE TIRADAS */
 .roll-log{display:flex;flex-direction:column;gap:6px;}
@@ -527,17 +557,6 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .swatch-blue{background:#2C4F79;}
 .swatch-pink{background:#8C3B62;}
 .swatch-green{background:#2B4A22;}
-
-.dtype-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:9px 0;}
-@media(max-width:360px){.dtype-grid{grid-template-columns:repeat(3,1fr);}}
-.dtype-card{
-  background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);border-radius:8px;
-  padding:7px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.15s ease;
-}
-.dtype-card:hover{border-color:var(--line-strong);}
-.dtype-card.active{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.18);box-shadow:0 0 10px -3px rgba(176,141,87,0.5);}
-.dtype-card svg{width:32px;height:32px;}
-.dtype-card span{font-family:var(--font-mono);font-size:.72rem;font-weight:700;}
 </style>
 </head>
 <body>
@@ -572,7 +591,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV100";
+var STORAGE_KEY = "krysalisFichasV101";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -881,7 +900,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal">'+
         '<span class="char-crest"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.0</span></div>'+
+          '<div class="char-name">'+esc(c.name)+'<span class="version-tag">v1.01</span></div>'+
           '<div class="char-sub">Nv. '+esc(c.nivel||"1")+' · '+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -927,7 +946,7 @@ var TABS = [
 
 function renderTabbar(){
   document.getElementById("tabbar").innerHTML = TABS.map(function(t){
-    return '<button class="tab-btn'+(state.activeTab===t.id?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'">'+t.label+'</button>';
+    return '<button class="tab-btn'+(state.activeTab===t.id?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'"><span>'+t.label+'</span></button>';
   }).join('');
 }
 
@@ -1495,10 +1514,7 @@ function handleClick(e){
     var nextNv = curNv + 1;
     c.nivel = String(nextNv);
     
-    // Puntos para habilidades generales según tramos:
-    // Niveles 1 al 10 -> 4 puntos
-    // Niveles 11 al 20 -> 6 puntos
-    // Niveles 21 al 30 -> 8 puntos
+    // Puntos según tramo de nivel
     var ptsToAdd = 4;
     if(nextNv > 20) ptsToAdd = 8;
     else if(nextNv > 10) ptsToAdd = 6;
