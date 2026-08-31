@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.04 </title>
+<title>Krysalis · Fichas de Rol v3.05 (BG3 Style)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -468,11 +468,9 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="bestiario"]::before{content:'🐾';}
 .tab-btn[data-tab="extra"]::before{content:'🔮';}
 .tab-btn[data-tab="mundo"]::before{content:'🗺️';}
-.tab-btn.gm-tab{color:var(--ink-faint);}
 .tab-btn:hover{color:var(--ink-dim);background:rgba(176,141,87,0.05);}
 .tab-btn:hover::before{filter:grayscale(.2) opacity(.9);}
 .tab-btn.active{color:var(--gold-light);font-weight:700;background:rgba(176,141,87,0.08);}
-.tab-btn.active.gm-tab{color:var(--gold-light);background:rgba(176,141,87,0.08);}
 .tab-btn.active::before{filter:none;transform:translateY(-1px);}
 .tab-btn.active::after{content:'';display:block;width:16px;height:2px;background:linear-gradient(90deg,transparent,var(--blood-light),transparent);border-radius:2px;margin:2px auto 0;box-shadow:0 0 6px var(--blood-light);}
 
@@ -626,7 +624,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV304";
+var STORAGE_KEY = "krysalisFichasV305";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -1670,6 +1668,8 @@ function openLoreModal(cat){
     
     typeSection = '<div class="field" style="margin-top:10px;"><label>Tipo de Objeto</label><div class="filter-pills" id="loreModalTypes" style="flex-wrap:wrap;gap:4px;">'+typeBtns+'</div></div>'+
                   '<div class="field" style="margin-top:10px;"><label>Terreno</label><div class="filter-pills" id="loreModalTerrains" style="flex-wrap:wrap;gap:4px;">'+terrainBtns+'</div></div>';
+  } else if(cat === "pistas" || cat === "npcs"){
+    typeSection = '<div class="field" style="margin-top:10px;"><label>Tipo / Categoría</label><input type="text" id="loreModalCustomType" placeholder="Ej: Aliado, Lugar, Misterio..."></div>';
   }
 
   var continentBtns = CONTINENTES_MODAL.map(function(cnt){
@@ -1686,7 +1686,6 @@ function openLoreModal(cat){
 
   document.getElementById("loreModal").innerHTML = html;
   
-  // Asignar estado seleccionado por defecto al primer botón de cada grupo
   var rSel = document.querySelectorAll("#loreModalRarities .lore-rarity-btn");
   if(rSel.length){ rSel[0].classList.add("active"); rSel[0].dataset.selected="true"; }
   
@@ -1724,8 +1723,13 @@ function loreModalClick(e){
     var rBtn = document.querySelector("#loreModalRarities [data-selected='true']");
     var rarityVal = rBtn ? rBtn.getAttribute("data-val") : "Común";
 
-    var tBtn = document.querySelector("#loreModalTypes [data-selected='true']");
-    var typeVal = tBtn ? tBtn.getAttribute("data-val") : (cat==="objetos"?"Veneno":"");
+    var typeVal = "";
+    if(cat === "objetos"){
+      var tBtn = document.querySelector("#loreModalTypes [data-selected='true']");
+      typeVal = tBtn ? tBtn.getAttribute("data-val") : "Veneno";
+    } else {
+      typeVal = (document.getElementById("loreModalCustomType")||{}).value || "";
+    }
 
     var trBtn = document.querySelector("#loreModalTerrains [data-selected='true']");
     var terrainVal = trBtn ? trBtn.getAttribute("data-val") : "";
