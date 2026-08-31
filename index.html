@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.03</title>
+<title>Krysalis · Fichas de Rol v3.04 (BG3 Style)</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -604,6 +604,8 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 <div class="modal-overlay hidden" id="diceModalOverlay"><div class="modal" id="diceModal"></div></div>
 <div class="modal-overlay hidden" id="dataModalOverlay"><div class="modal" id="dataModal"></div></div>
 <div class="modal-overlay hidden" id="pinModalOverlay"><div class="modal" id="pinModal"></div></div>
+<div class="modal-overlay hidden" id="loreModalOverlay"><div class="modal" id="loreModal"></div></div>
+
 <div class="roll-overlay hidden" id="rollOverlay">
   <div class="roll-box">
     <div id="rollLabel" style="font-family:var(--font-display);font-size:.92rem;color:var(--gold-light);"></div>
@@ -624,7 +626,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV303";
+var STORAGE_KEY = "krysalisFichasV304";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -670,10 +672,12 @@ var THEME_LIST = [
 ];
 
 var CONTINENTES = ["Todos", "Vetrys", "Tryssar", "Labrys", "Aslan", "Krysalis"];
+var CONTINENTES_MODAL = ["Vetrys", "Tryssar", "Labrys", "Aslan", "Krysalis", "Todos"];
 var TIPOS_OBJETO = ["Todos", "Veneno", "Poción", "Ungüento"];
+var TIPOS_OBJETO_MODAL = ["Veneno", "Poción", "Ungüento"];
 var TERRENOS = ["Todos", "Bosque", "Minas / Cuevas", "Pantano", "Manglar", "Praderas", "Desierto", "Montañas"];
+var TERRENOS_MODAL = ["Bosque", "Minas / Cuevas", "Pantano", "Manglar", "Praderas", "Desierto", "Montañas"];
 var RAREZAS_LIST = ["Común", "Rara", "Muy rara", "Legendaria"];
-var TIPOS_LORE_OBJ = ["Veneno", "Poción", "Ungüento"];
 
 function uid(){ return "id" + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
 function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -986,7 +990,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.03</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.04</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1641,11 +1645,116 @@ function tplMundoLore(s){
   });
 
   if(canEdit){
-    html += '<button class="btn-compact" data-action="add-lore" data-cat="'+cat+'" style="margin-top:6px;">+ Añadir a '+cat+'</button>';
+    html += '<button class="btn-compact" data-action="open-lore-modal" data-cat="'+cat+'" style="margin-top:6px;">+ Añadir a '+cat+'</button>';
   }
   html += '</div>';
   return html;
 }
+
+function openLoreModal(cat){
+  var titleLabel = cat === "objetos" ? "Recurso / Objeto" : (cat === "pistas" ? "Pista" : "NPC");
+  
+  var rarityBtns = RAREZAS_LIST.map(function(r){
+    var col = r==="Legendaria"?"#FDE047":r==="Muy rara"?"#C084FC":r==="Rara"?"#60A5FA":"#C2B196";
+    return '<button type="button" class="f-pill lore-rarity-btn" data-val="'+r+'" style="border-color:'+col+';color:'+col+';"><span>'+r+'</span></button>';
+  }).join('');
+
+  var typeSection = '';
+  if(cat === "objetos"){
+    var typeBtns = TIPOS_OBJETO_MODAL.map(function(t){
+      return '<button type="button" class="f-pill lore-type-btn" data-val="'+t+'"><span>'+t+'</span></button>';
+    }).join('');
+    var terrainBtns = TERRENOS_MODAL.map(function(tr){
+      return '<button type="button" class="f-pill lore-terrain-btn" data-val="'+tr+'"><span>'+tr+'</span></button>';
+    }).join('');
+    
+    typeSection = '<div class="field" style="margin-top:10px;"><label>Tipo de Objeto</label><div class="filter-pills" id="loreModalTypes" style="flex-wrap:wrap;gap:4px;">'+typeBtns+'</div></div>'+
+                  '<div class="field" style="margin-top:10px;"><label>Terreno</label><div class="filter-pills" id="loreModalTerrains" style="flex-wrap:wrap;gap:4px;">'+terrainBtns+'</div></div>';
+  }
+
+  var continentBtns = CONTINENTES_MODAL.map(function(cnt){
+    return '<button type="button" class="f-pill lore-cont-btn" data-val="'+cnt+'"><span>'+cnt+'</span></button>';
+  }).join('');
+
+  var html = '<h2>Nuevo '+titleLabel+'<button data-action="close-lore-modal" aria-label="Cerrar">&times;</button></h2>'+
+    '<div class="field"><label>Nombre</label><input type="text" id="loreModalTitle" placeholder="Ej: Flor de Lirio"></div>'+
+    '<div class="field" style="margin-top:8px;"><label>Rareza</label><div class="filter-pills" id="loreModalRarities" style="flex-wrap:wrap;gap:4px;">'+rarityBtns+'</div></div>'+
+    typeSection+
+    '<div class="field" style="margin-top:10px;"><label>Continente</label><div class="filter-pills" id="loreModalContinents" style="flex-wrap:wrap;gap:4px;">'+continentBtns+'</div></div>'+
+    '<div class="field" style="margin-top:8px;"><label>Descripción / Efecto</label><textarea id="loreModalText" placeholder="Detalles o efectos..."></textarea></div>'+
+    '<button class="btn-solid-gold" style="width:100%;margin-top:14px;padding:8px;" data-action="save-new-lore" data-cat="'+cat+'">Crear y Guardar</button>';
+
+  document.getElementById("loreModal").innerHTML = html;
+  
+  // Asignar estado seleccionado por defecto al primer botón de cada grupo
+  var rSel = document.querySelectorAll("#loreModalRarities .lore-rarity-btn");
+  if(rSel.length){ rSel[0].classList.add("active"); rSel[0].dataset.selected="true"; }
+  
+  if(cat === "objetos"){
+    var tSel = document.querySelectorAll("#loreModalTypes .lore-type-btn");
+    if(tSel.length){ tSel[0].classList.add("active"); tSel[0].dataset.selected="true"; }
+    var trSel = document.querySelectorAll("#loreModalTerrains .lore-terrain-btn");
+    if(trSel.length){ trSel[0].classList.add("active"); trSel[0].dataset.selected="true"; }
+  }
+  
+  var cSel = document.querySelectorAll("#loreModalContinents .lore-cont-btn");
+  if(cSel.length){ cSel[0].classList.add("active"); cSel[0].dataset.selected="true"; }
+
+  document.getElementById("loreModalOverlay").classList.remove("hidden");
+}
+
+function loreModalClick(e){
+  var pill = e.target.closest(".f-pill");
+  if(pill){
+    var parent = pill.parentElement;
+    parent.querySelectorAll(".f-pill").forEach(function(b){ b.classList.remove("active"); delete b.dataset.selected; });
+    pill.classList.add("active");
+    pill.dataset.selected = "true";
+    return;
+  }
+
+  var btn = e.target.closest("[data-action]"); if(!btn) return;
+  var action = btn.getAttribute("data-action");
+  if(action==="close-lore-modal"){ document.getElementById("loreModalOverlay").classList.add("hidden"); return; }
+  if(action==="save-new-lore"){
+    var cat = btn.getAttribute("data-cat");
+    var titleVal = (document.getElementById("loreModalTitle")||{}).value || "";
+    var textVal = (document.getElementById("loreModalText")||{}).value || "";
+    
+    var rBtn = document.querySelector("#loreModalRarities [data-selected='true']");
+    var rarityVal = rBtn ? rBtn.getAttribute("data-val") : "Común";
+
+    var tBtn = document.querySelector("#loreModalTypes [data-selected='true']");
+    var typeVal = tBtn ? tBtn.getAttribute("data-val") : (cat==="objetos"?"Veneno":"");
+
+    var trBtn = document.querySelector("#loreModalTerrains [data-selected='true']");
+    var terrainVal = trBtn ? trBtn.getAttribute("data-val") : "";
+
+    var cBtn = document.querySelector("#loreModalContinents [data-selected='true']");
+    var contVal = cBtn ? cBtn.getAttribute("data-val") : "Todos";
+
+    if(!titleVal.trim()){ showToast("Introduce un nombre.", "error"); return; }
+
+    state.lore[cat].push({
+      id: uid(),
+      title: titleVal.trim(),
+      text: textVal.trim(),
+      rarity: rarityVal,
+      type: typeVal,
+      terrain: terrainVal,
+      continent: contVal,
+      visible: true
+    });
+
+    saveState();
+    pushSharedData();
+    document.getElementById("loreModalOverlay").classList.add("hidden");
+    renderTab();
+    showToast("Entrada creada con éxito", "success");
+    return;
+  }
+}
+
 function creatureFieldGlobal(label,bind,val){
   return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-scope="global" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
 }
@@ -1991,15 +2100,9 @@ function handleClick(e){
     if(li){ li.visible = li.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
     return;
   }
-  if(action==="add-lore"){
+  if(action==="open-lore-modal"){
     if(!isGM()) return;
-    var cat = btn.getAttribute("data-cat");
-    var rOpt = prompt("Rareza (Común / Rara / Muy rara / Legendaria):","Común");
-    var tOpt = cat==="objetos" ? prompt("Tipo (Veneno / Poción / Ungüento):","Veneno") : "";
-    var trOpt = cat==="objetos" ? prompt("Terreno (Bosque / Pantano / Desierto / etc):","Bosque") : "";
-    state.lore[cat].push({id:uid(),title:"",text:"",rarity:rOpt||"Común",type:tOpt,terrain:trOpt,continent:loreContinentFilter||"Todos",visible:true});
-    saveState(); pushSharedData(); renderTab();
-    showToast("Entrada de lore añadida", "success");
+    openLoreModal(btn.getAttribute("data-cat"));
     return;
   }
   if(action==="del-lore"){
@@ -2068,514 +2171,6 @@ function handleClick(e){
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
 }
 
-function openPinModal(mapObj, x, y, pinId){
-  var pin = pinId ? (mapObj.markers||[]).find(function(p){return p.id===pinId;}) : {id:uid(), x:x, y:y, name:"", kind:"Ciudad", notes:""};
-  document.getElementById("pinModal").innerHTML =
-    '<h2>'+(pinId?'Editar Marcador':'Nuevo Punto en '+esc(mapObj.name))+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
-    '<div class="field"><label>Nombre del Lugar</label><input type="text" id="pinInputName" value="'+esc(pin.name)+'" placeholder="Ej: Ruinas Antiguas"></div>'+
-    '<div class="field" style="margin-top:8px;"><label>Tipo de Marcador</label><select id="pinInputKind">'+
-      ['Ciudad','Capital','Punto de Interés','Peligro'].map(function(k){return '<option value="'+k+'" '+(pin.kind===k?'selected':'')+'>'+k+'</option>';}).join('')+
-    '</select></div>'+
-    '<div class="field" style="margin-top:8px;"><label>Notas / Secretos</label><textarea id="pinInputNotes">'+esc(pin.notes)+'</textarea></div>'+
-    '<div style="display:flex;gap:6px;margin-top:12px;">'+
-      '<button class="btn-solid-gold" style="flex:1;" data-action="save-pin" data-id="'+pin.id+'" data-x="'+pin.x+'" data-y="'+pin.y+'">Guardar</button>'+
-      (pinId?'<button class="btn-compact" style="color:var(--danger);" data-action="del-pin" data-id="'+pin.id+'">Borrar</button>':'')+
-    '</div>';
-  document.getElementById("pinModalOverlay").classList.remove("hidden");
-}
-
-function pinModalClick(e){
-  var btn = e.target.closest("[data-action]"); if(!btn) return;
-  var action = btn.getAttribute("data-action");
-  var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-  if(action==="close-modal"){ closeModals(); return; }
-  if(action==="save-pin" && curM){
-    var pid = btn.getAttribute("data-id");
-    var existing = (curM.markers||[]).find(function(p){return p.id===pid;});
-    var pData = existing || {id:pid, x:btn.getAttribute("data-x"), y:btn.getAttribute("data-y")};
-    pData.name = document.getElementById("pinInputName").value.trim()||"Punto de Interés";
-    pData.kind = document.getElementById("pinInputKind").value;
-    pData.notes = document.getElementById("pinInputNotes").value;
-    if(!existing){ if(!curM.markers) curM.markers=[]; curM.markers.push(pData); }
-    saveState(); pushSharedData(); closeModals(); renderTab();
-    showToast("Marcador guardado", "success");
-    return;
-  }
-  if(action==="del-pin" && curM){
-    curM.markers = (curM.markers||[]).filter(function(p){return p.id!==btn.getAttribute("data-id");});
-    saveState(); pushSharedData(); closeModals(); renderTab();
-    showToast("Marcador eliminado", "info");
-    return;
-  }
-}
-
-function openCharModal(){
-  var chars = getUserCharacters();
-  var html = '<h2>Selección de Personaje<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
-  chars.forEach(function(c){
-    var swatches = THEME_LIST.map(function(t){
-      return '<button class="swatch swatch-'+t.id+((c.theme||"default")===t.id?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" aria-label="Tema '+t.label+'"></button>';
-    }).join('');
-    var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
-    var isNPC = !!c.isNPC;
-
-    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'" data-action="pick-char" data-id="'+c.id+'" role="button" tabindex="0">'+
-      '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
-      '<div class="cli-info">'+
-        '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+'</div>'+
-        '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
-        '<div class="theme-swatches" onclick="event.stopPropagation()">'+swatches+'</div>'+
-      '</div>'+
-      (isGM()?'<button class="row-del" data-action="del-char" data-id="'+c.id+'" onclick="event.stopPropagation()" aria-label="Eliminar personaje">✕</button>':'')+
-    '</div>';
-  });
-  if(isGM()){
-    html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>'+
-            '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button>';
-  }
-  document.getElementById("charModal").innerHTML = html;
-  document.getElementById("charModalOverlay").classList.remove("hidden");
-}
-
-function openDataModal(){
-  var html = '<h2>Ajustes y Sesión<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
-  if(currentUser){
-    html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:12px;">Sesión activa: <b>'+esc(currentUser.email)+'</b> ('+currentRole.toUpperCase()+')</div>'+
-      '<button class="btn-solid-gold" style="width:100%;" data-action="auth-logout">Cerrar Sesión</button>';
-  } else {
-    html += '<div class="field"><label>Correo Electrónico</label><input type="email" id="authEmail" placeholder="usuario@gmail.com"></div>'+
-      '<div class="field" style="margin-top:8px;"><label>Contraseña</label><input type="password" id="authPass"></div>'+
-      '<div style="display:flex;gap:6px;margin-top:12px;">'+
-        '<button class="btn-solid-gold" style="flex:1;" data-action="auth-login">Entrar</button>'+
-        '<button class="btn-compact" style="flex:1;" data-action="auth-signup">Registrarse</button>'+
-      '</div>';
-  }
-  html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">'+
-    '<div style="display:flex;gap:6px;">'+
-      '<button class="btn-compact" style="flex:1;" data-action="export-data">Exportar Backup</button>'+
-      '<button class="btn-compact" style="flex:1;" data-action="import-data">Importar Backup</button>'+
-    '</div>'+
-  '</div>';
-  document.getElementById("dataModal").innerHTML = html;
-  document.getElementById("dataModalOverlay").classList.remove("hidden");
-}
-
-var diceConfig = {qty:1, sides:10, mod:0, mode:"normal"};
-function openDiceModal(){
-  var sidesList = [4, 6, 8, 10, 12, 20, 100];
-  var diceCards = sidesList.map(function(s){
-    return '<div class="dtype-card '+(diceConfig.sides===s?'active':'')+'" data-action="pick-die" data-sides="'+s+'" role="button" tabindex="0">'+
-      getDieSvg(s)+
-      '<span>'+(s===100?'d%':'d'+s)+'</span>'+
-    '</div>';
-  }).join('');
-
-  document.getElementById("diceModal").innerHTML =
-    '<h2>Lanzador de Dados<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
-    '<div class="field"><label>Modalidad de Tirada</label><select id="diceMode">'+
-      '<option value="normal" '+(diceConfig.mode==='normal'?'selected':'')+'>Tirada Estándar</option>'+
-      '<option value="adv" '+(diceConfig.mode==='adv'?'selected':'')+'>Ventaja (2 dados, mayor)</option>'+
-      '<option value="disadv" '+(diceConfig.mode==='disadv'?'selected':'')+'>Desventaja (2 dados, menor)</option>'+
-    '</select></div>'+
-    '<div class="dtype-grid">'+diceCards+'</div>'+
-    (diceConfig.sides===100?'':'<div class="field" style="margin-top:6px;"><label>Número de dados</label><input type="number" min="1" id="diceQty" value="'+diceConfig.qty+'"></div>')+
-    '<div class="field" style="margin-top:6px;"><label>Modificador (+ / -)</label><input type="number" id="diceMod" value="'+diceConfig.mod+'"></div>'+
-    '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:8px;" data-action="roll-dice-btn">Lanzar Dados</button>';
-  document.getElementById("diceModalOverlay").classList.remove("hidden");
-}
-
-function diceModalClick(e){
-  var btn = e.target.closest("[data-action]"); if(!btn) return;
-  var action = btn.getAttribute("data-action");
-  if(action==="close-modal"){ closeModals(); return; }
-  if(action==="pick-die"){ diceConfig.sides = parseInt(btn.getAttribute("data-sides"),10); openDiceModal(); return; }
-  if(action==="roll-dice-btn"){
-    diceConfig.mod = parseInt(document.getElementById("diceMod").value,10)||0;
-    diceConfig.mode = document.getElementById("diceMode").value;
-    document.getElementById("diceModalOverlay").classList.add("hidden");
-
-    if(diceConfig.sides===100){
-      var dTens = (rollDie(10)-1)*10, dUnits = rollDie(10)-1;
-      var pct = dTens + dUnits === 0 ? 100 : dTens + dUnits;
-      var tot = pct + diceConfig.mod;
-      openRollModal("d% Percentil", tot, "Decenas: " + dTens + " | Unidades: " + dUnits, 100, pct===100, pct===1);
-      return;
-    }
-
-    if(diceConfig.mode==="adv" || diceConfig.mode==="disadv"){
-      var r1 = rollDie(diceConfig.sides), r2 = rollDie(diceConfig.sides);
-      var chosen = diceConfig.mode==="adv" ? Math.max(r1, r2) : Math.min(r1, r2);
-      var totalAdv = chosen + diceConfig.mod;
-      var advHtml = '<div class="adv-dice-wrap">'+
-        '<div class="adv-die-card '+(r1===chosen?'chosen':'discarded')+'">'+r1+'</div>'+
-        '<div class="adv-die-card '+(r2===chosen && (r1!==r2||diceConfig.mode==="adv")?'chosen':(r1===r2?'chosen':'discarded'))+'">'+r2+'</div>'+
-      '</div>';
-      var lblAdv = "d"+diceConfig.sides + (diceConfig.mode==="adv"?" (Ventaja)":" (Desventaja)");
-      openRollModal(lblAdv, totalAdv, "Modificador: " + (diceConfig.mod>=0?"+"+diceConfig.mod:diceConfig.mod), diceConfig.sides, chosen===diceConfig.sides, chosen===1, advHtml);
-      return;
-    }
-
-    diceConfig.qty = Math.max(1, parseInt((document.getElementById("diceQty")||{}).value,10)||1);
-    var rolls=[], sum=0;
-    for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
-    var grandTotal = sum + diceConfig.mod;
-    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
-    return;
-  }
-}
-
-function modalClick(e){
-  var btn = e.target.closest("[data-action]"); if(!btn) return;
-  var action = btn.getAttribute("data-action");
-  if(action==="close-modal"){ closeModals(); return; }
-  if(action==="pick-char"){ state.activeId = btn.getAttribute("data-id"); saveState(); closeModals(); renderTopbar(); renderTab(); return; }
-  if(action==="add-char"){
-    if(!isGM()) return;
-    var nName = prompt("Nombre del nuevo personaje:");
-    if(nName){
-      var nc = blankCharacter(nName);
-      state.characters.push(nc); state.activeId = nc.id;
-      saveState(); closeModals(); renderTopbar(); renderTab();
-      showToast("Personaje creado: " + nName, "success");
-    }
-    return;
-  }
-  if(action==="add-npc"){
-    if(!isGM()) return;
-    var nName = prompt("Nombre del NPC:");
-    if(nName){
-      var nn = blankCharacter(nName, true);
-      nn.trabajo = "Neutral";
-      state.characters.push(nn);
-      state.activeId = nn.id;
-      saveState(); closeModals(); renderTopbar(); renderTab();
-      showToast("NPC creado: " + nName, "success");
-    }
-    return;
-  }
-  if(action==="del-char"){
-    if(!isGM()) return;
-    if(confirm("¿Eliminar este personaje?")){
-      state.characters = state.characters.filter(function(x){return x.id!==btn.getAttribute("data-id");});
-      state.activeId = state.characters[0]?state.characters[0].id:"";
-      saveState(); closeModals(); renderTopbar(); renderTab();
-      showToast("Personaje eliminado", "info");
-    }
-    return;
-  }
-  if(action==="set-theme"){
-    var thC = state.characters.find(function(x){return x.id===btn.getAttribute("data-id");});
-    if(thC){ thC.theme = btn.getAttribute("data-theme"); saveState(); renderTopbar(); renderTab(); }
-    return;
-  }
-  if(action==="auth-login"){ supabaseLogin(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
-  if(action==="auth-signup"){ supabaseSignup(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
-  if(action==="auth-logout"){ supabaseLogout(); return; }
-  if(action==="export-data"){ exportData(); return; }
-  if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
-}
-
-function closeModals(){
-  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay"].forEach(function(id){
-    document.getElementById(id).classList.add("hidden");
-  });
-}
-
-function exportData(){
-  var blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
-  var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "krysalis-backup.json"; a.click();
-  showToast("Backup exportado", "success");
-}
-function importData(file){
-  var r = new FileReader();
-  r.onload = function(){
-    try{
-      state = migrateState(JSON.parse(r.result));
-      state.activeId = state.characters[0]?state.characters[0].id:"";
-      saveState(); closeModals(); renderTopbar(); renderTabbar(); renderTab();
-      showToast("Backup importado correctamente", "success");
-    }catch(e){ showToast("Archivo no válido.", "error"); }
-  };
-  r.readAsText(file);
-}
-
-function resizeImageFile(file, maxDim, quality, callback){
-  var reader = new FileReader();
-  reader.onload = function(ev){
-    var img = new Image();
-    img.onload = function(){
-      var scale = Math.min(1, maxDim/Math.max(img.width,img.height));
-      var canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width*scale); canvas.height = Math.round(img.height*scale);
-      canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
-      callback(canvas.toDataURL("image/jpeg", quality||0.65));
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-/* SUPABASE SINCRO */
-function initSupabase(){
-  if(!window.supabase) return;
-  try{
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    
-    if(!realtimeChannel){
-      realtimeChannel = supabaseClient.channel('realtime_all_changes')
-        .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(payload){
-          if(payload && payload.new){
-            var row = payload.new;
-            if(row.id === 'main_map'){
-              var remoteMaps = row.data || row.markers;
-              if(Array.isArray(remoteMaps) && remoteMaps.length){
-                state.maps = remoteMaps;
-                if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
-                saveState(true);
-                if(state.activeTab==="mundo") renderTab();
-              }
-            } else if(row.id === 'world_compendium'){
-              var comp = row.data;
-              if(comp){
-                if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
-                if(comp.bestiary) state.bestiary = comp.bestiary;
-                if(comp.lore) state.lore = comp.lore;
-                saveState(true);
-                renderTab();
-              }
-            }
-          }
-        })
-        .on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(payload){
-          handleRemoteCharacterChange(payload);
-        })
-        .subscribe();
-    }
-
-    pullMapFromSupabase();
-    pullSharedDataFromSupabase();
-
-    supabaseClient.auth.getSession().then(function(res){
-      if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
-    }).catch(function(e){ console.error('Supabase error:', e); });
-
-    supabaseClient.auth.onAuthStateChange(function(e, session){
-      currentUser = session ? session.user : null;
-      if(currentUser){ fetchUserProfile(); } else { currentRole='player'; updateSyncBadge("local"); renderTopbar(); renderTab(); }
-    });
-  }catch(e){ console.error('Supabase error:', e); }
-}
-
-function handleRemoteCharacterChange(payload){
-  if(!payload || !payload.eventType) return;
-  if(payload.eventType === 'DELETE'){
-    var delId = payload.old ? payload.old.id : null;
-    if(delId){
-      state.characters = (state.characters||[]).filter(function(x){ return x.db_id !== delId && x.id !== delId; });
-      if(!state.characters.length) state.characters.push(blankCharacter("Sin Personaje"));
-      if(!state.characters.some(function(x){return x.id===state.activeId;})){
-        state.activeId = state.characters[0].id;
-      }
-      saveState(true); renderTopbar(); renderTabbar(); renderTab();
-    }
-  } else {
-    var row = payload.new;
-    if(row && row.data){
-      var c = row.data;
-      c.db_id = row.id;
-      var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id; });
-      if(idx !== -1){
-        state.characters[idx] = c;
-      } else {
-        state.characters.push(c);
-      }
-      if(!state.activeId) state.activeId = c.id;
-      saveState(true); renderTopbar(); renderTabbar(); renderTab();
-    }
-  }
-}
-
-function handleRemoteSharedDataChange(payload){
-  if(!payload || !payload.new || !payload.new.data) return;
-  var sharedData = payload.new.data;
-  if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
-  if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
-  if(sharedData.lore) state.lore = sharedData.lore;
-  saveState(true);
-  renderTab();
-}
-
-async function fetchUserProfile(){
-  if(!supabaseClient || !currentUser) return;
-  try{
-    var res = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
-    if(res.data && res.data.role) currentRole = res.data.role;
-    pullAllFromSupabase();
-    pullMapFromSupabase();
-    pullSharedDataFromSupabase();
-  }catch(e){ console.error('Supabase error:', e); }
-  renderTopbar();
-  renderTabbar();
-  renderTab();
-}
-
-async function supabaseLogin(em, pw){
-  var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
-  if(res.error) showToast(res.error.message, "error"); else closeModals();
-}
-async function supabaseSignup(em, pw){
-  var res = await supabaseClient.auth.signUp({email:em, password:pw});
-  if(res.error) showToast(res.error.message, "error"); else showToast("Registro completado. Ya puedes entrar.", "success");
-}
-async function supabaseLogout(){
-  try {
-    await supabaseClient.auth.signOut();
-  } catch(e) {
-    console.error('Supabase error:', e);
-  }
-  currentUser=null; currentRole='player'; closeModals(); updateSyncBadge("local"); renderTopbar(); renderTabbar(); renderTab();
-  showToast("Sesión cerrada", "info");
-}
-async function pullAllFromSupabase(){
-  if(!supabaseClient || !currentUser) return;
-  isRemoteSyncing = true;
-  try{
-    var charRes = await supabaseClient.from('characters').select('*');
-    if(charRes.data && charRes.data.length){
-      state.characters = charRes.data.map(function(r){ var c = r.data; c.db_id = r.id; return c; });
-      if(!state.activeId && state.characters.length) state.activeId = state.characters[0].id;
-      updateSyncBadge("synced");
-    }
-    saveState(true); renderTopbar(); renderTabbar(); renderTab();
-  }catch(e){ console.error('Supabase error:', e); }
-  isRemoteSyncing = false;
-}
-function pushActiveChar(){
-  if(!supabaseClient || !currentUser) return;
-  var c = activeChar(); if(!c || !c.name || c.id==="empty") return;
-  var payload = {name:c.name, data:c, owner_id:currentUser.id, updated_at:new Date().toISOString()};
-  if(c.db_id) payload.id = c.db_id;
-  supabaseClient.from('characters').upsert(payload).select().then(function(res){
-    if(res.error) { console.error('Supabase error:', res.error); return; }
-    if(res.data && res.data[0]) c.db_id = res.data[0].id;
-    updateSyncBadge("synced");
-  }).catch(function(e){ console.error('Supabase error:', e); });
-}
-async function pullMapFromSupabase(){
-  if(!supabaseClient) return;
-  try{
-    var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'main_map').maybeSingle();
-    if(res.error) { console.error('Supabase error:', res.error); return; }
-    if(res.data && (res.data.data || res.data.markers)){
-      var remoteMaps = res.data.data || res.data.markers;
-      if(Array.isArray(remoteMaps) && remoteMaps.length){
-        state.maps = remoteMaps;
-        if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
-        saveState(true);
-        if(state.activeTab==="mundo") renderTab();
-      }
-    }
-  }catch(e){ console.error('Supabase error:', e); }
-}
-function pushMapsData(){
-  if(!supabaseClient) return;
-  supabaseClient.from('campaign_map').upsert({
-    id: 'main_map',
-    data: state.maps || [],
-    markers: state.maps || [],
-    updated_at: new Date().toISOString()
-  }).select().then(function(res){
-    if(res.error) { console.error('Supabase error:', res.error); return; }
-    updateSyncBadge("synced");
-  }).catch(function(e){ console.error('Supabase error:', e); });
-}
-
-async function pullSharedDataFromSupabase(){
-  if(!supabaseClient) return;
-  try{
-    var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'world_compendium').maybeSingle();
-    if(res.error) { console.error('Supabase error:', res.error); return; }
-    if(res.data && res.data.data){
-      var comp = res.data.data;
-      if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
-      if(comp.bestiary) state.bestiary = comp.bestiary;
-      if(comp.lore) state.lore = comp.lore;
-      saveState(true);
-      renderTab();
-    }
-  }catch(e){ console.error('Supabase error:', e); }
-}
-
-function pushSharedData(){
-  if(!supabaseClient) return;
-  supabaseClient.from('campaign_map').upsert({
-    id: 'world_compendium',
-    data: {
-      weaponsCatalog: state.weaponsCatalog || [],
-      bestiary: state.bestiary || [],
-      lore: state.lore || getSeedLore()
-    },
-    markers: [],
-    updated_at: new Date().toISOString()
-  }).select().then(function(res){
-    if(res.error) { console.error('Supabase error:', res.error); return; }
-    updateSyncBadge("synced");
-  }).catch(function(e){ console.error('Supabase error:', e); });
-}
-
-// SWIPE GESTURE SUPPORT
-var touchStartX = null;
-var touchStartY = null;
-var swipeIndicatorTimeout = null;
-
-function handleTouchStart(e){
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}
-
-function handleTouchEnd(e){
-  if(touchStartX === null || touchStartY === null) return;
-  
-  var touchEndX = e.changedTouches[0].clientX;
-  var touchEndY = e.changedTouches[0].clientY;
-  var dx = touchEndX - touchStartX;
-  var dy = touchEndY - touchStartY;
-  
-  var tabs = isGM() ? GM_TABS : PLAYER_TABS;
-  
-  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 80){
-    var currentTabIndex = tabs.findIndex(function(t){ return t.id === state.activeTab; });
-    var newIndex = currentTabIndex;
-    
-    if(dx < 0 && currentTabIndex < tabs.length - 1){
-      newIndex = currentTabIndex + 1;
-    } else if(dx > 0 && currentTabIndex > 0){
-      newIndex = currentTabIndex - 1;
-    }
-    
-    if(newIndex !== currentTabIndex){
-      state.activeTab = tabs[newIndex].id;
-      saveState();
-      renderTabbar();
-      renderTab();
-      
-      showToast(tabs[newIndex].label, "info");
-    }
-  }
-  
-  touchStartX = null;
-  touchStartY = null;
-}
-
-function showSwipeIndicator(){
-  var indicator = document.getElementById("swipeIndicator");
-  indicator.classList.add("visible");
-  clearTimeout(swipeIndicatorTimeout);
-  swipeIndicatorTimeout = setTimeout(function(){
-    indicator.classList.remove("visible");
-  }, 2000);
-}
-
 function init(){
   state = loadState();
   renderTopbar();
@@ -2608,10 +2203,14 @@ function init(){
   document.getElementById("dataModal").addEventListener("click", modalClick);
   document.getElementById("diceModal").addEventListener("click", diceModalClick);
   document.getElementById("pinModal").addEventListener("click", pinModalClick);
+  document.getElementById("loreModal").addEventListener("click", loreModalClick);
+  
   document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  document.getElementById("loreModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+  
   document.getElementById("rollOverlay").addEventListener("click", function(e){
     if(e.target===this || e.target.closest("[data-action='close-roll-modal']")) this.classList.add("hidden");
   });
