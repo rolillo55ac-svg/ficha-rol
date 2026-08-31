@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.02 (BG3 Style)</title>
+<title>Krysalis · Fichas de Rol v3.03</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -468,12 +468,11 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="bestiario"]::before{content:'🐾';}
 .tab-btn[data-tab="extra"]::before{content:'🔮';}
 .tab-btn[data-tab="mundo"]::before{content:'🗺️';}
-.tab-btn.gm-tab{color:var(--gm-light);}
-.tab-btn.gm-tab::after{content:'GM';position:absolute;top:2px;right:2px;font-size:.45rem;background:var(--gm-color);color:#FFF;padding:1px 3px;border-radius:3px;}
+.tab-btn.gm-tab{color:var(--ink-faint);}
 .tab-btn:hover{color:var(--ink-dim);background:rgba(176,141,87,0.05);}
 .tab-btn:hover::before{filter:grayscale(.2) opacity(.9);}
 .tab-btn.active{color:var(--gold-light);font-weight:700;background:rgba(176,141,87,0.08);}
-.tab-btn.active.gm-tab{color:var(--gm-light);background:rgba(210,105,30,0.1);}
+.tab-btn.active.gm-tab{color:var(--gold-light);background:rgba(176,141,87,0.08);}
 .tab-btn.active::before{filter:none;transform:translateY(-1px);}
 .tab-btn.active::after{content:'';display:block;width:16px;height:2px;background:linear-gradient(90deg,transparent,var(--blood-light),transparent);border-radius:2px;margin:2px auto 0;box-shadow:0 0 6px var(--blood-light);}
 
@@ -625,7 +624,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV302";
+var STORAGE_KEY = "krysalisFichasV303";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -673,6 +672,8 @@ var THEME_LIST = [
 var CONTINENTES = ["Todos", "Vetrys", "Tryssar", "Labrys", "Aslan", "Krysalis"];
 var TIPOS_OBJETO = ["Todos", "Veneno", "Poción", "Ungüento"];
 var TERRENOS = ["Todos", "Bosque", "Minas / Cuevas", "Pantano", "Manglar", "Praderas", "Desierto", "Montañas"];
+var RAREZAS_LIST = ["Común", "Rara", "Muy rara", "Legendaria"];
+var TIPOS_LORE_OBJ = ["Veneno", "Poción", "Ungüento"];
 
 function uid(){ return "id" + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
 function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -731,13 +732,13 @@ function blankCharacter(name, isNPC){
 
 function getSeedBestiary(){
   return [
-    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",notas:"Doma: 5. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Anaconda Gigante",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",notas:"Doma: 5. Carga pesada.",visible:true},
-    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",notas:"Doma: 5. No puede nadar.",visible:true},
-    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10//12 (T/V)",notas:"Doma: 5. Montura voladora.",visible:true},
-    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",notas:"Doma: 5. Acuático.",visible:true},
-    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",notas:"Doma: 5. Alta resistencia.",visible:true},
-    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",notas:"Resistencia al frío.",visible:true}
+    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",habilidades:"Doma: 5. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Anaconda Gigante",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",habilidades:"Doma: 5. Carga pesada.",visible:true},
+    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",habilidades:"Doma: 5. No puede nadar.",visible:true},
+    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",habilidades:"Doma: 5. Montura voladora.",visible:true},
+    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",habilidades:"Doma: 5. Acuático.",visible:true},
+    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",habilidades:"Doma: 5. Alta resistencia.",visible:true},
+    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",habilidades:"Resistencia al frío.",visible:true}
   ];
 }
 
@@ -777,6 +778,14 @@ function migrateState(s){
   if(!s.weaponsCatalog || !s.weaponsCatalog.length) s.weaponsCatalog = getSeedWeaponsCatalog();
   if(!s.lore || !s.lore.objetos) s.lore=getSeedLore();
   if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
+  else {
+    s.bestiary.forEach(function(b){
+      if(b.notas && !b.habilidades){
+        b.habilidades = b.notas;
+      }
+      if(b.habilidades===undefined) b.habilidades="";
+    });
+  }
   if(!s.maps || !s.maps.length){
     s.maps = [{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }];
     s.activeMapId = "world_main";
@@ -798,6 +807,10 @@ function migrateState(s){
     if(c.skillPointsUnlocked===undefined) c.skillPointsUnlocked=false;
     if(c.owner_id===undefined) c.owner_id=null;
     if(c.ownerEmail===undefined) c.ownerEmail="";
+    (c.summons||[]).forEach(function(su){
+      if(su.notas && !su.habilidades) su.habilidades = su.notas;
+      if(su.habilidades===undefined) su.habilidades="";
+    });
   });
   return s;
 }
@@ -973,7 +986,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.02</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.03</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1021,15 +1034,14 @@ var GM_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
-  {id:"extra",label:"Extra",gm:true}, {id:"mundo",label:"Mundo"}
+  {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
 function renderTabbar(){
   var tabs = isGM() ? GM_TABS : PLAYER_TABS;
   document.getElementById("tabbar").innerHTML = tabs.map(function(t){
     var isActive = state.activeTab===t.id;
-    var gmClass = t.gm ? ' gm-tab' : '';
-    return '<button class="tab-btn'+gmClass+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+'"><span>'+t.label+'</span></button>';
+    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+'"><span>'+t.label+'</span></button>';
   }).join('');
 }
 
@@ -1047,9 +1059,6 @@ function renderTab(){
   else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
   else if(state.activeTab==="extra" && isGM()) main.innerHTML = tplExtra(c);
   else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
-  
-  main.scrollTop = 0;
-  window.scrollTo(0, 0);
 }
 
 function tplFicha(c){
@@ -1393,7 +1402,7 @@ function tplInvocaciones(c){
         creatureField("Movilidad", "summons." + s.id + ".movilidad", s.movilidad) +
         creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia) +
       '</div>' +
-      '<textarea class="creature-notes" placeholder="Notas y habilidades..." data-bind="summons.' + s.id + '.notas">' + esc(s.notas) + '</textarea>' +
+      '<div class="creature-field" style="margin-top:6px;"><label>Habilidades, Tiradas y Rasgos</label><textarea class="creature-notes" placeholder="Ej: Melé 8+1d10, Rasgo..." data-bind="summons.' + s.id + '.habilidades">' + esc(s.habilidades||s.notas) + '</textarea></div>' +
     '</div>';
   });
   if(isGM()){
@@ -1440,7 +1449,9 @@ function tplBestiario(s){
         (canEdit ? creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano) : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.dano||"-")+'</span></div>')+
         (canEdit ? creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad) : '<div class="creature-field"><label>Movilidad</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.movilidad||"-")+'</span></div>')+
       '</div>'+
-      (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.notas">'+esc(b.notas)+'</textarea>' : (b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:6px;">'+esc(b.notas)+'</p>':''))+
+      '<div class="creature-field" style="margin-top:6px;"><label>Habilidades y Rasgos</label>'+
+      (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.habilidades">'+esc(b.habilidades||b.notas)+'</textarea>' : (b.habilidades||b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.habilidades||b.notas)+'</p>':''))+
+      '</div>'+
     '</div>';
   });
   
@@ -1692,9 +1703,10 @@ function handleChange(e){
   var isGlobal = el.getAttribute("data-scope")==="global";
   var target = isGlobal ? state : activeChar();
   setBind(target, el.getAttribute("data-bind"), el.value, el.type);
-  saveState();
-  renderTopbar();
-  renderTab();
+  saveState(true);
+  if(isGlobal){
+    pushSharedData();
+  }
 }
 
 function handleClick(e){
@@ -1952,7 +1964,7 @@ function handleClick(e){
   if(action==="del-spell"){ if(!isGM()) return; c.spells = c.spells.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-stone"){ if(!isGM()) return; c.stones.push({id:uid(),color:"",efecto:""}); saveState(); renderTab(); return; }
   if(action==="del-stone"){ if(!isGM()) return; c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-summon"){ if(!isGM()) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",notas:""}); saveState(); renderTab(); return; }
+  if(action==="add-summon"){ if(!isGM()) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); saveState(); renderTab(); return; }
   if(action==="del-summon"){ if(!isGM()) return; c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-poison"){ if(!isGM()) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); saveState(); renderTab(); return; }
   if(action==="del-poison"){ if(!isGM()) return; c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
@@ -1969,7 +1981,7 @@ function handleClick(e){
     if(b){ b.visible = b.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
     return;
   }
-  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",notas:"",visible:true}); saveState(); pushSharedData(); renderTab(); return; }
+  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",habilidades:"",visible:true}); saveState(); pushSharedData(); renderTab(); return; }
   if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); pushSharedData(); renderTab(); return; }
   if(action==="toggle-lore-visibility"){
     if(!isGM()) return;
@@ -2383,6 +2395,16 @@ function handleRemoteCharacterChange(payload){
   }
 }
 
+function handleRemoteSharedDataChange(payload){
+  if(!payload || !payload.new || !payload.new.data) return;
+  var sharedData = payload.new.data;
+  if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
+  if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
+  if(sharedData.lore) state.lore = sharedData.lore;
+  saveState(true);
+  renderTab();
+}
+
 async function fetchUserProfile(){
   if(!supabaseClient || !currentUser) return;
   try{
@@ -2567,7 +2589,10 @@ function init(){
     var isGlobal = el.getAttribute("data-scope")==="global";
     var target = isGlobal ? state : activeChar();
     setBind(target, el.getAttribute("data-bind"), el.value, el.type);
-    saveState();
+    saveState(true);
+    if(isGlobal){
+      pushSharedData();
+    }
   });
   
   document.addEventListener("touchstart", handleTouchStart, {passive: true});
