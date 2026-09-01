@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.111</title>
+<title>Krysalis · Fichas de Rol v3.112</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -1205,11 +1205,21 @@ function tplHabilidades(c){
   SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
 
   var unlocked = c.skillPointsUnlocked || false;
+  if(c.isNPC){
+    unlocked = true;
+  }
+  
   var banner = '';
   if(isGM() && !c.isNPC){
     banner = '<div class="skill-pool-banner">'+
       '<span>Puntos de mejora disponibles: <b>'+num(c.skillPoints,0)+'</b></span>'+
       '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>'+
+    '</div>';
+  }
+  
+  if(c.isNPC && isGM()){
+    banner = '<div class="skill-pool-banner">'+
+      '<span>NPC - Habilidades editables directamente (sin puntos)</span>'+
     '</div>';
   }
 
@@ -1234,7 +1244,7 @@ function tplHabilidades(c){
       var prog = num(c.skillProgress[cs.id],0);
       var costNeeded = bonusVal + 1;
       var canSub = prog > 0;
-      var canAdd = unlocked && bonusVal < 8 && num(c.skillPoints,0) >= 1 && bonusVal > 0;
+      var canAdd = unlocked && bonusVal < 8 && (c.isNPC || num(c.skillPoints,0) >= 1) && bonusVal > 0;
       
       html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span>'+
         '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
@@ -1272,7 +1282,7 @@ function skillRowHtml(s, c, unlocked){
   }
 
   var canSub = prog > 0;
-  var canAdd = unlocked && bonusVal < 8 && num(c.skillPoints,0) >= 1 && bonusVal > 0;
+  var canAdd = unlocked && bonusVal < 8 && (c.isNPC || num(c.skillPoints,0) >= 1) && bonusVal > 0;
 
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
@@ -2594,20 +2604,22 @@ function handleClick(e){
     showToast(c.skillPointsUnlocked ? "Asignación de habilidades desbloqueada" : "Asignación de habilidades bloqueada", "info");
     return;
   }
-  if(action==="skill-add"){
-    if(!c.skillPointsUnlocked) return;
+   if(action==="skill-add-custom"){
+    if(!c.skillPointsUnlocked && !c.isNPC) return;
     var sId = btn.getAttribute("data-id");
     var curBonus = num(c.skillBonus[sId], 0);
-    if(curBonus === 0) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
+    if(curBonus === 0 && !c.isNPC) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
     if(curBonus >= 8) { showToast("La habilidad ha alcanzado el nivel máximo (8).", "warning"); return; }
-    if(num(c.skillPoints, 0) < 1) { showToast("No tienes puntos disponibles.", "error"); return; }
+    if(!c.isNPC && num(c.skillPoints, 0) < 1) { showToast("No tienes puntos disponibles.", "error"); return; }
 
     if(!c.skillProgress) c.skillProgress = {};
     var prog = num(c.skillProgress[sId], 0);
     var targetLevel = curBonus + 1;
     var costNeeded = targetLevel;
 
-    c.skillPoints--;
+    if(!c.isNPC){
+      c.skillPoints--;
+    }
     prog++;
 
     if(prog >= costNeeded){
@@ -2619,7 +2631,7 @@ function handleClick(e){
     saveState(); renderTab(); return;
   }
   if(action==="skill-sub"){
-    if(!c.skillPointsUnlocked) return;
+    if(!c.skillPointsUnlocked && !c.isNPC) return;
     var sId2 = btn.getAttribute("data-id");
     if(!c.skillProgress) c.skillProgress = {};
     var prog2 = num(c.skillProgress[sId2], 0);
@@ -2627,10 +2639,23 @@ function handleClick(e){
     if(prog2 > 0){
       prog2--;
       c.skillProgress[sId2] = prog2;
-      c.skillPoints++;
+      if(!c.isNPC){
+        c.skillPoints++;
+      }
       saveState(); renderTab();
     } else {
-      showToast("No se puede restar un nivel ya consolidado.", "warning");
+      if(c.isNPC){
+        var curBonus2 = num(c.skillBonus[sId2], 0);
+        if(curBonus2 > 0){
+          c.skillBonus[sId2] = curBonus2 - 1;
+          c.skillProgress[sId2] = 0;
+          saveState(); renderTab();
+        } else {
+          showToast("La habilidad ya está en nivel 0.", "warning");
+        }
+      } else {
+        showToast("No se puede restar un nivel ya consolidado.", "warning");
+      }
     }
     return;
   }
