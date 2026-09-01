@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.23</title>
+<title>Krysalis · Fichas de Rol v3.33</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -1244,7 +1244,7 @@ function tplHabilidades(c){
       var prog = num(c.skillProgress[cs.id],0);
       var costNeeded = bonusVal + 1;
       var canSub = prog > 0;
-      var canAdd = unlocked && bonusVal < 8 && (c.isNPC || num(c.skillPoints,0) >= 1) && bonusVal > 0;
+      var canAdd = bonusVal < 8 && bonusVal > 0 && (c.isNPC ? num(c.skillPoints,0) >= 1 : (unlocked && num(c.skillPoints,0) >= 1));
       
       html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span>'+
         '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
@@ -1282,7 +1282,7 @@ function skillRowHtml(s, c, unlocked){
   }
 
   var canSub = prog > 0;
-      var canAdd = unlocked && bonusVal < 8 && (c.isNPC || num(c.skillPoints,0) >= 1) && bonusVal > 0;
+  var canAdd = bonusVal < 8 && bonusVal > 0 && (c.isNPC ? num(c.skillPoints,0) >= 1 : (unlocked && num(c.skillPoints,0) >= 1));
 
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
