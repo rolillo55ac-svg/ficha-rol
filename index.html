@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.22</title>
+<title>Krysalis · Fichas de Rol v3.23</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -1244,7 +1244,7 @@ function tplHabilidades(c){
       var prog = num(c.skillProgress[cs.id],0);
       var costNeeded = bonusVal + 1;
       var canSub = prog > 0;
-              var canAdd = (unlocked || isGM()) && bonusVal < 8 && (c.isNPC || isGM() || num(c.skillPoints,0) >= 1) && bonusVal > 0;
+      var canAdd = unlocked && bonusVal < 8 && (c.isNPC || num(c.skillPoints,0) >= 1) && bonusVal > 0;
       
       html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span>'+
         '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
@@ -1282,7 +1282,7 @@ function skillRowHtml(s, c, unlocked){
   }
 
   var canSub = prog > 0;
-    var canAdd = (unlocked || isGM()) && bonusVal < 8 && (c.isNPC || isGM() || num(c.skillPoints,0) >= 1) && bonusVal > 0;
+      var canAdd = unlocked && bonusVal < 8 && (c.isNPC || num(c.skillPoints,0) >= 1) && bonusVal > 0;
 
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
@@ -2608,22 +2608,21 @@ function handleClick(e){
     showToast(c.skillPointsUnlocked ? "Asignación de habilidades desbloqueada" : "Asignación de habilidades bloqueada", "info");
     return;
   }
-  if(action==="skill-add"){
+    if(action==="skill-add"){
     if(!c.skillPointsUnlocked && !c.isNPC) return;
     var sId = btn.getAttribute("data-id");
     var curBonus = num(c.skillBonus[sId], 0);
     if(curBonus === 0 && !c.isNPC) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
     if(curBonus >= 8) { showToast("La habilidad ha alcanzado el nivel máximo (8).", "warning"); return; }
     if(!c.isNPC && num(c.skillPoints, 0) < 1) { showToast("No tienes puntos disponibles.", "error"); return; }
+    if(c.isNPC && num(c.skillPoints, 0) < 1) { showToast("El NPC no tiene puntos. Sube su nivel primero.", "error"); return; }
 
     if(!c.skillProgress) c.skillProgress = {};
     var prog = num(c.skillProgress[sId], 0);
     var targetLevel = curBonus + 1;
     var costNeeded = targetLevel;
 
-    if(!c.isNPC){
-      c.skillPoints--;
-    }
+    c.skillPoints--;
     prog++;
 
     if(prog >= costNeeded){
@@ -2643,9 +2642,7 @@ function handleClick(e){
     if(prog2 > 0){
       prog2--;
       c.skillProgress[sId2] = prog2;
-      if(!c.isNPC){
-        c.skillPoints++;
-      }
+      c.skillPoints++;
       saveState(); renderTab();
     } else {
       if(c.isNPC){
@@ -2653,61 +2650,7 @@ function handleClick(e){
         if(curBonus2 > 0){
           c.skillBonus[sId2] = curBonus2 - 1;
           c.skillProgress[sId2] = 0;
-          saveState(); renderTab();
-        } else {
-          showToast("La habilidad ya está en nivel 0.", "warning");
-        }
-      } else {
-        showToast("No se puede restar un nivel ya consolidado.", "warning");
-      }
-    }
-    return;
-  }
-  if(action==="skill-add"){
-    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
-    var sId = btn.getAttribute("data-id");
-    var curBonus = num(c.skillBonus[sId], 0);
-    if(curBonus === 0 && !c.isNPC && !isGM()) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
-    if(curBonus >= 8) { showToast("La habilidad ha alcanzado el nivel máximo (8).", "warning"); return; }
-    if(!c.isNPC && !isGM() && num(c.skillPoints, 0) < 1) { showToast("No tienes puntos disponibles.", "error"); return; }
-
-    if(!c.skillProgress) c.skillProgress = {};
-    var prog = num(c.skillProgress[sId], 0);
-    var targetLevel = curBonus + 1;
-    var costNeeded = targetLevel;
-
-    if(!c.isNPC && !isGM()){
-      c.skillPoints--;
-    }
-    prog++;
-
-    if(prog >= costNeeded){
-      prog = 0;
-      c.skillBonus[sId] = targetLevel;
-      showToast("¡Habilidad subida a nivel " + targetLevel + "!", "success");
-    }
-    c.skillProgress[sId] = prog;
-    saveState(); renderTab(); return;
-  }
-  if(action==="skill-sub"){
-    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
-    var sId2 = btn.getAttribute("data-id");
-    if(!c.skillProgress) c.skillProgress = {};
-    var prog2 = num(c.skillProgress[sId2], 0);
-
-    if(prog2 > 0){
-      prog2--;
-      c.skillProgress[sId2] = prog2;
-      if(!c.isNPC && !isGM()){
-        c.skillPoints++;
-      }
-      saveState(); renderTab();
-    } else {
-      if(c.isNPC || isGM()){
-        var curBonus2 = num(c.skillBonus[sId2], 0);
-        if(curBonus2 > 0){
-          c.skillBonus[sId2] = curBonus2 - 1;
-          c.skillProgress[sId2] = 0;
+          c.skillPoints++;
           saveState(); renderTab();
         } else {
           showToast("La habilidad ya está en nivel 0.", "warning");
@@ -2719,23 +2662,22 @@ function handleClick(e){
     return;
   }
   if(action==="skill-add-custom"){
-    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
+    if(!c.skillPointsUnlocked && !c.isNPC) return;
     var csId = btn.getAttribute("data-id");
     var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
     if(csk){
       var curBonus = num(csk.bonus, 0);
-      if(curBonus === 0 && !c.isNPC && !isGM()) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
+      if(curBonus === 0 && !c.isNPC) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
       if(curBonus >= 8) { showToast("Máximo nivel 8.", "warning"); return; }
-      if(!c.isNPC && !isGM() && num(c.skillPoints, 0) < 1) { showToast("Puntos insuficientes.", "error"); return; }
+      if(!c.isNPC && num(c.skillPoints, 0) < 1) { showToast("Puntos insuficientes.", "error"); return; }
+      if(c.isNPC && num(c.skillPoints, 0) < 1) { showToast("El NPC no tiene puntos. Sube su nivel primero.", "error"); return; }
 
       if(!c.skillProgress) c.skillProgress = {};
       var prog = num(c.skillProgress[csId], 0);
       var targetLevel = curBonus + 1;
       var costNeeded = targetLevel;
 
-      if(!c.isNPC && !isGM()){
-        c.skillPoints--;
-      }
+      c.skillPoints--;
       prog++;
       if(prog >= costNeeded){
         prog = 0;
@@ -2748,7 +2690,7 @@ function handleClick(e){
     return;
   }
   if(action==="skill-sub-custom"){
-    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
+    if(!c.skillPointsUnlocked && !c.isNPC) return;
     var csId2 = btn.getAttribute("data-id");
     var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
     if(csk2){
@@ -2757,16 +2699,15 @@ function handleClick(e){
       if(prog2 > 0){
         prog2--;
         c.skillProgress[csId2] = prog2;
-        if(!c.isNPC && !isGM()){
-          c.skillPoints++;
-        }
+        c.skillPoints++;
         saveState(); renderTab();
       } else {
-        if(c.isNPC || isGM()){
+        if(c.isNPC){
           var curBonus2 = num(csk2.bonus, 0);
           if(curBonus2 > 0){
             csk2.bonus = curBonus2 - 1;
             c.skillProgress[csId2] = 0;
+            c.skillPoints++;
             saveState(); renderTab();
           } else {
             showToast("La habilidad ya está en nivel 0.", "warning");
