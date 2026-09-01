@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.10</title>
+<title>Krysalis · Fichas de Rol v3.11</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -626,7 +626,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV310";
+var STORAGE_KEY = "krysalisFichasV311";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1YnqcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -731,7 +731,7 @@ function blankCharacter(name, isNPC){
     isNPC:!!isNPC,
     owner_id:null,
     ownerEmail:"",
-    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabalho:"", descripcion:"",
+    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
     skillBonus:{}, skillProgress:{}, skillPointsUnlocked:false,
     skillHybrid:{}, customSkills:[],
@@ -1000,7 +1000,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.10</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.11</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1077,15 +1077,6 @@ function renderTab(){
 
 function tplFicha(c){
   var pStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
-  var attrCards = ATTRS.map(function(a){
-    return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div></div>';
-  }).join('');
-
-  var levelControl = '';
-  if(isGM() && !c.isNPC){
-    levelControl = '<button class="btn-solid-gold" data-action="grant-level">+ Nivel</button>';
-  }
-
   var isEditableAttr = isGM() && c.isNPC;
 
   return '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
@@ -1101,7 +1092,7 @@ function tplFicha(c){
       '<div>'+
         '<div class="field-grid">'+
           field("Nombre", "name", c.name, "text")+
-          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(c.isNPC?'':'readonly')+'>'+levelControl+'</div></div>'+
+          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(c.isNPC?'':'readonly')+'>'+(isGM() && !c.isNPC ? '<button class="btn-solid-gold" data-action="grant-level">+ Nivel</button>' : '')+'</div></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text")+
           field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text")+
           field("Altura","altura",c.altura,"text")+
@@ -1247,7 +1238,6 @@ function tplCombate(c){
     html += '<div style="font-size:0.8rem;color:var(--ink-faint);font-style:italic;margin-bottom:8px;">Sin buffs o debuffs activos.</div>';
   }
 
-  // Selector para añadir del catálogo
   if(buffsCatalog.length){
     html += '<div style="display:flex;gap:6px;align-items:center;margin-top:10px;">'+
       '<select id="charBuffSelect" style="flex:1;background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;padding:8px;font-size:0.85rem;" aria-label="Seleccionar buff">'+
@@ -2322,6 +2312,472 @@ function showSwipeIndicator(){
   swipeIndicatorTimeout = setTimeout(function(){
     indicator.classList.remove("visible");
   }, 2000);
+}
+
+
+function creatureFieldGlobal(label,bind,val){
+  return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-scope="global" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
+}
+
+function rollLogHtml(){
+  var logs = state.rollLog.slice(0,5);
+  var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span></div>';
+  if(!logs.length){ html += '<div class="roll-empty">Sin tiradas recientes.</div>'; }
+  else {
+    html += '<div class="roll-log">'+logs.map(function(r){
+      return '<div class="roll-log-item"><span>'+esc(r.charName)+' — '+esc(r.label)+'<br><span class="rl-formula">'+esc(r.formulaText)+'</span></span><span class="rl-result">'+r.total+'</span></div>';
+    }).join('')+'</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function setBind(target, path, rawValue, inputType){
+  var parts = path.split(".");
+  var value = inputType==="number" ? num(rawValue,0) : rawValue;
+  if(parts.length===1){ target[parts[0]] = value; return; }
+  if(parts[0]==="attrs"){ target.attrs[parts[1]] = value; return; }
+  if(parts[0]==="combat"){ target.combat[parts[1]] = value; return; }
+  if(parts[0]==="money"){ target.money[parts[1]] = value; return; }
+  if(parts[0]==="skillBonus"){ target.skillBonus[parts[1]] = value; return; }
+  if(parts[0]==="skillHybrid"){ target.skillHybrid[parts[1]] = value; return; }
+  if(parts[0]==="customSkills"){
+    var cs = target.customSkills.find(function(x){return x.id===parts[1];});
+    if(cs) cs[parts[2]] = value;
+    return;
+  }
+  if(parts[0]==="weaponsCatalog"){
+    var wItem = (target.weaponsCatalog||[]).find(function(x){return x.id===parts[1];});
+    if(wItem) wItem[parts[2]] = value;
+    return;
+  }
+  if(parts[0]==="buffsCatalog"){
+    var bItem = (target.buffsCatalog||[]).find(function(x){return x.id===parts[1];});
+    if(bItem) bItem[parts[2]] = value;
+    return;
+  }
+  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","activeBuffs","summons","bestiary","poisons"];
+  if(listFields.indexOf(parts[0])!==-1){
+    var arr = target[parts[0]];
+    var item = arr && arr.find(function(x){return x.id===parts[1];});
+    if(item) item[parts[2]] = value;
+    return;
+  }
+  if(parts[0]==="lore"){
+    var loreArr = target.lore[parts[1]];
+    var lItem = loreArr && loreArr.find(function(x){return x.id===parts[2];});
+    if(lItem) lItem[parts[3]] = value;
+    return;
+  }
+  target[path] = value;
+}
+
+function handleChange(e){
+  var el = e.target.closest("[data-bind]"); if(!el) return;
+  var isGlobal = el.getAttribute("data-scope")==="global";
+  var target = isGlobal ? state : activeChar();
+  setBind(target, el.getAttribute("data-bind"), el.value, el.type);
+  saveState(true);
+  if(isGlobal){
+    pushSharedData();
+  }
+}
+
+function handleClick(e){
+  getAudioCtx();
+  var btn = e.target.closest("[data-action]"); if(!btn) return;
+  var action = btn.getAttribute("data-action");
+  var c = activeChar();
+
+  if(action==="set-world-subtab"){ currentWorldSubtab = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="set-bestiary-continent"){ bestiaryContinentFilter = btn.getAttribute("data-continent"); renderTab(); return; }
+  if(action==="set-lore-continent"){ loreContinentFilter = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="set-lore-terrain"){ loreTerrainFilter = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
+
+  if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
+  if(action==="hp-mod"){
+    var d1 = parseInt(btn.getAttribute("data-delta"),10);
+    c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, 0, num(c.combat.pvMax,0)||999);
+    saveState(); renderTopbar(); return;
+  }
+  if(action==="shield-mod"){
+    var ds = parseInt(btn.getAttribute("data-delta"),10);
+    c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
+    saveState(); renderTopbar(); return;
+  }
+  if(action==="mana-mod"){
+    var d2 = parseInt(btn.getAttribute("data-delta"),10);
+    c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
+    saveState(); renderTopbar(); return;
+  }
+
+  if(action==="grant-level"){
+    if(!isGM() || c.isNPC) return;
+    var curNv = num(c.nivel, 1);
+    var nextNv = curNv + 1;
+    c.nivel = String(nextNv);
+    
+    var ptsToAdd = 4;
+    if(nextNv > 20) ptsToAdd = 8;
+    else if(nextNv > 10) ptsToAdd = 6;
+    c.skillPoints = num(c.skillPoints, 0) + ptsToAdd;
+
+    var fisicoVal = num(c.attrs.fisico, 0);
+    var hpGain = Math.ceil(fisicoVal / 2);
+    if(hpGain < 1) hpGain = 1;
+    c.combat.pvMax = num(c.combat.pvMax, 10) + hpGain;
+    c.combat.pvActual = num(c.combat.pvMax, 10);
+
+    if(nextNv % 4 === 0){
+      c.combat.manaMax = num(c.combat.manaMax, 10) + 5;
+    }
+
+    saveState(); renderTopbar(); renderTab();
+    showToast("¡Nivel " + nextNv + " alcanzado! +" + ptsToAdd + " puntos de habilidad", "success");
+    return;
+  }
+
+  if(action==="toggle-skill-lock"){
+    if(!isGM()) return;
+    c.skillPointsUnlocked = !c.skillPointsUnlocked;
+    saveState(); renderTab();
+    showToast(c.skillPointsUnlocked ? "Asignación de habilidades desbloqueada" : "Asignación de habilidades bloqueada", "info");
+    return;
+  }
+  if(action==="skill-add"){
+    if(!c.skillPointsUnlocked) return;
+    var sId = btn.getAttribute("data-id");
+    var curBonus = num(c.skillBonus[sId], 0);
+    if(curBonus === 0) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
+    if(curBonus >= 8) { showToast("La habilidad ha alcanzado el nivel máximo (8).", "warning"); return; }
+    if(num(c.skillPoints, 0) < 1) { showToast("No tienes puntos disponibles.", "error"); return; }
+
+    if(!c.skillProgress) c.skillProgress = {};
+    var prog = num(c.skillProgress[sId], 0);
+    var targetLevel = curBonus + 1;
+    var costNeeded = targetLevel;
+
+    c.skillPoints--;
+    prog++;
+
+    if(prog >= costNeeded){
+      prog = 0;
+      c.skillBonus[sId] = targetLevel;
+      showToast("¡Habilidad subida a nivel " + targetLevel + "!", "success");
+    }
+    c.skillProgress[sId] = prog;
+    saveState(); renderTab(); return;
+  }
+  if(action==="skill-sub"){
+    if(!c.skillPointsUnlocked) return;
+    var sId2 = btn.getAttribute("data-id");
+    if(!c.skillProgress) c.skillProgress = {};
+    var prog2 = num(c.skillProgress[sId2], 0);
+
+    if(prog2 > 0){
+      prog2--;
+      c.skillProgress[sId2] = prog2;
+      c.skillPoints++;
+      saveState(); renderTab();
+    } else {
+      showToast("No se puede restar un nivel ya consolidado.", "warning");
+    }
+    return;
+  }
+  if(action==="skill-add-custom"){
+    if(!c.skillPointsUnlocked) return;
+    var csId = btn.getAttribute("data-id");
+    var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
+    if(csk){
+      var curBonus = num(csk.bonus, 0);
+      if(curBonus === 0) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
+      if(curBonus >= 8) { showToast("Máximo nivel 8.", "warning"); return; }
+      if(num(c.skillPoints, 0) < 1) { showToast("Puntos insuficientes.", "error"); return; }
+
+      if(!c.skillProgress) c.skillProgress = {};
+      var prog = num(c.skillProgress[csId], 0);
+      var targetLevel = curBonus + 1;
+      var costNeeded = targetLevel;
+
+      c.skillPoints--;
+      prog++;
+      if(prog >= costNeeded){
+        prog = 0;
+        csk.bonus = targetLevel;
+        showToast("¡Habilidad subida a nivel " + targetLevel + "!", "success");
+      }
+      c.skillProgress[csId] = prog;
+      saveState(); renderTab();
+    }
+    return;
+  }
+  if(action==="skill-sub-custom"){
+    if(!c.skillPointsUnlocked) return;
+    var csId2 = btn.getAttribute("data-id");
+    var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
+    if(csk2){
+      if(!c.skillProgress) c.skillProgress = {};
+      var prog2 = num(c.skillProgress[csId2], 0);
+      if(prog2 > 0){
+        prog2--;
+        c.skillProgress[csId2] = prog2;
+        c.skillPoints++;
+        saveState(); renderTab();
+      } else {
+        showToast("No se puede restar un nivel ya consolidado.", "warning");
+      }
+    }
+    return;
+  }
+  if(action==="confirm-skills"){
+    c.skillPoints = 0;
+    saveState(); renderTab();
+    showToast("Puntos de habilidad confirmados", "success");
+    return;
+  }
+
+  if(action==="toggle-buff"){
+    var bName = btn.getAttribute("data-buff");
+    if(!c.buffs) c.buffs={};
+    c.buffs[bName] = !c.buffs[bName];
+    saveState(); renderTab(); return;
+  }
+  if(action==="add-char-buff"){
+    var selectEl = document.getElementById("charBuffSelect");
+    if(!selectEl || !selectEl.value) return;
+    var bId = selectEl.value;
+    if(!c.activeBuffs) c.activeBuffs = [];
+    if(c.activeBuffs.indexOf(bId) === -1){
+      c.activeBuffs.push(bId);
+      saveState();
+      renderTab();
+      showToast("Buff/Debuff añadido al personaje", "success");
+    }
+    return;
+  }
+  if(action==="toggle-char-buff"){
+    var bId2 = btn.getAttribute("data-id");
+    if(!c.activeBuffs) c.activeBuffs = [];
+    c.activeBuffs = c.activeBuffs.filter(function(x){ return x !== bId2; });
+    saveState();
+    renderTab();
+    showToast("Buff/Debuff desativado", "info");
+    return;
+  }
+  if(action==="roll-skill"){
+    var sid = btn.getAttribute("data-id");
+    var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
+    performD10Roll(c.name, sdef.name, skillTotal(sdef,c));
+    return;
+  }
+  if(action==="roll-custom-skill"){
+    var csid = btn.getAttribute("data-id");
+    var cs = (c.customSkills||[]).find(function(x){return x.id===csid;});
+    if(cs) performD10Roll(c.name, cs.name, customSkillTotal(cs,c));
+    return;
+  }
+  if(action==="add-custom-skill"){
+    if(!isGM()) return;
+    var nm = prompt("Nombre de la habilidad:");
+    if(!nm) return;
+    var attrChoice = prompt("Atributo base (fisico / destreza / inteligencia / percepcion / carisma):","destreza");
+    if(ATTRS.indexOf(attrChoice)===-1) attrChoice="destreza";
+    if(!c.customSkills) c.customSkills=[];
+    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:1});
+    saveState(); renderTab();
+    showToast("Habilidad personalizada añadida", "success");
+    return;
+  }
+  if(action==="add-custom-buff"){
+    if(!isGM()) return;
+    if(!c.customBuffs) c.customBuffs=[];
+    c.customBuffs.push({id:uid(),name:""});
+    saveState(); renderTab(); return;
+  }
+  if(action==="del-custom-buff"){
+    if(!isGM()) return;
+    c.customBuffs = (c.customBuffs||[]).filter(function(b){return b.id!==btn.getAttribute("data-id");});
+    saveState(); renderTab(); return;
+  }
+  if(action==="roll-init"){ performD10Roll(c.name, "Iniciativa", c.combat.iniciativa); return; }
+  if(action==="roll-weapon"){
+    var wid = btn.getAttribute("data-id");
+    var wpn = (c.weapons||[]).find(function(w){return w.id===wid;});
+    if(wpn){
+      var catItem = (state.weaponsCatalog||[]).find(function(ci){ return ci.name === wpn.name || ci.id === wpn.catalogId; });
+      var formula = catItem ? catItem.dano : "1d6";
+      performWeaponRoll(c.name, wpn.name||"Arma", formula);
+    }
+    return;
+  }
+  if(action==="select-weapon-catalog"){
+    var selEl = e.target;
+    var wid = btn.getAttribute("data-id");
+    var catId = selEl.value;
+    var catItem = (state.weaponsCatalog||[]).find(function(ci){ return ci.id === catId; });
+    var wpnObj = (c.weapons||[]).find(function(w){ return w.id === wid; });
+    if(wpnObj && catItem){
+      wpnObj.name = catItem.name;
+      wpnObj.dano = catItem.dano;
+      wpnObj.alcance = catItem.alcance;
+      wpnObj.catalogId = catItem.id;
+      saveState(); renderTab();
+      showToast("Arma equipada: " + catItem.name, "success");
+    }
+    return;
+  }
+  if(action==="toggle-weapon-visibility"){
+    if(!isGM()) return;
+    var wid2 = btn.getAttribute("data-id");
+    var w = (state.weaponsCatalog||[]).find(function(x){return x.id===wid2;});
+    if(w){ w.visible = w.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    return;
+  }
+  if(action==="toggle-buff-visibility"){
+    if(!isGM()) return;
+    var bid2 = btn.getAttribute("data-id");
+    var bItem = (state.buffsCatalog||[]).find(function(x){return x.id===bid2;});
+    if(bItem){ bItem.visible = bItem.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    return;
+  }
+  if(action==="add-global-weapon"){
+    if(!isGM()) return;
+    if(!state.weaponsCatalog) state.weaponsCatalog = [];
+    state.weaponsCatalog.push({id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción", visible:true});
+    saveState(); pushSharedData(); renderTab();
+    showToast("Arma añadida al catálogo", "success");
+    return;
+  }
+  if(action==="del-global-weapon"){
+    if(!isGM()) return;
+    state.weaponsCatalog = (state.weaponsCatalog||[]).filter(function(w){ return w.id !== btn.getAttribute("data-id"); });
+    saveState(); pushSharedData(); renderTab();
+    showToast("Arma eliminada del catálogo", "info");
+    return;
+  }
+  if(action==="add-global-buff"){
+    if(!isGM()) return;
+    if(!state.buffsCatalog) state.buffsCatalog = [];
+    state.buffsCatalog.push({id:uid(), name:"Nuevo Buff/Debuff", desc:"Efecto", visible:true});
+    saveState(); pushSharedData(); renderTab();
+    showToast("Buff añadido al compendio", "success");
+    return;
+  }
+  if(action==="del-global-buff"){
+    if(!isGM()) return;
+    state.buffsCatalog = (state.buffsCatalog||[]).filter(function(b){ return b.id !== btn.getAttribute("data-id"); });
+    saveState(); pushSharedData(); renderTab();
+    showToast("Buff eliminado del compendio", "info");
+    return;
+  }
+  if(action==="add-weapon"){ if(!isGM()) return; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); saveState(); renderTab(); return; }
+  if(action==="del-weapon"){ if(!isGM()) return; c.weapons = c.weapons.filter(function(w){return w.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-armor"){ if(!isGM()) return; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); saveState(); renderTab(); return; }
+  if(action==="del-armor"){ if(!isGM()) return; c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-inventory"){ if(!isGM()) return; c.inventory.push({id:uid(),name:"",qty:1}); saveState(); renderTab(); return; }
+  if(action==="del-inventory"){ if(!isGM()) return; c.inventory = c.inventory.filter(function(i){return i.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-spell"){ if(!isGM()) return; c.spells.push({id:uid(),name:"",coste:"",rango:""}); saveState(); renderTab(); return; }
+  if(action==="del-spell"){ if(!isGM()) return; c.spells = c.spells.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-stone"){ if(!isGM()) return; c.stones.push({id:uid(),color:"",efecto:""}); saveState(); renderTab(); return; }
+  if(action==="del-stone"){ if(!isGM()) return; c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-summon"){ if(!isGM()) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); saveState(); renderTab(); return; }
+  if(action==="del-summon"){ if(!isGM()) return; c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-poison"){ if(!isGM()) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); saveState(); renderTab(); return; }
+  if(action==="del-poison"){ if(!isGM()) return; c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-passiveNeg"){ if(!isGM()) return; c.passivesNeg.push({id:uid(),text:""}); saveState(); renderTab(); return; }
+  if(action==="del-passiveNeg"){ if(!isGM()) return; c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-passivePos"){ if(!isGM()) return; c.passivesPos.push({id:uid(),text:""}); saveState(); renderTab(); return; }
+  if(action==="del-passivePos"){ if(!isGM()) return; c.passivesPos = c.passivesPos.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-goddess"){ if(!isGM()) return; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); saveState(); renderTab(); return; }
+  if(action==="del-goddess"){ if(!isGM()) return; c.goddessTable = c.goddessTable.filter(function(g){return g.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="toggle-bestiary-visibility"){
+    if(!isGM()) return;
+    var bid = btn.getAttribute("data-id");
+    var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
+    if(b){ b.visible = b.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    return;
+  }
+  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",habilidades:"",visible:true}); saveState(); pushSharedData(); renderTab(); return; }
+  if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); pushSharedData(); renderTab(); return; }
+  if(action==="toggle-lore-visibility"){
+    if(!isGM()) return;
+    var lcat = btn.getAttribute("data-cat");
+    var lid = btn.getAttribute("data-id");
+    var li = (state.lore[lcat]||[]).find(function(x){return x.id===lid;});
+    if(li){ li.visible = li.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    return;
+  }
+  if(action==="open-lore-modal"){
+    if(!isGM()) return;
+    openLoreModal(btn.getAttribute("data-cat"));
+    return;
+  }
+  if(action==="del-lore"){
+    if(!isGM()) return;
+    var cat2 = btn.getAttribute("data-cat");
+    state.lore[cat2] = state.lore[cat2].filter(function(x){return x.id!==btn.getAttribute("data-id");});
+    saveState(); pushSharedData(); renderTab();
+    showToast("Entrada eliminada", "info");
+    return;
+  }
+
+  if(action==="sync-map-now"){ pullMapFromSupabase(); showToast("Mapa sincronizado con la nube", "success"); return; }
+  if(action==="switch-map"){ state.activeMapId = btn.getAttribute("data-id"); renderTab(); return; }
+  if(action==="add-new-map"){
+    if(!isGM()) return;
+    var mn = prompt("Nombre del mapa (ej: Mazmorra, Ciudad Capital):");
+    if(mn){
+      var nMap = {id:uid(), name:mn, image:null, markers:[]};
+      state.maps.push(nMap); state.activeMapId = nMap.id;
+      saveState(); pushSharedData(); renderTab();
+      showToast("Mapa creado: " + mn, "success");
+    }
+    return;
+  }
+  if(action==="delete-map"){
+    if(!isGM()) return;
+    if(confirm("¿Eliminar este mapa y sus pines?")){
+      state.maps = state.maps.filter(function(m){return m.id!==state.activeMapId;});
+      state.activeMapId = state.maps[0]?state.maps[0].id:"";
+      saveState(); pushSharedData(); renderTab();
+      showToast("Mapa eliminado", "info");
+    }
+    return;
+  }
+  if(action==="upload-map"){ if(!isGM()) return; document.getElementById("mapFileInput").click(); return; }
+  if(action==="remove-map"){
+    if(!isGM()) return;
+    var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+    if(curM){ curM.image = null; curM.markers = []; saveState(); pushSharedData(); renderTab(); }
+    return;
+  }
+  if(action==="map-click"){
+    if(!isGM()) return;
+    var curM2 = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+    var imgEl = btn.querySelector("img");
+    if(curM2 && imgEl){
+      var r = imgEl.getBoundingClientRect();
+      var px = ((e.clientX - r.left)/r.width*100).toFixed(2);
+      var py = ((e.clientY - r.top)/r.height*100).toFixed(2);
+      openPinModal(curM2, px, py);
+    }
+    return;
+  }
+  if(action==="edit-pin"){
+    if(!isGM()) return;
+    var curM3 = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+    if(curM3) openPinModal(curM3, null, null, btn.getAttribute("data-id"));
+    return;
+  }
+
+  if(action==="open-char-modal"){ openCharModal(); return; }
+  if(action==="open-data-modal"){ openDataModal(); return; }
+  if(action==="open-free-dice"){ openDiceModal(); return; }
+  if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
+  if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
+  if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
 }
 
 function init(){
