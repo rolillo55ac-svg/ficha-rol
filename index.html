@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v3.07</title>
+<title>Krysalis · Fichas de Rol v3.1</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -236,6 +236,10 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .attr-card:hover{transform:translateY(-2px);border-color:var(--line-strong);}
 .attr-card label{display:block;font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;letter-spacing:.03em;}
 .attr-val-box{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--gold-light);text-shadow:0 0 10px rgba(176,141,87,0.3);}
+.attr-input{
+  width:50px;text-align:center;font-size:1.3rem;font-weight:700;color:var(--gold-light);
+  background:transparent;border:none;font-family:var(--font-mono);
+}
 
 .skill-pool-banner{
   background:linear-gradient(135deg, rgba(176,141,87,0.16), rgba(176,141,87,0.05));
@@ -603,7 +607,6 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 <div class="modal-overlay hidden" id="dataModalOverlay"><div class="modal" id="dataModal"></div></div>
 <div class="modal-overlay hidden" id="pinModalOverlay"><div class="modal" id="pinModal"></div></div>
 <div class="modal-overlay hidden" id="loreModalOverlay"><div class="modal" id="loreModal"></div></div>
-
 <div class="roll-overlay hidden" id="rollOverlay">
   <div class="roll-box">
     <div id="rollLabel" style="font-family:var(--font-display);font-size:.92rem;color:var(--gold-light);"></div>
@@ -624,7 +627,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV307";
+var STORAGE_KEY = "krysalisFichasV310";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -706,12 +709,26 @@ var loreContinentFilter = "Todos";
 var loreTypeFilter = "Todos";
 var loreTerrainFilter = "Todos";
 var currentLoreSubtab = "objetos";
+var currentBuffTab = "all";
 
 function getSeedWeaponsCatalog(){
   return [
     {id:uid(), name:"Espada Larga", dano:"1d8+2", alcance:"Melé", critico:"Doble daño en dados y sangrado leve.", desc:"Espada equilibrada de hoja recta.", visible:true},
     {id:uid(), name:"Arco Largo", dano:"1d8", alcance:"150m", critico:"Ignora 2 puntos de absorción de armadura.", desc:"Arco de gran tensión para combate a distancia.", visible:true},
     {id:uid(), name:"Daga Mordaz", dano:"1d4+1", alcance:"Melé / Arrojadiza", critico:"Envenena automáticamente al objetivo.", desc:"Arma ligera con filo envenenado.", visible:true}
+  ];
+}
+
+function getSeedBuffCatalog(){
+  return [
+    {id:uid(), name:"Sangre Vampírica", type:"buff", attr:"melé", bonus:"+1", duration:"Permanente", desc:"+1 a ataques melé", visible:true},
+    {id:uid(), name:"Sangre Distancia", type:"buff", attr:"distancia", bonus:"+1", duration:"Permanente", desc:"+1 a ataques a distancia", visible:true},
+    {id:uid(), name:"Sangre Percepción", type:"buff", attr:"percepcion", bonus:"+2", duration:"Permanente", desc:"+2 a percepción", visible:true},
+    {id:uid(), name:"Sol Abrasador", type:"debuff", attr:"vida", bonus:"-50%", duration:"Día", desc:"Reduce vida a la mitad", visible:true},
+    {id:uid(), name:"Plata Ardiente", type:"debuff", attr:"daño", bonus:"1d6", duration:"Contacto", desc:"1d6 de daño por contacto", visible:true},
+    {id:uid(), name:"Drogado", type:"buff", attr:"destreza", bonus:"+1", duration:"Temporal", desc:"+1 a destreza", visible:true},
+    {id:uid(), name:"El Mono", type:"debuff", attr:"todo", bonus:"-1", duration:"Temporal", desc:"-1 a todo", visible:true},
+    {id:uid(), name:"Inmune al Veneno", type:"buff", attr:"veneno", bonus:"Inmune", duration:"Permanente", desc:"Inmune a venenos", visible:true}
   ];
 }
 
@@ -728,7 +745,8 @@ function blankCharacter(name, isNPC){
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
     weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
-    summons:[], buffs:{}, customBuffs:[], poisons:[], skillPoints:0
+    summons:[], buffs:{}, customBuffs:[], poisons:[], skillPoints:0,
+    activeBuffs: []
   };
 }
 
@@ -769,6 +787,7 @@ function defaultState(){
   return {
     activeId:"", activeTab:"ficha", rollLog:[], characters:[],
     weaponsCatalog: getSeedWeaponsCatalog(),
+    buffCatalog: getSeedBuffCatalog(),
     lore:getSeedLore(), bestiary:getSeedBestiary(),
     maps:[{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }],
     activeMapId:"world_main"
@@ -778,14 +797,17 @@ function defaultState(){
 function migrateState(s){
   if(!s.rollLog) s.rollLog=[];
   if(!s.weaponsCatalog || !s.weaponsCatalog.length) s.weaponsCatalog = getSeedWeaponsCatalog();
+  if(!s.buffCatalog || !s.buffCatalog.length) s.buffCatalog = getSeedBuffCatalog();
+  else {
+    s.buffCatalog.forEach(function(b){ if(b.visible===undefined) b.visible=true; });
+  }
   if(!s.lore || !s.lore.objetos) s.lore=getSeedLore();
   if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
   else {
     s.bestiary.forEach(function(b){
-      if(b.notas && !b.habilidades){
-        b.habilidades = b.notas;
-      }
+      if(b.notas && !b.habilidades) b.habilidades = b.notas;
       if(b.habilidades===undefined) b.habilidades="";
+      if(b.visible===undefined) b.visible=true;
     });
   }
   if(!s.maps || !s.maps.length){
@@ -793,7 +815,6 @@ function migrateState(s){
     s.activeMapId = "world_main";
   }
   (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });
-  (s.bestiary||[]).forEach(function(b){ if(b.visible===undefined) b.visible=true; });
   ["pistas","npcs","objetos"].forEach(function(cat){
     if(s.lore && s.lore[cat]){
       s.lore[cat].forEach(function(item){ if(item.visible===undefined) item.visible=true; });
@@ -809,6 +830,7 @@ function migrateState(s){
     if(c.skillPointsUnlocked===undefined) c.skillPointsUnlocked=false;
     if(c.owner_id===undefined) c.owner_id=null;
     if(c.ownerEmail===undefined) c.ownerEmail="";
+    if(!c.activeBuffs) c.activeBuffs=[];
     (c.summons||[]).forEach(function(su){
       if(su.notas && !su.habilidades) su.habilidades = su.notas;
       if(su.habilidades===undefined) su.habilidades="";
@@ -864,8 +886,18 @@ function getEffectiveAttr(aKey, c){
   var base = num(c.attrs[aKey],0);
   if(aKey==="percepcion" && c.buffs && c.buffs.sangre_perc) base += 2;
   if(aKey==="destreza" && c.buffs && c.buffs.drogado_dex) base += 1;
+  // Aplicar buffos globales activos
+  if(c.activeBuffs){
+    c.activeBuffs.forEach(function(ab){
+      if(ab.attr === aKey && ab.bonus){
+        var n = parseInt(ab.bonus, 10);
+        if(!isNaN(n)) base += n;
+      }
+    });
+  }
   return base;
 }
+
 function skillBase(skill, c){
   var attrKey = skill.attr!=="hybrid" ? skill.attr : (c.skillHybrid[skill.id] || skill.hybridOptions[0]);
   return getEffectiveAttr(attrKey, c);
@@ -988,7 +1020,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.07</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.1</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1066,6 +1098,9 @@ function renderTab(){
 function tplFicha(c){
   var pStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
   var attrCards = ATTRS.map(function(a){
+    if(c.isNPC){
+      return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label><input type="number" data-bind="attrs.'+a+'" value="'+num(c.attrs[a],0)+'" class="attr-input"></div>';
+    }
     return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div></div>';
   }).join('');
 
@@ -1103,7 +1138,7 @@ function tplFicha(c){
     '</div>'+
   '</div>'+
   '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
-    '<div class="section-title"><span>Atributos Base</span></div>'+
+    '<div class="section-title"><span>Atributos'+(c.isNPC?' (Editables)':'')+'</span></div>'+
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>';
 }
@@ -1205,30 +1240,22 @@ function skillRowHtml(s, c, unlocked){
 
 function tplCombate(c){
   var cb = c.combat||{};
-  var buffs = c.buffs||{};
-  var isVamp = (c.magiaTipo||"").toLowerCase().includes("vampir") || (c.trabajo||"").toLowerCase().includes("vástago");
-  var isTox = (c.magiaTipo||"").toLowerCase().includes("toxicómano") || (c.name||"").toLowerCase().includes("cherk");
+  
+  // Sistema de buffos globales
+  var activeBuffs = (c.activeBuffs||[]);
+  var availableBuffs = (state.buffCatalog||[]).filter(function(b){ return isGM() || b.visible !== false; });
+  
+  var buffsHtml = '<div class="buffs-container">';
+  availableBuffs.forEach(function(b){
+    var isActive = activeBuffs.some(function(ab){ return ab.id === b.id; });
+    var isDebuff = b.type === "debuff";
+    buffsHtml += '<div class="buff-pill'+(isDebuff?' debuff':'')+(isActive?' active':'')+'" data-action="toggle-global-buff" data-id="'+b.id+'" role="button" tabindex="0">'+
+      (isDebuff?'⚠️':'✨')+' '+esc(b.name)+(b.bonus?' ('+esc(b.bonus)+')':'')+
+    '</div>';
+  });
+  buffsHtml += '</div>';
 
-  var quickBtns = ["melee","distancia","esquivar","atletismo"].map(function(sid){
-    var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
-    return '<button class="combat-quick-btn" data-action="roll-skill" data-id="' + sid + '"><span class="cq-label">' + sdef.name + '</span><span class="cq-total">' + skillTotal(sdef, c) + '</span></button>';
-  }).join('');
-
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Buffs y Modificadores de Combate</span></div><div class="buffs-container">';
-  if(isVamp){
-    html += '<div class="buff-pill '+(buffs.sangre_ataque_melee?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_melee" role="button" tabindex="0">🩸 Sangre: +1 Melé</div>'+
-            '<div class="buff-pill '+(buffs.sangre_ataque_dist?'active':'')+'" data-action="toggle-buff" data-buff="sangre_ataque_dist" role="button" tabindex="0">🩸 Sangre: +1 Distancia</div>'+
-            '<div class="buff-pill '+(buffs.sangre_perc?'active':'')+'" data-action="toggle-buff" data-buff="sangre_perc" role="button" tabindex="0">🩸 Sangre: +2 Percepción</div>'+
-            '<div class="buff-pill debuff '+(buffs.sol?'active':'')+'" data-action="toggle-buff" data-buff="sol" role="button" tabindex="0">☀️ Sol (Mitad vida)</div>'+
-            '<div class="buff-pill debuff '+(buffs.plata?'active':'')+'" data-action="toggle-buff" data-buff="plata" role="button" tabindex="0">⚔️ Plata (1d6 daño)</div>';
-  } else if(isTox){
-    html += '<div class="buff-pill '+(buffs.drogado_dex?'active':'')+'" data-action="toggle-buff" data-buff="drogado_dex" role="button" tabindex="0">🍄 Drogado: +1 Destreza</div>'+
-            '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono" role="button" tabindex="0">⚠️ El Mono (-1 a todo)</div>'+
-            '<div class="buff-pill '+(buffs.inmune_veneno?'active':'')+'" data-action="toggle-buff" data-buff="inmune_veneno" role="button" tabindex="0">🧪 Inmune al veneno</div>';
-  } else {
-    html += '<div class="buff-pill debuff '+(buffs.mono?'active':'')+'" data-action="toggle-buff" data-buff="mono" role="button" tabindex="0">⚠️ Debuff -1 a todo</div>';
-  }
-  html += '</div>';
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Buffs y Debuffs Activos</span></div>'+buffsHtml;
 
   if(c.customBuffs && c.customBuffs.length){
     c.customBuffs.forEach(function(cbuff){
@@ -1242,6 +1269,11 @@ function tplCombate(c){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-custom-buff">+ Añadir buff temporal</button>';
   }
   html += '</div>';
+
+  var quickBtns = ["melee","distancia","esquivar","atletismo"].map(function(sid){
+    var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
+    return '<button class="combat-quick-btn" data-action="roll-skill" data-id="' + sid + '"><span class="cq-label">' + sdef.name + '</span><span class="cq-total">' + skillTotal(sdef, c) + '</span></button>';
+  }).join('');
 
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Tiradas de Combate</span></div><div class="combat-quick-grid">'+quickBtns+'</div></div>';
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Estadísticas de Combate</span></div>'+
@@ -1507,6 +1539,7 @@ function tplMundo(s){
     '<div class="filter-pills">'+
       '<button class="f-pill '+(subtab==='mapas'?'active':'')+'" data-action="set-world-subtab" data-val="mapas">🗺️ Mapas</button>'+
       '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">⚔️ Catálogo de Armas</button>'+
+      '<button class="f-pill '+(subtab==='buffs'?'active':'')+'" data-action="set-world-subtab" data-val="buffs">✨ Buffos</button>'+
       '<button class="f-pill '+(subtab==='lore'?'active':'')+'" data-action="set-world-subtab" data-val="lore">📜 Lore y Flora</button>'+
     '</div>'+
   '</div>';
@@ -1515,6 +1548,8 @@ function tplMundo(s){
     html += tplMundoMapas(s);
   } else if(subtab === "armas"){
     html += tplMundoArmas(s);
+  } else if(subtab === "buffs"){
+    html += tplMundoBuffs(s);
   } else {
     html += tplMundoLore(s);
   }
@@ -1589,6 +1624,53 @@ function tplMundoArmas(s){
   
   if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-global-weapon">+ Añadir nueva arma al compendio global</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function tplMundoBuffs(s){
+  var canEdit = isGM();
+  var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title"><span>'+(canEdit?'Catálogo de Buffos y Debuffos (GM)':'Buffos y Debuffos')+'</span></div>';
+  
+  var visibleBuffs = (s.buffCatalog||[]).filter(function(b){
+    if(canEdit) return true;
+    return b.visible !== false;
+  });
+
+  html += '<div class="filter-pills" style="margin-bottom:10px;">'+
+    '<button class="f-pill '+(currentBuffTab==='buffs'?'active':'')+'" data-action="set-buff-tab" data-val="buffs">Buffs</button>'+
+    '<button class="f-pill '+(currentBuffTab==='debuffs'?'active':'')+'" data-action="set-buff-tab" data-val="debuffs">Debuffs</button>'+
+    '<button class="f-pill '+(currentBuffTab==='all'?'active':'')+'" data-action="set-buff-tab" data-val="all">Todos</button>'+
+  '</div>';
+
+  visibleBuffs.forEach(function(b){
+    var showType = currentBuffTab==="all" || (currentBuffTab==="buffs" && b.type==="buff") || (currentBuffTab==="debuffs" && b.type==="debuff");
+    if(!showType) return;
+
+    html += '<div class="creature-card">'+
+      '<div class="creature-card-header">'+
+        (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="buffCatalog.'+b.id+'.name" value="'+esc(b.name)+'" placeholder="Nombre del buffo">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.name)+'</div>')+
+        (canEdit ? '<div style="display:flex;gap:4px;align-items:center;">'+
+          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;" data-scope="global" data-bind="buffCatalog.'+b.id+'.type">'+
+            '<option value="buff" '+((b.type||'buff')==='buff'?'selected':'')+'>Buff</option>'+
+            '<option value="debuff" '+((b.type||'buff')==='debuff'?'selected':'')+'>Debuff</option>'+
+          '</select>'+
+          '<button class="btn-compact" data-action="toggle-buff-visibility" data-id="'+b.id+'" title="Mostrar/Ocultar">'+(b.visible!==false?'👁️':'🙈')+'</button>'+
+          '<button class="row-del" data-action="del-global-buff" data-id="'+b.id+'" aria-label="Eliminar">✕</button>'+
+        '</div>' : '<span style="font-size:.7rem;color:'+(b.type==='debuff'?'var(--danger)':'var(--teal-light)')+';">'+(b.type==='debuff'?'Debuff':'Buff')+'</span>')+
+      '</div>'+
+      '<div class="creature-grid" style="grid-template-columns:1fr 1fr 1fr;">'+
+        (canEdit ? '<div class="creature-field"><label>Atributo</label><input type="text" data-scope="global" data-bind="buffCatalog.'+b.id+'.attr" value="'+esc(b.attr)+'"></div>' : '<div class="creature-field"><label>Atributo</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.attr||"-")+'</span></div>')+
+        (canEdit ? '<div class="creature-field"><label>Bonus</label><input type="text" data-scope="global" data-bind="buffCatalog.'+b.id+'.bonus" value="'+esc(b.bonus)+'"></div>' : '<div class="creature-field"><label>Bonus</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.bonus||"-")+'</span></div>')+
+        (canEdit ? '<div class="creature-field"><label>Duración</label><input type="text" data-scope="global" data-bind="buffCatalog.'+b.id+'.duration" value="'+esc(b.duration)+'"></div>' : '<div class="creature-field"><label>Duración</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.duration||"-")+'</span></div>')+
+      '</div>'+
+      (canEdit ? '<div class="creature-field"><label>Descripción</label><textarea class="creature-notes" data-scope="global" data-bind="buffCatalog.'+b.id+'.desc">'+esc(b.desc)+'</textarea></div>' : (b.desc?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.desc)+'</p>':''))+
+    '</div>';
+  });
+
+  if(canEdit){
+    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-global-buff">+ Añadir nuevo buff/debuff</button>';
   }
   html += '</div>';
   return html;
@@ -1750,7 +1832,7 @@ function loreModalClick(e){
       visible: true
     });
 
-    saveState();
+    saveState(true);
     pushSharedData();
     document.getElementById("loreModalOverlay").classList.add("hidden");
     renderTab();
@@ -1788,13 +1870,13 @@ function pinModalClick(e){
     pData.kind = document.getElementById("pinInputKind").value;
     pData.notes = document.getElementById("pinInputNotes").value;
     if(!existing){ if(!curM.markers) curM.markers=[]; curM.markers.push(pData); }
-    saveState(); pushSharedData(); closeModals(); renderTab();
+    saveState(true); pushSharedData(); closeModals(); renderTab();
     showToast("Marcador guardado", "success");
     return;
   }
   if(action==="del-pin" && curM){
     curM.markers = (curM.markers||[]).filter(function(p){return p.id!==btn.getAttribute("data-id");});
-    saveState(); pushSharedData(); closeModals(); renderTab();
+    saveState(true); pushSharedData(); closeModals(); renderTab();
     showToast("Marcador eliminado", "info");
     return;
   }
@@ -1967,7 +2049,7 @@ function modalClick(e){
 }
 
 function closeModals(){
-  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay"].forEach(function(id){
+  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay"].forEach(function(id){
     document.getElementById(id).classList.add("hidden");
   });
 }
@@ -2031,6 +2113,7 @@ function initSupabase(){
                 if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
                 if(comp.bestiary) state.bestiary = comp.bestiary;
                 if(comp.lore) state.lore = comp.lore;
+                if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
                 saveState(true);
                 renderTab();
               }
@@ -2074,6 +2157,7 @@ function handleRemoteCharacterChange(payload){
     if(row && row.data){
       var c = row.data;
       c.db_id = row.id;
+      if(row.owner_id) c.owner_id = row.owner_id;
       var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id; });
       if(idx !== -1){
         state.characters[idx] = c;
@@ -2092,6 +2176,7 @@ function handleRemoteSharedDataChange(payload){
   if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
   if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
   if(sharedData.lore) state.lore = sharedData.lore;
+  if(sharedData.buffCatalog) state.buffCatalog = sharedData.buffCatalog;
   saveState(true);
   renderTab();
 }
@@ -2133,7 +2218,12 @@ async function pullAllFromSupabase(){
   try{
     var charRes = await supabaseClient.from('characters').select('*');
     if(charRes.data && charRes.data.length){
-      state.characters = charRes.data.map(function(r){ var c = r.data; c.db_id = r.id; return c; });
+      state.characters = charRes.data.map(function(r){ 
+        var c = r.data; 
+        c.db_id = r.id;
+        if(r.owner_id) c.owner_id = r.owner_id;
+        return c; 
+      });
       if(!state.activeId && state.characters.length) state.activeId = state.characters[0].id;
       updateSyncBadge("synced");
     }
@@ -2144,7 +2234,21 @@ async function pullAllFromSupabase(){
 function pushActiveChar(){
   if(!supabaseClient || !currentUser) return;
   var c = activeChar(); if(!c || !c.name || c.id==="empty") return;
-  var payload = {name:c.name, data:c, owner_id:currentUser.id, updated_at:new Date().toISOString()};
+  var payload = {name:c.name, data:c, updated_at:new Date().toISOString()};
+  if(c.owner_id) payload.owner_id = c.owner_id;
+  if(c.db_id) payload.id = c.db_id;
+  supabaseClient.from('characters').upsert(payload).select().then(function(res){
+    if(res.error) { console.error('Supabase error:', res.error); return; }
+    if(res.data && res.data[0]) c.db_id = res.data[0].id;
+    updateSyncBadge("synced");
+  }).catch(function(e){ console.error('Supabase error:', e); });
+}
+function pushCharacterById(charId){
+  if(!supabaseClient || !currentUser) return;
+  var c = state.characters.find(function(x){ return x.id === charId; });
+  if(!c) return;
+  var payload = {name:c.name, data:c, updated_at:new Date().toISOString()};
+  if(c.owner_id) payload.owner_id = c.owner_id;
   if(c.db_id) payload.id = c.db_id;
   supabaseClient.from('characters').upsert(payload).select().then(function(res){
     if(res.error) { console.error('Supabase error:', res.error); return; }
@@ -2191,6 +2295,7 @@ async function pullSharedDataFromSupabase(){
       if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
       if(comp.bestiary) state.bestiary = comp.bestiary;
       if(comp.lore) state.lore = comp.lore;
+      if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
       saveState(true);
       renderTab();
     }
@@ -2204,7 +2309,8 @@ function pushSharedData(){
     data: {
       weaponsCatalog: state.weaponsCatalog || [],
       bestiary: state.bestiary || [],
-      lore: state.lore || getSeedLore()
+      lore: state.lore || getSeedLore(),
+      buffCatalog: state.buffCatalog || getSeedBuffCatalog()
     },
     markers: [],
     updated_at: new Date().toISOString()
@@ -2267,7 +2373,6 @@ function showSwipeIndicator(){
   }, 2000);
 }
 
-
 function creatureFieldGlobal(label,bind,val){
   return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-scope="global" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
 }
@@ -2304,7 +2409,12 @@ function setBind(target, path, rawValue, inputType){
     if(wItem) wItem[parts[2]] = value;
     return;
   }
-  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons"];
+  if(parts[0]==="buffCatalog"){
+    var bItem = (target.buffCatalog||[]).find(function(x){return x.id===parts[1];});
+    if(bItem) bItem[parts[2]] = value;
+    return;
+  }
+  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons","activeBuffs"];
   if(listFields.indexOf(parts[0])!==-1){
     var arr = target[parts[0]];
     var item = arr && arr.find(function(x){return x.id===parts[1];});
@@ -2343,6 +2453,7 @@ function handleClick(e){
   if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-terrain"){ loreTerrainFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="set-buff-tab"){ currentBuffTab = btn.getAttribute("data-val"); renderTab(); return; }
 
   if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
   if(action==="hp-mod"){
@@ -2486,6 +2597,22 @@ function handleClick(e){
     return;
   }
 
+  if(action==="toggle-global-buff"){
+    var bid = btn.getAttribute("data-id");
+    if(!c.activeBuffs) c.activeBuffs = [];
+    var idx = c.activeBuffs.findIndex(function(ab){ return ab.id === bid; });
+    if(idx !== -1){
+      c.activeBuffs.splice(idx, 1);
+    } else {
+      var buffToAdd = (state.buffCatalog||[]).find(function(b){ return b.id === bid; });
+      if(buffToAdd){
+        c.activeBuffs.push({id: buffToAdd.id, name: buffToAdd.name, type: buffToAdd.type, bonus: buffToAdd.bonus, attr: buffToAdd.attr});
+      }
+    }
+    saveState();
+    renderTab();
+    return;
+  }
   if(action==="toggle-buff"){
     var bName = btn.getAttribute("data-buff");
     if(!c.buffs) c.buffs={};
@@ -2558,22 +2685,43 @@ function handleClick(e){
     if(!isGM()) return;
     var wid2 = btn.getAttribute("data-id");
     var w = (state.weaponsCatalog||[]).find(function(x){return x.id===wid2;});
-    if(w){ w.visible = w.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    if(w){ w.visible = w.visible===false ? true : false; saveState(true); pushSharedData(); renderTab(); }
     return;
   }
   if(action==="add-global-weapon"){
     if(!isGM()) return;
     if(!state.weaponsCatalog) state.weaponsCatalog = [];
     state.weaponsCatalog.push({id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción", visible:true});
-    saveState(); pushSharedData(); renderTab();
+    saveState(true); pushSharedData(); renderTab();
     showToast("Arma añadida al catálogo", "success");
     return;
   }
   if(action==="del-global-weapon"){
     if(!isGM()) return;
     state.weaponsCatalog = (state.weaponsCatalog||[]).filter(function(w){ return w.id !== btn.getAttribute("data-id"); });
-    saveState(); pushSharedData(); renderTab();
+    saveState(true); pushSharedData(); renderTab();
     showToast("Arma eliminada del catálogo", "info");
+    return;
+  }
+  if(action==="toggle-buff-visibility"){
+    if(!isGM()) return;
+    var b = (state.buffCatalog||[]).find(function(x){return x.id===btn.getAttribute("data-id");});
+    if(b){ b.visible = b.visible===false ? true : false; saveState(true); pushSharedData(); renderTab(); }
+    return;
+  }
+  if(action==="add-global-buff"){
+    if(!isGM()) return;
+    if(!state.buffCatalog) state.buffCatalog = [];
+    state.buffCatalog.push({id:uid(), name:"Nuevo Buff", type:"buff", attr:"", bonus:"", duration:"", desc:"", visible:true});
+    saveState(true); pushSharedData(); renderTab();
+    showToast("Buff añadido al catálogo", "success");
+    return;
+  }
+  if(action==="del-global-buff"){
+    if(!isGM()) return;
+    state.buffCatalog = (state.buffCatalog||[]).filter(function(b){ return b.id !== btn.getAttribute("data-id"); });
+    saveState(true); pushSharedData(); renderTab();
+    showToast("Buff eliminado", "info");
     return;
   }
   if(action==="add-weapon"){ if(!isGM()) return; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); saveState(); renderTab(); return; }
@@ -2600,17 +2748,17 @@ function handleClick(e){
     if(!isGM()) return;
     var bid = btn.getAttribute("data-id");
     var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
-    if(b){ b.visible = b.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    if(b){ b.visible = b.visible===false ? true : false; saveState(true); pushSharedData(); renderTab(); }
     return;
   }
-  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",habilidades:"",visible:true}); saveState(); pushSharedData(); renderTab(); return; }
-  if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(); pushSharedData(); renderTab(); return; }
+  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",habilidades:"",visible:true}); saveState(true); pushSharedData(); renderTab(); return; }
+  if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(true); pushSharedData(); renderTab(); return; }
   if(action==="toggle-lore-visibility"){
     if(!isGM()) return;
     var lcat = btn.getAttribute("data-cat");
     var lid = btn.getAttribute("data-id");
     var li = (state.lore[lcat]||[]).find(function(x){return x.id===lid;});
-    if(li){ li.visible = li.visible===false ? true : false; saveState(); pushSharedData(); renderTab(); }
+    if(li){ li.visible = li.visible===false ? true : false; saveState(true); pushSharedData(); renderTab(); }
     return;
   }
   if(action==="open-lore-modal"){
@@ -2622,7 +2770,7 @@ function handleClick(e){
     if(!isGM()) return;
     var cat2 = btn.getAttribute("data-cat");
     state.lore[cat2] = state.lore[cat2].filter(function(x){return x.id!==btn.getAttribute("data-id");});
-    saveState(); pushSharedData(); renderTab();
+    saveState(true); pushSharedData(); renderTab();
     showToast("Entrada eliminada", "info");
     return;
   }
@@ -2635,7 +2783,7 @@ function handleClick(e){
     if(mn){
       var nMap = {id:uid(), name:mn, image:null, markers:[]};
       state.maps.push(nMap); state.activeMapId = nMap.id;
-      saveState(); pushSharedData(); renderTab();
+      saveState(true); pushSharedData(); renderTab();
       showToast("Mapa creado: " + mn, "success");
     }
     return;
@@ -2645,7 +2793,7 @@ function handleClick(e){
     if(confirm("¿Eliminar este mapa y sus pines?")){
       state.maps = state.maps.filter(function(m){return m.id!==state.activeMapId;});
       state.activeMapId = state.maps[0]?state.maps[0].id:"";
-      saveState(); pushSharedData(); renderTab();
+      saveState(true); pushSharedData(); renderTab();
       showToast("Mapa eliminado", "info");
     }
     return;
@@ -2654,7 +2802,7 @@ function handleClick(e){
   if(action==="remove-map"){
     if(!isGM()) return;
     var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-    if(curM){ curM.image = null; curM.markers = []; saveState(); pushSharedData(); renderTab(); }
+    if(curM){ curM.image = null; curM.markers = []; saveState(true); pushSharedData(); renderTab(); }
     return;
   }
   if(action==="map-click"){
@@ -2740,7 +2888,7 @@ function init(){
     if(e.target.files && e.target.files[0]){
       resizeImageFile(e.target.files[0], 900, 0.65, function(url){
         var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-        if(curM){ curM.image = url; saveState(); pushSharedData(); renderTab(); }
+        if(curM){ curM.image = url; saveState(true); pushSharedData(); renderTab(); }
       });
     }
     e.target.value="";
