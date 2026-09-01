@@ -624,11 +624,14 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 <input type="file" id="mapFileInput" accept="image/*" hidden>
 <input type="file" id="importFileInput" accept="application/json" hidden>
 
-<script>
+
+</body>
+</html>
+</script>
 (function(){
 "use strict";
 
-var STORAGE_KEY = "krysalisFichasV310";
+var STORAGE_KEY = "krysalisFichasV311";
 var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
 var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
 
@@ -894,7 +897,6 @@ function getEffectiveAttr(aKey, c){
   if(aKey==="destreza" && c.buffs && c.buffs.drogado_dex) base += 1;
   if(c.buffs && c.buffs.mono) base -= 1;
   
-  // Buffos globales activos
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
       if(ab.attr === aKey && ab.bonus){
@@ -917,7 +919,6 @@ function skillBase(skill, c){
 
 function skillTotal(skill, c){ 
   var total = skillBase(skill, c) + num(c.skillBonus[skill.id],0);
-  
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
       if(ab.attr === skill.id && ab.bonus){
@@ -972,7 +973,8 @@ function playDiceAudio(type){
     });
   }
 }
-  function getDieSvg(sides){
+
+function getDieSvg(sides){
   var stroke = "var(--gold)", fill = "var(--bg-card)", txt = "var(--gold-light)";
   if(sides===4) return '<svg viewBox="0 0 100 100"><polygon points="50,15 90,82 10,82" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><text x="50" y="65" font-family="var(--font-mono)" font-size="20" font-weight="700" fill="'+txt+'" text-anchor="middle">d4</text></svg>';
   if(sides===8) return '<svg viewBox="0 0 100 100"><polygon points="50,12 88,50 50,88 12,50" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><text x="50" y="57" font-family="var(--font-mono)" font-size="20" font-weight="700" fill="'+txt+'" text-anchor="middle">d8</text></svg>';
@@ -1065,7 +1067,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.1</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.11</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1307,11 +1309,12 @@ function tplCombate(c){
   buffsHtml += '</div>';
 
   if(activeBuffs.length > 0){
-    buffsHtml += '<div style="margin-top:10px;"><div style="font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:5px;">Buffos activos en este personaje:</div>';
+    buffsHtml += '<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px;">'+
+      '<div style="font-size:.65rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:5px;">Buffos activos en este personaje (toca ✕ para eliminar):</div>';
     activeBuffs.forEach(function(ab){
-      buffsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;margin-bottom:4px;">'+
-        '<span style="font-size:.75rem;">'+(ab.type==='debuff'?'⚠️':'✨')+' '+esc(ab.name)+(ab.bonus?' ('+esc(ab.bonus)+')':'')+'</span>'+
-        '<button class="row-del" data-action="remove-active-buff" data-id="'+ab.id+'" aria-label="Eliminar buff del personaje">✕</button>'+
+      buffsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:var(--bg-elev);border:1px solid '+(ab.type==='debuff'?'var(--danger)':'var(--line)')+';border-radius:5px;margin-bottom:4px;">'+
+        '<span style="font-size:.75rem;color:'+(ab.type==='debuff'?'#E88178':'var(--ink)')+';">'+(ab.type==='debuff'?'⚠️':'✨')+' '+esc(ab.name)+(ab.bonus?' ('+esc(ab.bonus)+')':'')+'</span>'+
+        '<button class="row-del" data-action="remove-active-buff" data-id="'+ab.id+'" aria-label="Eliminar buff del personaje" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>'+
       '</div>';
     });
     buffsHtml += '</div>';
@@ -1710,11 +1713,33 @@ function tplMundoBuffs(s){
     var showType = currentBuffTab==="all" || (currentBuffTab==="buffs" && b.type==="buff") || (currentBuffTab==="debuffs" && b.type==="debuff");
     if(!showType) return;
 
+    var attrOptions = '<option value="">-- Seleccionar --</option>'+
+      '<optgroup label="Atributos">'+
+        ATTRS.map(function(a){
+          return '<option value="'+a+'" '+((b.attr||'')===a?'selected':'')+'>'+ATTR_LABELS[a]+'</option>';
+        }).join('')+
+      '</optgroup>'+
+      '<optgroup label="Habilidades">'+
+        SKILL_DEFS.map(function(sk){
+          return '<option value="'+sk.id+'" '+((b.attr||'')===sk.id?'selected':'')+'>'+esc(sk.name)+'</option>';
+        }).join('')+
+      '</optgroup>'+
+      '<optgroup label="Otros">'+
+        '<option value="todo" '+((b.attr||'')==='todo'?'selected':'')+'>Todo</option>'+
+        '<option value="vida" '+((b.attr||'')==='vida'?'selected':'')+'>Vida</option>'+
+        '<option value="daño" '+((b.attr||'')==='daño'?'selected':'')+'>Daño</option>'+
+        '<option value="veneno" '+((b.attr||'')==='veneno'?'selected':'')+'>Veneno</option>'+
+        '<option value="iniciativa" '+((b.attr||'')==='iniciativa'?'selected':'')+'>Iniciativa</option>'+
+        '<option value="movilidad" '+((b.attr||'')==='movilidad'?'selected':'')+'>Movilidad</option>'+
+        '<option value="defensa" '+((b.attr||'')==='defensa'?'selected':'')+'>Defensa</option>'+
+        '<option value="defensaMagica" '+((b.attr||'')==='defensaMagica'?'selected':'')+'>Defensa Mágica</option>'+
+      '</optgroup>';
+
     html += '<div class="creature-card">'+
       '<div class="creature-card-header">'+
         (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="buffCatalog.'+b.id+'.name" value="'+esc(b.name)+'" placeholder="Nombre del buffo">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.name)+'</div>')+
         (canEdit ? '<div style="display:flex;gap:4px;align-items:center;">'+
-          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;" data-scope="global" data-bind="buffCatalog.'+b.id+'.type">'+
+          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);border-radius:5px;color:var(--ink);" data-scope="global" data-bind="buffCatalog.'+b.id+'.type">'+
             '<option value="buff" '+((b.type||'buff')==='buff'?'selected':'')+'>Buff</option>'+
             '<option value="debuff" '+((b.type||'buff')==='debuff'?'selected':'')+'>Debuff</option>'+
           '</select>'+
@@ -1723,10 +1748,13 @@ function tplMundoBuffs(s){
         '</div>' : '<span style="font-size:.7rem;color:'+(b.type==='debuff'?'var(--danger)':'var(--teal-light)')+';">'+(b.type==='debuff'?'Debuff':'Buff')+'</span>')+
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">'+
-        (canEdit ? '<div class="creature-field"><label>Atributo/Afecta</label><input type="text" data-scope="global" data-bind="buffCatalog.'+b.id+'.attr" value="'+esc(b.attr)+'" placeholder="melee, destreza, todo..."></div>' : '<div class="creature-field"><label>Afecta</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.attr||"-")+'</span></div>')+
+        (canEdit ? '<div class="creature-field"><label>Atributo/Afecta</label>'+
+          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);border-radius:5px;color:var(--ink);" data-scope="global" data-bind="buffCatalog.'+b.id+'.attr">'+
+            attrOptions+
+          '</select></div>' : '<div class="creature-field"><label>Afecta</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.attr||"-")+'</span></div>')+
         (canEdit ? '<div class="creature-field"><label>Bonus</label><input type="text" data-scope="global" data-bind="buffCatalog.'+b.id+'.bonus" value="'+esc(b.bonus)+'" placeholder="+1, -2, 1d6..."></div>' : '<div class="creature-field"><label>Bonus</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.bonus||"-")+'</span></div>')+
         (canEdit ? '<div class="creature-field"><label>Duración</label>'+
-          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;" data-scope="global" data-bind="buffCatalog.'+b.id+'.duration">'+
+          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);border-radius:5px;color:var(--ink);" data-scope="global" data-bind="buffCatalog.'+b.id+'.duration">'+
             '<option value="permanent" '+((b.duration||'permanent')==='permanent'?'selected':'')+'>Permanente</option>'+
             '<option value="turns" '+((b.duration||'permanent')==='turns'?'selected':'')+'>Por turnos</option>'+
           '</select></div>' : '<div class="creature-field"><label>Duración</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.duration==='turns'?(b.durationTurns||0)+' turnos':'Permanente')+'</span></div>')+
@@ -2155,7 +2183,6 @@ function resizeImageFile(file, maxDim, quality, callback){
   reader.readAsDataURL(file);
 }
 
-/* SUPABASE SINCRO */
 function initSupabase(){
   if(!window.supabase) return;
   try{
@@ -2387,7 +2414,6 @@ function pushSharedData(){
   }).catch(function(e){ console.error('Supabase error:', e); });
 }
 
-// SWIPE GESTURE SUPPORT
 var touchStartX = null;
 var touchStartY = null;
 var swipeIndicatorTimeout = null;
@@ -2991,9 +3017,6 @@ function init(){
 
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
-</script>
-</body>
-</html>
 </script>
 </body>
 </html>
