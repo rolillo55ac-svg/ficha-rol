@@ -99,7 +99,10 @@ function getSeedWeaponsCatalog(){
     {id:"wp_kusarigama", name:"Kusarigama", dano:"1d6+2", alcance:"+2m", critico:"Desarme o derribo del rival.", desc:"Hoz con cadena y contrapeso.", visible:true},
     {id:"wp_latigo", name:"Látigo", dano:"1d6+3", alcance:"+1m", critico:"Inmovilización o tropiezo.", desc:"Látigo flexible de cuero noble.", visible:true},
     {id:"wp_guja", name:"Guja", dano:"1d6+3", alcance:"+1m", critico:"Tajo extendido.", desc:"Arma de asta cortante con gran alcance.", visible:true},
-    {id:"wp_mordisco_vamp", name:"Mordisco Vampírico", dano:"1d6+3", alcance:"Melé", critico:"Absorbe la mitad del daño causado en salud.", desc:"Ataque vampírico que drena sangre y vitalidad.", visible:true}
+    {id:"wp_mordisco_vamp", name:"Mordisco Vampírico", dano:"1d6+3", alcance:"Melé", critico:"Absorbe la mitad del daño causado en salud.", desc:"Ataque vampírico que drena sangre y vitalidad.", visible:true},
+    {id:"wp_sable_bonito", name:"Sable bonito", dano:"1D6+3", alcance:"Melé", critico:"Corte rápido y elegante.", desc:"Sable fino y ligero de empuñadura noble.", visible:true},
+    {id:"wp_garras_lobezno", name:"Garras lobezno", dano:"1d4+2 / 1d4", alcance:"Melé", critico:"Desgarro salvaje múltiple.", desc:"Garras afiladas de depredador.", visible:true},
+    {id:"wp_martillo_2m", name:"Martillo a dos manos", dano:"2d6", alcance:"Melé", critico:"Impacto demoledor con derribo.", desc:"Pesado martillo contundente para dos manos.", visible:true}
   ];
 }
 
@@ -147,13 +150,13 @@ function getOfficialCharacters(){
       owner_id: null,
       ownerEmail: "",
       nivel: "1",
-      lugarNacimiento: "Trysard",
+      lugarNacimiento: "Trysar",
       altura: "1,52",
       peso: "50",
       edad: "57",
       trabajo: "Pescador",
-      ojos: "Marron",
-      pelo: "Largo, pobre y gris",
+      ojos: "marrones",
+      pelo: "largo, pobre y gris",
       descripcion: "",
       attrs: { fisico: 4, destreza: 8, inteligencia: 8, percepcion: 6, carisma: 4 },
       skillBonus: {
@@ -161,7 +164,7 @@ function getOfficialCharacters(){
         cabalgar: 0, callejeo: 0, comercio: 5, disfraz: 0, escalar: 0,
         esquivar: 2, etiqueta: 0, fauna: 4, leyes: 0, musica: 0,
         navegar: 4, nadar: 1, rastrear: 3, reflejos: 0, religion: 3,
-        sigilo: 2, rumores: 3, bolsillos: 1, herboristeria: 6, auxilios: 1,
+        sigilo: 2, rumores: 2, bolsillos: 1, herboristeria: 6, auxilios: 1,
         supervivencia: 3, tradicion: 1, manos: 3, carisma_sk: 2, piedras: 1
       },
       skillProgress: {},
@@ -182,8 +185,8 @@ function getOfficialCharacters(){
         manaMax: 40
       },
       weapons: [
-        { id: "wp_inst_cherk_1", name: "Arpón con cuerda", dano: "1d6+2", alcance: "8m", critico: "", desc: "" },
-        { id: "wp_inst_cherk_2", name: "Cerbatana", dano: "1d4+Veneno", alcance: "15m", critico: "", desc: "" },
+        { id: "wp_inst_cherk_1", name: "Arpón con cuerda", dano: "1D6+2", alcance: "8m", critico: "", desc: "" },
+        { id: "wp_inst_cherk_2", name: "Cerbatana", dano: "1D4+Veneno", alcance: "15m", critico: "", desc: "" },
         { id: "wp_inst_cherk_3", name: "Daga", dano: "1d4+2 / 1d4", alcance: "10m", critico: "", desc: "" }
       ],
       armors: [
@@ -201,10 +204,17 @@ function getOfficialCharacters(){
         { id: uid(), name: "Kit de yonki", qty: 1 },
         { id: uid(), name: "Kit de herboristería", qty: 1 },
         { id: uid(), name: "Pedernal", qty: 1 },
-        { id: uid(), name: "Bases de venenos", qty: 30 }
+        { id: uid(), name: "Bases de venenos", qty: 30 },
+        { id: uid(), name: "Vial: Seta del sueño", qty: 3 },
+        { id: uid(), name: "Vial: Seta terrosa", qty: 2 },
+        { id: uid(), name: "Vial: Nenúfar de Pantano", qty: 3 },
+        { id: uid(), name: "Vial: Nenúfar de Manglar", qty: 4 },
+        { id: uid(), name: "Vial: Flor de sombra", qty: 1 },
+        { id: uid(), name: "Vial: Cactus", qty: 2 },
+        { id: uid(), name: "Vial: Pez globo", qty: 1 }
       ],
-      money: { oro: 50, plata: 0 },
-      magiaTipo: "Drogadicción venenosa",
+      money: { oro: 25, plata: 0 },
+      magiaTipo: "Toxicómano",
       spells: [
         { id: uid(), name: "Seta del sueño", coste: 3, rango: "3", efecto: "1 - No necesitas dormir (Máximo 1 noche)", statAttr: "", statMod: "", active: false },
         { id: uid(), name: "Seta terrosa", coste: 3, rango: "2", efecto: "1 - + Mitad de movilidad (4 Turnos)", statAttr: "movilidad", statMod: "+4", active: false },
@@ -229,12 +239,12 @@ function getOfficialCharacters(){
       buffs: {},
       customBuffs: [],
       poisons: [
-        { id: uid(), name: "Seta del sueño", dosis: 1, efectoEnemigo: "Sueño / Paralización", efectoCherk: "No necesitas dormir (Máximo 1 noche)", estado: "descubierto" },
-        { id: uid(), name: "Seta terrosa", dosis: 1, efectoEnemigo: "Entumecer", efectoCherk: "+ Mitad de movilidad (4 Turnos)", estado: "descubierto" },
-        { id: uid(), name: "Nenúfar de Pantano", dosis: 1, efectoEnemigo: "Reduce Percepción rival", efectoCherk: "+2 a Percepción (20 min)", estado: "descubierto" },
-        { id: uid(), name: "Nenúfar de Manglar", dosis: 1, efectoEnemigo: "Daño continuo", efectoCherk: "+3 de vida falsa (hasta perderla)", estado: "descubierto" },
+        { id: uid(), name: "Seta del sueño", dosis: 3, efectoEnemigo: "Sueño / Paralización", efectoCherk: "No necesitas dormir (Máximo 1 noche)", estado: "descubierto" },
+        { id: uid(), name: "Seta terrosa", dosis: 2, efectoEnemigo: "Entumecer", efectoCherk: "+ Mitad de movilidad (4 Turnos)", estado: "descubierto" },
+        { id: uid(), name: "Nenúfar de Pantano", dosis: 3, efectoEnemigo: "Reduce Percepción rival", efectoCherk: "+2 a Percepción (20 min)", estado: "descubierto" },
+        { id: uid(), name: "Nenúfar de Manglar", dosis: 4, efectoEnemigo: "Daño continuo", efectoCherk: "+3 de vida falsa (hasta perderla)", estado: "descubierto" },
         { id: uid(), name: "Flor de sombra", dosis: 1, efectoEnemigo: "", efectoCherk: "Visión en la oscuridad (20 min)", estado: "descubierto" },
-        { id: uid(), name: "Cactus", dosis: 1, efectoEnemigo: "", efectoCherk: "+1 a las acciones (3 Turnos)", estado: "descubierto" },
+        { id: uid(), name: "Cactus", dosis: 2, efectoEnemigo: "", efectoCherk: "+1 a las acciones (3 Turnos)", estado: "descubierto" },
         { id: uid(), name: "Pez globo", dosis: 1, efectoEnemigo: "", efectoCherk: "Respiración acuática (20 min)", estado: "descubierto" }
       ],
       skillPoints: 0,
@@ -253,12 +263,12 @@ function getOfficialCharacters(){
       ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Krysalis",
-      altura: "1.60",
-      peso: "x",
+      altura: "1,60",
+      peso: "X",
       edad: "240",
       trabajo: "Adiestradora",
-      ojos: "Amarillo",
-      pelo: "Blanco y con coleta",
+      ojos: "Amarillos",
+      pelo: "Blanco con coleta",
       descripcion: "",
       attrs: { fisico: 8, destreza: 8, inteligencia: 4, percepcion: 6, carisma: 4 },
       skillBonus: {
@@ -273,7 +283,7 @@ function getOfficialCharacters(){
       skillPointsUnlocked: false,
       skillHybrid: { musica: "destreza", rumores: "percepcion" },
       customSkills: [
-        { id: "csk_ink_adiestrar", name: "Adiestrar", attr: "destreza", bonus: 3 }
+        { id: "csk_ink_adiestrar", name: "Adiestrar / Doma", attr: "destreza", bonus: 3 }
       ],
       combat: {
         iniciativa: 7,
@@ -287,9 +297,9 @@ function getOfficialCharacters(){
         manaMax: 40
       },
       weapons: [
-        { id: "wp_inst_ink_1", name: "Guadaña dos manos", dano: "2d6", alcance: "Melé", critico: "", desc: "" },
-        { id: "wp_inst_ink_2", name: "Arco", dano: "1d6+3", alcance: "Distancia", critico: "", desc: "" },
-        { id: "wp_inst_ink_3", name: "Mordisco Vampírico", dano: "1d6+3", alcance: "Melé", critico: "", desc: "" }
+        { id: "wp_inst_ink_1", name: "Guadaña", dano: "2D6", alcance: "Melé", critico: "", desc: "" },
+        { id: "wp_inst_ink_2", name: "Arco", dano: "1D6+3", alcance: "Distancia", critico: "", desc: "" },
+        { id: "wp_inst_ink_3", name: "Mordisco Vampírico", dano: "1D6+3", alcance: "Melé", critico: "", desc: "" }
       ],
       armors: [
         { id: "arm_ink_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
@@ -308,7 +318,7 @@ function getOfficialCharacters(){
         { id: uid(), name: "Peluche de Ratita", qty: 1 }
       ],
       money: { oro: 140, plata: 0 },
-      magiaTipo: "Vampiresa animal",
+      magiaTipo: "Vampiresa Animal",
       spells: [
         { id: uid(), name: "Ratita favorita", coste: 2, rango: "5m", efecto: "24h invocada, más inteligente", statAttr: "", statMod: "", active: false },
         { id: uid(), name: "Animales pequeños", coste: 4, rango: "5m", efecto: "(Máximo tamaño Rata)", statAttr: "", statMod: "", active: false },
@@ -319,19 +329,54 @@ function getOfficialCharacters(){
       ],
       stones: [],
       passivesNeg: [
-        { id: uid(), text: "Repetir sangre: Tienes que beber sangres distintas cada 2 morediscos." },
+        { id: uid(), text: "Repetir sangre: Tienes que beber sangres distintas cada 2 mordiscos." },
         { id: uid(), text: "Sol: Reduce la vida máxima a la mitad y -1 a las acciones." },
         { id: uid(), text: "Plata: Recibe daño del contacto de la plata, sufres 1d6 de daño directo." },
         { id: uid(), text: "Fuego: Impide sanar cualquier daño causado por el fuego." }
       ],
       passivesPos: [
-        { id: uid(), text: "Inmunidad al Sol (al beber sangre)." },
-        { id: uid(), text: "+1 en ataque a mele o ataque a distancias, +2 Percepción y ventaja en Advertir / Notar si hay sangre involucrada (al beber sangre)." }
+        { id: uid(), text: "Inmunidad al Sol." },
+        { id: uid(), text: "1 más en ataque a mele o ataque a distancias." },
+        { id: uid(), text: "2 más Percepción y ventaja en Advertir / Notar si hay sangre involucrada." }
       ],
       goddessCurses: [],
       goddessBlessings: [],
       goddessTable: [],
-      summons: [],
+      summons: [
+        {
+          id: "summon_ink_rata",
+          name: "Rata",
+          vida: "4",
+          defensa: "12",
+          absorcion: "1",
+          dano: "1d4+1",
+          movilidad: "6 (T) / 3 (N)",
+          inteligencia: "2",
+          habilidades: "Melé 8+1d10, Atletismo 2+1d10, Inteligencia 2+1d10, Percepción 7+1d10, Sigilo 12+1d10, Supervivencia 10+1d10, Esquivar 7+1d10. Obtienen un +1 a acertar los ataques cuando otra rata o Ink están al lado del enemigo (+4 Máximo)."
+        },
+        {
+          id: "summon_ink_murcielago",
+          name: "Murciélago",
+          vida: "5",
+          defensa: "12",
+          absorcion: "1",
+          dano: "1d4+1",
+          movilidad: "3 (T) / 7 (V)",
+          inteligencia: "2",
+          habilidades: "Melé 8+1d10, Atletismo 2+1d10, Inteligencia 2+1d10, Percepción 7+1d10, Sigilo 12+1d10, Supervivencia 8+1d10, Esquivar 8+1d10. Tiene ventaja en las tiradas de Percepción que se basen en sonido. Ruidos fuertes y estar ensordecido le impiden localizar."
+        },
+        {
+          id: "summon_ink_cuervo",
+          name: "Cuervo",
+          vida: "8",
+          defensa: "14",
+          absorcion: "1",
+          dano: "1d4+2",
+          movilidad: "3 (T) / 9 (V)",
+          inteligencia: "3",
+          habilidades: "Melé 9+1d10, Atletismo 3+1d10, Inteligencia 3+1d10, Percepción 9+1d10, Sigilo 12+1d10, Supervivencia 12+1d10, Esquivar 9+1d10. Obtienen +1 a atacar si Ink u otro cuervo están cerca (+2 máximo). Percepción +2 para buscar objetos brillantes."
+        }
+      ],
       buffs: {},
       customBuffs: [],
       poisons: [],
@@ -340,10 +385,10 @@ function getOfficialCharacters(){
       personalNotes: ""
     },
 
-    // 3. BAKY
+    // 3. BUCKY
     {
       id: "char_baky",
-      name: "Baky",
+      name: "Bucky",
       theme: "blue",
       portrait: null,
       isNPC: false,
@@ -355,8 +400,8 @@ function getOfficialCharacters(){
       peso: "70",
       edad: "18",
       trabajo: "Emisario (Lameculos)",
-      ojos: "Azul",
-      pelo: "Marrón corto",
+      ojos: "azul",
+      pelo: "marrón corto",
       descripcion: "",
       attrs: { fisico: 5, destreza: 7, inteligencia: 8, percepcion: 6, carisma: 4 },
       skillBonus: {
@@ -369,7 +414,7 @@ function getOfficialCharacters(){
       },
       skillProgress: {},
       skillPointsUnlocked: false,
-      skillHybrid: { musica: "destreza", rumores: "percepcion" },
+      skillHybrid: { musica: "destreza", rumores: "carisma" },
       customSkills: [],
       combat: {
         iniciativa: 8,
@@ -379,13 +424,13 @@ function getOfficialCharacters(){
         pvActual: 20,
         pvMax: 20,
         escudoActual: 0,
-        manaActual: 40,
-        manaMax: 40
+        manaActual: 35,
+        manaMax: 35
       },
       weapons: [
-        { id: "wp_inst_baky_1", name: "Arco", dano: "1d6+3", alcance: "Distancia", critico: "", desc: "" },
-        { id: "wp_inst_baky_2", name: "Kusarigama", dano: "1d6+2", alcance: "+2m", critico: "", desc: "" },
-        { id: "wp_inst_baky_3", name: "Daga", dano: "1d4+2 / 1d4", alcance: "10m", critico: "", desc: "" }
+        { id: "wp_inst_baky_1", name: "Kusarigama", dano: "1D6+2", alcance: "2m", critico: "", desc: "" },
+        { id: "wp_inst_baky_2", name: "Daga", dano: "1d4+2 / 1d4", alcance: "10m", critico: "", desc: "" },
+        { id: "wp_inst_baky_3", name: "Arco", dano: "1D6+3", alcance: "Distancia", critico: "", desc: "" }
       ],
       armors: [
         { id: "arm_baky_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
@@ -426,10 +471,10 @@ function getOfficialCharacters(){
       personalNotes: ""
     },
 
-    // 4. SCARLETH
+    // 4. SCARLETH / WINTER
     {
       id: "char_scarleth",
-      name: "Scarleth",
+      name: "Scarleth / Winter",
       theme: "default",
       portrait: null,
       isNPC: false,
@@ -437,12 +482,12 @@ function getOfficialCharacters(){
       ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Krysalis",
-      altura: "1.72",
+      altura: "1,72",
       peso: "x",
       edad: "192",
       trabajo: "Noble",
-      ojos: "Verde",
-      pelo: "Rojo y liso",
+      ojos: "verdes",
+      pelo: "pelirrojo y liso",
       descripcion: "",
       attrs: { fisico: 6, destreza: 8, inteligencia: 4, percepcion: 5, carisma: 7 },
       skillBonus: {
@@ -471,10 +516,10 @@ function getOfficialCharacters(){
         manaMax: 40
       },
       weapons: [
-        { id: "wp_inst_scar_1", name: "Látigo", dano: "1d6+3", alcance: "+1m", critico: "", desc: "" },
-        { id: "wp_inst_scar_2", name: "Guja", dano: "1d6+3", alcance: "+1m", critico: "", desc: "" },
-        { id: "wp_inst_scar_3", name: "Arco", dano: "1d6+3", alcance: "Distancia", critico: "", desc: "" },
-        { id: "wp_inst_scar_4", name: "Mordisco Vampírico", dano: "1d6+3", alcance: "Melé", critico: "", desc: "" }
+        { id: "wp_inst_scar_1", name: "Látigo", dano: "1D6+3", alcance: "1m", critico: "", desc: "" },
+        { id: "wp_inst_scar_2", name: "Guja", dano: "1D6+3", alcance: "1m", critico: "", desc: "" },
+        { id: "wp_inst_scar_3", name: "Arco", dano: "1D6+3", alcance: "Distancia", critico: "", desc: "" },
+        { id: "wp_inst_scar_4", name: "Mordisco Vampírico", dano: "1D6+3", alcance: "Melé", critico: "", desc: "" }
       ],
       armors: [
         { id: "arm_scar_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
@@ -500,28 +545,126 @@ function getOfficialCharacters(){
         { id: uid(), name: "Pañuelos de seda", qty: 1 },
         { id: uid(), name: "Maquillaje", qty: 1 },
         { id: uid(), name: "Cáliz de oro", qty: 1 },
-        { id: uid(), name: "Guantes", qty: 1 }
+        { id: uid(), name: "Guantes", qty: 1 },
+        { id: uid(), name: "Mantita Astarion", qty: 1 }
       ],
       money: { oro: 200, plata: 0 },
       magiaTipo: "Vampiresa",
       spells: [
-        { id: uid(), name: "Control mental", coste: 5, rango: "15m", efecto: "(1 turno combate / 1 min fuera). Tirada enfrentada: Carisma+nivel+dado", statAttr: "", statMod: "", active: false },
-        { id: uid(), name: "Leer pensamientos", coste: 7, rango: "15m", efecto: "(Instante de uso)", statAttr: "", statMod: "", active: false },
-        { id: uid(), name: "Crear con sangre", coste: 6, rango: "5m", efecto: "(objetos pequeños)(24h)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Control mental", coste: 5, rango: "15 metros", efecto: "(1 turno combate / 1 min fuera). Tirada enfrentada: Carisma+nivel+dado", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Leer pensamientos", coste: 7, rango: "15 metros", efecto: "(Instante de uso)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Crear con sangre", coste: 6, rango: "5 metros", efecto: "(objetos pequeños, máx una daga) (24h)", statAttr: "", statMod: "", active: false },
         { id: uid(), name: "Forma murciélago", coste: 6, rango: "", efecto: "(Maximo 2 veces dia / 30 min)", statAttr: "", statMod: "", active: false },
-        { id: uid(), name: "Mordisco vampírico", coste: 8, rango: "", efecto: "(Te sanas la mitad del daño causado)", statAttr: "", statMod: "", active: false },
-        { id: uid(), name: "Hablar con los Vástagos", coste: 2, rango: "50m", efecto: "Comunicación con los Vástagos", statAttr: "", statMod: "", active: false }
+        { id: uid(), name: "Mordisco vampírico (sanar)", coste: 8, rango: "", efecto: "Sanar la mitad del daño causado", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Hablar con los vástagos", coste: 2, rango: "50 metros", efecto: "Comunicación con los Vástagos", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Mordisco vampírico (crear vástago)", coste: 6, rango: "", efecto: "1d4 - Comer y crear vástago (Coste 0 ó 6)", statAttr: "", statMod: "", active: false }
       ],
-      stones: [],
+      stones: [
+        { id: uid(), color: "Roja", efecto: "Piedra mágica roja" },
+        { id: uid(), color: "Arcoíris", efecto: "Piedra mágica multicolor" }
+      ],
       passivesNeg: [
-        { id: uid(), text: "Repetir sangre: Tienes que beber sangres distintas cada 2 morediscos." },
+        { id: uid(), text: "Repetir sangre: Tienes que beber sangres distintas cada 2 mordiscos." },
         { id: uid(), text: "Sol: Reduce la vida máxima a la mitad y -1 a las acciones." },
         { id: uid(), text: "Plata: Recibe daño del contacto de la plata, sufres 1d6 de daño directo." },
         { id: uid(), text: "Fuego: Impide sanar cualquier daño causado por el fuego." }
       ],
       passivesPos: [
-        { id: uid(), text: "Inmunidad al Sol (al beber sangre)." },
-        { id: uid(), text: "+1 en ataque a mele o ataque a distancias, +2 Percepción y ventaja en Advertir / Notar si hay sangre involucrada (al beber sangre)." }
+        { id: uid(), text: "Inmunidad al Sol." },
+        { id: uid(), text: "1 más en ataque a mele o ataque a distancias." },
+        { id: uid(), text: "2 más Percepción y ventaja en Advertir / Notar si hay sangre involucrada." }
+      ],
+      goddessCurses: [],
+      goddessBlessings: [],
+      goddessTable: [
+        { id: uid(), name: "Luna", gustos: "Noche", disgustos: "" }
+      ],
+      summons: [],
+      buffs: {},
+      customBuffs: [],
+      poisons: [],
+      skillPoints: 0,
+      activeBuffs: [],
+      personalNotes: ""
+    },
+
+    // 5. DEREK (Personaje jugable de Scarleth)
+    {
+      id: "char_derek",
+      name: "Derek",
+      theme: "purple",
+      portrait: null,
+      isNPC: false,
+      owner_id: null,
+      ownerEmail: "",
+      nivel: "1 Vástago",
+      lugarNacimiento: "Krysalis",
+      altura: "1,69",
+      peso: "65",
+      edad: "20+76",
+      trabajo: "Vástago",
+      ojos: "heterocromía (azul y rojo)",
+      pelo: "Bicolor negro blanco",
+      descripcion: "Vástago de Krysalis",
+      attrs: { fisico: 8, destreza: 6, inteligencia: 8, percepcion: 8, carisma: 5 },
+      skillBonus: {
+        advertir: 3, distancia: 4, melee: 5, atletismo: 3, buscar: 1,
+        cabalgar: 2, callejeo: 0, comercio: 1, disfraz: 0, escalar: 3,
+        esquivar: 6, etiqueta: 0, fauna: 0, leyes: 1, musica: 0,
+        navegar: 0, nadar: 2, rastrear: 0, reflejos: 0, religion: 3,
+        sigilo: 4, rumores: 0, bolsillos: 0, herboristeria: 0, auxilios: 1,
+        supervivencia: 1, tradicion: 0, manos: 2, carisma_sk: 1, piedras: 0
+      },
+      skillProgress: {},
+      skillPointsUnlocked: false,
+      skillHybrid: { musica: "destreza", rumores: "percepcion" },
+      customSkills: [],
+      combat: {
+        iniciativa: 8,
+        movilidad: 6,
+        defensa: 17,
+        defensaMagica: 0,
+        pvActual: 32,
+        pvMax: 32,
+        escudoActual: 0,
+        manaActual: 30,
+        manaMax: 30
+      },
+      weapons: [
+        { id: "wp_inst_derek_1", name: "Sable bonito", dano: "1D6+3", alcance: "Melé", critico: "", desc: "" },
+        { id: "wp_inst_derek_2", name: "Garras lobezno", dano: "1d4+2 / 1d4", alcance: "Melé", critico: "", desc: "" },
+        { id: "wp_inst_derek_3", name: "Martillo a dos manos", dano: "2d6", alcance: "Melé", critico: "", desc: "" },
+        { id: "wp_inst_derek_4", name: "Arco", dano: "1D6+3", alcance: "Distancia", critico: "", desc: "" },
+        { id: "wp_inst_derek_5", name: "Mordisco Vampírico", dano: "1D6+3", alcance: "Melé", critico: "", desc: "" }
+      ],
+      armors: [
+        { id: "arm_derek_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
+      ],
+      inventory: [
+        { id: uid(), name: "Mochila", qty: 1 },
+        { id: uid(), name: "Cuerda", qty: 1 },
+        { id: uid(), name: "Raciones de comida", qty: 10 },
+        { id: uid(), name: "Tienda de campaña", qty: 1 },
+        { id: uid(), name: "Karcaj con 20 flechas", qty: 1 },
+        { id: uid(), name: "Muda", qty: 1 },
+        { id: uid(), name: "Pedernal", qty: 1 }
+      ],
+      money: { oro: 0, plata: 0 },
+      magiaTipo: "Vástago",
+      spells: [
+        { id: uid(), name: "Mordisco Vampírico", coste: 8, rango: "Melé", efecto: "Sanas la mitad del daño causado", statAttr: "", statMod: "", active: false }
+      ],
+      stones: [],
+      passivesNeg: [
+        { id: uid(), text: "Repetir sangre: Tienes que beber sangres distintas cada 2 mordiscos." },
+        { id: uid(), text: "Sol: Reduce la vida máxima a la mitad y -1 a las acciones." },
+        { id: uid(), text: "Plata: Recibe daño del contacto de la plata, sufres 1d6 de daño directo." },
+        { id: uid(), text: "Fuego: Impide sanar cualquier daño causado por el fuego." }
+      ],
+      passivesPos: [
+        { id: uid(), text: "El Sol solo le reduce 1/5 de su vida maxima." },
+        { id: uid(), text: "1 más en ataque a mele o ataque a distancias." },
+        { id: uid(), text: "1 en advertir notar." }
       ],
       goddessCurses: [],
       goddessBlessings: [],
@@ -540,22 +683,43 @@ function getOfficialCharacters(){
 function resetCharactersToOfficial(keepPortraits){
   var officials = getOfficialCharacters();
   state.characters = state.characters || [];
+  
+  var scarlethChar = state.characters.find(function(c){
+    return c.name && (c.name.toLowerCase().includes("scarleth") || c.name.toLowerCase().includes("winter"));
+  });
+  var scarlethOwner = scarlethChar ? scarlethChar.owner_id : null;
+  var scarlethEmail = scarlethChar ? scarlethChar.ownerEmail : "";
+
   officials.forEach(function(off){
     var existing = state.characters.find(function(c){
-      return c.name && c.name.trim().toLowerCase() === off.name.trim().toLowerCase();
+      var cName = (c.name || "").trim().toLowerCase();
+      var oName = off.name.trim().toLowerCase();
+      return cName === oName || cName.startsWith(oName) || oName.startsWith(cName) ||
+        (oName.includes("bucky") && cName.includes("baky")) ||
+        (oName.includes("baky") && cName.includes("bucky")) ||
+        (oName.includes("scarleth") && cName.includes("scarleth"));
     });
     if(existing){
       var savedPortrait = (keepPortraits !== false) ? (existing.portrait || off.portrait) : off.portrait;
       var savedOwner = existing.owner_id;
+      var savedDbId = existing.db_id;
       var savedEmail = existing.ownerEmail;
       var savedId = existing.id;
       Object.assign(existing, JSON.parse(JSON.stringify(off)));
       existing.id = savedId;
+      if(savedDbId) existing.db_id = savedDbId;
       existing.portrait = savedPortrait;
       existing.owner_id = savedOwner;
       existing.ownerEmail = savedEmail;
+      existing.officialDataVersion = 3;
     } else {
-      state.characters.push(JSON.parse(JSON.stringify(off)));
+      var nOff = JSON.parse(JSON.stringify(off));
+      if(nOff.name === "Derek" && scarlethOwner){
+        nOff.owner_id = scarlethOwner;
+        nOff.ownerEmail = scarlethEmail;
+      }
+      nOff.officialDataVersion = 3;
+      state.characters.push(nOff);
     }
   });
 
@@ -571,13 +735,27 @@ function resetCharactersToOfficial(keepPortraits){
 
 function getSeedBestiary(){
   return [
-    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",habilidades:"Doma: 5. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Anaconda Gigante",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",habilidades:"Doma: 5. Carga pesada.",visible:true},
-    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",habilidades:"Doma: 5. No puede nadar.",visible:true},
-    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",habilidades:"Doma: 5. Montura voladora.",visible:true},
-    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",habilidades:"Doma: 5. Acuático.",visible:true},
-    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"2d6",movilidad:"8 (T)",habilidades:"Doma: 5. Alta resistencia.",visible:true},
-    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",habilidades:"Resistencia al frío.",visible:true}
+    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",habilidades:"Doma: 5. Cabalgar: 1/1. Terreno: T/V. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Anaconda G.",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",habilidades:"Doma: 5. Cabalgar: 5. Carga pesada. Nada.",visible:true},
+    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. No puede nadar.",visible:true},
+    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10/12 (T/V)",habilidades:"Doma: 5. Cabalgar: 2. Montura voladora. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. Acuático.",visible:true},
+    {id:uid(),nombre:"Lagarto",continente:"Aslan",vida:"60",defensa:"16",absorcion:"3",dano:"1d6+2",movilidad:"10 (T/A)",habilidades:"Doma: 5. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"1d6+3",movilidad:"8 (T)",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Burro",continente:"Todos",vida:"20",defensa:"12",absorcion:"2",dano:"1d4",movilidad:"8 (T)",habilidades:"Doma: 3. Cabalgar: 1. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Caballo",continente:"Todos",vida:"30",defensa:"12",absorcion:"2",dano:"1d6",movilidad:"8 (T)",habilidades:"Doma: 3. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Caballo XL",continente:"Todos",vida:"40",defensa:"12",absorcion:"2",dano:"1d6+1",movilidad:"8 (T)",habilidades:"Doma: 4. Cabalgar: 2. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Camello",continente:"Aslan",vida:"30",defensa:"12",absorcion:"2",dano:"1d6",movilidad:"8 (T)",habilidades:"Doma: 3. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Elefante",continente:"Tryssar",vida:"60",defensa:"15",absorcion:"3",dano:"2d6",movilidad:"7 (T)",habilidades:"Doma: 4. Cabalgar: 4. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Osos",continente:"Todos",vida:"50",defensa:"13",absorcion:"3",dano:"1d6+2",movilidad:"7 (T)",habilidades:"Doma: 4. Cabalgar: 2. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Buey / Toro",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+1",movilidad:"8 (T)",habilidades:"Doma: 3. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo XL",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2",movilidad:"9 (T)",habilidades:"Doma: 4. Cabalgar: 1. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Avestruz",continente:"Aslan",vida:"20",defensa:"10",absorcion:"0",dano:"1d4+1",movilidad:"9 (T)",habilidades:"Doma: 3. Cabalgar: 1. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Cría",continente:"Todos",vida:"10",defensa:"13",absorcion:"2",dano:"1d4+2",movilidad:"8 (T)",habilidades:"Doma: 3. Inteligencia: 2. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",habilidades:"Doma: 3. Inteligencia: 3. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",habilidades:"Doma: 3. Inteligencia: 3. Resistencia al frío ambiente. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Entrenado",continente:"Todos",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",habilidades:"Doma: 5. Inteligencia: 4. Ataque entrenado. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Ártico Entrenado",continente:"Aslan",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",habilidades:"Doma: 5. Inteligencia: 4. Resistencia al frío ambiente. Nada a mitad de mov.",visible:true}
   ];
 }
 
@@ -590,14 +768,58 @@ function getSeedLore(){
       {id:uid(),title:"Emisario de Asland",text:"Representante diplomático del reino.",continent:"Aslan",rarity:"Común",type:"Aliado",visible:true}
     ],
     objetos:[
-      {id:uid(),title:"Veneno: Seta del sueño",text:"Efecto: Sueño / Paralización",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      // Venenos Oficiales (Págs. 10 y 11)
+      {id:uid(),title:"Veneno: Amanita (Base)",text:"Efecto: Base de venenos (Muy común)",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Seta del sueño",text:"Efecto: Sueño / Paralización (Común)",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
       {id:uid(),title:"Veneno: Seta terrosa",text:"Efecto: Entumecer (+ Mitad Movilidad para Cherk)",terrain:"Minas / Cuevas",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
-      {id:uid(),title:"Veneno: Nenúfar de Pantano",text:"Efecto: Reduce Percepción rival (+2 Percepción Cherk)",terrain:"Pantano",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
-      {id:uid(),title:"Veneno: Nenúfar de Manglar",text:"Efecto: Daño continuo (+3 vida falsa Cherk)",terrain:"Manglar",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
-      {id:uid(),title:"Poción: Flor de Lirio P",text:"Efecto: Cura venenos y toxinas",terrain:"Pantano",rarity:"Muy rara",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Veneno: Nenúfar P",text:"Efecto: Reduce Percepción rival (+2 Percepción Cherk)",terrain:"Pantano",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Nenúfar M",text:"Efecto: Daño continuo (+3 vida falsa Cherk)",terrain:"Manglar",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Flor del Caído",text:"Efecto: Mortal",terrain:"Jungla",rarity:"Muy rara",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Flor de Sombra",text:"Efecto: Ceguera (Visión en la oscuridad para Cherk)",terrain:"Bosques",rarity:"Rara",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Cactus",text:"Efecto: Urticante (+1 a las acciones Cherk)",terrain:"Desierto",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Corteza Congelada",text:"Efecto: Congela al rival",terrain:"Árboles congelados",rarity:"Rara",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Seta Secante",text:"Efecto: Deshidrata",terrain:"Arslan",rarity:"Común",continent:"Aslan",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Flor de volcán",text:"Efecto: Azufre corrosivo",terrain:"Montañas",rarity:"Rara",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Baya V de arbusto",text:"Efecto: Visión en blanco y negro",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Baya N de arbusto",text:"Efecto: Duerme la lengua",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Quimera",text:"Efecto: Paraliza",terrain:"Minas / Cuevas",rarity:"Muy rara",continent:"Vetrys",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Escorpión de cobre",text:"Efecto: Quemadura de sol",terrain:"Desierto",rarity:"Rara",continent:"Aslan",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Flor N de oasis",text:"Efecto: Ceguera",terrain:"Oasis",rarity:"Rara",continent:"Aslan",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Escorpión negro",text:"Efecto: Dolor fatal",terrain:"Desierto",rarity:"Muy rara",continent:"Aslan",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Sudor de pájaro",text:"Efecto: Corrosivo",terrain:"Jungla",rarity:"Rara",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Melocotón pinch",text:"Efecto: Adicción severa",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: Calamar gigante",text:"Efecto: Indigestión masiva",terrain:"Aguas profundas",rarity:"Rara",continent:"Todos",type:"Veneno",visible:true},
+      {id:uid(),title:"Veneno: V. de serpiente",text:"Efecto: Pesadilla",terrain:"Pantano",rarity:"Rara",continent:"Tryssar",type:"Veneno",visible:true},
+
+      // Pociones Oficiales (Págs. 10 y 11)
+      {id:uid(),title:"Poción: Alga playa (Base)",text:"Efecto: Base de pociones (Muy común)",terrain:"Playa",rarity:"Común",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Musgo V",text:"Efecto: Emite Luz Verde",terrain:"Minas / Cuevas",rarity:"Común",continent:"Todos",type:"Poción",visible:true},
       {id:uid(),title:"Poción: Flor del Rey",text:"Efecto: +Defensa mágica temporal",terrain:"Bosque",rarity:"Muy rara",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Flor de Lirio P",text:"Efecto: Cura venenos y toxinas",terrain:"Pantano",rarity:"Muy rara",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Raíz Manglar",text:"Efecto: Crecimiento de Plantas acelerado",terrain:"Manglar",rarity:"Común",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Flor del día",text:"Efecto: +Vitalidad temporal",terrain:"Jungla",rarity:"Muy rara",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Crisantemo",text:"Efecto: +Percepción",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Flor de Oasis",text:"Efecto: Regeneración de Maná / Energía",terrain:"Oasis",rarity:"Muy rara",continent:"Aslan",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Musgo A",text:"Efecto: Emite Luz Azul",terrain:"Minas / Cuevas",rarity:"Común",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Flor de cristal",text:"Efecto: Regeneración celular avanzada",terrain:"Montañas Nevadas",rarity:"Muy rara",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Seta del sueño",text:"Efecto: Melatonina concentrada",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Flor melosa",text:"Efecto: Dulce sedante",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Poción",visible:true},
+      {id:uid(),title:"Poción: Baya V arbusto",text:"Efecto: Otorga Visión nocturna",terrain:"Bosque",rarity:"Rara",continent:"Todos",type:"Poción",visible:true},
+
+      // Ungüentos Oficiales (Págs. 10 y 11)
+      {id:uid(),title:"Ungüento: Musgo de río (Base)",text:"Efecto: Base de ungüentos (Muy común)",terrain:"Ríos",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Flor de Aire",text:"Efecto: Mejorador de ungüentos",terrain:"Montañas",rarity:"Rara",continent:"Todos",type:"Ungüento",visible:true},
       {id:uid(),title:"Ungüento: Margarita",text:"Efecto: Curación básica de heridas",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
-      {id:uid(),title:"Ungüento: Flor de Hestia",text:"Efecto: Resistencia al frío extremo",terrain:"Desierto",rarity:"Rara",continent:"Aslan",type:"Ungüento",visible:true}
+      {id:uid(),title:"Ungüento: Margarita x2",text:"Efecto: Curación animal",terrain:"Praderas",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Musgo Olor",text:"Efecto: Rastreo de feromonas y pistas",terrain:"Pantano",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Flor de agua",text:"Efecto: Apnea prolongada bajo el agua",terrain:"Aguas profundas",rarity:"Rara",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Seta Leñosa",text:"Efecto: Cicatrización rápida de cortes",terrain:"Jungla",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Musgo Estanque",text:"Efecto: Camuflaje con el entorno",terrain:"Lagos",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Flor de Hestia",text:"Efecto: Resistencia al frío extremo",terrain:"Desierto de cobre",rarity:"Rara",continent:"Aslan",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Flor de Terra",text:"Efecto: Energía y rendimiento de Atleta",terrain:"Sabana",rarity:"Rara",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Flor Escarcha",text:"Efecto: Resistencia al calor extremo",terrain:"Zonas Nevadas",rarity:"Rara",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Bayas Glue",text:"Efecto: Pegamento adhesivo instantáneo",terrain:"Bosque",rarity:"Común",continent:"Todos",type:"Ungüento",visible:true},
+      {id:uid(),title:"Ungüento: Hestia + Escarcha",text:"Efecto: Adaptación climática universal",terrain:"Especial",rarity:"Muy rara",continent:"Todos",type:"Ungüento",visible:true}
     ]
   };
 }
@@ -609,7 +831,7 @@ function defaultState(){
     activeTab: "ficha",
     rollLog: [],
     characters: officialChars,
-    officialDataVersion: 2,
+    officialDataVersion: 3,
     weaponsCatalog: getSeedWeaponsCatalog(),
     buffCatalog: getSeedBuffCatalog(),
     lore: getSeedLore(),
@@ -666,12 +888,23 @@ function migrateState(s){
   if(!s.questMap) s.questMap = { name:"Mapa de la Misión", image:null, notes:"" };
   if(s.sessionSummary === undefined) s.sessionSummary = "";
 
-  if(!s.officialDataVersion || s.officialDataVersion < 2){
+  if(!s.officialDataVersion || s.officialDataVersion < 3){
     var officials = getOfficialCharacters();
     s.characters = s.characters || [];
+    var scarlethChar = s.characters.find(function(c){
+      return c.name && (c.name.toLowerCase().includes("scarleth") || c.name.toLowerCase().includes("winter"));
+    });
+    var scarlethOwner = scarlethChar ? scarlethChar.owner_id : null;
+    var scarlethEmail = scarlethChar ? scarlethChar.ownerEmail : "";
+
     officials.forEach(function(off){
       var existing = s.characters.find(function(c){
-        return c.name && c.name.trim().toLowerCase() === off.name.trim().toLowerCase();
+        var cName = (c.name || "").trim().toLowerCase();
+        var oName = off.name.trim().toLowerCase();
+        return cName === oName || cName.startsWith(oName) || oName.startsWith(cName) ||
+          (oName.includes("bucky") && cName.includes("baky")) ||
+          (oName.includes("baky") && cName.includes("bucky")) ||
+          (oName.includes("scarleth") && cName.includes("scarleth"));
       });
       if(existing){
         var savedPortrait = existing.portrait || off.portrait;
@@ -685,10 +918,14 @@ function migrateState(s){
         existing.portrait = savedPortrait;
         existing.owner_id = savedOwner;
         existing.ownerEmail = savedEmail;
-        existing.officialDataVersion = 2;
+        existing.officialDataVersion = 3;
       } else {
         var nOff = JSON.parse(JSON.stringify(off));
-        nOff.officialDataVersion = 2;
+        if(nOff.name === "Derek" && scarlethOwner){
+          nOff.owner_id = scarlethOwner;
+          nOff.ownerEmail = scarlethEmail;
+        }
+        nOff.officialDataVersion = 3;
         s.characters.push(nOff);
       }
     });
@@ -696,7 +933,7 @@ function migrateState(s){
       var n = (c.name || "").trim().toLowerCase();
       return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
     });
-    s.officialDataVersion = 2;
+    s.officialDataVersion = 3;
     if(!s.characters.some(function(c){ return c.id === s.activeId; })){
       s.activeId = s.characters[0] ? s.characters[0].id : "";
     }
@@ -2952,14 +3189,27 @@ async function pullAllFromSupabase(){
       });
 
       var needsOfficialReset = !pulledChars.some(function(c){
+        return c.name === "Derek";
+      }) || !pulledChars.some(function(c){
         return c.name === "Cherk" && c.attrs && c.attrs.fisico === 4 && c.combat && c.combat.pvMax === 16;
       });
 
       if(needsOfficialReset){
         var officials = getOfficialCharacters();
+        var scarlethChar = pulledChars.find(function(c){
+          return c.name && (c.name.toLowerCase().includes("scarleth") || c.name.toLowerCase().includes("winter"));
+        });
+        var scarlethOwner = scarlethChar ? scarlethChar.owner_id : null;
+        var scarlethEmail = scarlethChar ? scarlethChar.ownerEmail : "";
+
         officials.forEach(function(off){
           var existing = pulledChars.find(function(c){
-            return c.name && c.name.trim().toLowerCase() === off.name.trim().toLowerCase();
+            var cName = (c.name || "").trim().toLowerCase();
+            var oName = off.name.trim().toLowerCase();
+            return cName === oName || cName.startsWith(oName) || oName.startsWith(cName) ||
+              (oName.includes("bucky") && cName.includes("baky")) ||
+              (oName.includes("baky") && cName.includes("bucky")) ||
+              (oName.includes("scarleth") && cName.includes("scarleth"));
           });
           if(existing){
             var savedPortrait = existing.portrait || off.portrait;
@@ -2973,10 +3223,14 @@ async function pullAllFromSupabase(){
             existing.portrait = savedPortrait;
             existing.owner_id = savedOwner;
             existing.ownerEmail = savedEmail;
-            existing.officialDataVersion = 2;
+            existing.officialDataVersion = 3;
           } else {
             var nOff = JSON.parse(JSON.stringify(off));
-            nOff.officialDataVersion = 2;
+            if(nOff.name === "Derek" && scarlethOwner){
+              nOff.owner_id = scarlethOwner;
+              nOff.ownerEmail = scarlethEmail;
+            }
+            nOff.officialDataVersion = 3;
             pulledChars.push(nOff);
           }
         });
