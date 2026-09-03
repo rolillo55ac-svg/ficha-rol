@@ -379,11 +379,44 @@ function skillTotal(skill, c){
   return total;
 }
 
+function isShieldAttr(attr, name){
+  if(attr){
+    var a = String(attr).toLowerCase().trim();
+    if(a === "escudo" || a === "escudos" || a === "escudoactual" || a === "vida_falsa" || a === "vida falsa" || a.includes("escudo") || a.includes("vida falsa")){
+      return true;
+    }
+  }
+  if(name){
+    var n = String(name).toLowerCase().trim();
+    if(n.includes("escudo") || n.includes("vida falsa")){
+      return true;
+    }
+  }
+  return false;
+}
+
+function parseShieldBonus(modStr){
+  if(!modStr) return 0;
+  var str = String(modStr).trim();
+  var diceMatch = str.match(/^(\d+)d(\d+)([\+\-]\d+)?$/i);
+  if(diceMatch){
+    var qty = parseInt(diceMatch[1], 10) || 1;
+    var sides = parseInt(diceMatch[2], 10) || 6;
+    var mod = parseInt(diceMatch[3], 10) || 0;
+    var sum = 0;
+    for(var i = 0; i < qty; i++){ sum += rollDie(sides); }
+    return Math.max(1, sum + mod);
+  }
+  var clean = str.replace(/[^0-9\-]/g, '');
+  return parseInt(clean, 10) || 0;
+}
+
 function getEffectiveCombatStat(statKey, c){
-  var base = num(c.combat ? c.combat[statKey] : 0, 0);
+  var isShield = isShieldAttr(statKey);
+  var base = isShield ? num(c.combat ? c.combat.escudoActual : 0, 0) : num(c.combat ? c.combat[statKey] : 0, 0);
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
-      if(ab.attr === statKey && ab.bonus){
+      if((ab.attr === statKey || (isShield && isShieldAttr(ab.attr, ab.name))) && ab.bonus){
         var b = parseFloat(ab.bonus);
         if(!isNaN(b)) base += b;
       }
@@ -396,7 +429,7 @@ function getEffectiveCombatStat(statKey, c){
   if(c.spells){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
-        if(sp.statAttr === statKey){
+        if(sp.statAttr === statKey || (isShield && isShieldAttr(sp.statAttr, sp.name))){
           var spNum = parseFloat(sp.statMod);
           if(!isNaN(spNum)) base += spNum;
         }
@@ -634,7 +667,7 @@ function renderTopbar(){
         '</div>'+
       '</div>'+
       '<div class="gauge-wrap">'+
-        '<div class="gauge-label"><span style="color:var(--shield-light);">🛡️ Escudo</span><span class="gauge-nums">'+num(c.combat.escudoActual,0)+'</span></div>'+
+        '<div class="gauge-label"><span style="color:var(--shield-light);" title="El Escudo y la Vida Falsa son equivalentes">🛡️ Escudo / Vida Falsa</span><span class="gauge-nums">'+num(c.combat.escudoActual,0)+'</span></div>'+
         '<div class="gauge"><div class="gauge-fill shield" style="width:'+clamp(num(c.combat.escudoActual,0)*10,0,100)+'%;"></div></div>'+
         '<div class="gauge-adjust">'+
           '<button data-action="shield-mod" data-delta="-3" aria-label="Restar 3 escudo">-3</button><button data-action="shield-mod" data-delta="-1" aria-label="Restar 1 escudo">-1</button>'+
@@ -1109,6 +1142,7 @@ function tplCombate(c){
       combatStat("Movilidad","movilidad",cb.movilidad,false)+
       combatStat("Defensa","defensa",cb.defensa,false)+
       combatStat("Def. Mágica","defensaMagica",cb.defensaMagica,false)+
+      combatStat("Escudo / Vida Falsa","escudoActual",cb.escudoActual,false)+
     '</div>'+
   '</div>';
 
@@ -1166,10 +1200,8 @@ function combatStat(label,bind,val,rollable){
 
 function renderSpellStatOptions(curVal){
   return '<option value="">-- Sin efecto en stats --</option>'+
-    '<optgroup label="Atributos">'+
-      ATTRS.map(function(a){ return '<option value="'+a+'" '+(curVal===a?'selected':'')+'>'+ATTR_LABELS[a]+'</option>'; }).join('')+
-    '</optgroup>'+
-    '<optgroup label="Combate">'+
+    '<optgroup label="Combate y Vida">'+
+      '<option value="escudo" '+((curVal==='escudo'||curVal==='vida_falsa'||curVal==='escudoActual'||curVal==='vida falsa')?'selected':'')+'>🛡️ Escudo / Vida Falsa</option>'+
       '<option value="defensa" '+(curVal==='defensa'?'selected':'')+'>Defensa</option>'+
       '<option value="defensaMagica" '+(curVal==='defensaMagica'?'selected':'')+'>Defensa Mágica</option>'+
       '<option value="movilidad" '+(curVal==='movilidad'?'selected':'')+'>Movilidad</option>'+
@@ -2742,23 +2774,43 @@ function handleClick(e){
     if(!c.activeBuffs) c.activeBuffs = [];
     var idx = c.activeBuffs.findIndex(function(ab){ return ab.id === bid; });
     if(idx !== -1){
+      var remBuff = c.activeBuffs[idx];
+      if(remBuff && remBuff.shieldGranted){
+        c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remBuff.shieldGranted);
+      }
       c.activeBuffs.splice(idx, 1);
     } else {
       var buffToAdd = (state.buffCatalog||[]).find(function(b){ return b.id === bid; });
       if(buffToAdd){
-        c.activeBuffs.push({id: buffToAdd.id, name: buffToAdd.name, type: buffToAdd.type, bonus: buffToAdd.bonus, attr: buffToAdd.attr});
+        var buffObj = {id: buffToAdd.id, name: buffToAdd.name, type: buffToAdd.type, bonus: buffToAdd.bonus, attr: buffToAdd.attr};
+        if(isShieldAttr(buffToAdd.attr, buffToAdd.name)){
+          var sBonus = parseShieldBonus(buffToAdd.bonus);
+          if(sBonus > 0){
+            c.combat.escudoActual = num(c.combat.escudoActual, 0) + sBonus;
+            buffObj.shieldGranted = sBonus;
+          }
+        }
+        c.activeBuffs.push(buffObj);
       }
     }
     saveState();
+    renderTopbar();
     renderTab();
+    broadcastCharStatUpdate(c.id, c.combat);
     return;
   }
   if(action==="remove-active-buff"){
     var buffId = btn.getAttribute("data-id");
     if(c.activeBuffs){
+      var remBuff2 = c.activeBuffs.find(function(ab){ return ab.id === buffId; });
+      if(remBuff2 && remBuff2.shieldGranted){
+        c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remBuff2.shieldGranted);
+      }
       c.activeBuffs = c.activeBuffs.filter(function(ab){ return ab.id !== buffId; });
       saveState();
+      renderTopbar();
       renderTab();
+      broadcastCharStatUpdate(c.id, c.combat);
       showToast("Buff eliminado del personaje", "info");
     }
     return;
@@ -2914,10 +2966,23 @@ function handleClick(e){
     }
     c.combat.manaActual = Math.max(0, curMana - cost);
     sp.active = true;
+
+    var statNotice = "";
+    if(isShieldAttr(sp.statAttr, sp.name)){
+      var shieldGain = parseShieldBonus(sp.statMod);
+      if(shieldGain > 0){
+        c.combat.escudoActual = num(c.combat.escudoActual, 0) + shieldGain;
+        sp.shieldGranted = shieldGain;
+        statNotice = " [🛡️ +" + shieldGain + " Escudo/Vida Falsa]";
+      }
+    } else if(sp.statAttr && sp.statMod){
+      statNotice = " [Efecto activo: " + sp.statMod + " a " + sp.statAttr + "]";
+    }
+
     saveState();
     renderTopbar();
     renderTab();
-    var statNotice = (sp.statAttr && sp.statMod) ? " [Efecto activo: " + sp.statMod + " a " + sp.statAttr + "]" : "";
+    broadcastCharStatUpdate(c.id, c.combat);
     showToast("¡" + (sp.name || "Hechizo") + " activado! -" + cost + " maná" + statNotice, "success");
     playDiceAudio("crit");
     return;
@@ -2927,10 +2992,18 @@ function handleClick(e){
     var sp2 = (c.spells||[]).find(function(s){ return s.id === spId2; });
     if(sp2){
       sp2.active = false;
+      var shieldNotice = "";
+      if(sp2.shieldGranted && sp2.shieldGranted > 0){
+        var rem = sp2.shieldGranted;
+        c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - rem);
+        sp2.shieldGranted = 0;
+        shieldNotice = " (-" + rem + " Escudo/Vida Falsa)";
+      }
       saveState();
       renderTopbar();
       renderTab();
-      showToast("Efecto de " + (sp2.name || "Hechizo") + " desactivado.", "info");
+      broadcastCharStatUpdate(c.id, c.combat);
+      showToast("Efecto de " + (sp2.name || "Hechizo") + " desactivado" + shieldNotice + ".", "info");
     }
     return;
   }
