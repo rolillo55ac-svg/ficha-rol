@@ -88,9 +88,18 @@ var currentBuffTab = "all";
 
 function getSeedWeaponsCatalog(){
   return [
-    {id:uid(), name:"Espada Larga", dano:"1d8+2", alcance:"Melé", critico:"Doble daño en dados y sangrado leve.", desc:"Espada equilibrada de hoja recta.", visible:true},
-    {id:uid(), name:"Arco Largo", dano:"1d8", alcance:"150m", critico:"Ignora 2 puntos de absorción de armadura.", desc:"Arco de gran tensión para combate a distancia.", visible:true},
-    {id:uid(), name:"Daga Mordaz", dano:"1d4+1", alcance:"Melé / Arrojadiza", critico:"Envenena automáticamente al objetivo.", desc:"Arma ligera con filo envenenado.", visible:true}
+    {id:"wp_espada_larga", name:"Espada Larga", dano:"1d8+2", alcance:"Melé", critico:"Doble daño en dados y sangrado leve.", desc:"Espada equilibrada de hoja recta.", visible:true},
+    {id:"wp_arco_largo", name:"Arco Largo", dano:"1d8", alcance:"150m", critico:"Ignora 2 puntos de absorción de armadura.", desc:"Arco de gran tensión para combate a distancia.", visible:true},
+    {id:"wp_daga_mordaz", name:"Daga Mordaz", dano:"1d4+1", alcance:"Melé / Arrojadiza", critico:"Envenena automáticamente al objetivo.", desc:"Arma ligera con filo envenenado.", visible:true},
+    {id:"wp_arpon_cuerda", name:"Arpón con cuerda", dano:"1d6+2", alcance:"8m", critico:"Atrapa al objetivo con la cuerda.", desc:"Arpón de pescador con cuerda resistente.", visible:true},
+    {id:"wp_cerbatana", name:"Cerbatana", dano:"1d4+Veneno", alcance:"15m", critico:"Efecto de veneno potenciado.", desc:"Tubo para disparar dardos envenenados.", visible:true},
+    {id:"wp_daga", name:"Daga", dano:"1d4+2 / 1d4", alcance:"10m", critico:"1d4 de daño crítico adicional.", desc:"Daga de combate o lanzamiento.", visible:true},
+    {id:"wp_guadana_2m", name:"Guadaña dos manos", dano:"2d6", alcance:"Melé", critico:"Corte masivo que ignora 1 armadura.", desc:"Gran guadaña de combate a dos manos.", visible:true},
+    {id:"wp_arco", name:"Arco", dano:"1d6+3", alcance:"Distancia", critico:"Tiro certero.", desc:"Arco compuesto de precisión.", visible:true},
+    {id:"wp_kusarigama", name:"Kusarigama", dano:"1d6+2", alcance:"+2m", critico:"Desarme o derribo del rival.", desc:"Hoz con cadena y contrapeso.", visible:true},
+    {id:"wp_latigo", name:"Látigo", dano:"1d6+3", alcance:"+1m", critico:"Inmovilización o tropiezo.", desc:"Látigo flexible de cuero noble.", visible:true},
+    {id:"wp_guja", name:"Guja", dano:"1d6+3", alcance:"+1m", critico:"Tajo extendido.", desc:"Arma de asta cortante con gran alcance.", visible:true},
+    {id:"wp_mordisco_vamp", name:"Mordisco Vampírico", dano:"1d6+3", alcance:"Melé", critico:"Absorbe la mitad del daño causado en salud.", desc:"Ataque vampírico que drena sangre y vitalidad.", visible:true}
   ];
 }
 
@@ -124,6 +133,440 @@ function blankCharacter(name, isNPC){
     activeBuffs: [],
     personalNotes: ""
   };
+}
+
+function getOfficialCharacters(){
+  return [
+    // 1. CHERK
+    {
+      id: "char_cherk",
+      name: "Cherk",
+      theme: "teal",
+      portrait: null,
+      isNPC: false,
+      owner_id: null,
+      ownerEmail: "",
+      nivel: "1",
+      lugarNacimiento: "Trysard",
+      altura: "1,52",
+      peso: "50",
+      edad: "57",
+      trabajo: "Pescador",
+      ojos: "Marron",
+      pelo: "Largo, pobre y gris",
+      descripcion: "",
+      attrs: { fisico: 4, destreza: 8, inteligencia: 8, percepcion: 6, carisma: 4 },
+      skillBonus: {
+        advertir: 4, distancia: 2, melee: 1, atletismo: 1, buscar: 2,
+        cabalgar: 0, callejeo: 0, comercio: 5, disfraz: 0, escalar: 0,
+        esquivar: 2, etiqueta: 0, fauna: 4, leyes: 0, musica: 0,
+        navegar: 4, nadar: 1, rastrear: 3, reflejos: 0, religion: 3,
+        sigilo: 2, rumores: 3, bolsillos: 1, herboristeria: 6, auxilios: 1,
+        supervivencia: 3, tradicion: 1, manos: 3, carisma_sk: 2, piedras: 1
+      },
+      skillProgress: {},
+      skillPointsUnlocked: false,
+      skillHybrid: { musica: "destreza", rumores: "percepcion" },
+      customSkills: [
+        { id: "csk_cherk_pesca", name: "Pesca", attr: "destreza", bonus: 5 }
+      ],
+      combat: {
+        iniciativa: 6,
+        movilidad: 8,
+        defensa: 15,
+        defensaMagica: 0,
+        pvActual: 16,
+        pvMax: 16,
+        escudoActual: 0,
+        manaActual: 40,
+        manaMax: 40
+      },
+      weapons: [
+        { id: "wp_inst_cherk_1", name: "Arpón con cuerda", dano: "1d6+2", alcance: "8m", critico: "", desc: "" },
+        { id: "wp_inst_cherk_2", name: "Cerbatana", dano: "1d4+Veneno", alcance: "15m", critico: "", desc: "" },
+        { id: "wp_inst_cherk_3", name: "Daga", dano: "1d4+2 / 1d4", alcance: "10m", critico: "", desc: "" }
+      ],
+      armors: [
+        { id: "arm_cherk_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
+      ],
+      inventory: [
+        { id: uid(), name: "Mochila", qty: 1 },
+        { id: uid(), name: "Cuerda", qty: 1 },
+        { id: uid(), name: "Caña de pescar", qty: 1 },
+        { id: uid(), name: "Cebo", qty: 20 },
+        { id: uid(), name: "Raciones de comida", qty: 10 },
+        { id: uid(), name: "Tienda de campaña", qty: 1 },
+        { id: uid(), name: "Dardos", qty: 25 },
+        { id: uid(), name: "Muda", qty: 1 },
+        { id: uid(), name: "Kit de yonki", qty: 1 },
+        { id: uid(), name: "Kit de herboristería", qty: 1 },
+        { id: uid(), name: "Pedernal", qty: 1 },
+        { id: uid(), name: "Bases de venenos", qty: 30 }
+      ],
+      money: { oro: 50, plata: 0 },
+      magiaTipo: "Drogadicción venenosa",
+      spells: [
+        { id: uid(), name: "Seta del sueño", coste: 3, rango: "3", efecto: "1 - No necesitas dormir (Máximo 1 noche)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Seta terrosa", coste: 3, rango: "2", efecto: "1 - + Mitad de movilidad (4 Turnos)", statAttr: "movilidad", statMod: "+4", active: false },
+        { id: uid(), name: "Nenúfar de Pantano", coste: 4, rango: "3", efecto: "1 - +2 a Percepción (20 min)", statAttr: "percepcion", statMod: "+2", active: false },
+        { id: uid(), name: "Nenúfar de Manglar", coste: 4, rango: "4", efecto: "1 - +3 de vida falsa (hasta perderla)", statAttr: "Escudo / Vida Falsa", statMod: "+3", active: false },
+        { id: uid(), name: "Flor de sombra", coste: 4, rango: "1", efecto: "1 - Visión en la oscuridad (20 min)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Cactus", coste: 5, rango: "2", efecto: "1 - +1 a las acciones (3 Turnos)", statAttr: "", statMod: "+1", active: false },
+        { id: uid(), name: "Pez globo", coste: 5, rango: "1", efecto: "1 - Respiración acuática (20 min)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Amplificación del éxtasis", coste: 15, rango: "", efecto: "Reactiva el efecto del veneno", statAttr: "", statMod: "", active: false }
+      ],
+      stones: [],
+      passivesNeg: [
+        { id: uid(), text: "El mono: necesita pincharse un veneno mínimo cada 12h (máximo 2 veces seguidas el mismo). Si no se inyecta, -1 a todas las tiradas hasta que se chute y estaría muy ansioso." }
+      ],
+      passivesPos: [
+        { id: uid(), text: "Inmune al veneno y si esta drogado con algún veneno, +1 a Destreza. (Un 0 en la columna de la izquierda sigue siendo un 0)." }
+      ],
+      goddessCurses: [],
+      goddessBlessings: [],
+      goddessTable: [],
+      summons: [],
+      buffs: {},
+      customBuffs: [],
+      poisons: [
+        { id: uid(), name: "Seta del sueño", dosis: 1, efectoEnemigo: "Sueño / Paralización", efectoCherk: "No necesitas dormir (Máximo 1 noche)", estado: "descubierto" },
+        { id: uid(), name: "Seta terrosa", dosis: 1, efectoEnemigo: "Entumecer", efectoCherk: "+ Mitad de movilidad (4 Turnos)", estado: "descubierto" },
+        { id: uid(), name: "Nenúfar de Pantano", dosis: 1, efectoEnemigo: "Reduce Percepción rival", efectoCherk: "+2 a Percepción (20 min)", estado: "descubierto" },
+        { id: uid(), name: "Nenúfar de Manglar", dosis: 1, efectoEnemigo: "Daño continuo", efectoCherk: "+3 de vida falsa (hasta perderla)", estado: "descubierto" },
+        { id: uid(), name: "Flor de sombra", dosis: 1, efectoEnemigo: "", efectoCherk: "Visión en la oscuridad (20 min)", estado: "descubierto" },
+        { id: uid(), name: "Cactus", dosis: 1, efectoEnemigo: "", efectoCherk: "+1 a las acciones (3 Turnos)", estado: "descubierto" },
+        { id: uid(), name: "Pez globo", dosis: 1, efectoEnemigo: "", efectoCherk: "Respiración acuática (20 min)", estado: "descubierto" }
+      ],
+      skillPoints: 0,
+      activeBuffs: [],
+      personalNotes: ""
+    },
+
+    // 2. INK
+    {
+      id: "char_ink",
+      name: "Ink",
+      theme: "purple",
+      portrait: null,
+      isNPC: false,
+      owner_id: null,
+      ownerEmail: "",
+      nivel: "1",
+      lugarNacimiento: "Krysalis",
+      altura: "1.60",
+      peso: "x",
+      edad: "240",
+      trabajo: "Adiestradora",
+      ojos: "Amarillo",
+      pelo: "Blanco y con coleta",
+      descripcion: "",
+      attrs: { fisico: 8, destreza: 8, inteligencia: 4, percepcion: 6, carisma: 4 },
+      skillBonus: {
+        advertir: 5, distancia: 1, melee: 4, atletismo: 3, buscar: 2,
+        cabalgar: 2, callejeo: 2, comercio: 0, disfraz: 2, escalar: 2,
+        esquivar: 5, etiqueta: 1, fauna: 6, leyes: 1, musica: 1,
+        navegar: 1, nadar: 1, rastrear: 1, reflejos: 1, religion: 3,
+        sigilo: 3, rumores: 0, bolsillos: 0, herboristeria: 0, auxilios: 3,
+        supervivencia: 4, tradicion: 0, manos: 4, carisma_sk: 0, piedras: 0
+      },
+      skillProgress: {},
+      skillPointsUnlocked: false,
+      skillHybrid: { musica: "destreza", rumores: "percepcion" },
+      customSkills: [
+        { id: "csk_ink_adiestrar", name: "Adiestrar", attr: "destreza", bonus: 3 }
+      ],
+      combat: {
+        iniciativa: 7,
+        movilidad: 8,
+        defensa: 18,
+        defensaMagica: 0,
+        pvActual: 32,
+        pvMax: 32,
+        escudoActual: 0,
+        manaActual: 40,
+        manaMax: 40
+      },
+      weapons: [
+        { id: "wp_inst_ink_1", name: "Guadaña dos manos", dano: "2d6", alcance: "Melé", critico: "", desc: "" },
+        { id: "wp_inst_ink_2", name: "Arco", dano: "1d6+3", alcance: "Distancia", critico: "", desc: "" },
+        { id: "wp_inst_ink_3", name: "Mordisco Vampírico", dano: "1d6+3", alcance: "Melé", critico: "", desc: "" }
+      ],
+      armors: [
+        { id: "arm_ink_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
+      ],
+      inventory: [
+        { id: uid(), name: "Mochila", qty: 1 },
+        { id: uid(), name: "Cuerda", qty: 1 },
+        { id: uid(), name: "Raciones de comida", qty: 10 },
+        { id: uid(), name: "Tienda de campaña", qty: 1 },
+        { id: uid(), name: "Karcaj con 20 flechas", qty: 1 },
+        { id: uid(), name: "Muda", qty: 1 },
+        { id: uid(), name: "Pedernal", qty: 1 },
+        { id: uid(), name: "Queso", qty: 10 },
+        { id: uid(), name: "Candil con poción luminosa", qty: 1 },
+        { id: uid(), name: "Baratijas", qty: 11 },
+        { id: uid(), name: "Peluche de Ratita", qty: 1 }
+      ],
+      money: { oro: 140, plata: 0 },
+      magiaTipo: "Vampiresa animal",
+      spells: [
+        { id: uid(), name: "Ratita favorita", coste: 2, rango: "5m", efecto: "24h invocada, más inteligente", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Animales pequeños", coste: 4, rango: "5m", efecto: "(Máximo tamaño Rata)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Animales medianos", coste: 8, rango: "5m", efecto: "(Máximo tamaño Lobo)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Forma murciélago", coste: 6, rango: "", efecto: "(Maximo 2 veces dia / 30 min)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Mordisco vampírico", coste: 8, rango: "", efecto: "(Te sanas la mitad del daño causado)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Intimidación animal / Sumisión de criaturas", coste: 12, rango: "15m", efecto: "Sumisión de criaturas", statAttr: "", statMod: "", active: false }
+      ],
+      stones: [],
+      passivesNeg: [
+        { id: uid(), text: "Repetir sangre: Tienes que beber sangres distintas cada 2 morediscos." },
+        { id: uid(), text: "Sol: Reduce la vida máxima a la mitad y -1 a las acciones." },
+        { id: uid(), text: "Plata: Recibe daño del contacto de la plata, sufres 1d6 de daño directo." },
+        { id: uid(), text: "Fuego: Impide sanar cualquier daño causado por el fuego." }
+      ],
+      passivesPos: [
+        { id: uid(), text: "Inmunidad al Sol (al beber sangre)." },
+        { id: uid(), text: "+1 en ataque a mele o ataque a distancias, +2 Percepción y ventaja en Advertir / Notar si hay sangre involucrada (al beber sangre)." }
+      ],
+      goddessCurses: [],
+      goddessBlessings: [],
+      goddessTable: [],
+      summons: [],
+      buffs: {},
+      customBuffs: [],
+      poisons: [],
+      skillPoints: 0,
+      activeBuffs: [],
+      personalNotes: ""
+    },
+
+    // 3. BAKY
+    {
+      id: "char_baky",
+      name: "Baky",
+      theme: "blue",
+      portrait: null,
+      isNPC: false,
+      owner_id: null,
+      ownerEmail: "",
+      nivel: "1",
+      lugarNacimiento: "Asland",
+      altura: "1,70",
+      peso: "70",
+      edad: "18",
+      trabajo: "Emisario (Lameculos)",
+      ojos: "Azul",
+      pelo: "Marrón corto",
+      descripcion: "",
+      attrs: { fisico: 5, destreza: 7, inteligencia: 8, percepcion: 6, carisma: 4 },
+      skillBonus: {
+        advertir: 4, distancia: 5, melee: 4, atletismo: 5, buscar: 3,
+        cabalgar: 1, callejeo: 1, comercio: 0, disfraz: 0, escalar: 3,
+        esquivar: 6, etiqueta: 1, fauna: 2, leyes: 0, musica: 0,
+        navegar: 2, nadar: 3, rastrear: 1, reflejos: 2, religion: 3,
+        sigilo: 4, rumores: 2, bolsillos: 0, herboristeria: 0, auxilios: 2,
+        supervivencia: 2, tradicion: 0, manos: 2, carisma_sk: 1, piedras: 0
+      },
+      skillProgress: {},
+      skillPointsUnlocked: false,
+      skillHybrid: { musica: "destreza", rumores: "percepcion" },
+      customSkills: [],
+      combat: {
+        iniciativa: 8,
+        movilidad: 7,
+        defensa: 18,
+        defensaMagica: 0,
+        pvActual: 20,
+        pvMax: 20,
+        escudoActual: 0,
+        manaActual: 40,
+        manaMax: 40
+      },
+      weapons: [
+        { id: "wp_inst_baky_1", name: "Arco", dano: "1d6+3", alcance: "Distancia", critico: "", desc: "" },
+        { id: "wp_inst_baky_2", name: "Kusarigama", dano: "1d6+2", alcance: "+2m", critico: "", desc: "" },
+        { id: "wp_inst_baky_3", name: "Daga", dano: "1d4+2 / 1d4", alcance: "10m", critico: "", desc: "" }
+      ],
+      armors: [
+        { id: "arm_baky_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
+      ],
+      inventory: [
+        { id: uid(), name: "Mochila", qty: 1 },
+        { id: uid(), name: "Cuerda", qty: 1 },
+        { id: uid(), name: "Raciones de comida", qty: 10 },
+        { id: uid(), name: "Tienda de campaña", qty: 1 },
+        { id: uid(), name: "Karcaj con 20 flechas", qty: 1 },
+        { id: uid(), name: "Muda", qty: 1 },
+        { id: uid(), name: "Pedernal", qty: 1 },
+        { id: uid(), name: "Candil", qty: 1 },
+        { id: uid(), name: "Aceite de candil", qty: 10 },
+        { id: uid(), name: "Tés y set de tés", qty: 1 }
+      ],
+      money: { oro: 25, plata: 0 },
+      magiaTipo: "Marionetista",
+      spells: [
+        { id: uid(), name: "Marioneta humanoide normal", coste: 5, rango: "15m", efecto: "Tirada enfrentada: Inteligencia+nivel+dado (Combate 1 turno, fuera de combate 1min)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Marioneta humanoide con magia", coste: 8, rango: "15m", efecto: "Marioneta humanoide con magia", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Marioneta discreta", coste: 6, rango: "15m", efecto: "Marioneta discreta", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Marioneta animal (pequeño)", coste: 4, rango: "15m", efecto: "Marioneta animal pequeño", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Re-atadura", coste: 10, rango: "15m", efecto: "Re-atadura de marioneta", statAttr: "", statMod: "", active: false }
+      ],
+      stones: [],
+      passivesNeg: [],
+      passivesPos: [],
+      goddessCurses: [],
+      goddessBlessings: [],
+      goddessTable: [],
+      summons: [],
+      buffs: {},
+      customBuffs: [],
+      poisons: [],
+      skillPoints: 0,
+      activeBuffs: [],
+      personalNotes: ""
+    },
+
+    // 4. SCARLETH
+    {
+      id: "char_scarleth",
+      name: "Scarleth",
+      theme: "default",
+      portrait: null,
+      isNPC: false,
+      owner_id: null,
+      ownerEmail: "",
+      nivel: "1",
+      lugarNacimiento: "Krysalis",
+      altura: "1.72",
+      peso: "x",
+      edad: "192",
+      trabajo: "Noble",
+      ojos: "Verde",
+      pelo: "Rojo y liso",
+      descripcion: "",
+      attrs: { fisico: 6, destreza: 8, inteligencia: 4, percepcion: 5, carisma: 7 },
+      skillBonus: {
+        advertir: 6, distancia: 3, melee: 5, atletismo: 4, buscar: 1,
+        cabalgar: 2, callejeo: 1, comercio: 1, disfraz: 0, escalar: 2,
+        esquivar: 4, etiqueta: 1, fauna: 0, leyes: 1, musica: 1,
+        navegar: 0, nadar: 2, rastrear: 1, reflejos: 3, religion: 3,
+        sigilo: 4, rumores: 3, bolsillos: 0, herboristeria: 0, auxilios: 3,
+        supervivencia: 0, tradicion: 2, manos: 2, carisma_sk: 3, piedras: 1
+      },
+      skillProgress: {},
+      skillPointsUnlocked: false,
+      skillHybrid: { musica: "destreza", rumores: "carisma" },
+      customSkills: [
+        { id: "csk_scarleth_bailar", name: "Bailar", attr: "destreza", bonus: 1 }
+      ],
+      combat: {
+        iniciativa: 8,
+        movilidad: 8,
+        defensa: 17,
+        defensaMagica: 0,
+        pvActual: 24,
+        pvMax: 24,
+        escudoActual: 0,
+        manaActual: 40,
+        manaMax: 40
+      },
+      weapons: [
+        { id: "wp_inst_scar_1", name: "Látigo", dano: "1d6+3", alcance: "+1m", critico: "", desc: "" },
+        { id: "wp_inst_scar_2", name: "Guja", dano: "1d6+3", alcance: "+1m", critico: "", desc: "" },
+        { id: "wp_inst_scar_3", name: "Arco", dano: "1d6+3", alcance: "Distancia", critico: "", desc: "" },
+        { id: "wp_inst_scar_4", name: "Mordisco Vampírico", dano: "1d6+3", alcance: "Melé", critico: "", desc: "" }
+      ],
+      armors: [
+        { id: "arm_scar_cuero", name: "Cuero", absorcion: "2", estorbo: "0" }
+      ],
+      inventory: [
+        { id: uid(), name: "Mochila", qty: 1 },
+        { id: uid(), name: "Cuerda", qty: 1 },
+        { id: uid(), name: "Viales de sangre", qty: 10 },
+        { id: uid(), name: "Karcaj con 20 flechas", qty: 1 },
+        { id: uid(), name: "Mudas", qty: 2 },
+        { id: uid(), name: "Candil con poción luminosa", qty: 1 },
+        { id: uid(), name: "Daga bonita cara", qty: 1 },
+        { id: uid(), name: "Joyas", qty: 4 },
+        { id: uid(), name: "Sombrilla", qty: 1 },
+        { id: uid(), name: "Capa de terciopelo", qty: 1 },
+        { id: uid(), name: "Peine bueno", qty: 1 },
+        { id: uid(), name: "Perfume", qty: 1 },
+        { id: uid(), name: "Espejo útil", qty: 1 },
+        { id: uid(), name: "Kit médico", qty: 1 },
+        { id: uid(), name: "Pamela", qty: 1 },
+        { id: uid(), name: "Broche para capa", qty: 1 },
+        { id: uid(), name: "Viales vacíos", qty: 5 },
+        { id: uid(), name: "Pañuelos de seda", qty: 1 },
+        { id: uid(), name: "Maquillaje", qty: 1 },
+        { id: uid(), name: "Cáliz de oro", qty: 1 },
+        { id: uid(), name: "Guantes", qty: 1 }
+      ],
+      money: { oro: 200, plata: 0 },
+      magiaTipo: "Vampiresa",
+      spells: [
+        { id: uid(), name: "Control mental", coste: 5, rango: "15m", efecto: "(1 turno combate / 1 min fuera). Tirada enfrentada: Carisma+nivel+dado", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Leer pensamientos", coste: 7, rango: "15m", efecto: "(Instante de uso)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Crear con sangre", coste: 6, rango: "5m", efecto: "(objetos pequeños)(24h)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Forma murciélago", coste: 6, rango: "", efecto: "(Maximo 2 veces dia / 30 min)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Mordisco vampírico", coste: 8, rango: "", efecto: "(Te sanas la mitad del daño causado)", statAttr: "", statMod: "", active: false },
+        { id: uid(), name: "Hablar con los Vástagos", coste: 2, rango: "50m", efecto: "Comunicación con los Vástagos", statAttr: "", statMod: "", active: false }
+      ],
+      stones: [],
+      passivesNeg: [
+        { id: uid(), text: "Repetir sangre: Tienes que beber sangres distintas cada 2 morediscos." },
+        { id: uid(), text: "Sol: Reduce la vida máxima a la mitad y -1 a las acciones." },
+        { id: uid(), text: "Plata: Recibe daño del contacto de la plata, sufres 1d6 de daño directo." },
+        { id: uid(), text: "Fuego: Impide sanar cualquier daño causado por el fuego." }
+      ],
+      passivesPos: [
+        { id: uid(), text: "Inmunidad al Sol (al beber sangre)." },
+        { id: uid(), text: "+1 en ataque a mele o ataque a distancias, +2 Percepción y ventaja en Advertir / Notar si hay sangre involucrada (al beber sangre)." }
+      ],
+      goddessCurses: [],
+      goddessBlessings: [],
+      goddessTable: [],
+      summons: [],
+      buffs: {},
+      customBuffs: [],
+      poisons: [],
+      skillPoints: 0,
+      activeBuffs: [],
+      personalNotes: ""
+    }
+  ];
+}
+
+function resetCharactersToOfficial(keepPortraits){
+  var officials = getOfficialCharacters();
+  state.characters = state.characters || [];
+  officials.forEach(function(off){
+    var existing = state.characters.find(function(c){
+      return c.name && c.name.trim().toLowerCase() === off.name.trim().toLowerCase();
+    });
+    if(existing){
+      var savedPortrait = (keepPortraits !== false) ? (existing.portrait || off.portrait) : off.portrait;
+      var savedOwner = existing.owner_id;
+      var savedEmail = existing.ownerEmail;
+      var savedId = existing.id;
+      Object.assign(existing, JSON.parse(JSON.stringify(off)));
+      existing.id = savedId;
+      existing.portrait = savedPortrait;
+      existing.owner_id = savedOwner;
+      existing.ownerEmail = savedEmail;
+    } else {
+      state.characters.push(JSON.parse(JSON.stringify(off)));
+    }
+  });
+
+  state.characters = state.characters.filter(function(c){
+    var n = (c.name || "").trim().toLowerCase();
+    return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
+  });
+
+  if(!state.characters.some(function(c){ return c.id === state.activeId; })){
+    state.activeId = state.characters[0] ? state.characters[0].id : "";
+  }
 }
 
 function getSeedBestiary(){
@@ -160,31 +603,37 @@ function getSeedLore(){
 }
 
 function defaultState(){
+  var officialChars = getOfficialCharacters();
   return {
-    activeId:"", activeTab:"ficha", rollLog:[], characters:[],
+    activeId: officialChars[0] ? officialChars[0].id : "",
+    activeTab: "ficha",
+    rollLog: [],
+    characters: officialChars,
+    officialDataVersion: 1,
     weaponsCatalog: getSeedWeaponsCatalog(),
     buffCatalog: getSeedBuffCatalog(),
-    lore:getSeedLore(), bestiary:getSeedBestiary(),
-    maps:[{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }],
-    activeMapId:"world_main",
-    quests:[
+    lore: getSeedLore(),
+    bestiary: getSeedBestiary(),
+    maps: [{ id: "world_main", name: "Mapa de Campaña", image: null, markers: [] }],
+    activeMapId: "world_main",
+    quests: [
       {
-        id:uid(),
-        title:"Investigación en Krysalis",
-        desc:"Explorar las ruinas y descubrir el origen de las anomalías mágicas.",
-        status:"activa",
-        tasks:[
-          { id:uid(), text:"Consultar con el erudito de la capital", done:true },
-          { id:uid(), text:"Explorar la entrada de las catacumbas", done:false },
-          { id:uid(), text:"Recuperar el artefacto rúnico", done:false }
+        id: uid(),
+        title: "Investigación en Krysalis",
+        desc: "Explorar las ruinas y descubrir el origen de las anomalías mágicas.",
+        status: "activa",
+        tasks: [
+          { id: uid(), text: "Consultar con el erudito de la capital", done: true },
+          { id: uid(), text: "Explorar la entrada de las catacumbas", done: false },
+          { id: uid(), text: "Recuperar el artefacto rúnico", done: false }
         ]
       }
     ],
-    questClues:[
-      { id:uid(), title:"Pergamino Quebrado", text:"Habla de un sello elemental protegido por una bestia infernal.", image:null, visible:true }
+    questClues: [
+      { id: uid(), title: "Pergamino Quebrado", text: "Habla de un sello elemental protegido por una bestia infernal.", image: null, visible: true }
     ],
-    questMap:{ name:"Zona de Incursión", image:null, notes:"Plano táctico del área de exploración" },
-    sessionSummary:"Los aventureros llegaron a las afueras de Krysalis y preparan el descenso."
+    questMap: { name: "Zona de Incursión", image: null, notes: "Plano táctico del área de exploración" },
+    sessionSummary: "Los aventureros llegaron a las afueras de Krysalis y preparan el descenso."
   };
 }
 
@@ -216,6 +665,37 @@ function migrateState(s){
   if(!s.questClues) s.questClues = [];
   if(!s.questMap) s.questMap = { name:"Mapa de la Misión", image:null, notes:"" };
   if(s.sessionSummary === undefined) s.sessionSummary = "";
+
+  if(!s.officialDataVersion || s.officialDataVersion < 1){
+    var officials = getOfficialCharacters();
+    s.characters = s.characters || [];
+    officials.forEach(function(off){
+      var existing = s.characters.find(function(c){
+        return c.name && c.name.trim().toLowerCase() === off.name.trim().toLowerCase();
+      });
+      if(existing){
+        var savedPortrait = existing.portrait || off.portrait;
+        var savedOwner = existing.owner_id;
+        var savedEmail = existing.ownerEmail;
+        var savedId = existing.id;
+        Object.assign(existing, JSON.parse(JSON.stringify(off)));
+        existing.id = savedId;
+        existing.portrait = savedPortrait;
+        existing.owner_id = savedOwner;
+        existing.ownerEmail = savedEmail;
+      } else {
+        s.characters.push(JSON.parse(JSON.stringify(off)));
+      }
+    });
+    s.characters = s.characters.filter(function(c){
+      var n = (c.name || "").trim().toLowerCase();
+      return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
+    });
+    s.officialDataVersion = 1;
+    if(!s.characters.some(function(c){ return c.id === s.activeId; })){
+      s.activeId = s.characters[0] ? s.characters[0].id : "";
+    }
+  }
 
   (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });
   ["pistas","npcs","objetos"].forEach(function(cat){
@@ -2019,6 +2499,7 @@ function openDataModal(){
       '<button class="btn-compact" style="flex:1;" data-action="export-data">Exportar Backup</button>'+
       '<button class="btn-compact" style="flex:1;" data-action="import-data">Importar Backup</button>'+
     '</div>'+
+    '<button class="btn-solid-gold" style="width:100%;margin-top:10px;padding:9px;" data-action="reset-all-characters">↻ Resetear Fichas a Valores Oficiales (PDF)</button>'+
   '</div>';
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
@@ -2219,6 +2700,17 @@ function modalClick(e){
   if(action==="auth-logout"){ supabaseLogout(); return; }
   if(action==="export-data"){ exportData(); return; }
   if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
+  if(action==="reset-all-characters"){
+    if(confirm("¿Deseas resetear los atributos, habilidades, combate, magias y equipo de todos los personajes (Cherk, Ink, Baky, Scarleth) a los valores exactos de sus fichas oficiales en PDF? Se conservarán las fotos de perfil.")){
+      resetCharactersToOfficial(true);
+      saveState(false);
+      renderTopbar();
+      renderTab();
+      closeModals();
+      showToast("¡Personajes actualizados con éxito según las fichas oficiales!", "success");
+    }
+    return;
+  }
 }
 
 function closeModals(){
