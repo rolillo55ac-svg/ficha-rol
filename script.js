@@ -210,10 +210,22 @@ function migrateState(s){
     if(c.owner_id===undefined) c.owner_id=null;
     if(c.ownerEmail===undefined) c.ownerEmail="";
     if(!c.activeBuffs) c.activeBuffs=[];
+    if(!c.spells) c.spells=[];
+    c.spells.forEach(function(sp){
+      if(sp.coste===undefined) sp.coste=1;
+      if(sp.rango===undefined) sp.rango="Melé";
+      if(sp.statAttr===undefined) sp.statAttr="";
+      if(sp.statMod===undefined) sp.statMod="";
+      if(sp.active===undefined) sp.active=false;
+      if(sp.efecto===undefined) sp.efecto="";
+    });
     (c.summons||[]).forEach(function(su){
       if(su.notas && !su.habilidades) su.habilidades = su.notas;
       if(su.habilidades===undefined) su.habilidades="";
     });
+  });
+  (s.bestiary||[]).forEach(function(b){
+    if(b.image===undefined) b.image=null;
   });
   return s;
 }
@@ -235,8 +247,8 @@ function saveState(skipRemote){
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){
       pushActiveChar();
-      pushSharedData();
-    }, 400);
+      if(isGM()) pushSharedData();
+    }, 600);
   }
 }
 
@@ -279,6 +291,21 @@ function getEffectiveAttr(aKey, c){
       }
     });
   }
+
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        if(sp.statAttr === aKey){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum)) base += spNum;
+        }
+        if(sp.statAttr === "todo"){
+          var spAll = parseFloat(sp.statMod);
+          if(!isNaN(spAll)) base += spAll;
+        }
+      }
+    });
+  }
   return base;
 }
 
@@ -302,7 +329,48 @@ function skillTotal(skill, c){
       }
     });
   }
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        if(sp.statAttr === skill.id){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum)) total += spNum;
+        }
+      }
+    });
+  }
   return total;
+}
+
+function getEffectiveCombatStat(statKey, c){
+  var base = num(c.combat ? c.combat[statKey] : 0, 0);
+  if(c.activeBuffs){
+    c.activeBuffs.forEach(function(ab){
+      if(ab.attr === statKey && ab.bonus){
+        var b = parseFloat(ab.bonus);
+        if(!isNaN(b)) base += b;
+      }
+      if(ab.attr === "todo" && ab.bonus){
+        var bAll = parseFloat(ab.bonus);
+        if(!isNaN(bAll)) base += bAll;
+      }
+    });
+  }
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        if(sp.statAttr === statKey){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum)) base += spNum;
+        }
+        if(sp.statAttr === "todo"){
+          var spAll = parseFloat(sp.statMod);
+          if(!isNaN(spAll)) base += spAll;
+        }
+      }
+    });
+  }
+  return base;
 }
 
 function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
@@ -371,6 +439,46 @@ function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, ad
   else if(isFumble) setTimeout(function(){ playDiceAudio("fumble"); }, 400);
 }
 
+function broadcastDiceRoll(rollObj){
+  if(realtimeChannel && typeof realtimeChannel.send === 'function'){
+    try {
+      realtimeChannel.send({
+        type: 'broadcast',
+        event: 'dice_roll',
+        payload: rollObj
+      });
+    } catch(e){
+      console.warn("Could not broadcast dice roll:", e);
+    }
+  }
+}
+
+function handleRemoteDiceRoll(rollObj){
+  if(!rollObj) return;
+  state.rollLog.unshift({
+    id: rollObj.id || uid(),
+    charName: rollObj.charName || "Aventurero",
+    label: rollObj.label || "Tirada",
+    total: rollObj.total,
+    formulaText: rollObj.formulaText,
+    ts: rollObj.ts || Date.now()
+  });
+  if(state.rollLog.length > 20) state.rollLog.length = 20;
+  saveState(true);
+  
+  var critText = rollObj.isCrit ? " ¡Éxito Crítico!" : (rollObj.isFumble ? " ¡Pifia Crítica!" : "");
+  var toastType = rollObj.isCrit ? "success" : (rollObj.isFumble ? "error" : "info");
+  showToast("🎲 " + rollObj.charName + " tiró " + rollObj.label + ": " + rollObj.total + critText, toastType);
+  
+  if(rollObj.isCrit) playDiceAudio("crit");
+  else if(rollObj.isFumble) playDiceAudio("fumble");
+  else playDiceAudio("roll");
+  
+  if(state.activeTab === "habilidades" || state.activeTab === "combate") {
+    renderTab();
+  }
+}
+
 function performD10Roll(charName, label, mod){
   var c = activeChar();
   var extra = 0;
@@ -395,12 +503,32 @@ function performD10Roll(charName, label, mod){
       }
     });
   }
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        if(label.toLowerCase().includes("melé") && (sp.statAttr === "melee" || sp.statAttr === "melé")){
+          var b1 = parseFloat(sp.statMod);
+          if(!isNaN(b1)) extra += b1;
+        }
+        if(label.toLowerCase().includes("distancia") && sp.statAttr === "distancia"){
+          var b2 = parseFloat(sp.statMod);
+          if(!isNaN(b2)) extra += b2;
+        }
+        if(sp.statAttr === "todo"){
+          var b3 = parseFloat(sp.statMod);
+          if(!isNaN(b3)) extra += b3;
+        }
+      }
+    });
+  }
   var d = rollDie(10);
   var total = d + num(mod,0) + extra;
   var formula = "1d10 (" + d + ") + Mod (" + (num(mod,0)+extra) + ")";
-  state.rollLog.unshift({id:uid(), charName:charName, label:label, total:total, formulaText:formula, ts:Date.now()});
+  var rollItem = {id:uid(), charName:charName, label:label, total:total, formulaText:formula, isCrit:d===10, isFumble:d===1, ts:Date.now()};
+  state.rollLog.unshift(rollItem);
   if(state.rollLog.length>20) state.rollLog.length=20;
   saveState();
+  broadcastDiceRoll(rollItem);
   openRollModal(label, total, formula, 10, d===10, d===1);
   renderTab();
 }
@@ -416,28 +544,40 @@ function performWeaponRoll(charName, weaponName, formulaRaw){
   var rolls=[], sum=0;
   for(var i=0;i<qty;i++){ var r=rollDie(sides); rolls.push(r); sum+=r; }
   var total = sum + mod;
+  var isCrit = rolls.every(function(x){return x===sides;});
+  var isFumble = rolls.every(function(x){return x===1;});
   var detail = qty + "d" + sides + " [" + rolls.join(", ") + "]" + (mod ? (mod>0?" + "+mod:" - "+Math.abs(mod)) : "");
-  openRollModal("Daño — "+weaponName, total, detail, sides, rolls.every(function(x){return x===sides;}), rolls.every(function(x){return x===1;}));
+  var rollItem = {id:uid(), charName:charName, label:"Daño ("+weaponName+")", total:total, formulaText:detail, isCrit:isCrit, isFumble:isFumble, ts:Date.now()};
+  state.rollLog.unshift(rollItem);
+  if(state.rollLog.length>20) state.rollLog.length=20;
+  saveState();
+  broadcastDiceRoll(rollItem);
+  openRollModal("Daño — "+weaponName, total, detail, sides, isCrit, isFumble);
+  renderTab();
 }
 
 function renderTopbar(){
   var c = activeChar();
   document.body.setAttribute("data-theme", c.theme||"default");
+  var curPv = num(c.combat.pvActual, 0);
   var maxHp = Math.max(1, num(c.combat.pvMax, 1));
   var maxMana = Math.max(1, num(c.combat.manaMax, 1));
-  var hpPct = clamp(Math.round((num(c.combat.pvActual,0)/maxHp)*100), 0, 100);
+  var hpPct = curPv <= 0 ? 0 : clamp(Math.round((curPv/maxHp)*100), 0, 100);
   var manaPct = clamp(Math.round((num(c.combat.manaActual,0)/maxMana)*100), 0, 100);
   var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
   var isNPC = !!c.isNPC;
   var crestClass = isNPC ? 'char-crest npc' : 'char-crest';
   var nameClass = isNPC ? 'char-name npc-name' : 'char-name';
 
+  var hpNumsClass = curPv < 0 ? 'gauge-nums dying' : (curPv === 0 ? 'gauge-nums unconscious' : 'gauge-nums');
+  var hpStatusBadge = curPv < 0 ? '<span class="status-pill dying">💀 Agonizando ('+curPv+')</span>' : (curPv === 0 ? '<span class="status-pill unconscious">💤 Inconsciente</span>' : '');
+
   document.getElementById("topbar").innerHTML =
     '<div class="topbar-row">'+
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.11</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.34</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -449,8 +589,8 @@ function renderTopbar(){
     '</div>'+
     '<div class="gauges">'+
       '<div class="gauge-wrap">'+
-        '<div class="gauge-label"><span>Vida</span><span class="gauge-nums">'+num(c.combat.pvActual,0)+' / '+maxHp+'</span></div>'+
-        '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%;"></div></div>'+
+        '<div class="gauge-label"><span>Vida '+hpStatusBadge+'</span><span class="'+hpNumsClass+'">'+curPv+' / '+maxHp+'</span></div>'+
+        '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%;'+(curPv<=0?'background:#8C252F;':'')+'"></div></div>'+
         '<div class="gauge-adjust">'+
           '<button data-action="hp-mod" data-delta="-5" aria-label="Restar 5 vida">-5</button><button data-action="hp-mod" data-delta="-1" aria-label="Restar 1 vida">-1</button>'+
           '<button data-action="hp-mod" data-delta="1" aria-label="Sumar 1 vida">+1</button><button data-action="hp-mod" data-delta="5" aria-label="Sumar 5 vida">+5</button>'+
@@ -538,8 +678,9 @@ function tplFicha(c){
       '<div class="portrait-box">'+
         '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':'👤')+'</div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+
-          '<button class="btn-compact" data-action="upload-portrait">Foto</button>'+
-          (c.portrait ? '<button class="btn-compact" data-action="remove-portrait">✕</button>' : '')+
+          '<button class="btn-compact" data-action="upload-portrait" title="Subir foto desde archivo">Foto</button>'+
+          '<button class="btn-compact" data-action="url-portrait" title="Pegar enlace de GitHub o web">URL</button>'+
+          (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">✕</button>' : '')+
         '</div>'+
       '</div>'+
       '<div>'+
@@ -587,13 +728,17 @@ function tplHabilidades(c){
   if(isGM() && !c.isNPC){
     banner = '<div class="skill-pool-banner">'+
       '<span>Puntos de mejora disponibles: <b>'+num(c.skillPoints,0)+'</b></span>'+
-      '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
+        '<button class="btn-solid-gold" data-action="gm-add-skill-point" title="Dar 1 punto de habilidad al personaje">+1 Pto (GM)</button>'+
+        '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>'+
+      '</div>'+
     '</div>';
   }
   
   if(c.isNPC && isGM()){
     banner = '<div class="skill-pool-banner">'+
       '<span>NPC - Puntos disponibles: <b>'+num(c.skillPoints,0)+'</b>. Habilidades editables.</span>'+
+      '<button class="btn-solid-gold" data-action="gm-add-skill-point">+1 Pto (GM)</button>'+
     '</div>';
   }
 
@@ -613,12 +758,12 @@ function tplHabilidades(c){
     html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
     c.customSkills.forEach(function(cs){
-      var bonusVal = num(c.skillBonus[cs.id],0);
+      var bonusVal = num(cs.bonus, 0);
       if(!c.skillProgress) c.skillProgress = {};
-      var prog = num(c.skillProgress[cs.id],0);
+      var prog = num(c.skillProgress[cs.id], 0);
       var costNeeded = bonusVal + 1;
       var canSub = prog > 0;
-            var canAdd = false;
+      var canAdd = false;
       if(bonusVal > 0 && bonusVal < 8){
         if(c.isNPC){
           canAdd = num(c.skillPoints,0) >= 1;
@@ -626,13 +771,24 @@ function tplHabilidades(c){
           canAdd = unlocked && num(c.skillPoints,0) >= 1;
         }
       }
+
+      var gmCustomTools = '';
+      if(isGM()){
+        gmCustomTools = '<span class="gm-skill-tools" title="Ajuste directo del Máster por Lore">'+
+          '<button class="gm-skill-btn" data-action="gm-custom-skill-sub" data-id="'+cs.id+'" title="Restar 1 nivel (GM)">-</button>'+
+          '<span class="gm-skill-lvl">'+bonusVal+'</span>'+
+          '<button class="gm-skill-btn" data-action="gm-custom-skill-add" data-id="'+cs.id+'" title="Otorgar +1 nivel directamente (GM)">+ GM</button>'+
+        '</span>';
+      }
       
       html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span>'+
         '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
         '<span class="skill-bonus-ctrl">'+
-          '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso">-</button>'+
-          '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
-          '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso">+</button>'+
+          (isGM() ? gmCustomTools : (
+            '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso">-</button>'+
+            '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+            '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso">+</button>'
+          ))+
         '</span>'+
         '<span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'" aria-label="Tirar '+esc(cs.name)+'">&#127922;</button></div>';
     });
@@ -663,7 +819,7 @@ function skillRowHtml(s, c, unlocked){
   }
 
   var canSub = prog > 0;
-    var canAdd = false;
+  var canAdd = false;
   if(bonusVal > 0 && bonusVal < 8){
     if(c.isNPC){
       canAdd = num(c.skillPoints,0) >= 1;
@@ -672,13 +828,24 @@ function skillRowHtml(s, c, unlocked){
     }
   }
 
+  var gmControls = '';
+  if(isGM()){
+    gmControls = '<span class="gm-skill-tools" title="Ajuste directo del Máster por Lore">'+
+      '<button class="gm-skill-btn" data-action="gm-skill-sub" data-id="'+s.id+'" title="Restar 1 nivel base (GM)">-</button>'+
+      '<span class="gm-skill-lvl">'+bonusVal+'</span>'+
+      '<button class="gm-skill-btn" data-action="gm-skill-add" data-id="'+s.id+'" title="Otorgar +1 nivel base directamente (GM)">+ GM</button>'+
+    '</span>';
+  }
+
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
     '<span class="skill-base">'+base+'</span>'+
     '<span class="skill-bonus-ctrl">'+
-      '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso a '+esc(s.name)+'">-</button>'+
-      '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
-      '<button data-action="skill-add" data-id="'+s.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso a '+esc(s.name)+'">+</button>'+
+      (isGM() ? gmControls : (
+        '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso a '+esc(s.name)+'">-</button>'+
+        '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+        '<button data-action="skill-add" data-id="'+s.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso a '+esc(s.name)+'">+</button>'
+      ))+
     '</span>'+
     '<span class="skill-total">'+total+'</span>'+
     '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'" aria-label="Tirar '+esc(s.name)+'">&#127922;</button>'+
@@ -709,6 +876,20 @@ function tplCombate(c){
       buffsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:var(--bg-elev);border:1px solid '+(ab.type==='debuff'?'var(--danger)':'var(--line)')+';border-radius:5px;margin-bottom:4px;">'+
         '<span style="font-size:.75rem;color:'+(ab.type==='debuff'?'#E88178':'var(--ink)')+';">'+(ab.type==='debuff'?'⚠️':'✨')+' '+esc(ab.name)+(ab.bonus?' ('+esc(ab.bonus)+')':'')+'</span>'+
         '<button class="row-del" data-action="remove-active-buff" data-id="'+ab.id+'" aria-label="Eliminar buff del personaje" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>'+
+      '</div>';
+    });
+    buffsHtml += '</div>';
+  }
+
+  var activeSpells = (c.spells||[]).filter(function(sp){ return sp.active; });
+  if(activeSpells.length > 0){
+    buffsHtml += '<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">'+
+      '<div style="font-size:.65rem;color:var(--teal-light);text-transform:uppercase;margin-bottom:5px;font-weight:700;">✨ Magias y Hechizos Activos (toca ✕ para desactivar):</div>';
+    activeSpells.forEach(function(asp){
+      var statNote = (asp.statAttr && asp.statMod) ? ' ('+asp.statMod+' a '+asp.statAttr+')' : '';
+      buffsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:rgba(61,110,96,0.15);border:1px solid var(--teal-light);border-radius:5px;margin-bottom:4px;">'+
+        '<span style="font-size:.75rem;color:var(--teal-light);">✨ '+esc(asp.name || "Hechizo")+statNote+'</span>'+
+        '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Desactivar magia" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>'+
       '</div>';
     });
     buffsHtml += '</div>';
@@ -786,28 +967,84 @@ function tplCombate(c){
 }
 
 function combatStat(label,bind,val,rollable){
-  return '<div class="combat-stat"><label>'+esc(label)+'</label>'+
+  var c = activeChar();
+  var eff = getEffectiveCombatStat(bind, c);
+  var diff = eff - num(val, 0);
+  var diffBadge = diff !== 0 ? '<span class="stat-eff-tag '+(diff>0?'pos':'neg')+'" title="Valor efectivo">'+(diff>0?'+'+diff:diff)+' (Total: '+eff+')</span>' : '';
+  return '<div class="combat-stat"><label>'+esc(label)+diffBadge+'</label>'+
     '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'">'+
     (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa">&#127922;</button>':'')+
   '</div>';
 }
 
+function renderSpellStatOptions(curVal){
+  return '<option value="">-- Sin efecto en stats --</option>'+
+    '<optgroup label="Atributos">'+
+      ATTRS.map(function(a){ return '<option value="'+a+'" '+(curVal===a?'selected':'')+'>'+ATTR_LABELS[a]+'</option>'; }).join('')+
+    '</optgroup>'+
+    '<optgroup label="Combate">'+
+      '<option value="defensa" '+(curVal==='defensa'?'selected':'')+'>Defensa</option>'+
+      '<option value="defensaMagica" '+(curVal==='defensaMagica'?'selected':'')+'>Defensa Mágica</option>'+
+      '<option value="movilidad" '+(curVal==='movilidad'?'selected':'')+'>Movilidad</option>'+
+      '<option value="iniciativa" '+(curVal==='iniciativa'?'selected':'')+'>Iniciativa</option>'+
+    '</optgroup>'+
+    '<optgroup label="Habilidades clave">'+
+      '<option value="melee" '+(curVal==='melee'?'selected':'')+'>Armas a melé</option>'+
+      '<option value="distancia" '+(curVal==='distancia'?'selected':'')+'>Ataque a distancia</option>'+
+      '<option value="esquivar" '+(curVal==='esquivar'?'selected':'')+'>Esquivar</option>'+
+      '<option value="sigilo" '+(curVal==='sigilo'?'selected':'')+'>Sigilo</option>'+
+      '<option value="percepcion" '+(curVal==='percepcion'?'selected':'')+'>Percepción</option>'+
+      '<option value="todo" '+(curVal==='todo'?'selected':'')+'>Todo (+ a todo)</option>'+
+    '</optgroup>';
+}
+
 function tplMagia(c){
   var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Grimorio y Artes Mágicas</span></div>'+
-    '<div class="field" style="margin-bottom:10px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'"></div>'+
-    '<div style="display:grid;grid-template-columns:1fr 75px 85px 28px;gap:6px;font-size:0.62rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;padding-bottom:2px;border-bottom:1px solid var(--line);">'+
-      '<span>Hechizo / Habilidad</span><span>Coste (Maná)</span><span>Rango</span><span></span>'+
-    '</div>';
-  (c.spells||[]).forEach(function(s){
-    html += '<div class="list-row spell-row">'+
-      '<input type="text" placeholder="Nombre" data-bind="spells.'+s.id+'.name" value="'+esc(s.name)+'">'+
-      '<input type="text" placeholder="Coste" data-bind="spells.'+s.id+'.coste" value="'+esc(s.coste)+'">'+
-      '<input type="text" placeholder="Rango" data-bind="spells.'+s.id+'.rango" value="'+esc(s.rango)+'">'+
-      '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo">✕</button>'+
-    '</div>';
-  });
+    '<div class="field" style="margin-bottom:12px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'" placeholder="Ej: Piroclástica, Nigromancia, Sanación..."></div>';
+
+  if(!c.spells || !c.spells.length){
+    html += '<div style="font-size:.82rem;color:var(--ink-faint);font-style:italic;padding:8px 2px;">Sin hechizos conocidos en el grimorio.</div>';
+  } else {
+    c.spells.forEach(function(s){
+      var isActive = !!s.active;
+      var hasStatMod = s.statAttr && s.statMod;
+      var statBadge = hasStatMod ? '<span class="spell-badge effect">✨ '+esc(s.statMod)+' '+esc(s.statAttr)+'</span>' : '';
+      var activeBadge = isActive ? '<span class="spell-badge active">ACTIVO</span>' : '';
+
+      html += '<div class="spell-card'+(isActive?' active-spell':'')+'">'+
+        '<div class="spell-card-header">'+
+          '<input type="text" class="spell-name-input" placeholder="Nombre del Hechizo" data-bind="spells.'+s.id+'.name" value="'+esc(s.name)+'">'+
+          '<div class="spell-badges">'+
+            activeBadge+
+            statBadge+
+            (isActive ?
+              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="'+s.id+'">✕ Desactivar</button>' :
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'">⚡ Activar (-'+num(s.coste, 1)+' Maná)</button>'
+            )+
+            (isGM() ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
+          '</div>'+
+        '</div>'+
+        '<div class="spell-grid">'+
+          '<div class="creature-field"><label>Coste (Maná)</label><input type="number" min="0" data-bind="spells.'+s.id+'.coste" value="'+num(s.coste, 1)+'"></div>'+
+          '<div class="creature-field"><label>Alcance / Rango</label><input type="text" placeholder="Melé, 30m, Personal..." data-bind="spells.'+s.id+'.rango" value="'+esc(s.rango)+'"></div>'+
+        '</div>'+
+        '<div class="spell-grid" style="margin-top:6px;">'+
+          '<div class="creature-field"><label>Stat que Afecta (Opcional)</label>'+
+            '<select style="font-size:.74rem;background:var(--bg-card);padding:3px 6px;border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);" data-bind="spells.'+s.id+'.statAttr">'+
+              renderSpellStatOptions(s.statAttr)+
+            '</select>'+
+          '</div>'+
+          '<div class="creature-field"><label>Modificador de Stat</label><input type="text" placeholder="+2, -1, +1d4..." data-bind="spells.'+s.id+'.statMod" value="'+esc(s.statMod)+'"></div>'+
+        '</div>'+
+        '<div class="creature-field" style="margin-top:6px;"><label>Efecto y Descripción Narrativa</label>'+
+          '<textarea class="spell-notes" placeholder="Efectos mágicos, reglas específicas o descripción..." data-bind="spells.'+s.id+'.efecto">'+esc(s.efecto)+'</textarea>'+
+        '</div>'+
+      '</div>';
+    });
+  }
+
   if(isGM()){
-    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-spell">+ Añadir hechizo</button>';
+    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-spell">+ Añadir Hechizo al Grimorio</button>';
   }
   html += '</div>';
 
@@ -924,9 +1161,11 @@ function tplBestiario(s){
 
   visibleBestiary.forEach(function(b){
     var canEdit = isGM();
+    var imgStyle = b.image ? ' style="background-image:url(\''+b.image+'\')"' : '';
+
     html += '<div class="creature-card">'+
       '<div class="creature-card-header">'+
-        (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.nombre)+'</div>')+
+        (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre de criatura" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.nombre)+'</div>')+
         '<div style="display:flex;gap:4px;align-items:center;">'+
           (canEdit ? '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;" data-scope="global" data-bind="bestiary.'+b.id+'.continente">'+
             CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
@@ -935,16 +1174,26 @@ function tplBestiario(s){
           (canEdit ? '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'" aria-label="Eliminar criatura">✕</button>' : '')+
         '</div>'+
       '</div>'+
-      '<div class="creature-grid">'+
-        (canEdit ? creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida) : '<div class="creature-field"><label>Vida</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.vida||"-")+'</span></div>')+
-        (canEdit ? creatureFieldGlobal("Defensa","bestiary."+b.id+".defensa",b.defensa) : '<div class="creature-field"><label>Defensa</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.defensa||"-")+'</span></div>')+
-        (canEdit ? creatureFieldGlobal("Absorción","bestiary."+b.id+".absorcion",b.absorcion) : '<div class="creature-field"><label>Absorción</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.absorcion||"-")+'</span></div>')+
-        (canEdit ? creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano) : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.dano||"-")+'</span></div>')+
-        (canEdit ? creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad) : '<div class="creature-field"><label>Movilidad</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.movilidad||"-")+'</span></div>')+
+      '<div class="creature-layout">'+
+        (b.image ? '<div class="creature-img-thumb"'+imgStyle+' title="'+esc(b.nombre)+'"></div>' : '')+
+        '<div style="flex:1;min-width:0;">'+
+          '<div class="creature-grid">'+
+            (canEdit ? creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida) : '<div class="creature-field"><label>Vida</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.vida||"-")+'</span></div>')+
+            (canEdit ? creatureFieldGlobal("Defensa","bestiary."+b.id+".defensa",b.defensa) : '<div class="creature-field"><label>Defensa</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.defensa||"-")+'</span></div>')+
+            (canEdit ? creatureFieldGlobal("Absorción","bestiary."+b.id+".absorcion",b.absorcion) : '<div class="creature-field"><label>Absorción</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.absorcion||"-")+'</span></div>')+
+            (canEdit ? creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano) : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.dano||"-")+'</span></div>')+
+            (canEdit ? creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad) : '<div class="creature-field"><label>Movilidad</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.movilidad||"-")+'</span></div>')+
+          '</div>'+
+          '<div class="creature-field"><label>Habilidades y Rasgos</label>'+
+            (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.habilidades">'+esc(b.habilidades||b.notas||"")+'</textarea>' : (b.habilidades||b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.habilidades||b.notas)+'</p>':''))+
+          '</div>'+
+        '</div>'+
       '</div>'+
-      '<div class="creature-field" style="margin-top:6px;"><label>Habilidades y Rasgos</label>'+
-      (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.habilidades">'+esc(b.habilidades||b.notas)+'</textarea>' : (b.habilidades||b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.habilidades||b.notas)+'</p>':''))+
-      '</div>'+
+      (canEdit ? '<div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">'+
+        '<button class="btn-compact" data-action="upload-bestiary-img" data-id="'+b.id+'" title="Subir foto desde archivo">Foto</button>'+
+        '<button class="btn-compact" data-action="url-bestiary-img" data-id="'+b.id+'" title="Pegar enlace de GitHub o web">URL</button>'+
+        (b.image ? '<button class="btn-compact" data-action="remove-bestiary-img" data-id="'+b.id+'" title="Quitar foto">✕ Quitar Foto</button>' : '')+
+      '</div>' : '')+
     '</div>';
   });
   
@@ -1026,9 +1275,10 @@ function tplMundoMapas(s){
   var canEdit = isGM();
   var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title">'+
     '<span>'+(canEdit?'Cartografía y Mapas (GM)':'Cartografía y Mapas')+'</span>'+
-    (canEdit?'<div style="display:flex;gap:6px;">'+
-      '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga">🔄 Sincronizar Mapa</button>'+
-      '<button class="btn-compact" data-action="add-new-map">+ Nuevo Mapa</button>'+
+    (canEdit?'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+
+      '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga y sincronización">🔄 Sincronizar</button>'+
+      '<button class="btn-compact" data-action="add-new-map-url" title="Crear un mapa nuevo independiente mediante enlace / URL">+ Nuevo Mapa (URL)</button>'+
+      '<button class="btn-compact" data-action="add-new-map-file" title="Crear un mapa nuevo independiente subiendo archivo">+ Nuevo Mapa (Archivo)</button>'+
     '</div>':'')+
   '</div>'+
   '<div class="filter-pills" style="margin-bottom:10px;">'+mapTabs+'</div>';
@@ -1048,10 +1298,12 @@ function tplMundoMapas(s){
   }
   
   if(canEdit){
-    html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">'+
-      '<button class="btn-compact" data-action="upload-map">Subir / Cambiar Imagen</button>'+
-      (curMap.image?'<button class="btn-compact" data-action="remove-map">Quitar Imagen</button>':'')+
-      (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map">Borrar Mapa</button>':'')+
+    html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">'+
+      '<span style="font-size:0.75rem;color:var(--ink-dim);margin-right:2px;">Foto del mapa activo:</span>'+
+      '<button class="btn-compact" data-action="upload-map" title="Cambiar la imagen de este mapa subiendo un archivo">Subir Foto</button>'+
+      '<button class="btn-compact" data-action="url-map" title="Cambiar la imagen de este mapa pegando un enlace URL">Pegar URL</button>'+
+      (curMap.image?'<button class="btn-compact" data-action="remove-map" title="Quitar la foto pero conservar el mapa y sus marcadores">Quitar Foto</button>':'')+
+      (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map" title="Eliminar este mapa completo">✕ Borrar este Mapa</button>':'')+
     '</div>';
   }
   html += '</div>';
@@ -1359,13 +1611,13 @@ function pinModalClick(e){
     pData.kind = document.getElementById("pinInputKind").value;
     pData.notes = document.getElementById("pinInputNotes").value;
     if(!existing){ if(!curM.markers) curM.markers=[]; curM.markers.push(pData); }
-    saveState(true); pushSharedData(); closeModals(); renderTab();
+    saveState(true); pushMapsData(); closeModals(); renderTab();
     showToast("Marcador guardado", "success");
     return;
   }
   if(action==="del-pin" && curM){
     curM.markers = (curM.markers||[]).filter(function(p){return p.id!==btn.getAttribute("data-id");});
-    saveState(true); pushSharedData(); closeModals(); renderTab();
+    saveState(true); pushMapsData(); closeModals(); renderTab();
     showToast("Marcador eliminado", "info");
     return;
   }
@@ -1376,22 +1628,25 @@ function openCharModal(){
   var html = '<h2>Selección de Personaje<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   chars.forEach(function(c){
     var swatches = THEME_LIST.map(function(t){
-      return '<button class="swatch swatch-'+t.id+((c.theme||"default")===t.id?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" aria-label="Tema '+t.label+'"></button>';
+      return '<button type="button" class="swatch swatch-'+t.id+((c.theme||"default")===t.id?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" aria-label="Tema '+t.label+'"></button>';
     }).join('');
     var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
     var isNPC = !!c.isNPC;
+    var canDelete = isGM() || !currentUser || (currentUser && c.owner_id === currentUser.id);
 
-    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'" data-action="pick-char" data-id="'+c.id+'" role="button" tabindex="0">'+
-      '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
-      '<div class="cli-info">'+
-        '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+'</div>'+
-        '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
-        '<div class="theme-swatches" onclick="event.stopPropagation()">'+swatches+'</div>'+
+    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'">'+
+      '<div class="cli-main-select" data-action="pick-char" data-id="'+c.id+'" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;">'+
+        '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
+        '<div class="cli-info">'+
+          '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+'</div>'+
+          '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
+          '<div class="theme-swatches">'+swatches+'</div>'+
+        '</div>'+
       '</div>'+
-      (isGM()?'<button class="row-del" data-action="del-char" data-id="'+c.id+'" onclick="event.stopPropagation()" aria-label="Eliminar personaje">✕</button>':'')+
+      (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;margin-left:8px;position:relative;z-index:10;cursor:pointer;">✕</button>':'')+
     '</div>';
   });
-  if(isGM()){
+  if(isGM() || !currentUser){
     html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>'+
             '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button>';
   }
@@ -1455,12 +1710,20 @@ function diceModalClick(e){
     diceConfig.mod = parseInt(document.getElementById("diceMod").value,10)||0;
     diceConfig.mode = document.getElementById("diceMode").value;
     document.getElementById("diceModalOverlay").classList.add("hidden");
+    var cName = activeChar().name || "Aventurero";
 
     if(diceConfig.sides===100){
       var dTens = (rollDie(10)-1)*10, dUnits = rollDie(10)-1;
       var pct = dTens + dUnits === 0 ? 100 : dTens + dUnits;
       var tot = pct + diceConfig.mod;
-      openRollModal("d% Percentil", tot, "Decenas: " + dTens + " | Unidades: " + dUnits, 100, pct===100, pct===1);
+      var fText = "Decenas: " + dTens + " | Unidades: " + dUnits + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : "");
+      var rItem1 = {id:uid(), charName:cName, label:"d% Percentil", total:tot, formulaText:fText, isCrit:pct===100, isFumble:pct===1, ts:Date.now()};
+      state.rollLog.unshift(rItem1);
+      if(state.rollLog.length>20) state.rollLog.length=20;
+      saveState();
+      broadcastDiceRoll(rItem1);
+      openRollModal("d% Percentil", tot, fText, 100, pct===100, pct===1);
+      renderTab();
       return;
     }
 
@@ -1473,7 +1736,14 @@ function diceModalClick(e){
         '<div class="adv-die-card '+(r2===chosen && (r1!==r2||diceConfig.mode==="adv")?'chosen':(r1===r2?'chosen':'discarded'))+'">'+r2+'</div>'+
       '</div>';
       var lblAdv = "d"+diceConfig.sides + (diceConfig.mode==="adv"?" (Ventaja)":" (Desventaja)");
-      openRollModal(lblAdv, totalAdv, "Modificador: " + (diceConfig.mod>=0?"+"+diceConfig.mod:diceConfig.mod), diceConfig.sides, chosen===diceConfig.sides, chosen===1, advHtml);
+      var modStr = (diceConfig.mod>=0?"+"+diceConfig.mod:diceConfig.mod);
+      var rItem2 = {id:uid(), charName:cName, label:lblAdv, total:totalAdv, formulaText:"["+r1+", "+r2+"] -> " + chosen + " (Mod: " + modStr + ")", isCrit:chosen===diceConfig.sides, isFumble:chosen===1, ts:Date.now()};
+      state.rollLog.unshift(rItem2);
+      if(state.rollLog.length>20) state.rollLog.length=20;
+      saveState();
+      broadcastDiceRoll(rItem2);
+      openRollModal(lblAdv, totalAdv, "Modificador: " + modStr, diceConfig.sides, chosen===diceConfig.sides, chosen===1, advHtml);
+      renderTab();
       return;
     }
 
@@ -1481,7 +1751,16 @@ function diceModalClick(e){
     var rolls=[], sum=0;
     for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
     var grandTotal = sum + diceConfig.mod;
-    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, "Dados: [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : ""), diceConfig.sides, rolls.every(function(x){return x===diceConfig.sides;}), rolls.every(function(x){return x===1;}));
+    var isAllCrit = rolls.every(function(x){return x===diceConfig.sides;});
+    var isAllFumble = rolls.every(function(x){return x===1;});
+    var fDetail = diceConfig.qty + "d" + diceConfig.sides + " [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : "");
+    var rItem3 = {id:uid(), charName:cName, label:diceConfig.qty+"d"+diceConfig.sides, total:grandTotal, formulaText:fDetail, isCrit:isAllCrit, isFumble:isAllFumble, ts:Date.now()};
+    state.rollLog.unshift(rItem3);
+    if(state.rollLog.length>20) state.rollLog.length=20;
+    saveState();
+    broadcastDiceRoll(rItem3);
+    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, fDetail, diceConfig.sides, isAllCrit, isAllFumble);
+    renderTab();
     return;
   }
 }
@@ -1516,11 +1795,29 @@ function modalClick(e){
     return;
   }
   if(action==="del-char"){
-    if(!isGM()) return;
-    if(confirm("¿Eliminar este personaje?")){
-      state.characters = state.characters.filter(function(x){return x.id!==btn.getAttribute("data-id");});
-      state.activeId = state.characters[0]?state.characters[0].id:"";
-      saveState(); closeModals(); renderTopbar(); renderTab();
+    var targetId = btn.getAttribute("data-id");
+    var targetChar = (state.characters||[]).find(function(x){return x.id===targetId;});
+    var canDelete = isGM() || !currentUser || (targetChar && currentUser && targetChar.owner_id === currentUser.id);
+    if(!canDelete){
+      showToast("No tienes permiso para eliminar este personaje.", "warning");
+      return;
+    }
+    var charName = targetChar ? targetChar.name : "este personaje";
+    if(confirm("¿Eliminar definitivamente a \"" + charName + "\"?")){
+      if(targetChar && targetChar.db_id && supabaseClient){
+        supabaseClient.from('characters').delete().eq('id', targetChar.db_id).then(function(res){
+          if(res.error) console.error("Error al borrar en Supabase:", res.error);
+        }).catch(function(e){ console.error("Error al borrar en Supabase:", e); });
+      }
+      state.characters = (state.characters||[]).filter(function(x){return x.id!==targetId;});
+      if(!state.characters.length) state.characters.push(blankCharacter("Sin Personaje"));
+      if(state.activeId === targetId){
+        state.activeId = state.characters[0]?state.characters[0].id:"";
+      }
+      saveState();
+      openCharModal();
+      renderTopbar();
+      renderTab();
       showToast("Personaje eliminado", "info");
     }
     return;
@@ -1583,7 +1880,12 @@ function initSupabase(){
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     
     if(!realtimeChannel){
-      realtimeChannel = supabaseClient.channel('realtime_all_changes')
+      realtimeChannel = supabaseClient.channel('realtime_all_changes', {
+        config: { broadcast: { self: false } }
+      })
+        .on('broadcast', { event: 'dice_roll' }, function(payload){
+          if(payload && payload.payload) handleRemoteDiceRoll(payload.payload);
+        })
         .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(payload){
           if(payload && payload.new){
             var row = payload.new;
@@ -1922,9 +2224,11 @@ function handleChange(e){
   var isGlobal = el.getAttribute("data-scope")==="global";
   var target = isGlobal ? state : activeChar();
   setBind(target, el.getAttribute("data-bind"), el.value, el.type);
-  saveState(true);
   if(isGlobal){
+    saveState(true);
     pushSharedData();
+  } else {
+    saveState(false);
   }
 }
 
@@ -1945,7 +2249,8 @@ function handleClick(e){
   if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
   if(action==="hp-mod"){
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
-    c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, 0, num(c.combat.pvMax,0)||999);
+    var maxHp = num(c.combat.pvMax,0) || 999;
+    c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, -999, maxHp);
     saveState(); renderTopbar(); return;
   }
   if(action==="shield-mod"){
@@ -1957,6 +2262,55 @@ function handleClick(e){
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
     saveState(); renderTopbar(); return;
+  }
+
+  if(action==="gm-add-skill-point"){
+    if(!isGM()) return;
+    c.skillPoints = num(c.skillPoints, 0) + 1;
+    saveState(); renderTab();
+    showToast("+1 punto de habilidad concedido por el GM", "gm");
+    return;
+  }
+  if(action==="gm-skill-add"){
+    if(!isGM()) return;
+    var sid = btn.getAttribute("data-id");
+    if(!c.skillBonus) c.skillBonus = {};
+    c.skillBonus[sid] = num(c.skillBonus[sid], 0) + 1;
+    saveState(); renderTab();
+    var sdef = SKILL_DEFS.find(function(x){ return x.id === sid; });
+    showToast("GM otorgó nivel " + c.skillBonus[sid] + " a " + (sdef ? sdef.name : sid), "gm");
+    return;
+  }
+  if(action==="gm-skill-sub"){
+    if(!isGM()) return;
+    var sid2 = btn.getAttribute("data-id");
+    if(!c.skillBonus) c.skillBonus = {};
+    if(num(c.skillBonus[sid2], 0) > 0){
+      c.skillBonus[sid2] = num(c.skillBonus[sid2], 0) - 1;
+      saveState(); renderTab();
+    }
+    return;
+  }
+  if(action==="gm-custom-skill-add"){
+    if(!isGM()) return;
+    var csId = btn.getAttribute("data-id");
+    var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
+    if(csk){
+      csk.bonus = num(csk.bonus, 0) + 1;
+      saveState(); renderTab();
+      showToast("GM otorgó nivel " + csk.bonus + " a " + csk.name, "gm");
+    }
+    return;
+  }
+  if(action==="gm-custom-skill-sub"){
+    if(!isGM()) return;
+    var csId2 = btn.getAttribute("data-id");
+    var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
+    if(csk2 && num(csk2.bonus, 0) > 0){
+      csk2.bonus = num(csk2.bonus, 0) - 1;
+      saveState(); renderTab();
+    }
+    return;
   }
 
   if(action==="grant-level"){
@@ -2268,8 +2622,49 @@ function handleClick(e){
   if(action==="del-armor"){ if(!isGM()) return; c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-inventory"){ if(!isGM()) return; c.inventory.push({id:uid(),name:"",qty:1}); saveState(); renderTab(); return; }
   if(action==="del-inventory"){ if(!isGM()) return; c.inventory = c.inventory.filter(function(i){return i.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-spell"){ if(!isGM()) return; c.spells.push({id:uid(),name:"",coste:"",rango:""}); saveState(); renderTab(); return; }
-  if(action==="del-spell"){ if(!isGM()) return; c.spells = c.spells.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-spell"){
+    if(!isGM()) return;
+    if(!c.spells) c.spells = [];
+    c.spells.push({id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false});
+    saveState(); renderTab(); return;
+  }
+  if(action==="del-spell"){
+    if(!isGM()) return;
+    c.spells = (c.spells||[]).filter(function(s){return s.id!==btn.getAttribute("data-id");});
+    saveState(); renderTab(); return;
+  }
+  if(action==="cast-spell"){
+    var spId = btn.getAttribute("data-id");
+    var sp = (c.spells||[]).find(function(s){ return s.id === spId; });
+    if(!sp) return;
+    var cost = Math.max(0, num(sp.coste, 0));
+    var curMana = num(c.combat.manaActual, 0);
+    if(curMana < cost){
+      showToast("¡Maná insuficiente! (" + curMana + " / " + cost + ")", "warning");
+      return;
+    }
+    c.combat.manaActual = Math.max(0, curMana - cost);
+    sp.active = true;
+    saveState();
+    renderTopbar();
+    renderTab();
+    var statNotice = (sp.statAttr && sp.statMod) ? " [Efecto activo: " + sp.statMod + " a " + sp.statAttr + "]" : "";
+    showToast("¡" + (sp.name || "Hechizo") + " activado! -" + cost + " maná" + statNotice, "success");
+    playDiceAudio("crit");
+    return;
+  }
+  if(action==="toggle-spell-active"){
+    var spId2 = btn.getAttribute("data-id");
+    var sp2 = (c.spells||[]).find(function(s){ return s.id === spId2; });
+    if(sp2){
+      sp2.active = false;
+      saveState();
+      renderTopbar();
+      renderTab();
+      showToast("Efecto de " + (sp2.name || "Hechizo") + " desactivado.", "info");
+    }
+    return;
+  }
   if(action==="add-stone"){ if(!isGM()) return; c.stones.push({id:uid(),color:"",efecto:""}); saveState(); renderTab(); return; }
   if(action==="del-stone"){ if(!isGM()) return; c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-summon"){ if(!isGM()) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); saveState(); renderTab(); return; }
@@ -2313,34 +2708,86 @@ function handleClick(e){
     return;
   }
 
-  if(action==="sync-map-now"){ pullMapFromSupabase(); showToast("Mapa sincronizado con la nube", "success"); return; }
+  if(action==="sync-map-now"){ pullMapFromSupabase(); showToast("Mapas sincronizados con la nube", "success"); return; }
   if(action==="switch-map"){ state.activeMapId = btn.getAttribute("data-id"); renderTab(); return; }
-  if(action==="add-new-map"){
+  if(action==="add-new-map-url"){
     if(!isGM()) return;
-    var mn = prompt("Nombre del mapa (ej: Mazmorra, Ciudad Capital):");
-    if(mn){
-      var nMap = {id:uid(), name:mn, image:null, markers:[]};
-      state.maps.push(nMap); state.activeMapId = nMap.id;
-      saveState(true); pushSharedData(); renderTab();
-      showToast("Mapa creado: " + mn, "success");
+    var mn = prompt("Nombre del nuevo mapa (ej: Mazmorra, Ciudad, Continente):");
+    if(!mn) return;
+    var mUrl = prompt("Enlace o URL de la imagen (de GitHub, Imgur, web, etc.):");
+    if(mUrl !== null){
+      var nMap = { id: uid(), name: mn.trim(), image: mUrl.trim() || null, markers: [] };
+      state.maps = state.maps || [];
+      state.maps.push(nMap);
+      state.activeMapId = nMap.id;
+      saveState(true);
+      pushMapsData();
+      renderTab();
+      showToast("Nuevo mapa creado: " + nMap.name, "success");
     }
+    return;
+  }
+  if(action==="add-new-map-file"){
+    if(!isGM()) return;
+    var mn2 = prompt("Nombre del nuevo mapa (ej: Mazmorra, Ciudad, Continente):");
+    if(!mn2) return;
+    pendingNewMapName = mn2.trim();
+    document.getElementById("mapFileInput").click();
     return;
   }
   if(action==="delete-map"){
     if(!isGM()) return;
-    if(confirm("¿Eliminar este mapa y sus pines?")){
-      state.maps = state.maps.filter(function(m){return m.id!==state.activeMapId;});
-      state.activeMapId = state.maps[0]?state.maps[0].id:"";
-      saveState(true); pushSharedData(); renderTab();
-      showToast("Mapa eliminado", "info");
+    var targetMap = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+    if(!targetMap) return;
+    var mName = targetMap.name || "este mapa";
+    var mCount = (targetMap.markers||[]).length;
+    var confirmMsg = "¿Eliminar definitivamente el mapa \"" + mName + "\"" + (mCount > 0 ? " con sus " + mCount + " marcador(es)?" : "?");
+    if(confirm(confirmMsg)){
+      state.maps = (state.maps||[]).filter(function(m){return m.id!==targetMap.id;});
+      if(!state.maps.length){
+        var defaultM = { id:"world_main", name:"Mapa de Campaña", image:null, markers:[] };
+        state.maps.push(defaultM);
+      }
+      state.activeMapId = state.maps[0].id;
+      saveState(true);
+      pushMapsData();
+      renderTab();
+      showToast("Mapa \"" + mName + "\" eliminado", "info");
     }
     return;
   }
-  if(action==="upload-map"){ if(!isGM()) return; document.getElementById("mapFileInput").click(); return; }
+  if(action==="upload-map"){
+    if(!isGM()) return;
+    pendingNewMapName = null;
+    document.getElementById("mapFileInput").click();
+    return;
+  }
+  if(action==="url-map"){
+    if(!isGM()) return;
+    var curMUrl = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+    if(curMUrl){
+      var prevMapImg = curMUrl.image || "";
+      var mLink = prompt("Introduce el enlace de la imagen para \"" + curMUrl.name + "\":", prevMapImg.startsWith("data:")?"":prevMapImg);
+      if(mLink !== null){
+        curMUrl.image = mLink.trim() || null;
+        saveState(true);
+        pushMapsData();
+        renderTab();
+        showToast("Foto del mapa actualizada", "info");
+      }
+    }
+    return;
+  }
   if(action==="remove-map"){
     if(!isGM()) return;
     var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-    if(curM){ curM.image = null; curM.markers = []; saveState(true); pushSharedData(); renderTab(); }
+    if(curM){
+      curM.image = null;
+      saveState(true);
+      pushMapsData();
+      renderTab();
+      showToast("Foto quitada del mapa", "info");
+    }
     return;
   }
   if(action==="map-click"){
@@ -2362,13 +2809,60 @@ function handleClick(e){
     return;
   }
 
+  if(action==="upload-bestiary-img"){
+    if(!isGM()) return;
+    pendingBestiaryId = btn.getAttribute("data-id");
+    var bFileEl = document.getElementById("bestiaryFileInput");
+    if(bFileEl) bFileEl.click();
+    return;
+  }
+  if(action==="url-bestiary-img"){
+    if(!isGM()) return;
+    var bid = btn.getAttribute("data-id");
+    var beast = (state.bestiary||[]).find(function(x){return x.id===bid;});
+    if(beast){
+      var prevBImg = beast.image || "";
+      var bLink = prompt("Introduce el enlace de la criatura (de GitHub, Imgur, web, etc.):", prevBImg.startsWith("data:")?"":prevBImg);
+      if(bLink !== null){
+        beast.image = bLink.trim() || null;
+        saveState(true); pushSharedData(); renderTab();
+        showToast(beast.image ? "Imagen de criatura asignada" : "Imagen quitada", "info");
+      }
+    }
+    return;
+  }
+  if(action==="remove-bestiary-img"){
+    if(!isGM()) return;
+    var bid2 = btn.getAttribute("data-id");
+    var beast2 = (state.bestiary||[]).find(function(x){return x.id===bid2;});
+    if(beast2){
+      beast2.image = null;
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Imagen de criatura eliminada", "info");
+    }
+    return;
+  }
+
   if(action==="open-char-modal"){ openCharModal(); return; }
   if(action==="open-data-modal"){ openDataModal(); return; }
   if(action==="open-free-dice"){ openDiceModal(); return; }
   if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
+  if(action==="url-portrait"){
+    var curP = c.portrait || "";
+    var uLink = prompt("Introduce el enlace de la foto (de GitHub, Imgur, web, etc.):", curP.startsWith("data:")?"":curP);
+    if(uLink !== null){
+      c.portrait = uLink.trim() || null;
+      saveState(); renderTopbar(); renderTab();
+      showToast(c.portrait ? "Foto actualizada desde enlace" : "Foto quitada", "info");
+    }
+    return;
+  }
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
 }
+
+var pendingBestiaryId = null;
+var pendingNewMapName = null;
 
 function init(){
   state = loadState();
@@ -2378,16 +2872,7 @@ function init(){
 
   document.getElementById("main").addEventListener("click", handleClick);
   document.getElementById("main").addEventListener("change", handleChange);
-  document.getElementById("main").addEventListener("input", function(e){
-    var el = e.target.closest("[data-bind]"); if(!el) return;
-    var isGlobal = el.getAttribute("data-scope")==="global";
-    var target = isGlobal ? state : activeChar();
-    setBind(target, el.getAttribute("data-bind"), el.value, el.type);
-    saveState(true);
-    if(isGlobal){
-      pushSharedData();
-    }
-  });
+  document.getElementById("main").addEventListener("input", handleChange);
   
   document.addEventListener("touchstart", handleTouchStart, {passive: true});
   document.addEventListener("touchend", handleTouchEnd, {passive: true});
@@ -2425,12 +2910,46 @@ function init(){
   document.getElementById("mapFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]){
       resizeImageFile(e.target.files[0], 900, 0.65, function(url){
-        var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-        if(curM){ curM.image = url; saveState(true); pushSharedData(); renderTab(); }
+        if(pendingNewMapName){
+          var newM = { id: uid(), name: pendingNewMapName, image: url, markers: [] };
+          state.maps = state.maps || [];
+          state.maps.push(newM);
+          state.activeMapId = newM.id;
+          pendingNewMapName = null;
+          saveState(true);
+          pushMapsData();
+          renderTab();
+          showToast("Nuevo mapa creado: " + newM.name, "success");
+        } else {
+          var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+          if(curM){
+            curM.image = url;
+            saveState(true);
+            pushMapsData();
+            renderTab();
+            showToast("Foto del mapa actualizada", "info");
+          }
+        }
       });
     }
     e.target.value="";
   });
+  var bFileInput = document.getElementById("bestiaryFileInput");
+  if(bFileInput){
+    bFileInput.addEventListener("change", function(e){
+      if(e.target.files && e.target.files[0] && pendingBestiaryId){
+        resizeImageFile(e.target.files[0], 600, 0.7, function(url){
+          var beast = (state.bestiary||[]).find(function(x){return x.id===pendingBestiaryId;});
+          if(beast){
+            beast.image = url;
+            saveState(true); pushSharedData(); renderTab();
+          }
+          pendingBestiaryId = null;
+        });
+      }
+      e.target.value="";
+    });
+  }
   document.getElementById("importFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]) importData(e.target.files[0]);
     e.target.value="";
