@@ -147,8 +147,8 @@ function getOfficialCharacters(){
       theme: "teal",
       portrait: null,
       isNPC: false,
-      owner_id: null,
-      ownerEmail: "",
+      owner_id: "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3",
+      ownerEmail: "lolorey92@gmail.com",
       nivel: "1",
       lugarNacimiento: "Trysar",
       altura: "1,52",
@@ -259,8 +259,8 @@ function getOfficialCharacters(){
       theme: "purple",
       portrait: null,
       isNPC: false,
-      owner_id: null,
-      ownerEmail: "",
+      owner_id: "ece1cdb6-f8c6-4010-b3e8-045887dc92a3",
+      ownerEmail: "martu@gmail.com",
       nivel: "1",
       lugarNacimiento: "Krysalis",
       altura: "1,60",
@@ -392,8 +392,8 @@ function getOfficialCharacters(){
       theme: "blue",
       portrait: null,
       isNPC: false,
-      owner_id: null,
-      ownerEmail: "",
+      owner_id: "bcfb51f6-4916-4650-b842-0eaf7f8335f4",
+      ownerEmail: "piki@gmail.com",
       nivel: "1",
       lugarNacimiento: "Asland",
       altura: "1,70",
@@ -474,12 +474,12 @@ function getOfficialCharacters(){
     // 4. SCARLETH / WINTER
     {
       id: "char_scarleth",
-      name: "Scarleth / Winter",
+      name: "Scarleth",
       theme: "default",
       portrait: null,
       isNPC: false,
-      owner_id: null,
-      ownerEmail: "",
+      owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
+      ownerEmail: "saray@gmail.com",
       nivel: "1",
       lugarNacimiento: "Krysalis",
       altura: "1,72",
@@ -595,8 +595,8 @@ function getOfficialCharacters(){
       theme: "purple",
       portrait: null,
       isNPC: false,
-      owner_id: null,
-      ownerEmail: "",
+      owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
+      ownerEmail: "saray@gmail.com",
       nivel: "1 Vástago",
       lugarNacimiento: "Krysalis",
       altura: "1,69",
@@ -683,9 +683,10 @@ function getOfficialCharacters(){
 function resetCharactersToOfficial(keepPortraits){
   var officials = getOfficialCharacters();
   state.characters = state.characters || [];
-  
+
   var scarlethChar = state.characters.find(function(c){
-    return c.name && (c.name.toLowerCase().includes("scarleth") || c.name.toLowerCase().includes("winter"));
+    var n = (c.name || "").toLowerCase();
+    return n === "scarleth" || n.includes("scarleth") || n.includes("winter");
   });
   var scarlethOwner = scarlethChar ? scarlethChar.owner_id : null;
   var scarlethEmail = scarlethChar ? scarlethChar.ownerEmail : "";
@@ -694,16 +695,18 @@ function resetCharactersToOfficial(keepPortraits){
     var existing = state.characters.find(function(c){
       var cName = (c.name || "").trim().toLowerCase();
       var oName = off.name.trim().toLowerCase();
-      return cName === oName || cName.startsWith(oName) || oName.startsWith(cName) ||
-        (oName.includes("bucky") && cName.includes("baky")) ||
-        (oName.includes("baky") && cName.includes("bucky")) ||
-        (oName.includes("scarleth") && cName.includes("scarleth"));
+      if(oName === "derek") return cName === "derek";
+      if(oName === "scarleth") return cName === "scarleth" || cName.includes("scarleth") || cName.includes("winter");
+      if(oName === "bucky") return cName === "bucky" || cName === "baky" || cName.includes("bucky") || cName.includes("baky");
+      if(oName === "cherk") return cName === "cherk" || cName.includes("cherk");
+      if(oName === "ink") return cName === "ink" || cName.includes("ink");
+      return cName === oName;
     });
     if(existing){
       var savedPortrait = (keepPortraits !== false) ? (existing.portrait || off.portrait) : off.portrait;
-      var savedOwner = existing.owner_id;
+      var savedOwner = existing.owner_id || (off.name === "Derek" && scarlethOwner ? scarlethOwner : off.owner_id);
       var savedDbId = existing.db_id;
-      var savedEmail = existing.ownerEmail;
+      var savedEmail = existing.ownerEmail || (off.name === "Derek" && scarlethEmail ? scarlethEmail : off.ownerEmail);
       var savedId = existing.id;
       Object.assign(existing, JSON.parse(JSON.stringify(off)));
       existing.id = savedId;
@@ -711,14 +714,14 @@ function resetCharactersToOfficial(keepPortraits){
       existing.portrait = savedPortrait;
       existing.owner_id = savedOwner;
       existing.ownerEmail = savedEmail;
-      existing.officialDataVersion = 3;
+      existing.officialDataVersion = 4;
     } else {
       var nOff = JSON.parse(JSON.stringify(off));
       if(nOff.name === "Derek" && scarlethOwner){
         nOff.owner_id = scarlethOwner;
         nOff.ownerEmail = scarlethEmail;
       }
-      nOff.officialDataVersion = 3;
+      nOff.officialDataVersion = 4;
       state.characters.push(nOff);
     }
   });
@@ -831,7 +834,7 @@ function defaultState(){
     activeTab: "ficha",
     rollLog: [],
     characters: officialChars,
-    officialDataVersion: 3,
+    officialDataVersion: 4,
     weaponsCatalog: getSeedWeaponsCatalog(),
     buffCatalog: getSeedBuffCatalog(),
     lore: getSeedLore(),
@@ -841,31 +844,32 @@ function defaultState(){
     quests: [
       {
         id: uid(),
-        title: "Investigación en Krysalis",
-        desc: "Explorar las ruinas y descubrir el origen de las anomalías mágicas.",
-        status: "activa",
+        title: "La Infiltración en Trysar",
+        category: "principal",
+        desc: "Investigar las actividades sospechosas de los contrabandistas en los puertos de Trysar.",
         tasks: [
-          { id: uid(), text: "Consultar con el erudito de la capital", done: true },
-          { id: uid(), text: "Explorar la entrada de las catacumbas", done: false },
-          { id: uid(), text: "Recuperar el artefacto rúnico", done: false }
-        ]
+          { id: uid(), text: "Contactar con el informante en la taberna del puerto", done: false },
+          { id: uid(), text: "Inspeccionar el almacén de venenos y suministros", done: false }
+        ],
+        completed: false
       }
     ],
     questClues: [
-      { id: uid(), title: "Pergamino Quebrado", text: "Habla de un sello elemental protegido por una bestia infernal.", image: null, visible: true }
+      { id: uid(), title: "Sello de cera púrpura", desc: "Encontrado en una carta interceptada con la marca de Krysalis." }
     ],
-    questMap: { name: "Zona de Incursión", image: null, notes: "Plano táctico del área de exploración" },
-    sessionSummary: "Los aventureros llegaron a las afueras de Krysalis y preparan el descenso."
+    questMap: { name: "Mapa de la Misión", image: null, notes: "Puntos de reunión y rutas de escape marcadas." },
+    sessionSummary: "Los aventureros se preparan para su incursión. Recuerden comprobar provisiones y preparar antídotos."
   };
 }
 
 function migrateState(s){
+  if(!s) return defaultState();
+  if(!s.activeTab) s.activeTab="ficha";
   if(!s.rollLog) s.rollLog=[];
-  if(!s.weaponsCatalog || !s.weaponsCatalog.length) s.weaponsCatalog = getSeedWeaponsCatalog();
-  if(!s.buffCatalog || !s.buffCatalog.length) s.buffCatalog = getSeedBuffCatalog();
+  if(!s.weaponsCatalog || !s.weaponsCatalog.length) s.weaponsCatalog=getSeedWeaponsCatalog();
+  if(!s.buffCatalog || !s.buffCatalog.length) s.buffCatalog=getSeedBuffCatalog();
   else {
-    s.buffCatalog.forEach(function(b){ 
-      if(b.visible===undefined) b.visible=true;
+    s.buffCatalog.forEach(function(b){
       if(b.duration===undefined) b.duration="permanent";
       if(b.durationTurns===undefined) b.durationTurns=0;
     });
@@ -888,28 +892,25 @@ function migrateState(s){
   if(!s.questMap) s.questMap = { name:"Mapa de la Misión", image:null, notes:"" };
   if(s.sessionSummary === undefined) s.sessionSummary = "";
 
-  if(!s.officialDataVersion || s.officialDataVersion < 3){
+  if(!s.officialDataVersion || s.officialDataVersion < 4){
     var officials = getOfficialCharacters();
     s.characters = s.characters || [];
-    var scarlethChar = s.characters.find(function(c){
-      return c.name && (c.name.toLowerCase().includes("scarleth") || c.name.toLowerCase().includes("winter"));
-    });
-    var scarlethOwner = scarlethChar ? scarlethChar.owner_id : null;
-    var scarlethEmail = scarlethChar ? scarlethChar.ownerEmail : "";
 
     officials.forEach(function(off){
       var existing = s.characters.find(function(c){
         var cName = (c.name || "").trim().toLowerCase();
         var oName = off.name.trim().toLowerCase();
-        return cName === oName || cName.startsWith(oName) || oName.startsWith(cName) ||
-          (oName.includes("bucky") && cName.includes("baky")) ||
-          (oName.includes("baky") && cName.includes("bucky")) ||
-          (oName.includes("scarleth") && cName.includes("scarleth"));
+        if(oName === "derek") return cName === "derek";
+        if(oName === "scarleth") return cName === "scarleth" || cName.includes("scarleth") || cName.includes("winter");
+        if(oName === "bucky") return cName === "bucky" || cName === "baky" || cName.includes("bucky") || cName.includes("baky");
+        if(oName === "cherk") return cName === "cherk" || cName.includes("cherk");
+        if(oName === "ink") return cName === "ink" || cName.includes("ink");
+        return cName === oName;
       });
       if(existing){
         var savedPortrait = existing.portrait || off.portrait;
-        var savedOwner = existing.owner_id;
-        var savedEmail = existing.ownerEmail;
+        var savedOwner = existing.owner_id || off.owner_id;
+        var savedEmail = existing.ownerEmail || off.ownerEmail;
         var savedId = existing.id;
         var savedDbId = existing.db_id;
         Object.assign(existing, JSON.parse(JSON.stringify(off)));
@@ -918,14 +919,10 @@ function migrateState(s){
         existing.portrait = savedPortrait;
         existing.owner_id = savedOwner;
         existing.ownerEmail = savedEmail;
-        existing.officialDataVersion = 3;
+        existing.officialDataVersion = 4;
       } else {
         var nOff = JSON.parse(JSON.stringify(off));
-        if(nOff.name === "Derek" && scarlethOwner){
-          nOff.owner_id = scarlethOwner;
-          nOff.ownerEmail = scarlethEmail;
-        }
-        nOff.officialDataVersion = 3;
+        nOff.officialDataVersion = 4;
         s.characters.push(nOff);
       }
     });
@@ -933,7 +930,7 @@ function migrateState(s){
       var n = (c.name || "").trim().toLowerCase();
       return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
     });
-    s.officialDataVersion = 3;
+    s.officialDataVersion = 4;
     if(!s.characters.some(function(c){ return c.id === s.activeId; })){
       s.activeId = s.characters[0] ? s.characters[0].id : "";
     }
@@ -1019,7 +1016,10 @@ function updateSyncBadge(st){
   else { el.className="sync-status"; el.textContent="○ Local"; }
 }
 
-function isGM(){ return currentRole==='gm'; }
+function isGM(){
+  return currentRole==='gm' ||
+    (currentUser && (currentUser.email === 'rolillo55ac@gmail.com' || currentUser.email === 'lolorey92@gmail.com'));
+}
 function getUserCharacters(){
   if(isGM()) return state.characters;
   if(!currentUser) return state.characters.filter(function(c){ return !c.isNPC; });
@@ -2943,13 +2943,16 @@ function modalClick(e){
   if(action==="export-data"){ exportData(); return; }
   if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
   if(action==="reset-all-characters"){
-    if(confirm("¿Deseas resetear los atributos, habilidades, combate, magias y equipo de todos los personajes (Cherk, Ink, Baky, Scarleth) a los valores exactos de sus fichas oficiales en PDF? Se conservarán las fotos de perfil.")){
+    if(confirm("¿Deseas resetear los atributos, habilidades, combate, magias y equipo de los 5 personajes oficiales (Cherk, Ink, Bucky, Scarleth, Derek) a los valores exactos de sus fichas oficiales en PDF? Se conservarán las fotos de perfil.")){
       resetCharactersToOfficial(true);
-      saveState(false);
+      saveState(true);
+      if(supabaseClient && currentUser){
+        state.characters.forEach(function(c){ pushCharacterById(c.id); });
+      }
       renderTopbar();
       renderTab();
       closeModals();
-      showToast("¡Personajes actualizados con éxito según las fichas oficiales!", "success");
+      showToast("¡Personajes oficiales (incluyendo Derek y Scarleth) reseteados con éxito!", "success");
     }
     return;
   }
@@ -3188,34 +3191,37 @@ async function pullAllFromSupabase(){
         return c; 
       });
 
-      var needsOfficialReset = !pulledChars.some(function(c){
-        return c.name === "Derek";
-      }) || !pulledChars.some(function(c){
-        return c.name === "Cherk" && c.attrs && c.attrs.fisico === 4 && c.combat && c.combat.pvMax === 16;
+      var hasScarleth = pulledChars.some(function(c){
+        var n = (c.name || "").toLowerCase();
+        return n === "scarleth" || n.includes("scarleth") || n.includes("winter");
       });
+      var derekChar = pulledChars.find(function(c){ return (c.name || "").toLowerCase() === "derek"; });
+      var isDerekReset = derekChar && derekChar.combat && derekChar.combat.pvMax === 32 && derekChar.combat.manaMax === 30 && derekChar.weapons && derekChar.weapons.some(function(w){ return w.name === "Sable bonito"; });
+      var cherkChar = pulledChars.find(function(c){ return (c.name || "").toLowerCase() === "cherk"; });
+      var isCherkReset = cherkChar && cherkChar.attrs && cherkChar.attrs.fisico === 4 && cherkChar.combat && cherkChar.combat.pvMax === 16;
+      var bakyChar = pulledChars.find(function(c){ var n = (c.name || "").toLowerCase(); return n.includes("bucky") || n.includes("baky"); });
+      var isBakyReset = bakyChar && bakyChar.combat && bakyChar.combat.manaMax === 35;
+
+      var needsOfficialReset = !hasScarleth || !isDerekReset || !isCherkReset || !isBakyReset || pulledChars.length < 5;
 
       if(needsOfficialReset){
         var officials = getOfficialCharacters();
-        var scarlethChar = pulledChars.find(function(c){
-          return c.name && (c.name.toLowerCase().includes("scarleth") || c.name.toLowerCase().includes("winter"));
-        });
-        var scarlethOwner = scarlethChar ? scarlethChar.owner_id : null;
-        var scarlethEmail = scarlethChar ? scarlethChar.ownerEmail : "";
-
         officials.forEach(function(off){
           var existing = pulledChars.find(function(c){
             var cName = (c.name || "").trim().toLowerCase();
             var oName = off.name.trim().toLowerCase();
-            return cName === oName || cName.startsWith(oName) || oName.startsWith(cName) ||
-              (oName.includes("bucky") && cName.includes("baky")) ||
-              (oName.includes("baky") && cName.includes("bucky")) ||
-              (oName.includes("scarleth") && cName.includes("scarleth"));
+            if(oName === "derek") return cName === "derek";
+            if(oName === "scarleth") return cName === "scarleth" || cName.includes("scarleth") || cName.includes("winter");
+            if(oName === "bucky") return cName === "bucky" || cName === "baky" || cName.includes("bucky") || cName.includes("baky");
+            if(oName === "cherk") return cName === "cherk" || cName.includes("cherk");
+            if(oName === "ink") return cName === "ink" || cName.includes("ink");
+            return cName === oName;
           });
           if(existing){
             var savedPortrait = existing.portrait || off.portrait;
-            var savedOwner = existing.owner_id;
+            var savedOwner = existing.owner_id || off.owner_id;
             var savedDbId = existing.db_id;
-            var savedEmail = existing.ownerEmail;
+            var savedEmail = existing.ownerEmail || off.ownerEmail;
             var savedId = existing.id;
             Object.assign(existing, JSON.parse(JSON.stringify(off)));
             existing.id = savedId;
@@ -3223,14 +3229,10 @@ async function pullAllFromSupabase(){
             existing.portrait = savedPortrait;
             existing.owner_id = savedOwner;
             existing.ownerEmail = savedEmail;
-            existing.officialDataVersion = 3;
+            existing.officialDataVersion = 4;
           } else {
             var nOff = JSON.parse(JSON.stringify(off));
-            if(nOff.name === "Derek" && scarlethOwner){
-              nOff.owner_id = scarlethOwner;
-              nOff.ownerEmail = scarlethEmail;
-            }
-            nOff.officialDataVersion = 3;
+            nOff.officialDataVersion = 4;
             pulledChars.push(nOff);
           }
         });
