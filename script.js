@@ -609,7 +609,7 @@ function defaultState(){
     activeTab: "ficha",
     rollLog: [],
     characters: officialChars,
-    officialDataVersion: 1,
+    officialDataVersion: 2,
     weaponsCatalog: getSeedWeaponsCatalog(),
     buffCatalog: getSeedBuffCatalog(),
     lore: getSeedLore(),
@@ -666,7 +666,7 @@ function migrateState(s){
   if(!s.questMap) s.questMap = { name:"Mapa de la Misión", image:null, notes:"" };
   if(s.sessionSummary === undefined) s.sessionSummary = "";
 
-  if(!s.officialDataVersion || s.officialDataVersion < 1){
+  if(!s.officialDataVersion || s.officialDataVersion < 2){
     var officials = getOfficialCharacters();
     s.characters = s.characters || [];
     officials.forEach(function(off){
@@ -678,20 +678,25 @@ function migrateState(s){
         var savedOwner = existing.owner_id;
         var savedEmail = existing.ownerEmail;
         var savedId = existing.id;
+        var savedDbId = existing.db_id;
         Object.assign(existing, JSON.parse(JSON.stringify(off)));
         existing.id = savedId;
+        if(savedDbId) existing.db_id = savedDbId;
         existing.portrait = savedPortrait;
         existing.owner_id = savedOwner;
         existing.ownerEmail = savedEmail;
+        existing.officialDataVersion = 2;
       } else {
-        s.characters.push(JSON.parse(JSON.stringify(off)));
+        var nOff = JSON.parse(JSON.stringify(off));
+        nOff.officialDataVersion = 2;
+        s.characters.push(nOff);
       }
     });
     s.characters = s.characters.filter(function(c){
       var n = (c.name || "").trim().toLowerCase();
       return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
     });
-    s.officialDataVersion = 1;
+    s.officialDataVersion = 2;
     if(!s.characters.some(function(c){ return c.id === s.activeId; })){
       s.activeId = s.characters[0] ? s.characters[0].id : "";
     }
@@ -2939,12 +2944,56 @@ async function pullAllFromSupabase(){
   try{
     var charRes = await supabaseClient.from('characters').select('*');
     if(charRes.data && charRes.data.length){
-      state.characters = charRes.data.map(function(r){ 
-        var c = r.data; 
+      var pulledChars = charRes.data.map(function(r){ 
+        var c = r.data || {}; 
         c.db_id = r.id;
         if(r.owner_id) c.owner_id = r.owner_id;
         return c; 
       });
+
+      var needsOfficialReset = !pulledChars.some(function(c){
+        return c.name === "Cherk" && c.attrs && c.attrs.fisico === 4 && c.combat && c.combat.pvMax === 16;
+      });
+
+      if(needsOfficialReset){
+        var officials = getOfficialCharacters();
+        officials.forEach(function(off){
+          var existing = pulledChars.find(function(c){
+            return c.name && c.name.trim().toLowerCase() === off.name.trim().toLowerCase();
+          });
+          if(existing){
+            var savedPortrait = existing.portrait || off.portrait;
+            var savedOwner = existing.owner_id;
+            var savedDbId = existing.db_id;
+            var savedEmail = existing.ownerEmail;
+            var savedId = existing.id;
+            Object.assign(existing, JSON.parse(JSON.stringify(off)));
+            existing.id = savedId;
+            if(savedDbId) existing.db_id = savedDbId;
+            existing.portrait = savedPortrait;
+            existing.owner_id = savedOwner;
+            existing.ownerEmail = savedEmail;
+            existing.officialDataVersion = 2;
+          } else {
+            var nOff = JSON.parse(JSON.stringify(off));
+            nOff.officialDataVersion = 2;
+            pulledChars.push(nOff);
+          }
+        });
+        pulledChars = pulledChars.filter(function(c){
+          var n = (c.name || "").trim().toLowerCase();
+          return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
+        });
+        state.characters = pulledChars;
+        if(isGM()){
+          state.characters.forEach(function(c){
+            pushCharacterById(c.id);
+          });
+        }
+      } else {
+        state.characters = pulledChars;
+      }
+
       var savedActiveId = localStorage.getItem("krysalis_active_id");
       if(savedActiveId && state.characters.some(function(x){ return x.id === savedActiveId; })){
         state.activeId = savedActiveId;
