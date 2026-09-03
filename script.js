@@ -705,6 +705,7 @@ function resetCharactersToOfficial(keepPortraits){
     if(existing){
       var savedPortrait = (keepPortraits !== false) ? (existing.portrait || off.portrait) : off.portrait;
       var savedOwner = existing.owner_id || (off.name === "Derek" && scarlethOwner ? scarlethOwner : off.owner_id);
+      var savedTheme = existing.theme || off.theme;
       var savedDbId = existing.db_id;
       var savedEmail = existing.ownerEmail || (off.name === "Derek" && scarlethEmail ? scarlethEmail : off.ownerEmail);
       var savedId = existing.id;
@@ -714,6 +715,7 @@ function resetCharactersToOfficial(keepPortraits){
       existing.portrait = savedPortrait;
       existing.owner_id = savedOwner;
       existing.ownerEmail = savedEmail;
+      existing.theme = savedTheme;
       existing.officialDataVersion = 4;
     } else {
       var nOff = JSON.parse(JSON.stringify(off));
@@ -910,6 +912,7 @@ function migrateState(s){
       if(existing){
         var savedPortrait = existing.portrait || off.portrait;
         var savedOwner = existing.owner_id || off.owner_id;
+        var savedTheme = existing.theme || off.theme;
         var savedEmail = existing.ownerEmail || off.ownerEmail;
         var savedId = existing.id;
         var savedDbId = existing.db_id;
@@ -919,6 +922,7 @@ function migrateState(s){
         existing.portrait = savedPortrait;
         existing.owner_id = savedOwner;
         existing.ownerEmail = savedEmail;
+        existing.theme = savedTheme;
         existing.officialDataVersion = 4;
       } else {
         var nOff = JSON.parse(JSON.stringify(off));
@@ -1492,7 +1496,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v3.34</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9 Beta</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -2696,23 +2700,30 @@ function openCharModal(){
   var chars = getUserCharacters();
   var html = '<h2>Selección de Personaje<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   chars.forEach(function(c){
+    var cTheme = c.theme || "default";
     var swatches = THEME_LIST.map(function(t){
-      return '<button type="button" class="swatch swatch-'+t.id+((c.theme||"default")===t.id?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" aria-label="Tema '+t.label+'"></button>';
+      var isAct = cTheme === t.id;
+      return '<button type="button" class="swatch swatch-'+t.id+(isAct?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" title="Color '+t.label+'" aria-label="Color '+t.label+'"></button>';
     }).join('');
     var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
     var isNPC = !!c.isNPC;
     var canDelete = isGM() || !currentUser || (currentUser && c.owner_id === currentUser.id);
 
     html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'">'+
-      '<div class="cli-main-select" data-action="pick-char" data-id="'+c.id+'" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;">'+
-        '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
-        '<div class="cli-info">'+
-          '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+'</div>'+
-          '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
-          '<div class="theme-swatches">'+swatches+'</div>'+
+      '<div style="display:flex;align-items:center;gap:12px;width:100%;">'+
+        '<div class="cli-main-select" data-action="pick-char" data-id="'+c.id+'" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;">'+
+          '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
+          '<div class="cli-info">'+
+            '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+(c.id===state.activeId?' <span style="font-size:0.68rem;color:var(--gold-light);font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(176,141,87,0.22);margin-left:4px;border:1px solid rgba(176,141,87,0.4);">Activo</span>':'')+'</div>'+
+            '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
+          '</div>'+
         '</div>'+
+        (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;">✕</button>':'')+
       '</div>'+
-      (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;margin-left:8px;position:relative;z-index:10;cursor:pointer;">✕</button>':'')+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(176,141,87,0.15);width:100%;flex-wrap:wrap;">'+
+        '<span style="font-size:0.72rem;color:var(--ink-dim);letter-spacing:0.02em;">🎨 Color de acento:</span>'+
+        '<div class="theme-swatches">'+swatches+'</div>'+
+      '</div>'+
     '</div>';
   });
   if(isGM() || !currentUser){
@@ -2933,8 +2944,24 @@ function modalClick(e){
     return;
   }
   if(action==="set-theme"){
-    var thC = state.characters.find(function(x){return x.id===btn.getAttribute("data-id");});
-    if(thC){ thC.theme = btn.getAttribute("data-theme"); saveState(); renderTopbar(); renderTab(); }
+    var targetId = btn.getAttribute("data-id");
+    var targetTheme = btn.getAttribute("data-theme");
+    var thC = state.characters.find(function(x){return x.id===targetId;});
+    if(thC){
+      thC.theme = targetTheme;
+      saveState(true);
+      if(supabaseClient && currentUser){
+        pushCharacterById(thC.id);
+      }
+      if(state.activeId === thC.id){
+        document.body.setAttribute("data-theme", targetTheme || "default");
+        renderTopbar();
+        renderTab();
+      }
+      openCharModal();
+      var tObj = THEME_LIST.find(function(t){ return t.id === targetTheme; });
+      showToast("Color de " + thC.name + ": " + (tObj ? tObj.label : targetTheme), "info");
+    }
     return;
   }
   if(action==="auth-login"){ supabaseLogin(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
@@ -3222,13 +3249,14 @@ async function pullAllFromSupabase(){
             var savedOwner = existing.owner_id || off.owner_id;
             var savedDbId = existing.db_id;
             var savedEmail = existing.ownerEmail || off.ownerEmail;
-            var savedId = existing.id;
+            var savedTheme = existing.theme || off.theme;
             Object.assign(existing, JSON.parse(JSON.stringify(off)));
             existing.id = savedId;
             if(savedDbId) existing.db_id = savedDbId;
             existing.portrait = savedPortrait;
             existing.owner_id = savedOwner;
             existing.ownerEmail = savedEmail;
+            existing.theme = savedTheme;
             existing.officialDataVersion = 4;
           } else {
             var nOff = JSON.parse(JSON.stringify(off));
