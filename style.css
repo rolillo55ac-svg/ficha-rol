@@ -454,6 +454,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn span{display:block;width:100%;text-align:center;pointer-events:none;}
 .tab-btn::before{display:block;font-size:1.15rem;line-height:1.1;text-align:center;filter:grayscale(.4) opacity(.7);transition:filter var(--transition-fast), transform var(--transition-fast);pointer-events:none;}
 .tab-btn[data-tab="ficha"]::before{content:'📜';}
+.tab-btn[data-tab="mision"]::before{content:'🧭';}
 .tab-btn[data-tab="habilidades"]::before{content:'🎯';}
 .tab-btn[data-tab="combate"]::before{content:'⚔️';}
 .tab-btn[data-tab="inventario"]::before{content:'🎒';}
@@ -652,16 +653,108 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .stat-eff-tag.pos{background:rgba(46,204,113,0.22);color:#2ECC71;border:1px solid rgba(46,204,113,0.4);}
 .stat-eff-tag.neg{background:rgba(231,76,60,0.22);color:#E74C3C;border:1px solid rgba(231,76,60,0.4);}
 
-/* === BESTIARIO CON IMÁGENES === */
-.creature-layout{display:flex;gap:12px;align-items:flex-start;margin-bottom:6px;}
-.creature-img-thumb{
-  width:88px;height:88px;border-radius:var(--radius-sm);border:1.5px solid var(--gold);
-  background-size:cover;background-position:center;flex:none;box-shadow:0 4px 12px rgba(0,0,0,0.6);
-  background-color:var(--bg-card);
+/* === BESTIARIO CON IMÁGENES Y PERFIL === */
+.creature-layout{display:flex;gap:14px;align-items:flex-start;margin-bottom:8px;}
+.creature-profile-box{
+  display:flex;flex-direction:column;align-items:center;gap:6px;flex:none;
 }
-@media(max-width:480px){
-  .creature-layout{flex-direction:column;}
-  .creature-img-thumb{width:100%;height:140px;}
+.creature-avatar-img{
+  width:104px;height:104px;border-radius:12px;border:2px solid var(--gold);
+  background:radial-gradient(circle at 30% 20%, rgba(176,141,87,0.14), transparent 60%), var(--bg-card);
+  background-size:cover;background-position:center;
+  display:flex;align-items:center;justify-content:center;font-size:2.4rem;color:var(--ink-faint);
+  box-shadow:0 6px 18px rgba(0,0,0,0.6), inset 0 0 0 3px rgba(18,13,10,0.5), inset 0 0 0 4px rgba(176,141,87,0.25);
+  transition:transform var(--transition-fast), box-shadow var(--transition-fast);
 }
+.creature-avatar-img:hover{transform:scale(1.02);box-shadow:0 8px 22px rgba(0,0,0,0.75), inset 0 0 0 4px rgba(176,141,87,0.35);}
+@media(max-width:520px){
+  .creature-layout{flex-direction:column;align-items:center;}
+  .creature-profile-box{width:100%;margin-bottom:8px;}
+  .creature-avatar-img{width:120px;height:120px;}
+}
+
+/* === BARRA DE HERRAMIENTAS RESPONSIVA PARA MAPAS EN MÓVIL === */
+.map-toolbar{
+  display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;
+}
+@media(max-width:540px){
+  .map-toolbar{gap:5px;}
+  .map-toolbar .btn-compact{flex:1 1 auto;text-align:center;padding:6px 8px;font-size:.74rem;}
+}
+
+/* === PESTAÑA DE MISIÓN (ESTILO BALDUR'S GATE 3 / D&D 5E) === */
+.quest-banner{
+  background:linear-gradient(135deg, rgba(176,141,87,0.18), rgba(20,15,10,0.85)), var(--bg-card);
+  border:1.5px solid var(--gold);border-radius:var(--radius);
+  padding:14px;margin-bottom:14px;box-shadow:0 8px 24px -10px rgba(0,0,0,0.8);
+  position:relative;overflow:hidden;
+}
+.quest-banner::after{
+  content:'';position:absolute;top:0;right:0;width:120px;height:100%;
+  background:radial-gradient(circle at 80% 20%, rgba(176,141,87,0.15), transparent 70%);pointer-events:none;
+}
+.quest-header-title{
+  font-family:var(--font-display);font-size:1.15rem;color:var(--gold-light);
+  letter-spacing:.04em;display:flex;align-items:center;gap:8px;margin-bottom:4px;
+}
+.quest-status-badge{
+  font-size:.65rem;padding:2px 8px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+}
+.quest-status-badge.activa{background:rgba(241,196,15,0.2);color:#F1C40F;border:1px solid rgba(241,196,15,0.45);}
+.quest-status-badge.completada{background:rgba(46,204,113,0.2);color:#2ECC71;border:1px solid rgba(46,204,113,0.45);}
+.quest-status-badge.fallida{background:rgba(231,76,60,0.2);color:#E74C3C;border:1px solid rgba(231,76,60,0.45);}
+
+.quest-card{
+  background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:12px;margin-bottom:10px;box-shadow:0 4px 14px -6px rgba(0,0,0,0.6);
+  transition:border-color var(--transition-fast);
+}
+.quest-card:hover{border-color:var(--line-strong);}
+.quest-card.completed{border-left:3px solid #2ECC71;}
+.quest-card.active{border-left:3px solid #F1C40F;}
+.quest-card.failed{border-left:3px solid #E74C3C;opacity:.75;}
+
+.quest-task-list{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:5px;}
+.quest-task-item{
+  display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--ink-dim);
+  padding:5px 7px;border-radius:4px;background:rgba(0,0,0,0.16);
+}
+.quest-task-item.done{color:var(--ink-faint);text-decoration:line-through;}
+.quest-task-cb{cursor:pointer;accent-color:var(--gold);width:16px;height:16px;}
+
+/* PISTAS Y SECRETOS */
+.clues-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px;}
+.clue-card{
+  background:linear-gradient(150deg, rgba(139,69,19,0.1), var(--bg-card));
+  border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.5);display:flex;flex-direction:column;gap:6px;
+}
+.clue-title{font-family:var(--font-display);font-size:.9rem;color:var(--gold-light);display:flex;align-items:center;gap:6px;}
+.clue-img{width:100%;max-height:160px;object-fit:cover;border-radius:4px;border:1px solid var(--line);margin-top:4px;}
+
+/* MAPA DE MISIÓN RÁPIDO */
+.quest-map-box{
+  background:var(--bg-elev);border:1.5px solid var(--line);border-radius:var(--radius-sm);
+  padding:10px;margin-bottom:12px;
+}
+.quest-map-img{
+  width:100%;max-height:360px;object-fit:contain;background:#0d0907;border-radius:6px;
+  border:1px solid var(--line-strong);display:block;margin:0 auto;box-shadow:0 6px 18px rgba(0,0,0,0.7);
+}
+
+/* DIARIO PERSONAL DEL JUGADOR */
+.journal-box{
+  background:linear-gradient(145deg, rgba(20,15,10,0.9), rgba(30,22,15,0.95));
+  border:1.5px solid rgba(176,141,87,0.35);border-radius:var(--radius-sm);padding:12px;
+  box-shadow:inset 0 0 15px rgba(0,0,0,0.6);
+}
+.journal-textarea{
+  width:100%;min-height:140px;background:transparent;border:none;color:#E8D8B8;
+  font-family:var(--font-body);font-size:.88rem;line-height:1.6;resize:vertical;padding:6px;
+  outline:none;
+}
+.journal-textarea::placeholder{color:rgba(176,141,87,0.4);font-style:italic;}
+
 
 

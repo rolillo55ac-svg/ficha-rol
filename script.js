@@ -121,7 +121,8 @@ function blankCharacter(name, isNPC){
     weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
     summons:[], buffs:{}, customBuffs:[], poisons:[], skillPoints:0,
-    activeBuffs: []
+    activeBuffs: [],
+    personalNotes: ""
   };
 }
 
@@ -165,7 +166,25 @@ function defaultState(){
     buffCatalog: getSeedBuffCatalog(),
     lore:getSeedLore(), bestiary:getSeedBestiary(),
     maps:[{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }],
-    activeMapId:"world_main"
+    activeMapId:"world_main",
+    quests:[
+      {
+        id:uid(),
+        title:"Investigación en Krysalis",
+        desc:"Explorar las ruinas y descubrir el origen de las anomalías mágicas.",
+        status:"activa",
+        tasks:[
+          { id:uid(), text:"Consultar con el erudito de la capital", done:true },
+          { id:uid(), text:"Explorar la entrada de las catacumbas", done:false },
+          { id:uid(), text:"Recuperar el artefacto rúnico", done:false }
+        ]
+      }
+    ],
+    questClues:[
+      { id:uid(), title:"Pergamino Quebrado", text:"Habla de un sello elemental protegido por una bestia infernal.", image:null, visible:true }
+    ],
+    questMap:{ name:"Zona de Incursión", image:null, notes:"Plano táctico del área de exploración" },
+    sessionSummary:"Los aventureros llegaron a las afueras de Krysalis y preparan el descenso."
   };
 }
 
@@ -193,6 +212,11 @@ function migrateState(s){
     s.maps = [{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }];
     s.activeMapId = "world_main";
   }
+  if(!s.quests) s.quests = [];
+  if(!s.questClues) s.questClues = [];
+  if(!s.questMap) s.questMap = { name:"Mapa de la Misión", image:null, notes:"" };
+  if(s.sessionSummary === undefined) s.sessionSummary = "";
+
   (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });
   ["pistas","npcs","objetos"].forEach(function(cat){
     if(s.lore && s.lore[cat]){
@@ -210,6 +234,7 @@ function migrateState(s){
     if(c.owner_id===undefined) c.owner_id=null;
     if(c.ownerEmail===undefined) c.ownerEmail="";
     if(!c.activeBuffs) c.activeBuffs=[];
+    if(c.personalNotes===undefined) c.personalNotes="";
     if(!c.spells) c.spells=[];
     c.spells.forEach(function(sp){
       if(sp.coste===undefined) sp.coste=1;
@@ -233,15 +258,27 @@ function migrateState(s){
 function loadState(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultState();
-    var parsed = JSON.parse(raw);
-    return parsed ? migrateState(parsed) : defaultState();
+    var parsed = raw ? JSON.parse(raw) : null;
+    var loaded = parsed ? migrateState(parsed) : defaultState();
+    var savedActiveId = localStorage.getItem("krysalis_active_id");
+    if(savedActiveId && loaded.characters && loaded.characters.some(function(x){return x.id===savedActiveId;})){
+      loaded.activeId = savedActiveId;
+    }
+    var savedTab = localStorage.getItem("krysalis_active_tab");
+    if(savedTab){
+      loaded.activeTab = savedTab;
+    }
+    return loaded;
   }catch(e){ return defaultState(); }
 }
 
 var syncDebounceTimer = null;
 function saveState(skipRemote){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if(state.activeId) localStorage.setItem("krysalis_active_id", state.activeId);
+    if(state.activeTab) localStorage.setItem("krysalis_active_tab", state.activeTab);
+  }catch(e){}
   if(!skipRemote && supabaseClient && currentUser && !isRemoteSyncing){
     updateSyncBadge("saving");
     clearTimeout(syncDebounceTimer);
@@ -616,13 +653,13 @@ function renderTopbar(){
 }
 
 var PLAYER_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
+  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"mundo",label:"Mundo"}
 ];
 
 var GM_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
+  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
   {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
@@ -641,6 +678,7 @@ function renderTab(){
   var c = activeChar();
   
   if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
+  else if(state.activeTab==="mision") main.innerHTML = tplMision(c, state);
   else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
   else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
   else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
@@ -705,6 +743,155 @@ function tplFicha(c){
     '<div class="section-title"><span>Atributos'+(c.isNPC?' (Editables)':'')+'</span></div>'+
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>';
+}
+
+function tplMision(c, s){
+  var canEdit = isGM() || !currentUser;
+  var quests = s.quests || [];
+  var clues = s.questClues || [];
+  var qMap = s.questMap || { name: "Mapa de la Misión", image: null, notes: "" };
+
+  var html = '<div class="section'+(canEdit?' gm-section':'')+'">'+
+    '<div class="section-title">'+
+      '<span>🧭 Diario de Misión y Campaña'+(canEdit?' (GM)':'')+'</span>'+
+      (canEdit ? '<button class="btn-compact" data-action="add-quest">+ Nueva Misión</button>' : '')+
+    '</div>';
+
+  // 1. Resumen de la aventura / sesión
+  html += '<div class="quest-banner">'+
+    '<div class="quest-header-title">📜 Resumen de la Aventura</div>'+
+    (canEdit ? 
+      '<textarea class="field" style="width:100%;min-height:55px;resize:vertical;background:rgba(0,0,0,0.25);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px;font-size:0.85rem;color:var(--ink);" data-scope="global" data-bind="sessionSummary" placeholder="Escribe aquí el resumen de los acontecimientos recientes...">'+esc(s.sessionSummary||"")+'</textarea>' :
+      '<p style="font-size:0.86rem;color:var(--ink-dim);line-height:1.5;margin:4px 0 0;">'+(s.sessionSummary ? esc(s.sessionSummary) : '<em>El Master aún no ha añadido un resumen de la sesión.</em>')+'</p>'
+    )+
+  '</div>';
+
+  // 2. Mapa táctico del encuentro / misión actual
+  html += '<div class="quest-map-box">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">'+
+      '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:0.92rem;display:flex;align-items:center;gap:6px;">'+
+        '🗺️ ' + (canEdit ? '<input type="text" style="background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--gold-light);font-size:0.92rem;padding:2px;" data-scope="global" data-bind="questMap.name" value="'+esc(qMap.name||"Mapa del Encuentro")+'">' : esc(qMap.name||"Mapa del Encuentro"))+
+      '</div>'+
+      (canEdit ? '<div style="display:flex;gap:5px;flex-wrap:wrap;">'+
+        '<button class="btn-compact" data-action="upload-quest-map" title="Subir imagen de mapa para esta misión">Subir Foto</button>'+
+        '<button class="btn-compact" data-action="url-quest-map" title="Pegar enlace de GitHub o web">Pegar URL</button>'+
+        (qMap.image ? '<button class="btn-compact" data-action="remove-quest-map" title="Quitar imagen del mapa">✕</button>' : '')+
+      '</div>' : '')+
+    '</div>';
+
+  if(qMap.image){
+    html += '<img src="'+qMap.image+'" alt="Mapa de Misión" class="quest-map-img">';
+  } else {
+    html += '<div style="padding:24px 10px;text-align:center;color:var(--ink-faint);font-size:0.8rem;border:1px dashed var(--line);border-radius:var(--radius-sm);">No hay plano fijado para esta misión actualmente.</div>';
+  }
+  html += '</div>';
+
+  // 3. Misiones y Objetivos
+  html += '<div class="section-title" style="margin-top:14px;">'+
+    '<span>Objetivos y Misiones ('+quests.length+')</span>'+
+  '</div>';
+
+  if(!quests.length){
+    html += '<p style="font-size:0.82rem;color:var(--ink-faint);margin-bottom:12px;">Sin misiones registradas.</p>';
+  } else {
+    quests.forEach(function(q){
+      var st = q.status || "activa";
+      var badgeClass = st === "completada" ? "completada" : (st === "fallida" ? "fallida" : "activa");
+      var badgeLabel = st === "completada" ? "Completada" : (st === "fallida" ? "Fallida" : "Activa");
+
+      html += '<div class="quest-card '+(st==="completada"?"completed":(st==="fallida"?"failed":"active"))+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">'+
+          '<div style="flex:1;min-width:0;">'+
+            (canEdit ?
+              '<input type="text" style="font-family:var(--font-display);font-size:1rem;color:var(--gold-light);background:transparent;border:none;border-bottom:1px solid var(--line);width:100%;margin-bottom:4px;" data-scope="global" data-bind="quests.'+q.id+'.title" value="'+esc(q.title)+'">' :
+              '<div style="font-family:var(--font-display);font-size:1rem;color:var(--gold-light);margin-bottom:4px;">'+esc(q.title)+'</div>'
+            )+
+            (canEdit ?
+              '<textarea style="width:100%;min-height:38px;background:rgba(0,0,0,0.14);border:1px solid var(--line);border-radius:4px;padding:4px 6px;font-size:0.8rem;color:var(--ink-dim);resize:vertical;" data-scope="global" data-bind="quests.'+q.id+'.desc">'+esc(q.desc||"")+'</textarea>' :
+              (q.desc ? '<div style="font-size:0.8rem;color:var(--ink-dim);line-height:1.4;">'+esc(q.desc)+'</div>' : '')
+            )+
+          '</div>'+
+          '<div style="display:flex;gap:6px;align-items:center;">'+
+            (canEdit ?
+              '<select style="font-size:0.7rem;background:var(--bg-card);padding:2px 6px;" data-scope="global" data-bind="quests.'+q.id+'.status">'+
+                '<option value="activa" '+(st==="activa"?"selected":"")+'>🟡 Activa</option>'+
+                '<option value="completada" '+(st==="completada"?"selected":"")+'>🟢 Completada</option>'+
+                '<option value="fallida" '+(st==="fallida"?"selected":"")+'>🔴 Fallida</option>'+
+              '</select>' :
+              '<span class="quest-status-badge '+badgeClass+'">'+badgeLabel+'</span>'
+            )+
+            (canEdit ? '<button class="row-del" data-action="del-quest" data-id="'+q.id+'" title="Eliminar misión">✕</button>' : '')+
+          '</div>'+
+        '</div>';
+
+      // Tareas de la misión
+      var tasks = q.tasks || [];
+      html += '<ul class="quest-task-list">';
+      tasks.forEach(function(tk){
+        html += '<li class="quest-task-item'+(tk.done?' done':'')+'">'+
+          '<input type="checkbox" class="quest-task-cb" data-action="toggle-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" '+(tk.done?'checked':'')+'>'+
+          '<span style="flex:1;">'+esc(tk.text)+'</span>'+
+          (canEdit ? '<button class="row-del" data-action="del-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" style="width:20px;height:20px;font-size:0.7rem;">✕</button>' : '')+
+        '</li>';
+      });
+      html += '</ul>';
+
+      if(canEdit){
+        html += '<button class="btn-compact" style="margin-top:8px;font-size:0.7rem;" data-action="add-quest-task" data-id="'+q.id+'">+ Añadir Tarea</button>';
+      }
+      html += '</div>';
+    });
+  }
+
+  // 4. Pistas y Descubrimientos de la Sesión
+  html += '<div class="section-title" style="margin-top:16px;">'+
+    '<span>Pistas y Hallazgos Clave</span>'+
+    (canEdit ? '<button class="btn-compact" data-action="add-clue">+ Añadir Pista</button>' : '')+
+  '</div>';
+
+  if(!clues.length){
+    html += '<p style="font-size:0.82rem;color:var(--ink-faint);margin-bottom:12px;">Sin pistas registradas aún.</p>';
+  } else {
+    html += '<div class="clues-grid">';
+    clues.forEach(function(cl){
+      html += '<div class="clue-card">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+          (canEdit ?
+            '<input type="text" style="font-family:var(--font-display);font-size:0.9rem;color:var(--gold-light);background:transparent;border:none;border-bottom:1px solid var(--line);flex:1;" data-scope="global" data-bind="questClues.'+cl.id+'.title" value="'+esc(cl.title)+'">' :
+            '<div class="clue-title">📜 '+esc(cl.title)+'</div>'
+          )+
+          (canEdit ? '<button class="row-del" data-action="del-clue" data-id="'+cl.id+'" title="Eliminar pista">✕</button>' : '')+
+        '</div>'+
+        (canEdit ?
+          '<textarea style="width:100%;min-height:45px;background:rgba(0,0,0,0.15);border:1px solid var(--line);border-radius:4px;padding:4px;font-size:0.8rem;color:var(--ink-dim);resize:vertical;" data-scope="global" data-bind="questClues.'+cl.id+'.text">'+esc(cl.text||"")+'</textarea>' :
+          '<p style="font-size:0.82rem;color:var(--ink-dim);line-height:1.4;margin:2px 0;">'+esc(cl.text||"")+'</p>'
+        );
+      if(cl.image){
+        html += '<img src="'+cl.image+'" alt="Pista" class="clue-img">';
+      }
+      if(canEdit){
+        html += '<div style="display:flex;gap:4px;margin-top:4px;">'+
+          '<button class="btn-compact" data-action="url-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">'+(cl.image?'Cambiar URL':'Pegar URL')+'</button>'+
+          (cl.image ? '<button class="btn-compact" data-action="remove-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">Quitar Foto</button>' : '')+
+        '</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // 5. Cuaderno personal del aventurero (Notas privadas del jugador)
+  html += '<div class="section-title" style="margin-top:18px;">'+
+    '<span>Diario del Aventurero ('+esc(c.name)+')</span>'+
+    '<span style="font-size:0.68rem;color:var(--ink-faint);text-transform:none;">Solo visible en tu ficha</span>'+
+  '</div>'+
+  '<div class="journal-box">'+
+    '<textarea class="journal-textarea" data-bind="personalNotes" placeholder="Escribe aquí tus notas personales de la partida, sospechas, nombres de NPCs, deudas, planes o recordatorios secretos...">'+esc(c.personalNotes||"")+'</textarea>'+
+    '<div style="font-size:0.68rem;color:var(--ink-faint);text-align:right;margin-top:4px;">Se guarda automáticamente al escribir</div>'+
+  '</div>'+
+  '</div>';
+
+  return html;
 }
 
 function field(label,bind,val,type){
@@ -1146,21 +1333,21 @@ function creatureField(label,bind,val){
 }
 
 function tplBestiario(s){
+  var canEdit = isGM() || !currentUser;
   var pills = CONTINENTES.map(function(ct){
     return '<button class="f-pill '+(bestiaryContinentFilter===ct?'active':'')+'" data-action="set-bestiary-continent" data-continent="'+ct+'">'+ct+'</button>';
   }).join('');
 
   var visibleBestiary = (s.bestiary||[]).filter(function(b){
-    if(isGM()) return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
+    if(canEdit) return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
     return b.visible !== false && (bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter);
   });
 
-  var html = '<div class="section'+(isGM()?' gm-section':'')+'">'+
-    '<div class="section-title"><span>'+(isGM()?'Bestiario y Monturas (GM)':'Bestiario y Monturas')+'</span></div>'+
+  var html = '<div class="section'+(canEdit?' gm-section':'')+'">'+
+    '<div class="section-title"><span>'+(canEdit?'Bestiario y Monturas (GM)':'Bestiario y Monturas')+'</span></div>'+
     '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+pills+'</div></div>';
 
   visibleBestiary.forEach(function(b){
-    var canEdit = isGM();
     var imgStyle = b.image ? ' style="background-image:url(\''+b.image+'\')"' : '';
 
     html += '<div class="creature-card">'+
@@ -1175,7 +1362,14 @@ function tplBestiario(s){
         '</div>'+
       '</div>'+
       '<div class="creature-layout">'+
-        (b.image ? '<div class="creature-img-thumb"'+imgStyle+' title="'+esc(b.nombre)+'"></div>' : '')+
+        '<div class="creature-profile-box">'+
+          '<div class="creature-avatar-img"'+imgStyle+' title="'+esc(b.nombre)+'">'+(b.image ? '' : '🐉')+'</div>'+
+          (canEdit ? '<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:2px;">'+
+            '<button class="btn-compact" data-action="upload-bestiary-img" data-id="'+b.id+'" title="Subir foto desde archivo">Foto</button>'+
+            '<button class="btn-compact" data-action="url-bestiary-img" data-id="'+b.id+'" title="Pegar URL de foto">URL</button>'+
+            (b.image ? '<button class="btn-compact" data-action="remove-bestiary-img" data-id="'+b.id+'" title="Quitar foto">✕</button>' : '')+
+          '</div>' : '')+
+        '</div>'+
         '<div style="flex:1;min-width:0;">'+
           '<div class="creature-grid">'+
             (canEdit ? creatureFieldGlobal("Vida","bestiary."+b.id+".vida",b.vida) : '<div class="creature-field"><label>Vida</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.vida||"-")+'</span></div>')+
@@ -1189,15 +1383,10 @@ function tplBestiario(s){
           '</div>'+
         '</div>'+
       '</div>'+
-      (canEdit ? '<div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">'+
-        '<button class="btn-compact" data-action="upload-bestiary-img" data-id="'+b.id+'" title="Subir foto desde archivo">Foto</button>'+
-        '<button class="btn-compact" data-action="url-bestiary-img" data-id="'+b.id+'" title="Pegar enlace de GitHub o web">URL</button>'+
-        (b.image ? '<button class="btn-compact" data-action="remove-bestiary-img" data-id="'+b.id+'" title="Quitar foto">✕ Quitar Foto</button>' : '')+
-      '</div>' : '')+
     '</div>';
   });
   
-  if(isGM()){
+  if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-bestiary">+ Añadir criatura</button>';
   }
   html += '</div>';
@@ -1272,15 +1461,15 @@ function tplMundoMapas(s){
     return '<button class="f-pill '+(s.activeMapId===m.id?'active':'')+'" data-action="switch-map" data-id="'+m.id+'">'+esc(m.name)+'</button>';
   }).join('');
 
-  var canEdit = isGM();
+  var canEdit = isGM() || !currentUser;
   var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title">'+
     '<span>'+(canEdit?'Cartografía y Mapas (GM)':'Cartografía y Mapas')+'</span>'+
-    (canEdit?'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+
-      '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga y sincronización">🔄 Sincronizar</button>'+
-      '<button class="btn-compact" data-action="add-new-map-url" title="Crear un mapa nuevo independiente mediante enlace / URL">+ Nuevo Mapa (URL)</button>'+
-      '<button class="btn-compact" data-action="add-new-map-file" title="Crear un mapa nuevo independiente subiendo archivo">+ Nuevo Mapa (Archivo)</button>'+
-    '</div>':'')+
+    '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga y sincronización">🔄 Sincronizar</button>'+
   '</div>'+
+  (canEdit ? '<div class="map-toolbar">'+
+    '<button class="btn-compact" data-action="add-new-map-url" title="Crear un mapa nuevo independiente mediante enlace / URL">+ Nuevo Mapa (URL)</button>'+
+    '<button class="btn-compact" data-action="add-new-map-file" title="Crear un mapa nuevo independiente subiendo archivo">+ Nuevo Mapa (Archivo)</button>'+
+  '</div>' : '')+
   '<div class="filter-pills" style="margin-bottom:10px;">'+mapTabs+'</div>';
 
   if(curMap.image){
@@ -1298,8 +1487,8 @@ function tplMundoMapas(s){
   }
   
   if(canEdit){
-    html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">'+
-      '<span style="font-size:0.75rem;color:var(--ink-dim);margin-right:2px;">Foto del mapa activo:</span>'+
+    html += '<div class="map-toolbar" style="margin-top:8px;">'+
+      '<span style="font-size:0.75rem;color:var(--ink-dim);margin-right:2px;width:100%;">Foto de este mapa ('+esc(curMap.name)+'):</span>'+
       '<button class="btn-compact" data-action="upload-map" title="Cambiar la imagen de este mapa subiendo un archivo">Subir Foto</button>'+
       '<button class="btn-compact" data-action="url-map" title="Cambiar la imagen de este mapa pegando un enlace URL">Pegar URL</button>'+
       (curMap.image?'<button class="btn-compact" data-action="remove-map" title="Quitar la foto pero conservar el mapa y sus marcadores">Quitar Foto</button>':'')+
@@ -1886,6 +2075,9 @@ function initSupabase(){
         .on('broadcast', { event: 'dice_roll' }, function(payload){
           if(payload && payload.payload) handleRemoteDiceRoll(payload.payload);
         })
+        .on('broadcast', { event: 'char_stat_update' }, function(payload){
+          if(payload && payload.payload) handleRemoteCharStatUpdate(payload.payload);
+        })
         .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(payload){
           if(payload && payload.new){
             var row = payload.new;
@@ -1904,8 +2096,14 @@ function initSupabase(){
                 if(comp.bestiary) state.bestiary = comp.bestiary;
                 if(comp.lore) state.lore = comp.lore;
                 if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
+                if(comp.quests) state.quests = comp.quests;
+                if(comp.questClues) state.questClues = comp.questClues;
+                if(comp.questMap) state.questMap = comp.questMap;
+                if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
                 saveState(true);
-                renderTab();
+                if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
+                  if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
+                }
               }
             }
           }
@@ -1930,6 +2128,33 @@ function initSupabase(){
   }catch(e){ console.error('Supabase error:', e); }
 }
 
+function broadcastCharStatUpdate(charId, combatObj){
+  if(supabaseClient && realtimeChannel){
+    try{
+      realtimeChannel.send({
+        type: 'broadcast',
+        event: 'char_stat_update',
+        payload: { charId: charId, combat: combatObj, ts: Date.now() }
+      });
+    }catch(e){ console.warn("Could not broadcast char stat update:", e); }
+  }
+}
+
+function handleRemoteCharStatUpdate(data){
+  if(!data || !data.charId) return;
+  var target = (state.characters||[]).find(function(x){ return x.id === data.charId; });
+  if(target){
+    if(data.combat) target.combat = Object.assign(target.combat||{}, data.combat);
+    saveState(true);
+    if(state.activeId === data.charId){
+      renderTopbar();
+      if((state.activeTab==="combate" || state.activeTab==="magia") && (!document.activeElement || !document.activeElement.matches("input, textarea"))){
+        renderTab();
+      }
+    }
+  }
+}
+
 function handleRemoteCharacterChange(payload){
   if(!payload || !payload.eventType) return;
   if(payload.eventType === 'DELETE'){
@@ -1938,9 +2163,11 @@ function handleRemoteCharacterChange(payload){
       state.characters = (state.characters||[]).filter(function(x){ return x.db_id !== delId && x.id !== delId; });
       if(!state.characters.length) state.characters.push(blankCharacter("Sin Personaje"));
       if(!state.characters.some(function(x){return x.id===state.activeId;})){
-        state.activeId = state.characters[0].id;
+        var validChars = getUserCharacters();
+        state.activeId = validChars[0] ? validChars[0].id : state.characters[0].id;
       }
-      saveState(true); renderTopbar(); renderTabbar(); renderTab();
+      saveState(true); renderTopbar(); renderTabbar();
+      if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
     }
   } else {
     var row = payload.new;
@@ -1950,12 +2177,18 @@ function handleRemoteCharacterChange(payload){
       if(row.owner_id) c.owner_id = row.owner_id;
       var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id; });
       if(idx !== -1){
+        if(state.characters[idx].id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
+          c.personalNotes = state.characters[idx].personalNotes;
+        }
         state.characters[idx] = c;
       } else {
         state.characters.push(c);
       }
       if(!state.activeId) state.activeId = c.id;
-      saveState(true); renderTopbar(); renderTabbar(); renderTab();
+      saveState(true); renderTopbar(); renderTabbar();
+      if(!document.activeElement || !document.activeElement.matches("input, textarea")){
+        renderTab();
+      }
     }
   }
 }
@@ -1967,8 +2200,16 @@ function handleRemoteSharedDataChange(payload){
   if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
   if(sharedData.lore) state.lore = sharedData.lore;
   if(sharedData.buffCatalog) state.buffCatalog = sharedData.buffCatalog;
+  if(sharedData.quests) state.quests = sharedData.quests;
+  if(sharedData.questClues) state.questClues = sharedData.questClues;
+  if(sharedData.questMap) state.questMap = sharedData.questMap;
+  if(sharedData.sessionSummary !== undefined) state.sessionSummary = sharedData.sessionSummary;
   saveState(true);
-  renderTab();
+  if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
+    if(!document.activeElement || !document.activeElement.matches("input, textarea")){
+      renderTab();
+    }
+  }
 }
 
 async function fetchUserProfile(){
@@ -2014,10 +2255,17 @@ async function pullAllFromSupabase(){
         if(r.owner_id) c.owner_id = r.owner_id;
         return c; 
       });
-      if(!state.activeId && state.characters.length) state.activeId = state.characters[0].id;
+      var savedActiveId = localStorage.getItem("krysalis_active_id");
+      if(savedActiveId && state.characters.some(function(x){ return x.id === savedActiveId; })){
+        state.activeId = savedActiveId;
+      } else if(!state.activeId || !state.characters.some(function(x){ return x.id === state.activeId; })){
+        var validChars = getUserCharacters();
+        state.activeId = validChars[0] ? validChars[0].id : (state.characters[0] ? state.characters[0].id : "");
+      }
       updateSyncBadge("synced");
     }
-    saveState(true); renderTopbar(); renderTabbar(); renderTab();
+    saveState(true); renderTopbar(); renderTabbar();
+    if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
   }catch(e){ console.error('Supabase error:', e); }
   isRemoteSyncing = false;
 }
@@ -2086,8 +2334,14 @@ async function pullSharedDataFromSupabase(){
       if(comp.bestiary) state.bestiary = comp.bestiary;
       if(comp.lore) state.lore = comp.lore;
       if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
+      if(comp.quests) state.quests = comp.quests;
+      if(comp.questClues) state.questClues = comp.questClues;
+      if(comp.questMap) state.questMap = comp.questMap;
+      if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
       saveState(true);
-      renderTab();
+      if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
+        if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
+      }
     }
   }catch(e){ console.error('Supabase error:', e); }
 }
@@ -2100,7 +2354,11 @@ function pushSharedData(){
       weaponsCatalog: state.weaponsCatalog || [],
       bestiary: state.bestiary || [],
       lore: state.lore || getSeedLore(),
-      buffCatalog: state.buffCatalog || getSeedBuffCatalog()
+      buffCatalog: state.buffCatalog || getSeedBuffCatalog(),
+      quests: state.quests || [],
+      questClues: state.questClues || [],
+      questMap: state.questMap || { name: "Mapa de la Misión", image: null, notes: "" },
+      sessionSummary: state.sessionSummary || ""
     },
     markers: [],
     updated_at: new Date().toISOString()
@@ -2203,7 +2461,12 @@ function setBind(target, path, rawValue, inputType){
     if(bItem) bItem[parts[2]] = value;
     return;
   }
-  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons","activeBuffs"];
+  if(parts[0]==="questMap"){
+    if(!target.questMap) target.questMap = { name: "Mapa de la Misión", image: null, notes: "" };
+    target.questMap[parts[1]] = value;
+    return;
+  }
+  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons","activeBuffs","quests","questClues"];
   if(listFields.indexOf(parts[0])!==-1){
     var arr = target[parts[0]];
     var item = arr && arr.find(function(x){return x.id===parts[1];});
@@ -2251,17 +2514,23 @@ function handleClick(e){
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
     var maxHp = num(c.combat.pvMax,0) || 999;
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, -999, maxHp);
-    saveState(); renderTopbar(); return;
+    saveState(); renderTopbar();
+    broadcastCharStatUpdate(c.id, c.combat);
+    return;
   }
   if(action==="shield-mod"){
     var ds = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
-    saveState(); renderTopbar(); return;
+    saveState(); renderTopbar();
+    broadcastCharStatUpdate(c.id, c.combat);
+    return;
   }
   if(action==="mana-mod"){
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
-    saveState(); renderTopbar(); return;
+    saveState(); renderTopbar();
+    broadcastCharStatUpdate(c.id, c.combat);
+    return;
   }
 
   if(action==="gm-add-skill-point"){
@@ -2711,7 +2980,7 @@ function handleClick(e){
   if(action==="sync-map-now"){ pullMapFromSupabase(); showToast("Mapas sincronizados con la nube", "success"); return; }
   if(action==="switch-map"){ state.activeMapId = btn.getAttribute("data-id"); renderTab(); return; }
   if(action==="add-new-map-url"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var mn = prompt("Nombre del nuevo mapa (ej: Mazmorra, Ciudad, Continente):");
     if(!mn) return;
     var mUrl = prompt("Enlace o URL de la imagen (de GitHub, Imgur, web, etc.):");
@@ -2728,7 +2997,7 @@ function handleClick(e){
     return;
   }
   if(action==="add-new-map-file"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var mn2 = prompt("Nombre del nuevo mapa (ej: Mazmorra, Ciudad, Continente):");
     if(!mn2) return;
     pendingNewMapName = mn2.trim();
@@ -2736,7 +3005,7 @@ function handleClick(e){
     return;
   }
   if(action==="delete-map"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var targetMap = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
     if(!targetMap) return;
     var mName = targetMap.name || "este mapa";
@@ -2757,13 +3026,13 @@ function handleClick(e){
     return;
   }
   if(action==="upload-map"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     pendingNewMapName = null;
     document.getElementById("mapFileInput").click();
     return;
   }
   if(action==="url-map"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var curMUrl = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
     if(curMUrl){
       var prevMapImg = curMUrl.image || "";
@@ -2779,7 +3048,7 @@ function handleClick(e){
     return;
   }
   if(action==="remove-map"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
     if(curM){
       curM.image = null;
@@ -2791,7 +3060,7 @@ function handleClick(e){
     return;
   }
   if(action==="map-click"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var curM2 = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
     var imgEl = btn.querySelector("img");
     if(curM2 && imgEl){
@@ -2803,21 +3072,21 @@ function handleClick(e){
     return;
   }
   if(action==="edit-pin"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var curM3 = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
     if(curM3) openPinModal(curM3, null, null, btn.getAttribute("data-id"));
     return;
   }
 
   if(action==="upload-bestiary-img"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     pendingBestiaryId = btn.getAttribute("data-id");
     var bFileEl = document.getElementById("bestiaryFileInput");
     if(bFileEl) bFileEl.click();
     return;
   }
   if(action==="url-bestiary-img"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var bid = btn.getAttribute("data-id");
     var beast = (state.bestiary||[]).find(function(x){return x.id===bid;});
     if(beast){
@@ -2832,13 +3101,153 @@ function handleClick(e){
     return;
   }
   if(action==="remove-bestiary-img"){
-    if(!isGM()) return;
+    if(!isGM() && currentUser) return;
     var bid2 = btn.getAttribute("data-id");
     var beast2 = (state.bestiary||[]).find(function(x){return x.id===bid2;});
     if(beast2){
       beast2.image = null;
       saveState(true); pushSharedData(); renderTab();
       showToast("Imagen de criatura eliminada", "info");
+    }
+    return;
+  }
+
+  // === ACCIONES DE LA PESTAÑA MISIÓN (ESTILO BALDUR'S GATE 3 / D&D) ===
+  if(action==="add-quest"){
+    if(!isGM() && currentUser) return;
+    var qTitle = prompt("Título de la nueva misión:");
+    if(qTitle && qTitle.trim()){
+      state.quests = state.quests || [];
+      state.quests.push({
+        id: uid(),
+        title: qTitle.trim(),
+        desc: "",
+        status: "activa",
+        tasks: []
+      });
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Misión añadida: " + qTitle, "success");
+    }
+    return;
+  }
+  if(action==="del-quest"){
+    if(!isGM() && currentUser) return;
+    var qid = btn.getAttribute("data-id");
+    if(confirm("¿Eliminar esta misión y todas sus tareas asociadas?")){
+      state.quests = (state.quests||[]).filter(function(q){ return q.id !== qid; });
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Misión eliminada", "info");
+    }
+    return;
+  }
+  if(action==="add-quest-task"){
+    if(!isGM() && currentUser) return;
+    var qid2 = btn.getAttribute("data-id");
+    var qObj = (state.quests||[]).find(function(q){ return q.id === qid2; });
+    if(qObj){
+      var tText = prompt("Nuevo objetivo o paso para esta misión:");
+      if(tText && tText.trim()){
+        qObj.tasks = qObj.tasks || [];
+        qObj.tasks.push({ id: uid(), text: tText.trim(), done: false });
+        saveState(true); pushSharedData(); renderTab();
+        showToast("Objetivo añadido", "success");
+      }
+    }
+    return;
+  }
+  if(action==="del-quest-task"){
+    if(!isGM() && currentUser) return;
+    var qid3 = btn.getAttribute("data-qid");
+    var tid = btn.getAttribute("data-tid");
+    var qObj2 = (state.quests||[]).find(function(q){ return q.id === qid3; });
+    if(qObj2 && qObj2.tasks){
+      qObj2.tasks = qObj2.tasks.filter(function(t){ return t.id !== tid; });
+      saveState(true); pushSharedData(); renderTab();
+    }
+    return;
+  }
+  if(action==="toggle-quest-task"){
+    var qid4 = btn.getAttribute("data-qid");
+    var tid2 = btn.getAttribute("data-tid");
+    var qObj3 = (state.quests||[]).find(function(q){ return q.id === qid4; });
+    if(qObj3 && qObj3.tasks){
+      var task = qObj3.tasks.find(function(t){ return t.id === tid2; });
+      if(task){
+        task.done = !task.done;
+        saveState(true); pushSharedData(); renderTab();
+      }
+    }
+    return;
+  }
+  if(action==="add-clue"){
+    if(!isGM() && currentUser) return;
+    var clTitle = prompt("Título del descubrimiento o pista:");
+    if(clTitle && clTitle.trim()){
+      state.questClues = state.questClues || [];
+      state.questClues.push({ id: uid(), title: clTitle.trim(), text: "", image: null, visible: true });
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Pista añadida", "success");
+    }
+    return;
+  }
+  if(action==="del-clue"){
+    if(!isGM() && currentUser) return;
+    var clId = btn.getAttribute("data-id");
+    if(confirm("¿Eliminar esta pista?")){
+      state.questClues = (state.questClues||[]).filter(function(c){ return c.id !== clId; });
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Pista eliminada", "info");
+    }
+    return;
+  }
+  if(action==="url-clue-img"){
+    if(!isGM() && currentUser) return;
+    var clId2 = btn.getAttribute("data-id");
+    var clObj = (state.questClues||[]).find(function(c){ return c.id === clId2; });
+    if(clObj){
+      var clUrl = prompt("Enlace de la imagen para esta pista (de GitHub, web, etc.):", clObj.image||"");
+      if(clUrl !== null){
+        clObj.image = clUrl.trim() || null;
+        saveState(true); pushSharedData(); renderTab();
+        showToast(clObj.image ? "Imagen de pista asignada" : "Imagen quitada", "info");
+      }
+    }
+    return;
+  }
+  if(action==="remove-clue-img"){
+    if(!isGM() && currentUser) return;
+    var clId3 = btn.getAttribute("data-id");
+    var clObj2 = (state.questClues||[]).find(function(c){ return c.id === clId3; });
+    if(clObj2){
+      clObj2.image = null;
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Imagen de pista eliminada", "info");
+    }
+    return;
+  }
+  if(action==="upload-quest-map"){
+    if(!isGM() && currentUser) return;
+    var qFileInput = document.getElementById("questFileInput");
+    if(qFileInput) qFileInput.click();
+    return;
+  }
+  if(action==="url-quest-map"){
+    if(!isGM() && currentUser) return;
+    state.questMap = state.questMap || { name: "Mapa del Encuentro", image: null, notes: "" };
+    var qmUrl = prompt("Introduce el enlace o URL de la imagen para el plano de misión:", state.questMap.image||"");
+    if(qmUrl !== null){
+      state.questMap.image = qmUrl.trim() || null;
+      saveState(true); pushSharedData(); renderTab();
+      showToast(state.questMap.image ? "Mapa de misión fijado" : "Mapa de misión quitado", "info");
+    }
+    return;
+  }
+  if(action==="remove-quest-map"){
+    if(!isGM() && currentUser) return;
+    if(state.questMap){
+      state.questMap.image = null;
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Mapa de misión quitado", "info");
     }
     return;
   }
@@ -2948,6 +3357,20 @@ function init(){
         });
       }
       e.target.value="";
+    });
+  }
+  var qFileInput = document.getElementById("questFileInput");
+  if(qFileInput){
+    qFileInput.addEventListener("change", function(e){
+      if(e.target.files && e.target.files[0]){
+        resizeImageFile(e.target.files[0], 900, 0.7, function(url){
+          state.questMap = state.questMap || { name: "Mapa del Encuentro", image: null, notes: "" };
+          state.questMap.image = url;
+          saveState(true); pushSharedData(); renderTab();
+          showToast("Mapa de misión actualizado", "success");
+        });
+      }
+      e.target.value = "";
     });
   }
   document.getElementById("importFileInput").addEventListener("change", function(e){
