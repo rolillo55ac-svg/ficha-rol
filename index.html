@@ -25,13 +25,19 @@
 <div class="modal-overlay hidden" id="loreModalOverlay"><div class="modal" id="loreModal"></div></div>
 <div class="roll-overlay hidden" id="rollOverlay">
   <div class="roll-box">
-    <div id="rollLabel" style="font-family:var(--font-display);font-size:.92rem;color:var(--gold-light);"></div>
-    <div id="rollDieGraphic" style="display:flex;justify-content:center;margin:8px 0;"></div>
-    <div id="rollAdvVisual"></div>
-    <div class="roll-score" id="rollScore"></div>
-    <div id="rollVerdict" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;"></div>
-    <div id="rollDetail" style="font-size:.78rem;color:var(--ink-dim);line-height:1.4;"></div>
-    <button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:7px;" data-action="close-roll-modal">Cerrar</button>
+    <div class="cup-stage" id="cupStage"></div>
+    <div class="roll-result-stage" id="rollResultStage">
+      <div id="rollLabel" style="font-family:var(--font-display);font-size:.95rem;color:var(--gold-light);"></div>
+      <div id="rollDieGraphic" style="display:flex;justify-content:center;margin:8px 0;"></div>
+      <div id="rollAdvVisual"></div>
+      <div class="roll-score" id="rollScore"></div>
+      <div id="rollVerdict" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:700;"></div>
+      <div id="rollDetail" style="font-size:.8rem;color:var(--ink-dim);line-height:1.4;"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn-compact" data-action="reroll-last-dice" style="flex:1;">🎲 Volver a Tirar</button>
+        <button class="btn-solid-gold" data-action="close-roll-modal" style="flex:1;">Cerrar</button>
+      </div>
+    </div>
   </div>
 </div>
 

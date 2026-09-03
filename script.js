@@ -332,13 +332,14 @@ function getEffectiveAttr(aKey, c){
   if(c.spells){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
         if(sp.statAttr === aKey){
           var spNum = parseFloat(sp.statMod);
-          if(!isNaN(spNum)) base += spNum;
+          if(!isNaN(spNum)) base += spNum * stacks;
         }
         if(sp.statAttr === "todo"){
           var spAll = parseFloat(sp.statMod);
-          if(!isNaN(spAll)) base += spAll;
+          if(!isNaN(spAll)) base += spAll * stacks;
         }
       }
     });
@@ -369,9 +370,10 @@ function skillTotal(skill, c){
   if(c.spells){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
         if(sp.statAttr === skill.id){
           var spNum = parseFloat(sp.statMod);
-          if(!isNaN(spNum)) total += spNum;
+          if(!isNaN(spNum)) total += spNum * stacks;
         }
       }
     });
@@ -429,13 +431,14 @@ function getEffectiveCombatStat(statKey, c){
   if(c.spells){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
         if(sp.statAttr === statKey || (isShield && isShieldAttr(sp.statAttr, sp.name))){
           var spNum = parseFloat(sp.statMod);
-          if(!isNaN(spNum)) base += spNum;
+          if(!isNaN(spNum)) base += spNum * stacks;
         }
         if(sp.statAttr === "todo"){
           var spAll = parseFloat(sp.statMod);
-          if(!isNaN(spAll)) base += spAll;
+          if(!isNaN(spAll)) base += spAll * stacks;
         }
       }
     });
@@ -451,33 +454,72 @@ function getAudioCtx(){
   if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
   return audioCtx;
 }
+
+function playCupRattleAudio(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  var taps = [0, 0.06, 0.12, 0.19, 0.26, 0.33, 0.40, 0.47];
+  taps.forEach(function(delay, i){
+    var t = now + delay;
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = i % 2 === 0 ? "triangle" : "square";
+    osc.frequency.setValueAtTime(200 + (i * 30) + Math.random() * 80, t);
+    osc.frequency.exponentialRampToValueAtTime(130 + Math.random() * 30, t + 0.04);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.2, t + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 0.06);
+  });
+}
+
+function playDiceDropAudio(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  var thud = ctx.createOscillator(), thudGain = ctx.createGain();
+  thud.type = "sine";
+  thud.frequency.setValueAtTime(150, now);
+  thud.frequency.exponentialRampToValueAtTime(45, now + 0.13);
+  thudGain.gain.setValueAtTime(0.001, now);
+  thudGain.gain.linearRampToValueAtTime(0.35, now + 0.015);
+  thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+  thud.connect(thudGain); thudGain.connect(ctx.destination);
+  thud.start(now); thud.stop(now + 0.16);
+
+  [0.02, 0.07, 0.14].forEach(function(d, idx){
+    var t = now + d;
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(360 + Math.random() * 140, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.16 / (idx + 1), t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t + 0.045);
+  });
+}
+
 function playDiceAudio(type){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
   if(type==="roll"){
-    for(var i=0;i<6;i++){
-      var t = now + i*0.05;
-      var osc = ctx.createOscillator(), gain = ctx.createGain();
-      osc.type = "triangle"; osc.frequency.setValueAtTime(240+Math.random()*300, t);
-      gain.gain.setValueAtTime(0.001, t); gain.gain.exponentialRampToValueAtTime(0.15, t+0.01); gain.gain.exponentialRampToValueAtTime(0.001, t+0.04);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t); osc.stop(t+0.05);
-    }
+    playCupRattleAudio();
+    setTimeout(playDiceDropAudio, 350);
   }else if(type==="crit"){
     [523.25, 659.25, 783.99, 1046.50].forEach(function(f, idx){
       var osc = ctx.createOscillator(), gain = ctx.createGain();
       osc.type = "triangle"; osc.frequency.setValueAtTime(f, now + idx*0.04);
-      gain.gain.setValueAtTime(0.001, now + idx*0.04); gain.gain.exponentialRampToValueAtTime(0.2, now + idx*0.04 + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.04 + 0.4);
+      gain.gain.setValueAtTime(0.001, now + idx*0.04); gain.gain.exponentialRampToValueAtTime(0.22, now + idx*0.04 + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.04 + 0.45);
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(now + idx*0.04); osc.stop(now + idx*0.04 + 0.45);
+      osc.start(now + idx*0.04); osc.stop(now + idx*0.04 + 0.5);
     });
   }else if(type==="fumble"){
-    [311.13, 277.18, 220].forEach(function(f, idx){
+    [311.13, 277.18, 220, 164.81].forEach(function(f, idx){
       var osc = ctx.createOscillator(), gain = ctx.createGain();
       osc.type = "sawtooth"; osc.frequency.setValueAtTime(f, now + idx*0.06);
-      gain.gain.setValueAtTime(0.001, now + idx*0.06); gain.gain.exponentialRampToValueAtTime(0.15, now + idx*0.06 + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.06 + 0.3);
+      gain.gain.setValueAtTime(0.001, now + idx*0.06); gain.gain.exponentialRampToValueAtTime(0.18, now + idx*0.06 + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, now + idx*0.06 + 0.35);
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(now + idx*0.06); osc.stop(now + idx*0.06 + 0.35);
+      osc.start(now + idx*0.06); osc.stop(now + idx*0.06 + 0.4);
     });
   }
 }
@@ -493,20 +535,101 @@ function getDieSvg(sides){
   return '<svg viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" rx="10" fill="'+fill+'" stroke="'+stroke+'" stroke-width="3.5"/><text x="50" y="60" font-family="var(--font-mono)" font-size="24" font-weight="700" fill="'+txt+'" text-anchor="middle">d6</text></svg>';
 }
 
-function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, advCardsHtml){
+function getOrnateCupSvg(){
+  return '<svg class="ornate-cup-svg" viewBox="0 0 160 200" width="115" height="145" xmlns="http://www.w3.org/2000/svg">'+
+    '<defs>'+
+      '<linearGradient id="cupLeatherGrad" x1="0%" y1="0%" x2="100%" y2="0%">'+
+        '<stop offset="0%" stop-color="#180e07"/>'+
+        '<stop offset="30%" stop-color="#3d2514"/>'+
+        '<stop offset="50%" stop-color="#54331c"/>'+
+        '<stop offset="70%" stop-color="#3d2514"/>'+
+        '<stop offset="100%" stop-color="#120904"/>'+
+      '</linearGradient>'+
+      '<linearGradient id="cupGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">'+
+        '<stop offset="0%" stop-color="#FFF275"/>'+
+        '<stop offset="40%" stop-color="#D4AF37"/>'+
+        '<stop offset="80%" stop-color="#996515"/>'+
+        '<stop offset="100%" stop-color="#4A3415"/>'+
+      '</linearGradient>'+
+      '<linearGradient id="cupVelvetGrad" x1="0%" y1="0%" x2="0%" y2="100%">'+
+        '<stop offset="0%" stop-color="#3e0910"/>'+
+        '<stop offset="100%" stop-color="#120204"/>'+
+      '</linearGradient>'+
+    '</defs>'+
+    '<ellipse cx="80" cy="186" rx="42" ry="9" fill="rgba(0,0,0,0.55)"/>'+
+    '<polygon points="35,45 125,45 110,175 50,175" fill="url(#cupLeatherGrad)" stroke="#100703" stroke-width="2.5"/>'+
+    '<line x1="72" y1="46" x2="76" y2="174" stroke="#A0783E" stroke-width="1.6" stroke-dasharray="3,3"/>'+
+    '<line x1="88" y1="46" x2="84" y2="174" stroke="#A0783E" stroke-width="1.6" stroke-dasharray="3,3"/>'+
+    '<polygon points="40,102 120,102 116,125 44,125" fill="url(#cupGoldGrad)" stroke="#3A280F" stroke-width="1.8"/>'+
+    '<text x="80" y="119" font-family="monospace" font-size="12" font-weight="900" fill="#1C1109" text-anchor="middle" letter-spacing="3.5">ᚠ ᚱ ᛊ ᛏ</text>'+
+    '<circle cx="48" cy="113" r="3.2" fill="#FFF275" stroke="#4A3415" stroke-width="1"/>'+
+    '<circle cx="112" cy="113" r="3.2" fill="#FFF275" stroke="#4A3415" stroke-width="1"/>'+
+    '<polygon points="48,166 112,166 110,178 50,178" fill="url(#cupGoldGrad)" stroke="#3A280F" stroke-width="1.6"/>'+
+    '<ellipse cx="80" cy="177" rx="30" ry="7" fill="#1A1009" stroke="url(#cupGoldGrad)" stroke-width="1.8"/>'+
+    '<ellipse cx="80" cy="45" rx="45" ry="14" fill="url(#cupVelvetGrad)" stroke="url(#cupGoldGrad)" stroke-width="3.6"/>'+
+    '<ellipse cx="80" cy="45" rx="38" ry="9" fill="#1D0306" stroke="#FFF275" stroke-width="1.2" opacity="0.8"/>'+
+    '<path d="M54,64 Q80,78 106,64" fill="none" stroke="url(#cupGoldGrad)" stroke-width="2" opacity="0.85"/>'+
+    '<path d="M57,146 Q80,158 103,146" fill="none" stroke="url(#cupGoldGrad)" stroke-width="1.8" opacity="0.85"/>'+
+  '</svg>';
+}
+
+var lastRollFn = null;
+
+function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, advCardsHtml, rerollFn){
+  if(rerollFn) lastRollFn = rerollFn;
+
+  var overlay = document.getElementById("rollOverlay");
+  var cupStage = document.getElementById("cupStage");
+  var resultStage = document.getElementById("rollResultStage");
+
   document.getElementById("rollLabel").textContent = label;
   document.getElementById("rollDieGraphic").innerHTML = getDieSvg(sides);
   document.getElementById("rollAdvVisual").innerHTML = advCardsHtml || "";
   var scoreEl = document.getElementById("rollScore");
   scoreEl.textContent = scoreText;
-  scoreEl.className = "roll-score" + (isCrit?" crit":isFumble?" fumble":"");
+  scoreEl.className = "roll-score" + (isCrit ? " crit" : isFumble ? " fumble" : "");
   document.getElementById("rollVerdict").textContent = isCrit ? "¡Éxito Crítico!" : (isFumble ? "¡Pifia Crítica!" : "");
   document.getElementById("rollVerdict").style.color = isCrit ? "var(--gold-light)" : (isFumble ? "var(--danger)" : "transparent");
   document.getElementById("rollDetail").innerHTML = detailHtml;
-  document.getElementById("rollOverlay").classList.remove("hidden");
-  playDiceAudio("roll");
-  if(isCrit) setTimeout(function(){ playDiceAudio("crit"); }, 400);
-  else if(isFumble) setTimeout(function(){ playDiceAudio("fumble"); }, 400);
+
+  var rerollBtn = document.querySelector("[data-action='reroll-last-dice']");
+  if(rerollBtn){
+    rerollBtn.style.display = lastRollFn ? "block" : "none";
+  }
+
+  overlay.classList.remove("hidden");
+
+  if(cupStage && resultStage){
+    cupStage.style.display = "flex";
+    cupStage.innerHTML = '<div class="ornate-cup-wrapper shaking">' + getOrnateCupSvg() + '<div class="cup-sparks"></div></div>';
+    resultStage.style.display = "none";
+    resultStage.classList.remove("revealed");
+
+    playCupRattleAudio();
+
+    setTimeout(function(){
+      var cupWrap = cupStage.querySelector(".ornate-cup-wrapper");
+      if(cupWrap){
+        cupWrap.classList.remove("shaking");
+        cupWrap.classList.add("pouring");
+      }
+      playDiceDropAudio();
+    }, 450);
+
+    setTimeout(function(){
+      if(cupStage) cupStage.style.display = "none";
+      if(resultStage){
+        resultStage.style.display = "block";
+        resultStage.classList.add("revealed");
+      }
+      if(isCrit) setTimeout(function(){ playDiceAudio("crit"); }, 150);
+      else if(isFumble) setTimeout(function(){ playDiceAudio("fumble"); }, 150);
+    }, 850);
+  } else {
+    playDiceAudio("roll");
+    if(isCrit) setTimeout(function(){ playDiceAudio("crit"); }, 400);
+    else if(isFumble) setTimeout(function(){ playDiceAudio("fumble"); }, 400);
+  }
 }
 
 function broadcastDiceRoll(rollObj){
@@ -1104,12 +1227,13 @@ function tplCombate(c){
   var activeSpells = (c.spells||[]).filter(function(sp){ return sp.active; });
   if(activeSpells.length > 0){
     buffsHtml += '<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">'+
-      '<div style="font-size:.65rem;color:var(--teal-light);text-transform:uppercase;margin-bottom:5px;font-weight:700;">✨ Magias y Hechizos Activos (toca ✕ para desactivar):</div>';
+      '<div style="font-size:.65rem;color:var(--teal-light);text-transform:uppercase;margin-bottom:5px;font-weight:700;">✨ Magias y Hechizos Activos (toca ✕ para retirar carga):</div>';
     activeSpells.forEach(function(asp){
-      var statNote = (asp.statAttr && asp.statMod) ? ' ('+asp.statMod+' a '+asp.statAttr+')' : '';
+      var stacks = asp.activeStacks || 1;
+      var statNote = (asp.statAttr && asp.statMod) ? ' ('+asp.statMod+' a '+asp.statAttr+(stacks>1?' x'+stacks:'')+')' : (stacks>1?' (x'+stacks+')':'');
       buffsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:rgba(61,110,96,0.15);border:1px solid var(--teal-light);border-radius:5px;margin-bottom:4px;">'+
-        '<span style="font-size:.75rem;color:var(--teal-light);">✨ '+esc(asp.name || "Hechizo")+statNote+'</span>'+
-        '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Desactivar magia" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>'+
+        '<span style="font-size:.75rem;color:var(--teal-light);">✨ '+esc(asp.name || "Hechizo")+(stacks>1?' <b>(Cargas: '+stacks+')</b>':'')+statNote+'</span>'+
+        '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Quitar carga de magia" style="min-width:28px;min-height:28px;width:28px;height:28px;" title="Quitar 1 carga">✕</button>'+
       '</div>';
     });
     buffsHtml += '</div>';
@@ -1226,9 +1350,10 @@ function tplMagia(c){
   } else {
     c.spells.forEach(function(s){
       var isActive = !!s.active;
+      var stacks = s.activeStacks || (isActive ? 1 : 0);
       var hasStatMod = s.statAttr && s.statMod;
-      var statBadge = hasStatMod ? '<span class="spell-badge effect">✨ '+esc(s.statMod)+' '+esc(s.statAttr)+'</span>' : '';
-      var activeBadge = isActive ? '<span class="spell-badge active">ACTIVO</span>' : '';
+      var statBadge = hasStatMod ? '<span class="spell-badge effect">✨ '+esc(s.statMod)+' '+esc(s.statAttr)+(stacks>1?' (x'+stacks+')':'')+'</span>' : '';
+      var activeBadge = isActive ? '<span class="spell-badge active">ACTIVO'+(stacks>1?' x'+stacks:'')+'</span>' : '';
 
       html += '<div class="spell-card'+(isActive?' active-spell':'')+'">'+
         '<div class="spell-card-header">'+
@@ -1237,7 +1362,8 @@ function tplMagia(c){
             activeBadge+
             statBadge+
             (isActive ?
-              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="'+s.id+'">✕ Desactivar</button>' :
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'" title="Lanzar de nuevo y superponer">+ Superponer (-'+num(s.coste, 1)+' Maná)</button>'+
+              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="'+s.id+'" title="Quitar una carga o desactivar">✕ Quitar Carga ('+stacks+')</button>' :
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'">⚡ Activar (-'+num(s.coste, 1)+' Maná)</button>'
             )+
             (isGM() ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
@@ -1909,16 +2035,46 @@ function openDiceModal(){
   }).join('');
 
   document.getElementById("diceModal").innerHTML =
-    '<h2>Lanzador de Dados<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
-    '<div class="field"><label>Modalidad de Tirada</label><select id="diceMode">'+
-      '<option value="normal" '+(diceConfig.mode==='normal'?'selected':'')+'>Tirada Estándar</option>'+
-      '<option value="adv" '+(diceConfig.mode==='adv'?'selected':'')+'>Ventaja (2 dados, mayor)</option>'+
-      '<option value="disadv" '+(diceConfig.mode==='disadv'?'selected':'')+'>Desventaja (2 dados, menor)</option>'+
-    '</select></div>'+
+    '<div class="cup-modal-header">'+
+      '<div class="cup-modal-icon">'+getOrnateCupSvg()+'</div>'+
+      '<div class="cup-modal-title">'+
+        '<h3>Cubilete de Aventurero</h3>'+
+        '<div class="cup-modal-sub">Selecciona dados, modalidad y lanza tu destino</div>'+
+      '</div>'+
+      '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>'+
+    '</div>'+
+    '<div class="dice-mode-pills">'+
+      '<button class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">⚔️ Normal</button>'+
+      '<button class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">🍀 Ventaja</button>'+
+      '<button class="dmode-pill '+(diceConfig.mode==='disadv'?'active':'')+'" data-action="set-dice-mode" data-mode="disadv">💀 Desventaja</button>'+
+    '</div>'+
+    '<div class="cup-tray-label">Dados Poliédricos</div>'+
     '<div class="dtype-grid">'+diceCards+'</div>'+
-    (diceConfig.sides===100?'':'<div class="field" style="margin-top:6px;"><label>Número de dados</label><input type="number" min="1" id="diceQty" value="'+diceConfig.qty+'"></div>')+
-    '<div class="field" style="margin-top:6px;"><label>Modificador (+ / -)</label><input type="number" id="diceMod" value="'+diceConfig.mod+'"></div>'+
-    '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:8px;" data-action="roll-dice-btn">Lanzar Dados</button>';
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">'+
+      (diceConfig.sides===100?'<div></div>':'<div class="field"><label>Cantidad</label>'+
+        '<div class="qty-control-row">'+
+          '<button class="qty-btn" data-action="dec-dice-qty">-</button>'+
+          '<input type="number" min="1" max="20" id="diceQty" value="'+diceConfig.qty+'" style="width:48px;text-align:center;">'+
+          '<button class="qty-btn" data-action="inc-dice-qty">+</button>'+
+        '</div>'+
+        '<div class="quick-qty-chips" style="margin-top:4px;">'+
+          [1,2,3,4].map(function(q){
+            return '<button class="qty-chip '+(diceConfig.qty===q?'active':'')+'" data-action="set-dice-qty" data-qty="'+q+'">x'+q+'</button>';
+          }).join('')+
+        '</div>'+
+      '</div>')+
+      '<div class="field"><label>Modificador</label>'+
+        '<div class="mod-control-row">'+
+          '<input type="number" id="diceMod" value="'+diceConfig.mod+'" style="width:60px;text-align:center;">'+
+          '<div class="quick-mod-chips">'+
+            [-2,0,1,2,5].map(function(m){
+              return '<button class="mod-chip '+(diceConfig.mod===m?'active':'')+'" data-action="set-dice-mod" data-mod="'+m+'">'+(m>0?'+'+m:m)+'</button>';
+            }).join('')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<button class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 ¡Agitar Cubilete y Lanzar!</button>';
   document.getElementById("diceModalOverlay").classList.remove("hidden");
 }
 
@@ -1926,62 +2082,72 @@ function diceModalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
+  if(action==="set-dice-mode"){ diceConfig.mode = btn.getAttribute("data-mode"); openDiceModal(); return; }
+  if(action==="inc-dice-qty"){ diceConfig.qty = Math.min(20, (diceConfig.qty||1)+1); openDiceModal(); return; }
+  if(action==="dec-dice-qty"){ diceConfig.qty = Math.max(1, (diceConfig.qty||1)-1); openDiceModal(); return; }
+  if(action==="set-dice-qty"){ diceConfig.qty = parseInt(btn.getAttribute("data-qty"),10)||1; openDiceModal(); return; }
+  if(action==="set-dice-mod"){ diceConfig.mod = parseInt(btn.getAttribute("data-mod"),10)||0; openDiceModal(); return; }
   if(action==="pick-die"){ diceConfig.sides = parseInt(btn.getAttribute("data-sides"),10); openDiceModal(); return; }
   if(action==="roll-dice-btn"){
-    diceConfig.mod = parseInt(document.getElementById("diceMod").value,10)||0;
-    diceConfig.mode = document.getElementById("diceMode").value;
+    var modInput = document.getElementById("diceMod");
+    if(modInput) diceConfig.mod = parseInt(modInput.value,10)||0;
+    var qtyInput = document.getElementById("diceQty");
+    if(qtyInput) diceConfig.qty = Math.max(1, parseInt(qtyInput.value,10)||1);
     document.getElementById("diceModalOverlay").classList.add("hidden");
     var cName = activeChar().name || "Aventurero";
 
-    if(diceConfig.sides===100){
-      var dTens = (rollDie(10)-1)*10, dUnits = rollDie(10)-1;
-      var pct = dTens + dUnits === 0 ? 100 : dTens + dUnits;
-      var tot = pct + diceConfig.mod;
-      var fText = "Decenas: " + dTens + " | Unidades: " + dUnits + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : "");
-      var rItem1 = {id:uid(), charName:cName, label:"d% Percentil", total:tot, formulaText:fText, isCrit:pct===100, isFumble:pct===1, ts:Date.now()};
-      state.rollLog.unshift(rItem1);
+    var doRoll = function(){
+      if(diceConfig.sides===100){
+        var dTens = (rollDie(10)-1)*10, dUnits = rollDie(10)-1;
+        var pct = dTens + dUnits === 0 ? 100 : dTens + dUnits;
+        var tot = pct + diceConfig.mod;
+        var fText = "Decenas: " + dTens + " | Unidades: " + dUnits + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : "");
+        var rItem1 = {id:uid(), charName:cName, label:"d% Percentil", total:tot, formulaText:fText, isCrit:pct===100, isFumble:pct===1, ts:Date.now()};
+        state.rollLog.unshift(rItem1);
+        if(state.rollLog.length>20) state.rollLog.length=20;
+        saveState();
+        broadcastDiceRoll(rItem1);
+        openRollModal("d% Percentil", tot, fText, 100, pct===100, pct===1, null, doRoll);
+        renderTab();
+        return;
+      }
+
+      if(diceConfig.mode==="adv" || diceConfig.mode==="disadv"){
+        var r1 = rollDie(diceConfig.sides), r2 = rollDie(diceConfig.sides);
+        var chosen = diceConfig.mode==="adv" ? Math.max(r1, r2) : Math.min(r1, r2);
+        var totalAdv = chosen + diceConfig.mod;
+        var advHtml = '<div class="adv-dice-wrap">'+
+          '<div class="adv-die-card '+(r1===chosen?'chosen':'discarded')+'">'+r1+'</div>'+
+          '<div class="adv-die-card '+(r2===chosen && (r1!==r2||diceConfig.mode==="adv")?'chosen':(r1===r2?'chosen':'discarded'))+'">'+r2+'</div>'+
+        '</div>';
+        var lblAdv = "d"+diceConfig.sides + (diceConfig.mode==="adv"?" (Ventaja)":" (Desventaja)");
+        var modStr = (diceConfig.mod>=0?"+"+diceConfig.mod:diceConfig.mod);
+        var rItem2 = {id:uid(), charName:cName, label:lblAdv, total:totalAdv, formulaText:"["+r1+", "+r2+"] -> " + chosen + " (Mod: " + modStr + ")", isCrit:chosen===diceConfig.sides, isFumble:chosen===1, ts:Date.now()};
+        state.rollLog.unshift(rItem2);
+        if(state.rollLog.length>20) state.rollLog.length=20;
+        saveState();
+        broadcastDiceRoll(rItem2);
+        openRollModal(lblAdv, totalAdv, "Modificador: " + modStr, diceConfig.sides, chosen===diceConfig.sides, chosen===1, advHtml, doRoll);
+        renderTab();
+        return;
+      }
+
+      var rolls=[], sum=0;
+      for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
+      var grandTotal = sum + diceConfig.mod;
+      var isAllCrit = rolls.every(function(x){return x===diceConfig.sides;});
+      var isAllFumble = rolls.every(function(x){return x===1;});
+      var fDetail = diceConfig.qty + "d" + diceConfig.sides + " [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : "");
+      var rItem3 = {id:uid(), charName:cName, label:diceConfig.qty+"d"+diceConfig.sides, total:grandTotal, formulaText:fDetail, isCrit:isAllCrit, isFumble:isAllFumble, ts:Date.now()};
+      state.rollLog.unshift(rItem3);
       if(state.rollLog.length>20) state.rollLog.length=20;
       saveState();
-      broadcastDiceRoll(rItem1);
-      openRollModal("d% Percentil", tot, fText, 100, pct===100, pct===1);
+      broadcastDiceRoll(rItem3);
+      openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, fDetail, diceConfig.sides, isAllCrit, isAllFumble, null, doRoll);
       renderTab();
-      return;
-    }
+    };
 
-    if(diceConfig.mode==="adv" || diceConfig.mode==="disadv"){
-      var r1 = rollDie(diceConfig.sides), r2 = rollDie(diceConfig.sides);
-      var chosen = diceConfig.mode==="adv" ? Math.max(r1, r2) : Math.min(r1, r2);
-      var totalAdv = chosen + diceConfig.mod;
-      var advHtml = '<div class="adv-dice-wrap">'+
-        '<div class="adv-die-card '+(r1===chosen?'chosen':'discarded')+'">'+r1+'</div>'+
-        '<div class="adv-die-card '+(r2===chosen && (r1!==r2||diceConfig.mode==="adv")?'chosen':(r1===r2?'chosen':'discarded'))+'">'+r2+'</div>'+
-      '</div>';
-      var lblAdv = "d"+diceConfig.sides + (diceConfig.mode==="adv"?" (Ventaja)":" (Desventaja)");
-      var modStr = (diceConfig.mod>=0?"+"+diceConfig.mod:diceConfig.mod);
-      var rItem2 = {id:uid(), charName:cName, label:lblAdv, total:totalAdv, formulaText:"["+r1+", "+r2+"] -> " + chosen + " (Mod: " + modStr + ")", isCrit:chosen===diceConfig.sides, isFumble:chosen===1, ts:Date.now()};
-      state.rollLog.unshift(rItem2);
-      if(state.rollLog.length>20) state.rollLog.length=20;
-      saveState();
-      broadcastDiceRoll(rItem2);
-      openRollModal(lblAdv, totalAdv, "Modificador: " + modStr, diceConfig.sides, chosen===diceConfig.sides, chosen===1, advHtml);
-      renderTab();
-      return;
-    }
-
-    diceConfig.qty = Math.max(1, parseInt((document.getElementById("diceQty")||{}).value,10)||1);
-    var rolls=[], sum=0;
-    for(var i=0;i<diceConfig.qty;i++){ var r=rollDie(diceConfig.sides); rolls.push(r); sum+=r; }
-    var grandTotal = sum + diceConfig.mod;
-    var isAllCrit = rolls.every(function(x){return x===diceConfig.sides;});
-    var isAllFumble = rolls.every(function(x){return x===1;});
-    var fDetail = diceConfig.qty + "d" + diceConfig.sides + " [" + rolls.join(", ") + "]" + (diceConfig.mod ? (diceConfig.mod>0?" + "+diceConfig.mod:" - "+Math.abs(diceConfig.mod)) : "");
-    var rItem3 = {id:uid(), charName:cName, label:diceConfig.qty+"d"+diceConfig.sides, total:grandTotal, formulaText:fDetail, isCrit:isAllCrit, isFumble:isAllFumble, ts:Date.now()};
-    state.rollLog.unshift(rItem3);
-    if(state.rollLog.length>20) state.rollLog.length=20;
-    saveState();
-    broadcastDiceRoll(rItem3);
-    openRollModal(diceConfig.qty+"d"+diceConfig.sides, grandTotal, fDetail, diceConfig.sides, isAllCrit, isAllFumble);
-    renderTab();
+    doRoll();
     return;
   }
 }
@@ -2966,24 +3132,27 @@ function handleClick(e){
     }
     c.combat.manaActual = Math.max(0, curMana - cost);
     sp.active = true;
+    sp.activeStacks = (sp.activeStacks || 0) + 1;
 
     var statNotice = "";
     if(isShieldAttr(sp.statAttr, sp.name)){
       var shieldGain = parseShieldBonus(sp.statMod);
       if(shieldGain > 0){
         c.combat.escudoActual = num(c.combat.escudoActual, 0) + shieldGain;
-        sp.shieldGranted = shieldGain;
-        statNotice = " [🛡️ +" + shieldGain + " Escudo/Vida Falsa]";
+        sp.shieldStacks = sp.shieldStacks || [];
+        sp.shieldStacks.push(shieldGain);
+        sp.shieldGranted = (sp.shieldGranted || 0) + shieldGain;
+        statNotice = " [🛡️ +" + shieldGain + " Escudo/Vida Falsa (Carga " + sp.activeStacks + ")]";
       }
     } else if(sp.statAttr && sp.statMod){
-      statNotice = " [Efecto activo: " + sp.statMod + " a " + sp.statAttr + "]";
+      statNotice = " [Carga " + sp.activeStacks + ": " + sp.statMod + " a " + sp.statAttr + "]";
     }
 
     saveState();
     renderTopbar();
     renderTab();
     broadcastCharStatUpdate(c.id, c.combat);
-    showToast("¡" + (sp.name || "Hechizo") + " activado! -" + cost + " maná" + statNotice, "success");
+    showToast("¡" + (sp.name || "Hechizo") + " lanzado! (" + sp.activeStacks + "ª carga) -" + cost + " maná" + statNotice, "success");
     playDiceAudio("crit");
     return;
   }
@@ -2991,19 +3160,34 @@ function handleClick(e){
     var spId2 = btn.getAttribute("data-id");
     var sp2 = (c.spells||[]).find(function(s){ return s.id === spId2; });
     if(sp2){
-      sp2.active = false;
       var shieldNotice = "";
-      if(sp2.shieldGranted && sp2.shieldGranted > 0){
-        var rem = sp2.shieldGranted;
+      if(sp2.shieldStacks && sp2.shieldStacks.length > 0){
+        var rem = sp2.shieldStacks.pop();
         c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - rem);
-        sp2.shieldGranted = 0;
+        sp2.shieldGranted = Math.max(0, (sp2.shieldGranted || 0) - rem);
         shieldNotice = " (-" + rem + " Escudo/Vida Falsa)";
+      } else if(sp2.shieldGranted && sp2.shieldGranted > 0){
+        var rem2 = sp2.shieldGranted;
+        c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - rem2);
+        sp2.shieldGranted = 0;
+        shieldNotice = " (-" + rem2 + " Escudo/Vida Falsa)";
       }
+
+      sp2.activeStacks = Math.max(0, (sp2.activeStacks || 1) - 1);
+      if(sp2.activeStacks <= 0){
+        sp2.active = false;
+        sp2.activeStacks = 0;
+        sp2.shieldGranted = 0;
+        sp2.shieldStacks = [];
+        showToast("Efecto de " + (sp2.name || "Hechizo") + " desactivado por completo" + shieldNotice + ".", "info");
+      } else {
+        showToast("Retirada 1 carga de " + (sp2.name || "Hechizo") + " (" + sp2.activeStacks + " restantes)" + shieldNotice + ".", "info");
+      }
+
       saveState();
       renderTopbar();
       renderTab();
       broadcastCharStatUpdate(c.id, c.combat);
-      showToast("Efecto de " + (sp2.name || "Hechizo") + " desactivado" + shieldNotice + ".", "info");
     }
     return;
   }
@@ -3341,6 +3525,7 @@ function handleClick(e){
   }
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
+  if(action==="reroll-last-dice"){ if(typeof lastRollFn==="function") lastRollFn(); return; }
 }
 
 var pendingBestiaryId = null;
@@ -3378,7 +3563,11 @@ function init(){
   document.getElementById("loreModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
   
   document.getElementById("rollOverlay").addEventListener("click", function(e){
-    if(e.target===this || e.target.closest("[data-action='close-roll-modal']")) this.classList.add("hidden");
+    if(e.target===this || e.target.closest("[data-action='close-roll-modal']")){
+      this.classList.add("hidden");
+    } else if(e.target.closest("[data-action='reroll-last-dice']")){
+      if(typeof lastRollFn === "function") lastRollFn();
+    }
   });
 
   document.getElementById("fabDice").addEventListener("click", openDiceModal);
