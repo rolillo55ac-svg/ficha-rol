@@ -80,11 +80,57 @@ var isRemoteSyncing = false;
 var realtimeChannel = null;
 
 var bestiaryContinentFilter = "Todos";
+var bestiaryRarityFilter = "Todos";
+var bestiaryMountFilter = "Todos";
 var loreContinentFilter = "Todos";
 var loreTypeFilter = "Todos";
 var loreTerrainFilter = "Todos";
 var currentLoreSubtab = "objetos";
 var currentBuffTab = "all";
+
+function updateLoadingProgress(pct, msg){
+  var fill = document.getElementById("loadingBarFill");
+  var txt = document.getElementById("loadingStatusText");
+  if(fill) fill.style.width = Math.min(100, Math.max(5, pct)) + "%";
+  if(txt && msg) txt.textContent = msg;
+}
+
+function hideLoadingScreen(){
+  var ls = document.getElementById("loadingScreen");
+  if(!ls) return;
+  updateLoadingProgress(100, "¡Bienvenido a Krysalis!");
+  setTimeout(function(){
+    ls.classList.add("fade-out");
+    setTimeout(function(){
+      ls.style.display = "none";
+    }, 700);
+  }, 500);
+}
+
+// === CIBERSEGURIDAD: PROTECCIÓN ANTI FUERZA BRUTA ===
+var MAX_LOGIN_ATTEMPTS = 5;
+var LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+
+function getAuthAttempts(){
+  try{
+    return JSON.parse(localStorage.getItem("krysalis_auth_attempts") || '{"count":0,"lockoutUntil":0}');
+  }catch(e){ return {count:0, lockoutUntil:0}; }
+}
+
+function recordFailedLoginAttempt(){
+  var att = getAuthAttempts();
+  att.count = (att.count || 0) + 1;
+  att.lastAttempt = Date.now();
+  if(att.count >= MAX_LOGIN_ATTEMPTS){
+    att.lockoutUntil = Date.now() + LOCKOUT_DURATION_MS;
+  }
+  localStorage.setItem("krysalis_auth_attempts", JSON.stringify(att));
+  return att;
+}
+
+function clearAuthAttempts(){
+  localStorage.removeItem("krysalis_auth_attempts");
+}
 
 function getSeedWeaponsCatalog(){
   return [
@@ -740,28 +786,51 @@ function resetCharactersToOfficial(keepPortraits){
 
 function getSeedBestiary(){
   return [
-    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",habilidades:"Doma: 5. Cabalgar: 1/1. Terreno: T/V. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Anaconda G.",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",habilidades:"Doma: 5. Cabalgar: 5. Carga pesada. Nada.",visible:true},
-    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. No puede nadar.",visible:true},
-    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10/12 (T/V)",habilidades:"Doma: 5. Cabalgar: 2. Montura voladora. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. Acuático.",visible:true},
-    {id:uid(),nombre:"Lagarto",continente:"Aslan",vida:"60",defensa:"16",absorcion:"3",dano:"1d6+2",movilidad:"10 (T/A)",habilidades:"Doma: 5. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"1d6+3",movilidad:"8 (T)",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Burro",continente:"Todos",vida:"20",defensa:"12",absorcion:"2",dano:"1d4",movilidad:"8 (T)",habilidades:"Doma: 3. Cabalgar: 1. Carga normal. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Caballo",continente:"Todos",vida:"30",defensa:"12",absorcion:"2",dano:"1d6",movilidad:"8 (T)",habilidades:"Doma: 3. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Caballo XL",continente:"Todos",vida:"40",defensa:"12",absorcion:"2",dano:"1d6+1",movilidad:"8 (T)",habilidades:"Doma: 4. Cabalgar: 2. Carga pesada. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Camello",continente:"Aslan",vida:"30",defensa:"12",absorcion:"2",dano:"1d6",movilidad:"8 (T)",habilidades:"Doma: 3. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Elefante",continente:"Tryssar",vida:"60",defensa:"15",absorcion:"3",dano:"2d6",movilidad:"7 (T)",habilidades:"Doma: 4. Cabalgar: 4. Carga pesada. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Osos",continente:"Todos",vida:"50",defensa:"13",absorcion:"3",dano:"1d6+2",movilidad:"7 (T)",habilidades:"Doma: 4. Cabalgar: 2. Carga pesada. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Buey / Toro",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+1",movilidad:"8 (T)",habilidades:"Doma: 3. Carga pesada. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Lobo XL",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2",movilidad:"9 (T)",habilidades:"Doma: 4. Cabalgar: 1. Carga normal. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Avestruz",continente:"Aslan",vida:"20",defensa:"10",absorcion:"0",dano:"1d4+1",movilidad:"9 (T)",habilidades:"Doma: 3. Cabalgar: 1. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Lobo Cría",continente:"Todos",vida:"10",defensa:"13",absorcion:"2",dano:"1d4+2",movilidad:"8 (T)",habilidades:"Doma: 3. Inteligencia: 2. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Lobo",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",habilidades:"Doma: 3. Inteligencia: 3. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",habilidades:"Doma: 3. Inteligencia: 3. Resistencia al frío ambiente. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Lobo Entrenado",continente:"Todos",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",habilidades:"Doma: 5. Inteligencia: 4. Ataque entrenado. Nada a mitad de mov.",visible:true},
-    {id:uid(),nombre:"Lobo Ártico Entrenado",continente:"Aslan",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",habilidades:"Doma: 5. Inteligencia: 4. Resistencia al frío ambiente. Nada a mitad de mov.",visible:true}
+    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",casillasMovimiento:"10",doma:"5",montable:true,rarity:"Muy rara",habilidades:"Doma: 5. Cabalgar: 1/1. Terreno: T/V. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Anaconda G.",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",casillasMovimiento:"8",doma:"5",montable:true,rarity:"Rara",habilidades:"Doma: 5. Cabalgar: 5. Carga pesada. Nada.",visible:true},
+    {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",casillasMovimiento:"12",doma:"5",montable:true,rarity:"Muy rara",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. No puede nadar.",visible:true},
+    {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10/12 (T/V)",casillasMovimiento:"12",doma:"5",montable:true,rarity:"Legendaria",habilidades:"Doma: 5. Cabalgar: 2. Montura voladora. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Hypocampo",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"12 (A)",casillasMovimiento:"12",doma:"5",montable:true,rarity:"Rara",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. Acuático.",visible:true},
+    {id:uid(),nombre:"Lagarto",continente:"Aslan",vida:"60",defensa:"16",absorcion:"3",dano:"1d6+2",movilidad:"10 (T/A)",casillasMovimiento:"10",doma:"5",montable:true,rarity:"Rara",habilidades:"Doma: 5. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Oso Perro",continente:"Krysalis",vida:"80",defensa:"17",absorcion:"3",dano:"1d6+3",movilidad:"8 (T)",casillasMovimiento:"8",doma:"5",montable:true,rarity:"Rara",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Burro",continente:"Todos",vida:"20",defensa:"12",absorcion:"2",dano:"1d4",movilidad:"8 (T)",casillasMovimiento:"8",doma:"3",montable:true,rarity:"Común",habilidades:"Doma: 3. Cabalgar: 1. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Caballo",continente:"Todos",vida:"30",defensa:"12",absorcion:"2",dano:"1d6",movilidad:"8 (T)",casillasMovimiento:"8",doma:"3",montable:true,rarity:"Común",habilidades:"Doma: 3. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Caballo XL",continente:"Todos",vida:"40",defensa:"12",absorcion:"2",dano:"1d6+1",movilidad:"8 (T)",casillasMovimiento:"8",doma:"4",montable:true,rarity:"Común",habilidades:"Doma: 4. Cabalgar: 2. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Camello",continente:"Aslan",vida:"30",defensa:"12",absorcion:"2",dano:"1d6",movilidad:"8 (T)",casillasMovimiento:"8",doma:"3",montable:true,rarity:"Común",habilidades:"Doma: 3. Cabalgar: 2. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Elefante",continente:"Tryssar",vida:"60",defensa:"15",absorcion:"3",dano:"2d6",movilidad:"7 (T)",casillasMovimiento:"7",doma:"4",montable:true,rarity:"Rara",habilidades:"Doma: 4. Cabalgar: 4. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Osos",continente:"Todos",vida:"50",defensa:"13",absorcion:"3",dano:"1d6+2",movilidad:"7 (T)",casillasMovimiento:"7",doma:"4",montable:true,rarity:"Común",habilidades:"Doma: 4. Cabalgar: 2. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Buey / Toro",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+1",movilidad:"8 (T)",casillasMovimiento:"8",doma:"3",montable:true,rarity:"Común",habilidades:"Doma: 3. Carga pesada. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo XL",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2",movilidad:"9 (T)",casillasMovimiento:"9",doma:"4",montable:true,rarity:"Común",habilidades:"Doma: 4. Cabalgar: 1. Carga normal. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Avestruz",continente:"Aslan",vida:"20",defensa:"10",absorcion:"0",dano:"1d4+1",movilidad:"9 (T)",casillasMovimiento:"9",doma:"3",montable:true,rarity:"Común",habilidades:"Doma: 3. Cabalgar: 1. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Cría",continente:"Todos",vida:"10",defensa:"13",absorcion:"2",dano:"1d4+2",movilidad:"8 (T)",casillasMovimiento:"8",doma:"3",montable:false,rarity:"Común",habilidades:"Doma: 3. Inteligencia: 2. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo",continente:"Todos",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",casillasMovimiento:"8",doma:"3",montable:false,rarity:"Común",habilidades:"Doma: 3. Inteligencia: 3. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Ártico",continente:"Aslan",vida:"40",defensa:"13",absorcion:"2",dano:"1d6+2/+3",movilidad:"8 (T)",casillasMovimiento:"8",doma:"3",montable:false,rarity:"Común",habilidades:"Doma: 3. Inteligencia: 3. Resistencia al frío ambiente. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Entrenado",continente:"Todos",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",casillasMovimiento:"9",doma:"5",montable:false,rarity:"Rara",habilidades:"Doma: 5. Inteligencia: 4. Ataque entrenado. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Lobo Ártico Entrenado",continente:"Aslan",vida:"60",defensa:"16",absorcion:"2",dano:"1d6+2/+3",movilidad:"9 (T)",casillasMovimiento:"9",doma:"5",montable:false,rarity:"Rara",habilidades:"Doma: 5. Inteligencia: 4. Resistencia al frío ambiente. Nada a mitad de mov.",visible:true}
   ];
+}
+
+function migrateBestiaryData(bestiary){
+  if(!Array.isArray(bestiary)) return;
+  bestiary.forEach(function(b){
+    if(b.notas && !b.habilidades) b.habilidades = b.notas;
+    if(b.habilidades === undefined) b.habilidades = "";
+    if(b.visible === undefined) b.visible = true;
+    if(b.rarity === undefined || !b.rarity) b.rarity = "Común";
+    var text = (b.habilidades || "") + " " + (b.notas || "");
+    if(b.montable === undefined){
+      b.montable = /cabalgar|montura/i.test(text);
+    }
+    if(b.doma === undefined || b.doma === "" || b.doma === null){
+      var m = text.match(/doma\s*:\s*(\d+)/i);
+      b.doma = m ? m[1] : "3";
+    }
+    if(b.casillasMovimiento === undefined || b.casillasMovimiento === "" || b.casillasMovimiento === null){
+      var mov = (b.movilidad || "");
+      var mDigits = mov.match(/(\d+)/);
+      b.casillasMovimiento = mDigits ? mDigits[1] : "8";
+    }
+  });
 }
 
 function getSeedLore(){
@@ -879,11 +948,7 @@ function migrateState(s){
   if(!s.lore || !s.lore.objetos) s.lore=getSeedLore();
   if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
   else {
-    s.bestiary.forEach(function(b){
-      if(b.notas && !b.habilidades) b.habilidades = b.notas;
-      if(b.habilidades===undefined) b.habilidades="";
-      if(b.visible===undefined) b.visible=true;
-    });
+    migrateBestiaryData(s.bestiary);
   }
   if(!s.maps || !s.maps.length){
     s.maps = [{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }];
@@ -1997,19 +2062,27 @@ function tplCombate(c){
   '</div>';
 
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Armas del Personaje</span></div>';
-  var catalog = (state.weaponsCatalog||[]).filter(function(w){ return isGM() || w.visible !== false; });
+  var catalog = state.weaponsCatalog || [];
   (c.weapons||[]).forEach(function(w){
     var selectedCatItem = catalog.find(function(catItem){ return catItem.name === w.name || catItem.id === w.catalogId; });
+    var isBlocked = selectedCatItem ? (selectedCatItem.visible === false) : false;
     var infoText = selectedCatItem ? ('Daño: ' + selectedCatItem.dano + ' | Alcance: ' + selectedCatItem.alcance) : 'Selecciona un arma del compendio';
+    if(isBlocked){
+      infoText += ' | <span style="color:#F87171;font-weight:700;">[🔒 Bloqueada por el Máster - No usable]</span>';
+    }
 
-    html += '<div class="list-row weapons-row" style="grid-template-columns:1fr 36px 36px;">'+
+    html += '<div class="list-row weapons-row'+(isBlocked?' weapon-row-blocked':'')+'" style="grid-template-columns:1fr 36px 36px;">'+
       '<select data-action="select-weapon-catalog" data-id="'+w.id+'" aria-label="Seleccionar arma">'+
         '<option value="">-- Seleccionar Arma del Compendio --</option>'+
         catalog.map(function(catItem){
-          return '<option value="'+catItem.id+'" '+(selectedCatItem && selectedCatItem.id===catItem.id?'selected':'')+'>'+esc(catItem.name)+' ('+esc(catItem.dano)+')</option>';
+          var isLockedOpt = catItem.visible === false;
+          return '<option value="'+catItem.id+'" '+(selectedCatItem && selectedCatItem.id===catItem.id?'selected':'')+'>'+(isLockedOpt ? '🔒 ' : '')+esc(catItem.name)+' ('+esc(catItem.dano)+')'+(isLockedOpt ? ' [Bloqueada]' : '')+'</option>';
         }).join('')+
       '</select>'+
-      '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño" aria-label="Tirar daño">&#127922;</button>'+
+      (isBlocked && !isGM()
+        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
+        : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño" aria-label="Tirar daño">&#127922;</button>'
+      )+
       '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'+
     '</div>'+
     '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
@@ -2222,25 +2295,56 @@ function tplBestiario(s){
     return '<button class="f-pill '+(bestiaryContinentFilter===ct?'active':'')+'" data-action="set-bestiary-continent" data-continent="'+ct+'">'+ct+'</button>';
   }).join('');
 
+  var rarityList = ["Todos"].concat(RAREZAS_LIST);
+  var rarityPills = rarityList.map(function(r){
+    var col = r==="Legendaria"?"#FDE047":r==="Muy rara"?"#C084FC":r==="Rara"?"#60A5FA":r==="Común"?"#C2B196":"var(--ink-dim)";
+    var isAct = bestiaryRarityFilter === r;
+    return '<button class="f-pill '+(isAct?'active':'')+'" data-action="set-bestiary-rarity" data-val="'+r+'" style="border-color:'+col+';'+(isAct?'background:'+col+';color:#120D0A;font-weight:700;':'color:'+col+';')+'">'+r+'</button>';
+  }).join('');
+
+  var mountPills = [
+    {id:"Todos", label:"Todas"},
+    {id:"monturas", label:"🐎 Solo Monturas"},
+    {id:"no_monturas", label:"🚶 No montables"}
+  ].map(function(m){
+    return '<button class="f-pill '+(bestiaryMountFilter===m.id?'active':'')+'" data-action="set-bestiary-mount" data-val="'+m.id+'">'+m.label+'</button>';
+  }).join('');
+
   var visibleBestiary = (s.bestiary||[]).filter(function(b){
-    if(canEdit) return bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
-    return b.visible !== false && (bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter);
+    var matchCont = bestiaryContinentFilter==="Todos" || (b.continente||"Todos")===bestiaryContinentFilter;
+    var matchRar = bestiaryRarityFilter==="Todos" || (b.rarity||"Común")===bestiaryRarityFilter;
+    var matchMount = bestiaryMountFilter==="Todos" || (bestiaryMountFilter==="monturas" ? !!b.montable : !b.montable);
+    if(canEdit) return matchCont && matchRar && matchMount;
+    return b.visible !== false && matchCont && matchRar && matchMount;
   });
 
   var html = '<div class="section'+(canEdit?' gm-section':'')+'">'+
     '<div class="section-title"><span>'+(canEdit?'Bestiario y Monturas (GM)':'Bestiario y Monturas')+'</span></div>'+
-    '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+pills+'</div></div>';
+    '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+pills+'</div></div>'+
+    '<div class="filter-section"><div class="filter-label">Rareza</div><div class="filter-pills">'+rarityPills+'</div></div>'+
+    '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills">'+mountPills+'</div></div>';
 
   visibleBestiary.forEach(function(b){
     var imgStyle = b.image ? ' style="background-image:url(\''+b.image+'\')"' : '';
+    var rName = b.rarity || "Común";
+    var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
+    var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
 
-    html += '<div class="creature-card">'+
+    html += '<div class="creature-card '+rClass+'">'+
       '<div class="creature-card-header">'+
-        (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre de criatura" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.nombre)+'</div>')+
-        '<div style="display:flex;gap:4px;align-items:center;">'+
-          (canEdit ? '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;" data-scope="global" data-bind="bestiary.'+b.id+'.continente">'+
+        '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:wrap;">'+
+          (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre de criatura" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.05rem;font-weight:700;">'+esc(b.nombre)+'</div>')+
+          '<span class="item-badge '+bClass+'">'+rName+'</span>'+
+          '<span class="mount-pill '+(b.montable?'is-mount':'no-mount')+'">'+(b.montable?'🐎 Montura':'🚶 No montable')+'</span>'+
+        '</div>'+
+        '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'+
+          (canEdit ? '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);" data-scope="global" data-bind="bestiary.'+b.id+'.rarity" title="Rareza">'+
+            RAREZAS_LIST.map(function(r){return '<option value="'+r+'" '+((b.rarity||"Común")===r?'selected':'')+'>'+r+'</option>';}).join('')+
+          '</select>' : '')+
+          (canEdit ? '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);" data-scope="global" data-bind="bestiary.'+b.id+'.continente" title="Continente">'+
             CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
           '</select>' : '<span style="font-size:.7rem;color:var(--ink-dim);">'+esc(b.continente||"Todos")+'</span>')+
+          (canEdit ? '<button class="btn-compact '+(b.montable?'btn-solid-gold':'')+'" data-action="toggle-bestiary-mountable" data-id="'+b.id+'" title="Alternar si es montura">'+(b.montable?'🐎 Montable':'🚶 No montable')+'</button>' : '')+
           (canEdit ? '<button class="btn-compact" data-action="toggle-bestiary-visibility" data-id="'+b.id+'" title="Mostrar/Ocultar para jugadores">'+(b.visible!==false?'👁️':'🙈')+'</button>' : '')+
           (canEdit ? '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'" aria-label="Eliminar criatura">✕</button>' : '')+
         '</div>'+
@@ -2261,8 +2365,13 @@ function tplBestiario(s){
             (canEdit ? creatureFieldGlobal("Absorción","bestiary."+b.id+".absorcion",b.absorcion) : '<div class="creature-field"><label>Absorción</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.absorcion||"-")+'</span></div>')+
             (canEdit ? creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano) : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.dano||"-")+'</span></div>')+
             (canEdit ? creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad) : '<div class="creature-field"><label>Movilidad</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.movilidad||"-")+'</span></div>')+
+            (canEdit ? creatureFieldGlobal("Casillas Mov.","bestiary."+b.id+".casillasMovimiento",b.casillasMovimiento||"8") : '<div class="creature-field"><label>Casillas Mov.</label><span style="font-size:.8rem;color:var(--ink);font-weight:700;">🏃 '+(b.casillasMovimiento||"-")+' casillas</span></div>')+
+            (canEdit ? creatureFieldGlobal("Doma (Dif.)","bestiary."+b.id+".doma",b.doma||"3") : '<div class="creature-field"><label>Doma (Dif.)</label><span style="font-size:.8rem;color:var(--gold-light);font-weight:700;">🎯 Dif. '+(b.doma||"-")+'</span></div>')+
           '</div>'+
-          '<div class="creature-field"><label>Habilidades y Rasgos</label>'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px;flex-wrap:wrap;">'+
+            '<button class="tame-btn" data-action="roll-tame" data-name="'+esc(b.nombre)+'" data-diff="'+(b.doma||"3")+'" title="Realizar tirada de doma con d10">🎲 Tirada de Doma (Dif. '+(b.doma||"3")+')</button>'+
+          '</div>'+
+          '<div class="creature-field" style="margin-top:6px;"><label>Habilidades y Rasgos</label>'+
             (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.habilidades">'+esc(b.habilidades||b.notas||"")+'</textarea>' : (b.habilidades||b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.habilidades||b.notas)+'</p>':''))+
           '</div>'+
         '</div>'+
@@ -2384,16 +2493,20 @@ function tplMundoMapas(s){
 }
 
 function tplMundoArmas(s){
-  var catalog = (s.weaponsCatalog||[]).filter(function(w){ return isGM() || w.visible !== false; });
+  var catalog = s.weaponsCatalog || [];
   var canEdit = isGM();
   var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title"><span>'+(canEdit?'Catálogo de Armas (GM)':'Catálogo de Armas')+'</span></div>';
   
   catalog.forEach(function(w){
-    html += '<div class="creature-card">'+
+    var isLocked = (w.visible === false);
+    html += '<div class="creature-card weapon-card'+(isLocked?' is-locked':'')+'">'+
       '<div class="creature-card-header">'+
-        (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.name" value="'+esc(w.name)+'" placeholder="Nombre del arma">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(w.name)+'</div>')+
-        (canEdit ? '<div style="display:flex;gap:4px;align-items:center;">'+
-          '<button class="btn-compact" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="Mostrar/Ocultar para jugadores">'+(w.visible!==false?'👁️':'🙈')+'</button>'+
+        '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;flex-wrap:wrap;">'+
+          (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.name" value="'+esc(w.name)+'" placeholder="Nombre del arma">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;font-weight:700;">'+esc(w.name)+'</div>')+
+          (isLocked ? '<span class="weapon-status-badge locked" title="Arma bloqueada por el Máster">🔒 Bloqueada</span>' : '<span class="weapon-status-badge visible" title="Arma visible y usable para todos">👁️ Visible</span>')+
+        '</div>'+
+        (canEdit ? '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
+          '<button class="btn-compact btn-lock-weapon '+(isLocked?'locked':'')+'" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="'+(isLocked?'Desbloquear arma para jugadores':'Bloquear arma para jugadores')+'">'+(isLocked?'🔓 Desbloquear':'🔒 Bloquear')+'</button>'+
           '<button class="row-del" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'+
         '</div>' : '')+
       '</div>'+
@@ -2709,10 +2822,10 @@ function openCharModal(){
     var isNPC = !!c.isNPC;
     var canDelete = isGM() || !currentUser || (currentUser && c.owner_id === currentUser.id);
 
-    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'">'+
+    html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'" data-theme="'+cTheme+'">'+
       '<div style="display:flex;align-items:center;gap:12px;width:100%;">'+
         '<div class="cli-main-select" data-action="pick-char" data-id="'+c.id+'" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;">'+
-          '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
+          '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'" data-theme="'+cTheme+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
           '<div class="cli-info">'+
             '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+(c.id===state.activeId?' <span style="font-size:0.68rem;color:var(--gold-light);font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(176,141,87,0.22);margin-left:4px;border:1px solid rgba(176,141,87,0.4);">Activo</span>':'')+'</div>'+
             '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
@@ -2735,10 +2848,17 @@ function openCharModal(){
 }
 
 function openDataModal(){
-  var html = '<h2>Ajustes y Sesión<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
+  var att = getAuthAttempts();
+  var isLocked = att.lockoutUntil && att.lockoutUntil > Date.now();
+  var lastWeekly = localStorage.getItem("krysalis_last_weekly_backup");
+  var lastWeeklyTxt = lastWeekly ? new Date(lastWeekly).toLocaleDateString() : "Ninguna registrada";
+
+  var html = '<h2>Ajustes, Sesión y Seguridad<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   if(currentUser){
-    html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:12px;">Sesión activa: <b>'+esc(currentUser.email)+'</b> ('+currentRole.toUpperCase()+')</div>'+
-      '<button class="btn-solid-gold" style="width:100%;" data-action="auth-logout">Cerrar Sesión</button>';
+    html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:6px;border:1px solid var(--line);">'+
+      '<span>Conectado: <b style="color:var(--gold-light);">'+esc(currentUser.email)+'</b> ('+currentRole.toUpperCase()+')</span>'+
+      '<button class="btn-compact" data-action="auth-logout" style="padding:4px 10px;">Salir</button>'+
+    '</div>';
   } else {
     html += '<div class="field"><label>Correo Electrónico</label><input type="email" id="authEmail" placeholder="usuario@gmail.com"></div>'+
       '<div class="field" style="margin-top:8px;"><label>Contraseña</label><input type="password" id="authPass"></div>'+
@@ -2747,13 +2867,36 @@ function openDataModal(){
         '<button class="btn-compact" style="flex:1;" data-action="auth-signup">Registrarse</button>'+
       '</div>';
   }
-  html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px;">'+
-    '<div style="display:flex;gap:6px;">'+
-      '<button class="btn-compact" style="flex:1;" data-action="export-data">Exportar Backup</button>'+
-      '<button class="btn-compact" style="flex:1;" data-action="import-data">Importar Backup</button>'+
+
+  // Panel de Seguridad Activa
+  html += '<div style="margin-top:14px;background:rgba(20,15,12,0.6);border:1px solid rgba(176,141,87,0.25);border-radius:8px;padding:10px 12px;">'+
+    '<div style="font-size:0.75rem;font-weight:700;color:var(--gold-light);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;">'+
+      '🛡️ Protección del Servidor & RBAC'+
     '</div>'+
-    '<button class="btn-solid-gold" style="width:100%;margin-top:10px;padding:9px;" data-action="reset-all-characters">↻ Resetear Fichas a Valores Oficiales (PDF)</button>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.72rem;color:var(--ink-dim);">'+
+      '<div>• Anti Fuerza Bruta: <span style="color:#60A5FA;font-weight:700;">Activo (5 max)</span></div>'+
+      '<div>• Sesión Persistente: <span style="color:#4ADE80;font-weight:700;">Activa</span></div>'+
+      '<div>• Permisos Compendio: <span style="color:#FDE047;font-weight:700;">Solo GM</span></div>'+
+      '<div>• Copia Semanal: <span style="color:var(--gold-light);font-weight:700;">'+lastWeeklyTxt+'</span></div>'+
+    '</div>'+
   '</div>';
+
+  // Copias de Seguridad y Recuperación
+  html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">'+
+    '<div style="font-size:0.78rem;font-weight:700;color:var(--gold-light);margin-bottom:8px;">📦 Copias de Seguridad y Recuperación Completa</div>'+
+    '<div style="display:flex;gap:6px;flex-direction:column;">'+
+      '<div style="display:flex;gap:6px;">'+
+        '<button class="btn-compact" style="flex:1;padding:8px;" data-action="download-full-backup" title="Exportar personajes, bestiario, mapas, armas y lore en un único archivo JSON">💾 Descargar Copia Completa (.json)</button>'+
+        '<button class="btn-compact" style="flex:1;padding:8px;" data-action="import-data" title="Restaurar copia de seguridad desde un archivo JSON">📥 Restaurar Copia</button>'+
+      '</div>'+
+      (isGM() ? '<button class="btn-compact btn-solid-gold" style="width:100%;margin-top:4px;padding:8px;" data-action="cloud-backup-now" title="Guardar instantánea completa en la base de datos Supabase">☁️ Guardar Copia en la Nube Ahora</button>' : '')+
+    '</div>'+
+    '<div style="font-size:0.68rem;color:var(--ink-faint);margin-top:8px;line-height:1.35;border-left:2px solid var(--gold-dark);padding-left:8px;">'+
+      'Para emergencias o soporte técnico, las copias JSON descargadas pueden archivarse en Google Drive o enviarse por correo a <b style="color:var(--gold-light);">rolillo55ac@gmail.com</b>.'+
+    '</div>'+
+    '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:9px;" data-action="reset-all-characters">↻ Resetear Fichas a Valores Oficiales (PDF)</button>'+
+  '</div>';
+
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 }
@@ -2967,7 +3110,8 @@ function modalClick(e){
   if(action==="auth-login"){ supabaseLogin(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
   if(action==="auth-signup"){ supabaseSignup(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
   if(action==="auth-logout"){ supabaseLogout(); return; }
-  if(action==="export-data"){ exportData(); return; }
+  if(action==="export-data" || action==="download-full-backup"){ exportFullBackup(); return; }
+  if(action==="cloud-backup-now"){ performCloudBackup(false); return; }
   if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
   if(action==="reset-all-characters"){
     if(confirm("¿Deseas resetear los atributos, habilidades, combate, magias y equipo de los 5 personajes oficiales (Cherk, Ink, Bucky, Scarleth, Derek) a los valores exactos de sus fichas oficiales en PDF? Se conservarán las fotos de perfil.")){
@@ -2991,22 +3135,95 @@ function closeModals(){
   });
 }
 
-function exportData(){
-  var blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
-  var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "krysalis-backup.json"; a.click();
-  showToast("Backup exportado", "success");
+function exportFullBackup(){
+  var dateStr = new Date().toISOString().slice(0, 10);
+  var backupData = {
+    krysalis_system: "Krysalis RPG",
+    version: "v0.9 Beta",
+    backup_type: "full_disaster_recovery",
+    timestamp: new Date().toISOString(),
+    support_contact: "rolillo55ac@gmail.com",
+    state: state
+  };
+  var blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "krysalis_backup_completo_" + dateStr + ".json";
+  a.click();
+  showToast("Copia de seguridad completa descargada con éxito", "success");
 }
+
+function exportData(){
+  exportFullBackup();
+}
+
 function importData(file){
   var r = new FileReader();
   r.onload = function(){
     try{
-      state = migrateState(JSON.parse(r.result));
-      state.activeId = state.characters[0]?state.characters[0].id:"";
-      saveState(); closeModals(); renderTopbar(); renderTabbar(); renderTab();
-      showToast("Backup importado correctamente", "success");
-    }catch(e){ showToast("Archivo no válido.", "error"); }
+      var raw = JSON.parse(r.result);
+      var importedData = (raw && raw.state) ? raw.state : raw;
+      state = migrateState(importedData);
+      if(!state.activeId || !state.characters.some(function(x){ return x.id === state.activeId; })){
+        var validChars = getUserCharacters();
+        state.activeId = validChars[0] ? validChars[0].id : (state.characters[0] ? state.characters[0].id : "");
+      }
+      saveState(true);
+      if(isGM()){
+        pushSharedData();
+        pushMapsData();
+        state.characters.forEach(function(c){ pushCharacterById(c.id); });
+      }
+      closeModals(); renderTopbar(); renderTabbar(); renderTab();
+      showToast("Copia de seguridad restaurada correctamente", "success");
+    }catch(e){
+      console.error("Error importando backup:", e);
+      showToast("Archivo de copia no válido.", "error");
+    }
   };
   r.readAsText(file);
+}
+
+function checkWeeklyBackup(){
+  try{
+    var lastBackupStr = localStorage.getItem("krysalis_last_weekly_backup");
+    var now = Date.now();
+    var ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    if(!lastBackupStr || (now - new Date(lastBackupStr).getTime() > ONE_WEEK_MS)){
+      if(isGM()){
+        performCloudBackup(true);
+      }
+    }
+  }catch(e){
+    console.warn("Could not check weekly backup:", e);
+  }
+}
+
+async function performCloudBackup(isAuto){
+  if(!supabaseClient) return;
+  try{
+    var dateStr = new Date().toISOString().slice(0, 10);
+    var backupKey = 'backup_weekly_' + dateStr;
+    var res = await supabaseClient.from('campaign_map').upsert({
+      id: backupKey,
+      data: {
+        timestamp: new Date().toISOString(),
+        backupType: isAuto ? 'automatic_weekly' : 'manual_master',
+        state: state
+      },
+      markers: [],
+      updated_at: new Date().toISOString()
+    });
+    if(!res.error){
+      localStorage.setItem("krysalis_last_weekly_backup", new Date().toISOString());
+      if(!isAuto) showToast("Copia de seguridad guardada en la nube con éxito", "success");
+    } else {
+      if(!isAuto) showToast("Error al guardar copia en la nube", "error");
+    }
+  }catch(e){
+    console.error("Cloud backup error:", e);
+    if(!isAuto) showToast("Error al procesar copia en la nube", "error");
+  }
 }
 
 function resizeImageFile(file, maxDim, quality, callback){
@@ -3028,7 +3245,13 @@ function resizeImageFile(file, maxDim, quality, callback){
 function initSupabase(){
   if(!window.supabase) return;
   try{
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
     
     if(!realtimeChannel){
       realtimeChannel = supabaseClient.channel('realtime_all_changes', {
@@ -3189,8 +3412,27 @@ async function fetchUserProfile(){
 }
 
 async function supabaseLogin(em, pw){
+  var att = getAuthAttempts();
+  var now = Date.now();
+  if(att.lockoutUntil && att.lockoutUntil > now){
+    var remainingMins = Math.ceil((att.lockoutUntil - now) / 60000);
+    showToast("Bloqueo de seguridad por reiterados fallos. Espera " + remainingMins + " min.", "error");
+    return;
+  }
   var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
-  if(res.error) showToast(res.error.message, "error"); else closeModals();
+  if(res.error){
+    var updated = recordFailedLoginAttempt();
+    var remainingAttempts = MAX_LOGIN_ATTEMPTS - (updated.count || 0);
+    if(remainingAttempts <= 0){
+      showToast("Acceso bloqueado durante 15 minutos por seguridad.", "error");
+    } else {
+      showToast(res.error.message + " (Intentos restantes: " + remainingAttempts + ")", "error");
+    }
+  } else {
+    clearAuthAttempts();
+    closeModals();
+    showToast("Sesión iniciada con éxito", "success");
+  }
 }
 async function supabaseSignup(em, pw){
   var res = await supabaseClient.auth.signUp({email:em, password:pw});
@@ -3245,6 +3487,7 @@ async function pullAllFromSupabase(){
             return cName === oName;
           });
           if(existing){
+            var savedId = existing.id;
             var savedPortrait = existing.portrait || off.portrait;
             var savedOwner = existing.owner_id || off.owner_id;
             var savedDbId = existing.db_id;
@@ -3295,6 +3538,7 @@ async function pullAllFromSupabase(){
 function pushActiveChar(){
   if(!supabaseClient || !currentUser) return;
   var c = activeChar(); if(!c || !c.name || c.id==="empty") return;
+  if(!isGM() && c.owner_id && c.owner_id !== currentUser.id) return;
   var payload = {name:c.name, data:c, updated_at:new Date().toISOString()};
   if(c.owner_id) payload.owner_id = c.owner_id;
   if(c.db_id) payload.id = c.db_id;
@@ -3308,6 +3552,7 @@ function pushCharacterById(charId){
   if(!supabaseClient || !currentUser) return;
   var c = state.characters.find(function(x){ return x.id === charId; });
   if(!c) return;
+  if(!isGM() && c.owner_id && c.owner_id !== currentUser.id) return;
   var payload = {name:c.name, data:c, updated_at:new Date().toISOString()};
   if(c.owner_id) payload.owner_id = c.owner_id;
   if(c.db_id) payload.id = c.db_id;
@@ -3335,6 +3580,7 @@ async function pullMapFromSupabase(){
 }
 function pushMapsData(){
   if(!supabaseClient) return;
+  if(currentUser && !isGM()) return;
   supabaseClient.from('campaign_map').upsert({
     id: 'main_map',
     data: state.maps || [],
@@ -3371,6 +3617,7 @@ async function pullSharedDataFromSupabase(){
 
 function pushSharedData(){
   if(!supabaseClient) return;
+  if(currentUser && !isGM()) return;
   supabaseClient.from('campaign_map').upsert({
     id: 'world_compendium',
     data: {
@@ -3508,7 +3755,15 @@ function setBind(target, path, rawValue, inputType){
 function handleChange(e){
   var el = e.target.closest("[data-bind]"); if(!el) return;
   var isGlobal = el.getAttribute("data-scope")==="global";
+  if(isGlobal && currentUser && !isGM()){
+    showToast("Permiso denegado: solo el GM puede modificar datos globales.", "error");
+    return;
+  }
   var target = isGlobal ? state : activeChar();
+  if(!isGlobal && currentUser && !isGM() && target && target.owner_id && target.owner_id !== currentUser.id){
+    showToast("Permiso denegado: no puedes editar personajes de otros jugadores.", "error");
+    return;
+  }
   setBind(target, el.getAttribute("data-bind"), el.value, el.type);
   if(isGlobal){
     saveState(true);
@@ -3864,6 +4119,10 @@ function handleClick(e){
     var wpn = (c.weapons||[]).find(function(w){return w.id===wid;});
     if(wpn){
       var catItem = (state.weaponsCatalog||[]).find(function(ci){ return ci.name === wpn.name || ci.id === wpn.catalogId; });
+      if(catItem && catItem.visible === false && !isGM()){
+        showToast("Esta arma ha sido bloqueada por el Máster y no se puede usar.", "warning");
+        return;
+      }
       var formula = catItem ? catItem.dano : "1d6";
       performWeaponRoll(c.name, wpn.name||"Arma", formula);
     }
@@ -3889,7 +4148,13 @@ function handleClick(e){
     if(!isGM()) return;
     var wid2 = btn.getAttribute("data-id");
     var w = (state.weaponsCatalog||[]).find(function(x){return x.id===wid2;});
-    if(w){ w.visible = w.visible===false ? true : false; saveState(true); pushSharedData(); renderTab(); }
+    if(w){
+      w.visible = (w.visible===false) ? true : false;
+      saveState(true);
+      pushSharedData();
+      renderTab();
+      showToast(w.name + (w.visible ? " ahora es visible y usable para todos" : " ha sido bloqueada por el Máster"), "info");
+    }
     return;
   }
   if(action==="add-global-weapon"){
@@ -4035,7 +4300,85 @@ function handleClick(e){
     if(b){ b.visible = b.visible===false ? true : false; saveState(true); pushSharedData(); renderTab(); }
     return;
   }
-  if(action==="add-bestiary"){ if(!isGM()) return; state.bestiary.push({id:uid(),nombre:"Nueva Criatura",continente:"Todos",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",habilidades:"",visible:true}); saveState(true); pushSharedData(); renderTab(); return; }
+  if(action==="toggle-bestiary-mountable"){
+    if(!isGM()) return;
+    var bid = btn.getAttribute("data-id");
+    var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
+    if(b){
+      b.montable = !b.montable;
+      saveState(true);
+      pushSharedData();
+      renderTab();
+      showToast(b.nombre + (b.montable ? " marcada como montura" : " marcada como no montable"), "info");
+    }
+    return;
+  }
+  if(action==="set-bestiary-rarity"){
+    bestiaryRarityFilter = btn.getAttribute("data-val") || "Todos";
+    renderTab();
+    return;
+  }
+  if(action==="set-bestiary-mount"){
+    bestiaryMountFilter = btn.getAttribute("data-val") || "Todos";
+    renderTab();
+    return;
+  }
+  if(action==="roll-tame"){
+    var creatureName = btn.getAttribute("data-name") || "Criatura";
+    var diff = parseInt(btn.getAttribute("data-diff"), 10) || 3;
+    var faunaDef = SKILL_DEFS.find(function(s){ return s.id === "fauna"; });
+    var cabalgarDef = SKILL_DEFS.find(function(s){ return s.id === "cabalgar"; });
+    var faunaTotal = faunaDef ? skillTotal(faunaDef, c) : 0;
+    var cabalgarTotal = cabalgarDef ? skillTotal(cabalgarDef, c) : 0;
+    var carismaVal = (c.attrs && c.attrs.carisma) ? num(c.attrs.carisma, 0) : 0;
+    var bestBonus = Math.max(faunaTotal, cabalgarTotal, carismaVal);
+    var chosenStat = bestBonus === faunaTotal ? "Fauna" : (bestBonus === cabalgarTotal ? "Cabalgar" : "Carisma");
+
+    var d = rollDie(10);
+    var total = d + bestBonus;
+    var isSuccess = total >= diff;
+    var formula = "1d10 (" + d + ") + " + chosenStat + " (" + bestBonus + ") vs Dif. " + diff;
+    var rollItem = {
+      id: uid(),
+      charName: c.name,
+      label: "Doma (" + creatureName + ")" + (isSuccess ? " ✅ ÉXITO" : " ❌ FALLO"),
+      total: total,
+      formulaText: formula,
+      isCrit: d === 10,
+      isFumble: d === 1,
+      ts: Date.now()
+    };
+    state.rollLog.unshift(rollItem);
+    if(state.rollLog.length > 20) state.rollLog.length = 20;
+    saveState();
+    broadcastDiceRoll(rollItem);
+    showToast((isSuccess ? "¡Éxito domando a " : "Fallo al domar a ") + creatureName + " (Total: " + total + " vs Dif " + diff + ")", isSuccess ? "success" : "warning");
+    if(state.activeTab === "bestiario" || state.activeTab === "combate") renderTab();
+    return;
+  }
+  if(action==="add-bestiary"){
+    if(!isGM()) return;
+    state.bestiary.push({
+      id: uid(),
+      nombre: "Nueva Criatura",
+      continente: "Todos",
+      rarity: "Común",
+      montable: false,
+      casillasMovimiento: "8",
+      doma: "3",
+      vida: "",
+      defensa: "",
+      absorcion: "",
+      dano: "",
+      movilidad: "",
+      habilidades: "",
+      visible: true
+    });
+    saveState(true);
+    pushSharedData();
+    renderTab();
+    return;
+  }
   if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(true); pushSharedData(); renderTab(); return; }
   if(action==="toggle-lore-visibility"){
     if(!isGM()) return;
@@ -4357,7 +4700,9 @@ var pendingBestiaryId = null;
 var pendingNewMapName = null;
 
 function init(){
+  updateLoadingProgress(25, "Iniciando compendio y grimorios...");
   state = loadState();
+  updateLoadingProgress(60, "Sincronizando aventureros y bestiario...");
   renderTopbar();
   renderTabbar();
   renderTab();
@@ -4465,7 +4810,12 @@ function init(){
     e.target.value="";
   });
 
+  updateLoadingProgress(85, "Conectando al éter y verificando seguridad...");
   initSupabase();
+  checkWeeklyBackup();
+  updateLoadingProgress(100, "¡Bienvenido a Krysalis!");
+  setTimeout(hideLoadingScreen, 700);
+  setTimeout(hideLoadingScreen, 3500);
 }
 
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
