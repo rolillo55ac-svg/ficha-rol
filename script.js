@@ -1556,10 +1556,14 @@ function renderTopbar(){
   var hpNumsClass = curPv < 0 ? 'gauge-nums dying' : (curPv === 0 ? 'gauge-nums unconscious' : 'gauge-nums');
   var hpStatusBadge = curPv < 0 ? '<span class="status-pill dying">💀 Agonizando ('+curPv+')</span>' : (curPv === 0 ? '<span class="status-pill unconscious">💤 Inconsciente</span>' : '');
 
+  var crestContent = (c.portrait && c.portrait.trim())
+    ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="crest-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="crest-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
+    : '<span class="crest-initial">' + esc(c.name.charAt(0).toUpperCase()) + '</span>';
+
   document.getElementById("topbar").innerHTML =
     '<div class="topbar-row">'+
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
-        '<span class="'+crestClass+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</span>'+
+        '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
           '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9 Beta</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
@@ -2822,10 +2826,14 @@ function openCharModal(){
     var isNPC = !!c.isNPC;
     var canDelete = isGM() || !currentUser || (currentUser && c.owner_id === currentUser.id);
 
+    var avatarContent = (c.portrait && c.portrait.trim())
+      ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="cli-avatar-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="cli-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
+      : '<span class="cli-initial">' + esc(c.name.charAt(0).toUpperCase()) + '</span>';
+
     html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'" data-theme="'+cTheme+'">'+
       '<div style="display:flex;align-items:center;gap:12px;width:100%;">'+
         '<div class="cli-main-select" data-action="pick-char" data-id="'+c.id+'" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;">'+
-          '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'" data-theme="'+cTheme+'"'+crestStyle+'>'+(c.portrait?'':esc(c.name.charAt(0).toUpperCase()))+'</div>'+
+          '<div class="char-list-avatar'+(isNPC?' npc-avatar':'')+'" data-theme="'+cTheme+'"'+crestStyle+'>'+avatarContent+'</div>'+
           '<div class="cli-info">'+
             '<div class="cli-name'+(isNPC?' npc-name':'')+'">'+esc(c.name)+(c.id===state.activeId?' <span style="font-size:0.68rem;color:var(--gold-light);font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(176,141,87,0.22);margin-left:4px;border:1px solid rgba(176,141,87,0.4);">Activo</span>':'')+'</div>'+
             '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
@@ -2848,53 +2856,36 @@ function openCharModal(){
 }
 
 function openDataModal(){
-  var att = getAuthAttempts();
-  var isLocked = att.lockoutUntil && att.lockoutUntil > Date.now();
-  var lastWeekly = localStorage.getItem("krysalis_last_weekly_backup");
-  var lastWeeklyTxt = lastWeekly ? new Date(lastWeekly).toLocaleDateString() : "Ninguna registrada";
-
-  var html = '<h2>Ajustes, Sesión y Seguridad<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
+  var html = '<h2>Ajustes y Cuenta<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   if(currentUser){
-    html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:6px;border:1px solid var(--line);">'+
-      '<span>Conectado: <b style="color:var(--gold-light);">'+esc(currentUser.email)+'</b> ('+currentRole.toUpperCase()+')</span>'+
-      '<button class="btn-compact" data-action="auth-logout" style="padding:4px 10px;">Salir</button>'+
+    html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.3);padding:10px 12px;border-radius:8px;border:1px solid var(--line);">'+
+      '<div>'+
+        '<div style="font-size:0.7rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.04em;">Conectado como</div>'+
+        '<div style="color:var(--gold-light);font-weight:700;font-size:0.95rem;">'+esc(currentUser.email)+' <span style="font-size:0.72rem;color:var(--gold);font-weight:400;">('+ (currentRole === 'gm' ? 'Máster' : 'Jugador') +')</span></div>'+
+      '</div>'+
+      '<button class="btn-compact" data-action="auth-logout" style="padding:6px 12px;">Cerrar sesión</button>'+
     '</div>';
   } else {
-    html += '<div class="field"><label>Correo Electrónico</label><input type="email" id="authEmail" placeholder="usuario@gmail.com"></div>'+
-      '<div class="field" style="margin-top:8px;"><label>Contraseña</label><input type="password" id="authPass"></div>'+
-      '<div style="display:flex;gap:6px;margin-top:12px;">'+
-        '<button class="btn-solid-gold" style="flex:1;" data-action="auth-login">Entrar</button>'+
-        '<button class="btn-compact" style="flex:1;" data-action="auth-signup">Registrarse</button>'+
+    html += '<div style="font-size:0.8rem;color:var(--ink-dim);margin-bottom:10px;">Inicia sesión con tu cuenta para guardar y sincronizar tu personaje:</div>'+
+      '<div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="tu-correo@gmail.com"></div>'+
+      '<div class="field" style="margin-top:8px;"><label>Contraseña</label><input type="password" id="authPass" placeholder="••••••••"></div>'+
+      '<div style="display:flex;gap:8px;margin-top:12px;">'+
+        '<button class="btn-solid-gold" style="flex:1;padding:8px;" data-action="auth-login">Entrar</button>'+
+        '<button class="btn-compact" style="flex:1;padding:8px;" data-action="auth-signup">Crear cuenta</button>'+
       '</div>';
   }
 
-  // Panel de Seguridad Activa
-  html += '<div style="margin-top:14px;background:rgba(20,15,12,0.6);border:1px solid rgba(176,141,87,0.25);border-radius:8px;padding:10px 12px;">'+
-    '<div style="font-size:0.75rem;font-weight:700;color:var(--gold-light);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;">'+
-      '🛡️ Protección del Servidor & RBAC'+
+  html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">'+
+    '<div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);margin-bottom:8px;">💾 Guardar y restaurar partida</div>'+
+    '<div style="display:flex;gap:8px;">'+
+      '<button class="btn-compact" style="flex:1;padding:8px;" data-action="download-full-backup" title="Descargar un archivo JSON con todos los datos">Descargar copia (.json)</button>'+
+      '<button class="btn-compact" style="flex:1;padding:8px;" data-action="import-data" title="Cargar un archivo de copia anterior">Cargar copia</button>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.72rem;color:var(--ink-dim);">'+
-      '<div>• Anti Fuerza Bruta: <span style="color:#60A5FA;font-weight:700;">Activo (5 max)</span></div>'+
-      '<div>• Sesión Persistente: <span style="color:#4ADE80;font-weight:700;">Activa</span></div>'+
-      '<div>• Permisos Compendio: <span style="color:#FDE047;font-weight:700;">Solo GM</span></div>'+
-      '<div>• Copia Semanal: <span style="color:var(--gold-light);font-weight:700;">'+lastWeeklyTxt+'</span></div>'+
+    (isGM() ? '<button class="btn-compact btn-solid-gold" style="width:100%;margin-top:8px;padding:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
+    '<div style="font-size:0.72rem;color:var(--ink-faint);margin-top:10px;line-height:1.4;">'+
+      '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo a Lolo (rolillo55ac@gmail.com).</i>'+
     '</div>'+
-  '</div>';
-
-  // Copias de Seguridad y Recuperación
-  html += '<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">'+
-    '<div style="font-size:0.78rem;font-weight:700;color:var(--gold-light);margin-bottom:8px;">📦 Copias de Seguridad y Recuperación Completa</div>'+
-    '<div style="display:flex;gap:6px;flex-direction:column;">'+
-      '<div style="display:flex;gap:6px;">'+
-        '<button class="btn-compact" style="flex:1;padding:8px;" data-action="download-full-backup" title="Exportar personajes, bestiario, mapas, armas y lore en un único archivo JSON">💾 Descargar Copia Completa (.json)</button>'+
-        '<button class="btn-compact" style="flex:1;padding:8px;" data-action="import-data" title="Restaurar copia de seguridad desde un archivo JSON">📥 Restaurar Copia</button>'+
-      '</div>'+
-      (isGM() ? '<button class="btn-compact btn-solid-gold" style="width:100%;margin-top:4px;padding:8px;" data-action="cloud-backup-now" title="Guardar instantánea completa en la base de datos Supabase">☁️ Guardar Copia en la Nube Ahora</button>' : '')+
-    '</div>'+
-    '<div style="font-size:0.68rem;color:var(--ink-faint);margin-top:8px;line-height:1.35;border-left:2px solid var(--gold-dark);padding-left:8px;">'+
-      'Para emergencias o soporte técnico, las copias JSON descargadas pueden archivarse en Google Drive o enviarse por correo a <b style="color:var(--gold-light);">rolillo55ac@gmail.com</b>.'+
-    '</div>'+
-    '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:9px;" data-action="reset-all-characters">↻ Resetear Fichas a Valores Oficiales (PDF)</button>'+
+    '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:9px;" data-action="reset-all-characters">↻ Restablecer personajes oficiales (PDF)</button>'+
   '</div>';
 
   document.getElementById("dataModal").innerHTML = html;
@@ -3416,7 +3407,7 @@ async function supabaseLogin(em, pw){
   var now = Date.now();
   if(att.lockoutUntil && att.lockoutUntil > now){
     var remainingMins = Math.ceil((att.lockoutUntil - now) / 60000);
-    showToast("Bloqueo de seguridad por reiterados fallos. Espera " + remainingMins + " min.", "error");
+    showToast("Demasiados intentos seguidos. Espera " + remainingMins + " min para volver a probar.", "warning");
     return;
   }
   var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
@@ -3424,14 +3415,15 @@ async function supabaseLogin(em, pw){
     var updated = recordFailedLoginAttempt();
     var remainingAttempts = MAX_LOGIN_ATTEMPTS - (updated.count || 0);
     if(remainingAttempts <= 0){
-      showToast("Acceso bloqueado durante 15 minutos por seguridad.", "error");
+      showToast("Has fallado 5 veces seguidas. Espera 15 minutos para volver a probar.", "error");
     } else {
-      showToast(res.error.message + " (Intentos restantes: " + remainingAttempts + ")", "error");
+      var msg = res.error.message.includes("Invalid login") ? "Contraseña o email incorrectos" : res.error.message;
+      showToast(msg + " (te quedan " + remainingAttempts + " intentos)", "error");
     }
   } else {
     clearAuthAttempts();
     closeModals();
-    showToast("Sesión iniciada con éxito", "success");
+    showToast("¡Sesión iniciada!", "success");
   }
 }
 async function supabaseSignup(em, pw){
@@ -3756,12 +3748,12 @@ function handleChange(e){
   var el = e.target.closest("[data-bind]"); if(!el) return;
   var isGlobal = el.getAttribute("data-scope")==="global";
   if(isGlobal && currentUser && !isGM()){
-    showToast("Permiso denegado: solo el GM puede modificar datos globales.", "error");
+    showToast("Solo el Máster puede editar datos del compendio o del mundo.", "warning");
     return;
   }
   var target = isGlobal ? state : activeChar();
   if(!isGlobal && currentUser && !isGM() && target && target.owner_id && target.owner_id !== currentUser.id){
-    showToast("Permiso denegado: no puedes editar personajes de otros jugadores.", "error");
+    showToast("Esa ficha es de otro jugador.", "warning");
     return;
   }
   setBind(target, el.getAttribute("data-bind"), el.value, el.type);
@@ -4700,9 +4692,9 @@ var pendingBestiaryId = null;
 var pendingNewMapName = null;
 
 function init(){
-  updateLoadingProgress(25, "Iniciando compendio y grimorios...");
+  updateLoadingProgress(25, "Cargando fichas...");
   state = loadState();
-  updateLoadingProgress(60, "Sincronizando aventureros y bestiario...");
+  updateLoadingProgress(60, "Preparando compendio...");
   renderTopbar();
   renderTabbar();
   renderTab();
@@ -4810,10 +4802,10 @@ function init(){
     e.target.value="";
   });
 
-  updateLoadingProgress(85, "Conectando al éter y verificando seguridad...");
+  updateLoadingProgress(85, "Conectando con la partida...");
   initSupabase();
   checkWeeklyBackup();
-  updateLoadingProgress(100, "¡Bienvenido a Krysalis!");
+  updateLoadingProgress(100, "¡Listo!");
   setTimeout(hideLoadingScreen, 700);
   setTimeout(hideLoadingScreen, 3500);
 }
