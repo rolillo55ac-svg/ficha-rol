@@ -189,6 +189,7 @@ function getOfficialCharacters(){
     // 1. CHERK
     {
       id: "char_cherk",
+      db_id: "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3",
       name: "Cherk",
       theme: "teal",
       portrait: null,
@@ -301,6 +302,7 @@ function getOfficialCharacters(){
     // 2. INK
     {
       id: "char_ink",
+      db_id: "ece1cdb6-f8c6-4010-b3e8-045887dc92a3",
       name: "Ink",
       theme: "purple",
       portrait: null,
@@ -434,6 +436,7 @@ function getOfficialCharacters(){
     // 3. BUCKY
     {
       id: "char_baky",
+      db_id: "4d8dd9b1-b5aa-430e-ae19-79c35b6c3c5e",
       name: "Bucky",
       theme: "blue",
       portrait: null,
@@ -520,6 +523,7 @@ function getOfficialCharacters(){
     // 4. SCARLETH / WINTER
     {
       id: "char_scarleth",
+      db_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
       name: "Scarleth",
       theme: "default",
       portrait: null,
@@ -637,6 +641,7 @@ function getOfficialCharacters(){
     // 5. DEREK (Personaje jugable de Scarleth)
     {
       id: "char_derek",
+      db_id: "d9dee50e-051d-4058-b4a5-d46c809fbb25",
       name: "Derek",
       theme: "purple",
       portrait: null,
@@ -975,19 +980,16 @@ function migrateState(s){
         return cName === oName;
       });
       if(existing){
-        var savedPortrait = existing.portrait || off.portrait;
-        var savedOwner = existing.owner_id || off.owner_id;
-        var savedTheme = existing.theme || off.theme;
-        var savedEmail = existing.ownerEmail || off.ownerEmail;
-        var savedId = existing.id;
-        var savedDbId = existing.db_id;
-        Object.assign(existing, JSON.parse(JSON.stringify(off)));
-        existing.id = savedId;
-        if(savedDbId) existing.db_id = savedDbId;
-        existing.portrait = savedPortrait;
-        existing.owner_id = savedOwner;
-        existing.ownerEmail = savedEmail;
-        existing.theme = savedTheme;
+        if(!existing.db_id && off.db_id) existing.db_id = off.db_id;
+        if(!existing.portrait && off.portrait) existing.portrait = off.portrait;
+        if(!existing.theme && off.theme) existing.theme = off.theme;
+        if(!existing.owner_id && off.owner_id) existing.owner_id = off.owner_id;
+        if(!existing.ownerEmail && off.ownerEmail) existing.ownerEmail = off.ownerEmail;
+        if(!existing.combat) existing.combat = JSON.parse(JSON.stringify(off.combat||{}));
+        if(!existing.inventory) existing.inventory = JSON.parse(JSON.stringify(off.inventory||[]));
+        if(!existing.weapons) existing.weapons = JSON.parse(JSON.stringify(off.weapons||[]));
+        if(!existing.armors) existing.armors = JSON.parse(JSON.stringify(off.armors||[]));
+        if(!existing.spells) existing.spells = JSON.parse(JSON.stringify(off.spells||[]));
         existing.officialDataVersion = 4;
       } else {
         var nOff = JSON.parse(JSON.stringify(off));
@@ -1079,7 +1081,7 @@ function flushPendingSync(){
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = null;
   }
-  if(!supabaseClient || !currentUser || isRemoteSyncing) return;
+  if(!supabaseClient || isRemoteSyncing) return;
 
   var toPush = new Set(dirtyCharIds);
   (state.characters || []).forEach(function(c){
@@ -1094,7 +1096,7 @@ function flushPendingSync(){
   if(isGlobalDirty || state._isSharedDirty){
     isGlobalDirty = false;
     state._isSharedDirty = false;
-    if(isGM()) pushSharedData();
+    if(isGM() || !currentUser) pushSharedData();
   }
 }
 
@@ -1114,7 +1116,7 @@ function saveState(skipRemote){
   }catch(e){
     console.error("Error al guardar en localStorage:", e);
   }
-  if(!skipRemote && supabaseClient && currentUser && !isRemoteSyncing){
+  if(!skipRemote && supabaseClient && !isRemoteSyncing){
     updateSyncBadge("saving");
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){
@@ -1145,25 +1147,12 @@ function isCharOwner(c, user){
 
 function canEditChar(c){
   if(!c) return false;
-  if(isGM()) return true;
-  if(!currentUser) return true;
-  if(c.isNPC) return false;
-  if(!c.owner_id) return true;
-  return isCharOwner(c, currentUser);
+  return true; // Todos los jugadores y el máster pueden editar y guardar su ficha
 }
 
 function getUserCharacters(){
   if(isGM()) return state.characters;
-  if(!currentUser) return state.characters.filter(function(c){ return !c.isNPC; });
-  var owned = state.characters.filter(function(c){ 
-    return isCharOwner(c, currentUser);
-  });
-  if(owned.length > 0) return owned;
-  var unclaimed = state.characters.filter(function(c){ 
-    return !c.owner_id && !c.isNPC;
-  });
-  if(unclaimed.length > 0) return unclaimed;
-  return state.characters.filter(function(c){ return !c.isNPC; });
+  return (state.characters || []).filter(function(c){ return !c.isNPC; });
 }
 
 function activeChar(){
@@ -1635,7 +1624,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.1</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.2</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -2917,9 +2906,9 @@ function openCharModal(){
       '</div>'+
     '</div>';
   });
+  html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>';
   if(isGM() || !currentUser){
-    html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>'+
-            '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button>';
+    html += '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button>';
   }
   document.getElementById("charModal").innerHTML = html;
   document.getElementById("charModalOverlay").classList.remove("hidden");
@@ -3107,13 +3096,21 @@ function modalClick(e){
     return;
   }
   if(action==="add-char"){
-    if(!isGM()) return;
     var nName = prompt("Nombre del nuevo personaje:");
-    if(nName){
-      var nc = blankCharacter(nName);
-      state.characters.push(nc); state.activeId = nc.id;
-      saveState(); closeModals(); renderTopbar(); renderTab();
-      showToast("Personaje creado: " + nName, "success");
+    if(nName && nName.trim()){
+      var nc = blankCharacter(nName.trim());
+      if(currentUser && currentUser.id) nc.owner_id = currentUser.id;
+      nc._isDirty = true;
+      nc._lastLocalEdit = Date.now();
+      state.characters.push(nc);
+      state.activeId = nc.id;
+      markCharDirty(nc.id);
+      saveState(false);
+      pushCharacterById(nc.id);
+      closeModals();
+      renderTopbar();
+      renderTab();
+      showToast("Personaje creado: " + nName.trim(), "success");
     }
     return;
   }
@@ -3373,14 +3370,16 @@ function initSupabase(){
 
     pullMapFromSupabase();
     pullSharedDataFromSupabase();
+    pullAllFromSupabase();
 
     supabaseClient.auth.getSession().then(function(res){
       if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
+      else { updateSyncBadge("synced"); }
     }).catch(function(e){ console.error('Supabase error:', e); });
 
     supabaseClient.auth.onAuthStateChange(function(e, session){
       currentUser = session ? session.user : null;
-      if(currentUser){ fetchUserProfile(); } else { currentRole='player'; updateSyncBadge("local"); renderTopbar(); renderTab(); }
+      if(currentUser){ fetchUserProfile(); } else { currentRole='player'; updateSyncBadge("synced"); renderTopbar(); renderTab(); }
     });
   }catch(e){ console.error('Supabase error:', e); }
 }
@@ -3526,7 +3525,7 @@ async function supabaseLogout(){
   showToast("Sesión cerrada", "info");
 }
 async function pullAllFromSupabase(){
-  if(!supabaseClient || !currentUser) return;
+  if(!supabaseClient) return;
   isRemoteSyncing = true;
   try{
     var charRes = await supabaseClient.from('characters').select('*');
@@ -3631,11 +3630,50 @@ async function pullAllFromSupabase(){
   }
 }
 
+function sendKeepalivePush(c){
+  if(!c || !c.name || c.id==="empty") return;
+  try{
+    var n = (c.name||"").trim().toLowerCase();
+    var dbId = c.db_id;
+    if(!dbId){
+      if(n === "derek") dbId = "d9dee50e-051d-4058-b4a5-d46c809fbb25";
+      else if(n.includes("scarleth") || n.includes("winter")) dbId = "5e9c545e-176a-4e99-a3e7-299f89fa0779";
+      else if(n.includes("bucky") || n.includes("baky")) dbId = "4d8dd9b1-b5aa-430e-ae19-79c35b6c3c5e";
+      else if(n.includes("cherk")) dbId = "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3";
+      else if(n.includes("ink")) dbId = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
+    }
+    var payload = { name: c.name, data: c, updated_at: new Date().toISOString() };
+    if(dbId) payload.id = dbId;
+    if(c.owner_id) payload.owner_id = c.owner_id;
+    
+    var url = SUPABASE_URL + "/rest/v1/characters";
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON,
+        "Authorization": "Bearer " + SUPABASE_ANON,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(payload),
+      keepalive: true
+    }).catch(function(){});
+  }catch(e){}
+}
+
 function pushCharacterById(charId){
-  if(!supabaseClient || !currentUser) return;
+  if(!supabaseClient) return;
   var c = (state.characters||[]).find(function(x){ return x.id === charId; });
   if(!c || !c.name || c.id==="empty") return;
-  if(!canEditChar(c)) return;
+
+  if(!c.db_id){
+    var n = (c.name||"").trim().toLowerCase();
+    if(n === "derek") c.db_id = "d9dee50e-051d-4058-b4a5-d46c809fbb25";
+    else if(n.includes("scarleth") || n.includes("winter")) c.db_id = "5e9c545e-176a-4e99-a3e7-299f89fa0779";
+    else if(n.includes("bucky") || n.includes("baky")) c.db_id = "4d8dd9b1-b5aa-430e-ae19-79c35b6c3c5e";
+    else if(n.includes("cherk")) c.db_id = "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3";
+    else if(n.includes("ink")) c.db_id = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
+  }
 
   if(!c.owner_id && currentUser && !c.isNPC){
     c.owner_id = currentUser.id;
@@ -4956,13 +4994,22 @@ function init(){
       try { document.activeElement.blur(); } catch(e){}
     }
     flushPendingSync();
+    (state.characters || []).forEach(function(c){
+      if(c && c._isDirty) sendKeepalivePush(c);
+    });
   });
   window.addEventListener("pagehide", function(){
     flushPendingSync();
+    (state.characters || []).forEach(function(c){
+      if(c && c._isDirty) sendKeepalivePush(c);
+    });
   });
   document.addEventListener("visibilitychange", function(){
     if(document.visibilityState === "hidden"){
       flushPendingSync();
+      (state.characters || []).forEach(function(c){
+        if(c && c._isDirty) sendKeepalivePush(c);
+      });
     }
   });
 

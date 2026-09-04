@@ -1,144 +1,170 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Krysalis · Fichas de Rol v0.9.1</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="style.css?v=0.9.1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Krysalis · Fichas de Rol v0.9 Beta</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css?v=0.9b">
 </head>
+
 <body>
-<div id="loadingScreen" class="loading-screen" aria-live="polite">
-  <div class="loading-content">
-    <div class="loading-emblem-wrap">
-      <div class="loading-rune-ring"></div>
-      <div class="loading-glow"></div>
-      <svg class="loading-emblem" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Emblema de Krysalis">
-        <defs>
-          <radialGradient id="gemGrad" cx="40%" cy="35%" r="65%">
-            <stop offset="0%" stop-color="#FF7685"/>
-            <stop offset="45%" stop-color="#C84B57"/>
-            <stop offset="85%" stop-color="#8C252F"/>
-            <stop offset="100%" stop-color="#4A0E14"/>
-          </radialGradient>
-          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#FFF3D4"/>
-            <stop offset="30%" stop-color="#DEC392"/>
-            <stop offset="70%" stop-color="#B08D57"/>
-            <stop offset="100%" stop-color="#6E4F23"/>
-          </linearGradient>
-          <linearGradient id="goldDark" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#553A15"/>
-            <stop offset="50%" stop-color="#91703C"/>
-            <stop offset="100%" stop-color="#DEC392"/>
-          </linearGradient>
-          <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
-        </defs>
+  <div id="loadingScreen" class="loading-screen" aria-live="polite">
+    <div class="loading-content">
+      <div class="loading-emblem-wrap">
+        <div class="loading-rune-ring"></div>
+        <div class="loading-glow"></div>
+        <svg class="loading-emblem" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"
+          aria-label="Emblema de Krysalis">
+          <defs>
+            <radialGradient id="gemGrad" cx="40%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#FF7685" />
+              <stop offset="45%" stop-color="#C84B57" />
+              <stop offset="85%" stop-color="#8C252F" />
+              <stop offset="100%" stop-color="#4A0E14" />
+            </radialGradient>
+            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFF3D4" />
+              <stop offset="30%" stop-color="#DEC392" />
+              <stop offset="70%" stop-color="#B08D57" />
+              <stop offset="100%" stop-color="#6E4F23" />
+            </linearGradient>
+            <linearGradient id="goldDark" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#553A15" />
+              <stop offset="50%" stop-color="#91703C" />
+              <stop offset="100%" stop-color="#DEC392" />
+            </linearGradient>
+            <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
 
-        <!-- Anillo exterior ornamental -->
-        <circle cx="100" cy="100" r="92" stroke="url(#goldDark)" stroke-width="1.5" stroke-dasharray="6 3" opacity="0.6"/>
-        <circle cx="100" cy="100" r="86" stroke="url(#goldGrad)" stroke-width="2" opacity="0.85"/>
-        <circle cx="100" cy="100" r="78" stroke="url(#goldGrad)" stroke-width="1" stroke-dasharray="2 4" opacity="0.5"/>
+          <!-- Anillo exterior ornamental -->
+          <circle cx="100" cy="100" r="92" stroke="url(#goldDark)" stroke-width="1.5" stroke-dasharray="6 3"
+            opacity="0.6" />
+          <circle cx="100" cy="100" r="86" stroke="url(#goldGrad)" stroke-width="2" opacity="0.85" />
+          <circle cx="100" cy="100" r="78" stroke="url(#goldGrad)" stroke-width="1" stroke-dasharray="2 4"
+            opacity="0.5" />
 
-        <!-- Puntos cardinales de la rosa de los vientos / compás -->
-        <polygon points="100,10 104,26 100,22 96,26" fill="url(#goldGrad)"/>
-        <polygon points="100,190 104,174 100,178 96,174" fill="url(#goldGrad)"/>
-        <polygon points="10,100 26,104 22,100 26,96" fill="url(#goldGrad)"/>
-        <polygon points="190,100 174,104 178,100 174,96" fill="url(#goldGrad)"/>
+          <!-- Puntos cardinales de la rosa de los vientos / compás -->
+          <polygon points="100,10 104,26 100,22 96,26" fill="url(#goldGrad)" />
+          <polygon points="100,190 104,174 100,178 96,174" fill="url(#goldGrad)" />
+          <polygon points="10,100 26,104 22,100 26,96" fill="url(#goldGrad)" />
+          <polygon points="190,100 174,104 178,100 174,96" fill="url(#goldGrad)" />
 
-        <!-- Puntos ordinales pequeños -->
-        <polygon points="36,36 47,44 44,47" fill="url(#goldGrad)" opacity="0.8"/>
-        <polygon points="164,36 153,44 156,47" fill="url(#goldGrad)" opacity="0.8"/>
-        <polygon points="36,164 47,156 44,153" fill="url(#goldGrad)" opacity="0.8"/>
-        <polygon points="164,164 153,156 156,153" fill="url(#goldGrad)" opacity="0.8"/>
+          <!-- Puntos ordinales pequeños -->
+          <polygon points="36,36 47,44 44,47" fill="url(#goldGrad)" opacity="0.8" />
+          <polygon points="164,36 153,44 156,47" fill="url(#goldGrad)" opacity="0.8" />
+          <polygon points="36,164 47,156 44,153" fill="url(#goldGrad)" opacity="0.8" />
+          <polygon points="164,164 153,156 156,153" fill="url(#goldGrad)" opacity="0.8" />
 
-        <!-- Alas de dragón / filigranas laterales -->
-        <path d="M100 48 C75 42 42 58 35 88 C48 84 62 88 68 96 C50 104 42 120 46 138 C56 122 72 118 84 122 C78 134 80 148 92 156 C90 142 94 132 100 126 Z" fill="url(#goldDark)" opacity="0.45"/>
-        <path d="M100 48 C125 42 158 58 165 88 C152 84 138 88 132 96 C150 104 158 120 154 138 C144 122 128 118 116 122 C122 134 120 148 108 156 C110 142 106 132 100 126 Z" fill="url(#goldDark)" opacity="0.45"/>
+          <!-- Alas de dragón / filigranas laterales -->
+          <path
+            d="M100 48 C75 42 42 58 35 88 C48 84 62 88 68 96 C50 104 42 120 46 138 C56 122 72 118 84 122 C78 134 80 148 92 156 C90 142 94 132 100 126 Z"
+            fill="url(#goldDark)" opacity="0.45" />
+          <path
+            d="M100 48 C125 42 158 58 165 88 C152 84 138 88 132 96 C150 104 158 120 154 138 C144 122 128 118 116 122 C122 134 120 148 108 156 C110 142 106 132 100 126 Z"
+            fill="url(#goldDark)" opacity="0.45" />
 
-        <path d="M100 52 C80 48 52 62 45 88 C56 85 68 89 74 97 C58 103 52 116 55 130 C64 117 78 114 88 118 C83 128 85 140 95 146 C93 135 96 127 100 122 Z" stroke="url(#goldGrad)" stroke-width="1.8" fill="none"/>
-        <path d="M100 52 C120 48 148 62 155 88 C144 85 132 89 126 97 C142 103 148 116 145 130 C136 117 122 114 112 118 C117 128 115 140 105 146 C107 135 104 127 100 122 Z" stroke="url(#goldGrad)" stroke-width="1.8" fill="none"/>
+          <path
+            d="M100 52 C80 48 52 62 45 88 C56 85 68 89 74 97 C58 103 52 116 55 130 C64 117 78 114 88 118 C83 128 85 140 95 146 C93 135 96 127 100 122 Z"
+            stroke="url(#goldGrad)" stroke-width="1.8" fill="none" />
+          <path
+            d="M100 52 C120 48 148 62 155 88 C144 85 132 89 126 97 C142 103 148 116 145 130 C136 117 122 114 112 118 C117 128 115 140 105 146 C107 135 104 127 100 122 Z"
+            stroke="url(#goldGrad)" stroke-width="1.8" fill="none" />
 
-        <!-- Espada Central Mística -->
-        <polygon points="100,28 103,42 100,40 97,42" fill="url(#goldGrad)"/>
-        <!-- Pomo y guarda -->
-        <circle cx="100" cy="34" r="3.5" fill="url(#goldGrad)"/>
-        <line x1="88" y1="46" x2="112" y2="46" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="88" cy="46" r="2.5" fill="url(#goldGrad)"/>
-        <circle cx="112" cy="46" r="2.5" fill="url(#goldGrad)"/>
-        <!-- Hoja de la espada -->
-        <path d="M98 48 L102 48 L102 144 L100 158 L98 144 Z" fill="url(#goldGrad)" filter="url(#goldGlow)"/>
-        <line x1="100" y1="48" x2="100" y2="152" stroke="#FFF7E6" stroke-width="1"/>
+          <!-- Espada Central Mística -->
+          <polygon points="100,28 103,42 100,40 97,42" fill="url(#goldGrad)" />
+          <!-- Pomo y guarda -->
+          <circle cx="100" cy="34" r="3.5" fill="url(#goldGrad)" />
+          <line x1="88" y1="46" x2="112" y2="46" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
+          <circle cx="88" cy="46" r="2.5" fill="url(#goldGrad)" />
+          <circle cx="112" cy="46" r="2.5" fill="url(#goldGrad)" />
+          <!-- Hoja de la espada -->
+          <path d="M98 48 L102 48 L102 144 L100 158 L98 144 Z" fill="url(#goldGrad)" filter="url(#goldGlow)" />
+          <line x1="100" y1="48" x2="100" y2="152" stroke="#FFF7E6" stroke-width="1" />
 
-        <!-- Gema Carmesí Central Resplandeciente -->
-        <polygon points="100,82 116,98 100,114 84,98" fill="url(#gemGrad)" stroke="url(#goldGrad)" stroke-width="2"/>
-        <!-- Facetas de la gema -->
-        <polygon points="100,88 110,98 100,108 90,98" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-        <line x1="100" y1="82" x2="100" y2="88" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
-        <line x1="100" y1="108" x2="100" y2="114" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-        <line x1="84" y1="98" x2="90" y2="98" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
-        <line x1="110" y1="98" x2="116" y2="98" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
-        <!-- Brillo especular -->
-        <circle cx="95" cy="93" r="2.5" fill="#FFFFFF" opacity="0.8"/>
-      </svg>
-    </div>
-
-    <div class="loading-titles">
-      <h1 class="loading-brand">KRY SALIS</h1>
-      <div class="loading-sub">CRÓNICAS &middot; FICHAS DE ROL</div>
-      <div class="loading-version">v0.9.1</div>
-    </div>
-
-    <div class="loading-bar-wrap">
-      <div class="loading-bar-track">
-        <div class="loading-bar-fill" id="loadingBarFill"></div>
+          <!-- Gema Carmesí Central Resplandeciente -->
+          <polygon points="100,82 116,98 100,114 84,98" fill="url(#gemGrad)" stroke="url(#goldGrad)" stroke-width="2" />
+          <!-- Facetas de la gema -->
+          <polygon points="100,88 110,98 100,108 90,98" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
+          <line x1="100" y1="82" x2="100" y2="88" stroke="rgba(255,255,255,0.6)" stroke-width="1" />
+          <line x1="100" y1="108" x2="100" y2="114" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
+          <line x1="84" y1="98" x2="90" y2="98" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
+          <line x1="110" y1="98" x2="116" y2="98" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
+          <!-- Brillo especular -->
+          <circle cx="95" cy="93" r="2.5" fill="#FFFFFF" opacity="0.8" />
+        </svg>
       </div>
-      <div class="loading-status" id="loadingStatusText">Cargando partida...</div>
-    </div>
-  </div>
-</div>
 
-<div id="app">
-  <header class="topbar" id="topbar"></header>
-  <nav class="tabbar" id="tabbar"></nav>
-  <main id="main"></main>
-  <button class="fab-dice" id="fabDice" title="Lanzar dados" aria-label="Lanzar dados">🎲</button>
-</div>
+      <div class="loading-titles">
+        <h1 class="loading-brand">KRYSALIS</h1>
+        <div class="loading-sub">CRÓNICAS &middot; FICHAS DE ROL</div>
+        <div class="loading-version">v0.9.2</div>
+      </div>
 
-<div class="toast-container" id="toastContainer"></div>
-<div class="swipe-indicator" id="swipeIndicator">Desliza para cambiar de pestaña</div>
-
-<div class="modal-overlay hidden" id="charModalOverlay"><div class="modal" id="charModal"></div></div>
-<div class="modal-overlay hidden" id="diceModalOverlay"><div class="modal" id="diceModal"></div></div>
-<div class="modal-overlay hidden" id="dataModalOverlay"><div class="modal" id="dataModal"></div></div>
-<div class="modal-overlay hidden" id="pinModalOverlay"><div class="modal" id="pinModal"></div></div>
-<div class="modal-overlay hidden" id="loreModalOverlay"><div class="modal" id="loreModal"></div></div>
-<div class="roll-overlay hidden" id="rollOverlay">
-  <div class="roll-box">
-    <div class="cup-stage" id="cupStage"></div>
-    <div class="roll-result-stage" id="rollResultStage">
-      <div id="rollLabel" style="font-family:var(--font-display);font-size:.95rem;color:var(--gold-light);"></div>
-      <div id="rollDieGraphic" style="display:flex;justify-content:center;margin:8px 0;"></div>
-      <div id="rollAdvVisual"></div>
-      <div class="roll-score" id="rollScore"></div>
-      <div id="rollVerdict" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:700;"></div>
-      <div id="rollDetail" style="font-size:.8rem;color:var(--ink-dim);line-height:1.4;"></div>
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn-compact" data-action="reroll-last-dice" style="flex:1;">🎲 Volver a Tirar</button>
-        <button class="btn-solid-gold" data-action="close-roll-modal" style="flex:1;">Cerrar</button>
+      <div class="loading-bar-wrap">
+        <div class="loading-bar-track">
+          <div class="loading-bar-fill" id="loadingBarFill"></div>
+        </div>
+        <div class="loading-status" id="loadingStatusText">Cargando partida...</div>
       </div>
     </div>
   </div>
-</div>
 
-<input type="file" id="portraitFileInput" accept="image/*" hidden>
-<input type="file" id="mapFileInput" accept="image/*" hidden>
-<input type="file" id="bestiaryFileInput" accept="image/*" hidden>
-<input type="file" id="questFileInput" accept="image/*" hidden>
-<input type="file" id="importFileInput" accept="application/json" hidden>
-<script src="script.js?v=0.9.1"></script>
+  <div id="app">
+    <header class="topbar" id="topbar"></header>
+    <nav class="tabbar" id="tabbar"></nav>
+    <main id="main"></main>
+    <button class="fab-dice" id="fabDice" title="Lanzar dados" aria-label="Lanzar dados">🎲</button>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="swipe-indicator" id="swipeIndicator">Desliza para cambiar de pestaña</div>
+
+  <div class="modal-overlay hidden" id="charModalOverlay">
+    <div class="modal" id="charModal"></div>
+  </div>
+  <div class="modal-overlay hidden" id="diceModalOverlay">
+    <div class="modal" id="diceModal"></div>
+  </div>
+  <div class="modal-overlay hidden" id="dataModalOverlay">
+    <div class="modal" id="dataModal"></div>
+  </div>
+  <div class="modal-overlay hidden" id="pinModalOverlay">
+    <div class="modal" id="pinModal"></div>
+  </div>
+  <div class="modal-overlay hidden" id="loreModalOverlay">
+    <div class="modal" id="loreModal"></div>
+  </div>
+  <div class="roll-overlay hidden" id="rollOverlay">
+    <div class="roll-box">
+      <div class="cup-stage" id="cupStage"></div>
+      <div class="roll-result-stage" id="rollResultStage">
+        <div id="rollLabel" style="font-family:var(--font-display);font-size:.95rem;color:var(--gold-light);"></div>
+        <div id="rollDieGraphic" style="display:flex;justify-content:center;margin:8px 0;"></div>
+        <div id="rollAdvVisual"></div>
+        <div class="roll-score" id="rollScore"></div>
+        <div id="rollVerdict"
+          style="font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:700;">
+        </div>
+        <div id="rollDetail" style="font-size:.8rem;color:var(--ink-dim);line-height:1.4;"></div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn-compact" data-action="reroll-last-dice" style="flex:1;">🎲 Volver a Tirar</button>
+          <button class="btn-solid-gold" data-action="close-roll-modal" style="flex:1;">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="portraitFileInput" accept="image/*" hidden>
+  <input type="file" id="mapFileInput" accept="image/*" hidden>
+  <input type="file" id="bestiaryFileInput" accept="image/*" hidden>
+  <input type="file" id="questFileInput" accept="image/*" hidden>
+  <input type="file" id="importFileInput" accept="application/json" hidden>
+  <script src="script.js?v=0.9.2"></script>
 </body>
+
 </html>
