@@ -1639,7 +1639,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.3</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.4</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -3463,6 +3463,17 @@ function handleRemoteCharacterChange(payload){
         if(localChar._isDirty || dirtyCharIds.has(localChar.id) || (localChar._lastLocalEdit && Date.now() - localChar._lastLocalEdit < 3500)){
           return;
         }
+        if(currentUser && !isGM() && isCharOwner(localChar, currentUser)){
+          var remoteEditTime = c._lastLocalEdit || (row.updated_at ? new Date(row.updated_at).getTime() : 0);
+          var localEditTime = localChar._lastLocalEdit || 0;
+          if(localEditTime && localEditTime >= remoteEditTime){
+            return;
+          }
+          if(localChar.combat && c.combat && localChar.combat.pvActual < localChar.combat.pvMax && c.combat.pvActual === c.combat.pvMax && !localChar._restoredByPlayer){
+            console.warn("Protegido contra reseteo de fábrica remoto para", localChar.name);
+            return;
+          }
+        }
         if(localChar.id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
           c.personalNotes = localChar.personalNotes;
         }
@@ -3615,6 +3626,18 @@ async function pullAllFromSupabase(){
             markCharDirty(localC.id);
             return localC;
           }
+          if(currentUser && !isGM() && isCharOwner(localC, currentUser)){
+            if(localC._lastLocalEdit && (!remoteC._lastLocalEdit || localC._lastLocalEdit >= remoteC._lastLocalEdit)){
+              localC._isDirty = true;
+              markCharDirty(localC.id);
+              return localC;
+            }
+            if(localC.combat && remoteC.combat && localC.combat.pvActual < localC.combat.pvMax && remoteC.combat.pvActual === remoteC.combat.pvMax && !localC._restoredByPlayer){
+              localC._isDirty = true;
+              markCharDirty(localC.id);
+              return localC;
+            }
+          }
         }
         return remoteC;
       });
@@ -3657,6 +3680,7 @@ async function pullAllFromSupabase(){
 
 function sendKeepalivePush(c){
   if(!c || !c.name || c.id==="empty") return;
+  if(!isGM() && currentUser && !isCharOwner(c, currentUser)) return;
   try{
     var n = (c.name||"").trim().toLowerCase();
     var dbId = c.db_id;
@@ -3690,6 +3714,7 @@ function pushCharacterById(charId){
   if(!supabaseClient) return;
   var c = (state.characters||[]).find(function(x){ return x.id === charId; });
   if(!c || !c.name || c.id==="empty") return;
+  if(!isGM() && currentUser && !isCharOwner(c, currentUser)) return;
 
   if(!c.db_id){
     var n = (c.name||"").trim().toLowerCase();
