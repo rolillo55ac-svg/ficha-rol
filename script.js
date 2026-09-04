@@ -1061,18 +1061,51 @@ function loadState(){
 }
 
 var syncDebounceTimer = null;
+var dirtyCharIds = new Set();
+var isGlobalDirty = false;
+
+function markCharDirty(charId){
+  if(charId) dirtyCharIds.add(charId);
+}
+
+function flushPendingSync(){
+  if(syncDebounceTimer){
+    clearTimeout(syncDebounceTimer);
+    syncDebounceTimer = null;
+  }
+  if(!supabaseClient || !currentUser || isRemoteSyncing) return;
+
+  var currentC = activeChar();
+  if(currentC && currentC.id && dirtyCharIds.size === 0 && !isGlobalDirty){
+    return;
+  }
+
+  dirtyCharIds.forEach(function(cid){
+    pushCharacterById(cid);
+  });
+  dirtyCharIds.clear();
+
+  if(isGlobalDirty){
+    isGlobalDirty = false;
+    if(isGM()) pushSharedData();
+  }
+}
+
 function saveState(skipRemote){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if(state.activeId) localStorage.setItem("krysalis_active_id", state.activeId);
     if(state.activeTab) localStorage.setItem("krysalis_active_tab", state.activeTab);
-  }catch(e){}
+  }catch(e){
+    console.error("Error al guardar en localStorage:", e);
+  }
   if(!skipRemote && supabaseClient && currentUser && !isRemoteSyncing){
+    var ac = activeChar();
+    if(ac && ac.id) markCharDirty(ac.id);
     updateSyncBadge("saving");
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){
-      pushActiveChar();
-      if(isGM()) pushSharedData();
+      flushPendingSync();
     }, 600);
   }
 }
@@ -1089,13 +1122,37 @@ function isGM(){
   return currentRole==='gm' ||
     (currentUser && (currentUser.email === 'rolillo55ac@gmail.com' || currentUser.email === 'lolorey92@gmail.com'));
 }
+
+function isCharOwner(c, user){
+  if(!c || !user) return false;
+  if(c.owner_id && c.owner_id === user.id) return true;
+  if(c.ownerEmail && user.email && c.ownerEmail.trim().toLowerCase() === user.email.trim().toLowerCase()) return true;
+  return false;
+}
+
+function canEditChar(c){
+  if(!c) return false;
+  if(isGM()) return true;
+  if(!currentUser) return true;
+  if(c.isNPC) return false;
+  if(!c.owner_id) return true;
+  return isCharOwner(c, currentUser);
+}
+
 function getUserCharacters(){
   if(isGM()) return state.characters;
   if(!currentUser) return state.characters.filter(function(c){ return !c.isNPC; });
-  return state.characters.filter(function(c){ 
-    return c.owner_id === currentUser.id || (!c.owner_id && !c.isNPC);
+  var owned = state.characters.filter(function(c){ 
+    return isCharOwner(c, currentUser);
   });
+  if(owned.length > 0) return owned;
+  var unclaimed = state.characters.filter(function(c){ 
+    return !c.owner_id && !c.isNPC;
+  });
+  if(unclaimed.length > 0) return unclaimed;
+  return state.characters.filter(function(c){ return !c.isNPC; });
 }
+
 function activeChar(){
   var chars = getUserCharacters();
   return chars.find(function(x){return x.id===state.activeId;}) || chars[0] || blankCharacter("Sin Personaje");
@@ -2040,11 +2097,11 @@ function tplCombate(c){
     c.customBuffs.forEach(function(cbuff){
       html += '<div class="list-row text-row">'+
         '<input type="text" placeholder="Efecto de estado" data-bind="customBuffs.'+cbuff.id+'.name" value="'+esc(cbuff.name)+'">'+
-        '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">✕</button>'+
+        (canEditChar(c) ? '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">✕</button>' : '')+
       '</div>';
     });
   }
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-custom-buff">+ Añadir buff temporal</button>';
   }
   html += '</div>';
@@ -2087,11 +2144,11 @@ function tplCombate(c){
         ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
         : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño" aria-label="Tirar daño">&#127922;</button>'
       )+
-      '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
     '</div>'+
     '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma al equipo</button>';
   }
   html += '</div>';
@@ -2102,10 +2159,10 @@ function tplCombate(c){
       '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura">'+
       '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción">'+
       '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo">'+
-      '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>'+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-armor">+ Añadir armadura</button>';
   }
   html += '</div>';
@@ -2169,7 +2226,7 @@ function tplMagia(c){
               '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="'+s.id+'" title="Quitar una carga o desactivar">✕ Quitar Carga ('+stacks+')</button>' :
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'">⚡ Activar (-'+num(s.coste, 1)+' Maná)</button>'
             )+
-            (isGM() ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
+            (canEditChar(c) ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
           '</div>'+
         '</div>'+
         '<div class="spell-grid">'+
@@ -2191,7 +2248,7 @@ function tplMagia(c){
     });
   }
 
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-spell">+ Añadir Hechizo al Grimorio</button>';
   }
   html += '</div>';
@@ -2201,10 +2258,10 @@ function tplMagia(c){
     html += '<div class="list-row stone-row">'+
       '<input type="text" placeholder="Color" data-bind="stones.'+s.id+'.color" value="'+esc(s.color)+'">'+
       '<input type="text" placeholder="Efecto" data-bind="stones.'+s.id+'.efecto" value="'+esc(s.efecto)+'">'+
-      '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>'+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>' : '')+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-stone">+ Añadir piedra</button>';
   }
   html += '</div>';
@@ -2220,7 +2277,7 @@ function tplAlquimia(c){
         '<div style="display:flex;align-items:center;gap:6px;">'+
           '<span style="font-size:.65rem;color:var(--ink-faint);">Dosis:</span>'+
           '<input type="number" style="width:40px;text-align:center;background:var(--bg-card);padding:2px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'">'+
-          '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>'+
+          (canEditChar(c) ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
         '</div>'+
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:6px;">'+
@@ -2235,7 +2292,7 @@ function tplAlquimia(c){
       '</div>'+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-poison">+ Añadir veneno / fórmula</button>';
   }
   html += '</div>';
@@ -2254,10 +2311,10 @@ function tplInventario(c){
     html += '<div class="list-row inv-row">'+
       '<input type="text" placeholder="Objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'">'+
       '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'">'+
-      '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>'+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-inventory">+ Añadir objeto</button>';
   }
   html += '</div>';
@@ -2270,7 +2327,7 @@ function tplInvocaciones(c){
     html += '<div class="creature-card">' +
       '<div class="creature-card-header">' +
         '<input type="text" class="creature-name-input" placeholder="Nombre" data-bind="summons.' + s.id + '.name" value="' + esc(s.name) + '">' +
-        '<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>' +
+        (canEditChar(c) ? '<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>' : '') +
       '</div>' +
       '<div class="creature-grid">' +
         creatureField("Vida", "summons." + s.id + ".vida", s.vida) +
@@ -2283,7 +2340,7 @@ function tplInvocaciones(c){
       '<div class="creature-field" style="margin-top:6px;"><label>Habilidades, Tiradas y Rasgos</label><textarea class="creature-notes" placeholder="Ej: Melé 8+1d10, Rasgo..." data-bind="summons.' + s.id + '.habilidades">' + esc(s.habilidades||s.notas) + '</textarea></div>' +
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-summon">+ Añadir invocación</button>';
   }
   html += '</div>';
@@ -3024,7 +3081,18 @@ function modalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
-  if(action==="pick-char"){ state.activeId = btn.getAttribute("data-id"); saveState(); closeModals(); renderTopbar(); renderTab(); return; }
+  if(action==="pick-char"){
+    if(document.activeElement && document.activeElement.matches("input, textarea, select")){
+      try { document.activeElement.blur(); } catch(e){}
+    }
+    flushPendingSync();
+    state.activeId = btn.getAttribute("data-id");
+    saveState();
+    closeModals();
+    renderTopbar();
+    renderTab();
+    return;
+  }
   if(action==="add-char"){
     if(!isGM()) return;
     var nName = prompt("Nombre del nuevo personaje:");
@@ -3320,6 +3388,7 @@ function handleRemoteCharStatUpdate(data){
   if(!data || !data.charId) return;
   var target = (state.characters||[]).find(function(x){ return x.id === data.charId; });
   if(target){
+    if(target._lastLocalEdit && Date.now() - target._lastLocalEdit < 2000) return;
     if(data.combat) target.combat = Object.assign(target.combat||{}, data.combat);
     saveState(true);
     if(state.activeId === data.charId){
@@ -3353,8 +3422,12 @@ function handleRemoteCharacterChange(payload){
       if(row.owner_id) c.owner_id = row.owner_id;
       var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id; });
       if(idx !== -1){
-        if(state.characters[idx].id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
-          c.personalNotes = state.characters[idx].personalNotes;
+        var localChar = state.characters[idx];
+        if(dirtyCharIds.has(localChar.id) || (localChar._lastLocalEdit && Date.now() - localChar._lastLocalEdit < 2500)){
+          return;
+        }
+        if(localChar.id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
+          c.personalNotes = localChar.personalNotes;
         }
         state.characters[idx] = c;
       } else {
@@ -3449,69 +3522,66 @@ async function pullAllFromSupabase(){
         var c = r.data || {}; 
         c.db_id = r.id;
         if(r.owner_id) c.owner_id = r.owner_id;
+        c._serverUpdatedAt = r.updated_at ? new Date(r.updated_at).getTime() : 0;
         return c; 
       });
 
-      var hasScarleth = pulledChars.some(function(c){
-        var n = (c.name || "").toLowerCase();
-        return n === "scarleth" || n.includes("scarleth") || n.includes("winter");
+      pulledChars = pulledChars.filter(function(c){
+        var n = (c.name || "").trim().toLowerCase();
+        return n && n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
       });
-      var derekChar = pulledChars.find(function(c){ return (c.name || "").toLowerCase() === "derek"; });
-      var isDerekReset = derekChar && derekChar.combat && derekChar.combat.pvMax === 32 && derekChar.combat.manaMax === 30 && derekChar.weapons && derekChar.weapons.some(function(w){ return w.name === "Sable bonito"; });
-      var cherkChar = pulledChars.find(function(c){ return (c.name || "").toLowerCase() === "cherk"; });
-      var isCherkReset = cherkChar && cherkChar.attrs && cherkChar.attrs.fisico === 4 && cherkChar.combat && cherkChar.combat.pvMax === 16;
-      var bakyChar = pulledChars.find(function(c){ var n = (c.name || "").toLowerCase(); return n.includes("bucky") || n.includes("baky"); });
-      var isBakyReset = bakyChar && bakyChar.combat && bakyChar.combat.manaMax === 35;
 
-      var needsOfficialReset = !hasScarleth || !isDerekReset || !isCherkReset || !isBakyReset || pulledChars.length < 5;
+      // Ensure all official characters exist in the database (never overwrite existing player modifications)
+      var officials = getOfficialCharacters();
+      officials.forEach(function(off){
+        var exists = pulledChars.some(function(c){
+          var cName = (c.name || "").trim().toLowerCase();
+          var oName = off.name.trim().toLowerCase();
+          if(oName === "derek") return cName === "derek";
+          if(oName === "scarleth") return cName === "scarleth" || cName.includes("scarleth") || cName.includes("winter");
+          if(oName === "bucky") return cName === "bucky" || cName === "baky" || cName.includes("bucky") || cName.includes("baky");
+          if(oName === "cherk") return cName === "cherk" || cName.includes("cherk");
+          if(oName === "ink") return cName === "ink" || cName.includes("ink");
+          return cName === oName;
+        });
+        if(!exists){
+          var nOff = JSON.parse(JSON.stringify(off));
+          nOff.officialDataVersion = 4;
+          pulledChars.push(nOff);
+          if(isGM()){
+            pushCharacterById(nOff.id);
+          }
+        }
+      });
 
-      if(needsOfficialReset){
-        var officials = getOfficialCharacters();
-        officials.forEach(function(off){
-          var existing = pulledChars.find(function(c){
-            var cName = (c.name || "").trim().toLowerCase();
-            var oName = off.name.trim().toLowerCase();
-            if(oName === "derek") return cName === "derek";
-            if(oName === "scarleth") return cName === "scarleth" || cName.includes("scarleth") || cName.includes("winter");
-            if(oName === "bucky") return cName === "bucky" || cName === "baky" || cName.includes("bucky") || cName.includes("baky");
-            if(oName === "cherk") return cName === "cherk" || cName.includes("cherk");
-            if(oName === "ink") return cName === "ink" || cName.includes("ink");
-            return cName === oName;
-          });
-          if(existing){
-            var savedId = existing.id;
-            var savedPortrait = existing.portrait || off.portrait;
-            var savedOwner = existing.owner_id || off.owner_id;
-            var savedDbId = existing.db_id;
-            var savedEmail = existing.ownerEmail || off.ownerEmail;
-            var savedTheme = existing.theme || off.theme;
-            Object.assign(existing, JSON.parse(JSON.stringify(off)));
-            existing.id = savedId;
-            if(savedDbId) existing.db_id = savedDbId;
-            existing.portrait = savedPortrait;
-            existing.owner_id = savedOwner;
-            existing.ownerEmail = savedEmail;
-            existing.theme = savedTheme;
-            existing.officialDataVersion = 4;
-          } else {
-            var nOff = JSON.parse(JSON.stringify(off));
-            nOff.officialDataVersion = 4;
-            pulledChars.push(nOff);
+      // Match owner_id with user if email matches
+      if(currentUser && currentUser.email){
+        var userEmail = currentUser.email.trim().toLowerCase();
+        pulledChars.forEach(function(c){
+          if(c.ownerEmail && c.ownerEmail.trim().toLowerCase() === userEmail){
+            c.owner_id = currentUser.id;
           }
         });
-        pulledChars = pulledChars.filter(function(c){
-          var n = (c.name || "").trim().toLowerCase();
-          return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
-        });
-        state.characters = pulledChars;
-        if(isGM()){
-          state.characters.forEach(function(c){
-            pushCharacterById(c.id);
-          });
-        }
-      } else {
-        state.characters = pulledChars;
       }
+
+      // Merge: never overwrite newer local modifications
+      var mergedChars = pulledChars.map(function(remoteC){
+        var localC = (state.characters || []).find(function(lc){ return lc.id === remoteC.id || (lc.db_id && lc.db_id === remoteC.db_id); });
+        if(localC && localC._lastLocalEdit && (!remoteC._serverUpdatedAt || localC._lastLocalEdit > remoteC._serverUpdatedAt)){
+          markCharDirty(localC.id);
+          return localC;
+        }
+        return remoteC;
+      });
+
+      (state.characters || []).forEach(function(localC){
+        if(!mergedChars.some(function(mc){ return mc.id === localC.id || (mc.db_id && mc.db_id === localC.db_id); })){
+          mergedChars.push(localC);
+          markCharDirty(localC.id);
+        }
+      });
+
+      state.characters = mergedChars;
 
       var savedActiveId = localStorage.getItem("krysalis_active_id");
       if(savedActiveId && state.characters.some(function(x){ return x.id === savedActiveId; })){
@@ -3521,30 +3591,36 @@ async function pullAllFromSupabase(){
         state.activeId = validChars[0] ? validChars[0].id : (state.characters[0] ? state.characters[0].id : "");
       }
       updateSyncBadge("synced");
+    } else if(charRes.data && charRes.data.length === 0){
+      var seedOfficials = getOfficialCharacters();
+      state.characters = seedOfficials;
+      if(isGM()){
+        state.characters.forEach(function(c){ pushCharacterById(c.id); });
+      }
+      updateSyncBadge("synced");
     }
     saveState(true); renderTopbar(); renderTabbar();
     if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
   }catch(e){ console.error('Supabase error:', e); }
   isRemoteSyncing = false;
+  if(dirtyCharIds.size > 0){
+    flushPendingSync();
+  }
 }
-function pushActiveChar(){
-  if(!supabaseClient || !currentUser) return;
-  var c = activeChar(); if(!c || !c.name || c.id==="empty") return;
-  if(!isGM() && c.owner_id && c.owner_id !== currentUser.id) return;
-  var payload = {name:c.name, data:c, updated_at:new Date().toISOString()};
-  if(c.owner_id) payload.owner_id = c.owner_id;
-  if(c.db_id) payload.id = c.db_id;
-  supabaseClient.from('characters').upsert(payload).select().then(function(res){
-    if(res.error) { console.error('Supabase error:', res.error); return; }
-    if(res.data && res.data[0]) c.db_id = res.data[0].id;
-    updateSyncBadge("synced");
-  }).catch(function(e){ console.error('Supabase error:', e); });
-}
+
 function pushCharacterById(charId){
   if(!supabaseClient || !currentUser) return;
-  var c = state.characters.find(function(x){ return x.id === charId; });
-  if(!c) return;
-  if(!isGM() && c.owner_id && c.owner_id !== currentUser.id) return;
+  var c = (state.characters||[]).find(function(x){ return x.id === charId; });
+  if(!c || !c.name || c.id==="empty") return;
+  if(!canEditChar(c)) return;
+
+  if(!c.owner_id && currentUser && !c.isNPC){
+    c.owner_id = currentUser.id;
+    if(currentUser.email) c.ownerEmail = currentUser.email;
+  } else if(currentUser && isCharOwner(c, currentUser)){
+    c.owner_id = currentUser.id;
+  }
+
   var payload = {name:c.name, data:c, updated_at:new Date().toISOString()};
   if(c.owner_id) payload.owner_id = c.owner_id;
   if(c.db_id) payload.id = c.db_id;
@@ -3553,6 +3629,11 @@ function pushCharacterById(charId){
     if(res.data && res.data[0]) c.db_id = res.data[0].id;
     updateSyncBadge("synced");
   }).catch(function(e){ console.error('Supabase error:', e); });
+}
+
+function pushActiveChar(){
+  var c = activeChar();
+  if(c && c.id) pushCharacterById(c.id);
 }
 async function pullMapFromSupabase(){
   if(!supabaseClient) return;
@@ -3752,12 +3833,26 @@ function handleChange(e){
     return;
   }
   var target = isGlobal ? state : activeChar();
-  if(!isGlobal && currentUser && !isGM() && target && target.owner_id && target.owner_id !== currentUser.id){
+  if(!isGlobal && !canEditChar(target)){
     showToast("Esa ficha es de otro jugador.", "warning");
     return;
   }
-  setBind(target, el.getAttribute("data-bind"), el.value, el.type);
+  var bind = el.getAttribute("data-bind");
+  setBind(target, bind, el.value, el.type);
+  if(!isGlobal && target && target.id){
+    target._lastLocalEdit = Date.now();
+    markCharDirty(target.id);
+    if(currentUser && !target.owner_id && !target.isNPC){
+      target.owner_id = currentUser.id;
+      if(currentUser.email) target.ownerEmail = currentUser.email;
+    }
+  }
+  if(bind && bind.startsWith("combat.") && target && target.id){
+    broadcastCharStatUpdate(target.id, target.combat);
+    renderTopbar();
+  }
   if(isGlobal){
+    isGlobalDirty = true;
     saveState(true);
     pushSharedData();
   } else {
@@ -3779,11 +3874,23 @@ function handleClick(e){
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-buff-tab"){ currentBuffTab = btn.getAttribute("data-val"); renderTab(); return; }
 
-  if(action==="switch-tab"){ state.activeTab = btn.getAttribute("data-tab"); saveState(); renderTabbar(); renderTab(); return; }
+  if(action==="switch-tab"){
+    if(document.activeElement && document.activeElement.matches("input, textarea, select")){
+      try { document.activeElement.blur(); } catch(e){}
+    }
+    flushPendingSync();
+    state.activeTab = btn.getAttribute("data-tab");
+    saveState(true);
+    renderTabbar();
+    renderTab();
+    return;
+  }
   if(action==="hp-mod"){
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
     var maxHp = num(c.combat.pvMax,0) || 999;
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, -999, maxHp);
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id);
     saveState(); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
     return;
@@ -3791,6 +3898,8 @@ function handleClick(e){
   if(action==="shield-mod"){
     var ds = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id);
     saveState(); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
     return;
@@ -3798,6 +3907,8 @@ function handleClick(e){
   if(action==="mana-mod"){
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id);
     saveState(); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
     return;
@@ -4083,26 +4194,29 @@ function handleClick(e){
     return;
   }
   if(action==="add-custom-skill"){
-    if(!isGM()) return;
+    if(!canEditChar(c)) return;
     var nm = prompt("Nombre de la habilidad:");
     if(!nm) return;
     var attrChoice = prompt("Atributo base (fisico / destreza / inteligencia / percepcion / carisma):","destreza");
     if(ATTRS.indexOf(attrChoice)===-1) attrChoice="destreza";
     if(!c.customSkills) c.customSkills=[];
     c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:1});
+    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab();
     showToast("Habilidad personalizada añadida", "success");
     return;
   }
   if(action==="add-custom-buff"){
-    if(!isGM()) return;
+    if(!canEditChar(c)) return;
     if(!c.customBuffs) c.customBuffs=[];
     c.customBuffs.push({id:uid(),name:""});
+    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab(); return;
   }
   if(action==="del-custom-buff"){
-    if(!isGM()) return;
+    if(!canEditChar(c)) return;
     c.customBuffs = (c.customBuffs||[]).filter(function(b){return b.id!==btn.getAttribute("data-id");});
+    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab(); return;
   }
   if(action==="roll-init"){ performD10Roll(c.name, "Iniciativa", c.combat.iniciativa); return; }
@@ -4121,6 +4235,7 @@ function handleClick(e){
     return;
   }
   if(action==="select-weapon-catalog"){
+    if(!canEditChar(c)) return;
     var selEl = e.target;
     var wid = btn.getAttribute("data-id");
     var catId = selEl.value;
@@ -4131,6 +4246,7 @@ function handleClick(e){
       wpnObj.dano = catItem.dano;
       wpnObj.alcance = catItem.alcance;
       wpnObj.catalogId = catItem.id;
+      c._lastLocalEdit = Date.now(); markCharDirty(c.id);
       saveState(); renderTab();
       showToast("Arma equipada: " + catItem.name, "success");
     }
@@ -4185,21 +4301,23 @@ function handleClick(e){
     showToast("Buff eliminado", "info");
     return;
   }
-  if(action==="add-weapon"){ if(!isGM()) return; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); saveState(); renderTab(); return; }
-  if(action==="del-weapon"){ if(!isGM()) return; c.weapons = c.weapons.filter(function(w){return w.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-armor"){ if(!isGM()) return; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); saveState(); renderTab(); return; }
-  if(action==="del-armor"){ if(!isGM()) return; c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-inventory"){ if(!isGM()) return; c.inventory.push({id:uid(),name:"",qty:1}); saveState(); renderTab(); return; }
-  if(action==="del-inventory"){ if(!isGM()) return; c.inventory = c.inventory.filter(function(i){return i.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-weapon"){ if(!canEditChar(c)) return; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-weapon"){ if(!canEditChar(c)) return; c.weapons = c.weapons.filter(function(w){return w.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-armor"){ if(!canEditChar(c)) return; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-armor"){ if(!canEditChar(c)) return; c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-inventory"){ if(!canEditChar(c)) return; c.inventory = c.inventory || []; c.inventory.push({id:uid(),name:"",qty:1}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-inventory"){ if(!canEditChar(c)) return; c.inventory = (c.inventory || []).filter(function(i){return i.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="add-spell"){
-    if(!isGM()) return;
+    if(!canEditChar(c)) return;
     if(!c.spells) c.spells = [];
     c.spells.push({id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false});
+    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab(); return;
   }
   if(action==="del-spell"){
-    if(!isGM()) return;
+    if(!canEditChar(c)) return;
     c.spells = (c.spells||[]).filter(function(s){return s.id!==btn.getAttribute("data-id");});
+    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab(); return;
   }
   if(action==="cast-spell"){
@@ -4273,12 +4391,12 @@ function handleClick(e){
     }
     return;
   }
-  if(action==="add-stone"){ if(!isGM()) return; c.stones.push({id:uid(),color:"",efecto:""}); saveState(); renderTab(); return; }
-  if(action==="del-stone"){ if(!isGM()) return; c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-summon"){ if(!isGM()) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); saveState(); renderTab(); return; }
-  if(action==="del-summon"){ if(!isGM()) return; c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-poison"){ if(!isGM()) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); saveState(); renderTab(); return; }
-  if(action==="del-poison"){ if(!isGM()) return; c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-stone"){ if(!canEditChar(c)) return; c.stones.push({id:uid(),color:"",efecto:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-stone"){ if(!canEditChar(c)) return; c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-summon"){ if(!canEditChar(c)) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-summon"){ if(!canEditChar(c)) return; c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-poison"){ if(!canEditChar(c)) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-poison"){ if(!canEditChar(c)) return; c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="add-passiveNeg"){ if(!isGM()) return; c.passivesNeg.push({id:uid(),text:""}); saveState(); renderTab(); return; }
   if(action==="del-passiveNeg"){ if(!isGM()) return; c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
   if(action==="add-passivePos"){ if(!isGM()) return; c.passivesPos.push({id:uid(),text:""}); saveState(); renderTab(); return; }
@@ -4800,6 +4918,21 @@ function init(){
   document.getElementById("importFileInput").addEventListener("change", function(e){
     if(e.target.files && e.target.files[0]) importData(e.target.files[0]);
     e.target.value="";
+  });
+
+  window.addEventListener("beforeunload", function(){
+    if(document.activeElement && document.activeElement.matches("input, textarea, select")){
+      try { document.activeElement.blur(); } catch(e){}
+    }
+    flushPendingSync();
+  });
+  window.addEventListener("pagehide", function(){
+    flushPendingSync();
+  });
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "hidden"){
+      flushPendingSync();
+    }
   });
 
   updateLoadingProgress(85, "Conectando con la partida...");
