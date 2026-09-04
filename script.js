@@ -1116,12 +1116,12 @@ function saveState(skipRemote){
   }catch(e){
     console.error("Error al guardar en localStorage:", e);
   }
-  if(!skipRemote && supabaseClient && !isRemoteSyncing){
+  if(!skipRemote && supabaseClient){
     updateSyncBadge("saving");
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){
       flushPendingSync();
-    }, 300);
+    }, 250);
   }
 }
 
@@ -1135,23 +1135,38 @@ function updateSyncBadge(st){
 
 function isGM(){
   return currentRole==='gm' ||
-    (currentUser && (currentUser.email === 'rolillo55ac@gmail.com' || currentUser.email === 'lolorey92@gmail.com'));
+    (currentUser && currentUser.email === 'rolillo55ac@gmail.com');
 }
 
 function isCharOwner(c, user){
   if(!c || !user) return false;
   if(c.owner_id && c.owner_id === user.id) return true;
   if(c.ownerEmail && user.email && c.ownerEmail.trim().toLowerCase() === user.email.trim().toLowerCase()) return true;
+  var cName = (c.name || "").trim().toLowerCase();
+  var uEmail = (user.email || "").trim().toLowerCase();
+  if(uEmail === "lolorey92@gmail.com" && cName.includes("cherk")) return true;
+  if(uEmail === "martu@gmail.com" && cName.includes("ink")) return true;
+  if(uEmail === "piki@gmail.com" && (cName.includes("bucky") || cName.includes("baky"))) return true;
+  if(uEmail === "saray@gmail.com" && (cName.includes("scarleth") || cName.includes("winter") || cName === "derek")) return true;
   return false;
 }
 
 function canEditChar(c){
   if(!c) return false;
-  return true; // Todos los jugadores y el máster pueden editar y guardar su ficha
+  if(isGM()) return true;
+  if(!currentUser) return true;
+  return isCharOwner(c, currentUser);
 }
 
 function getUserCharacters(){
-  if(isGM()) return state.characters;
+  if(isGM()) return state.characters || [];
+  if(!currentUser) return (state.characters || []).filter(function(c){ return !c.isNPC; });
+  var owned = (state.characters || []).filter(function(c){ 
+    return isCharOwner(c, currentUser);
+  });
+  if(owned.length > 0) return owned;
+  var unclaimed = (state.characters || []).filter(function(c){ return !c.owner_id && !c.isNPC; });
+  if(unclaimed.length > 0) return unclaimed;
   return (state.characters || []).filter(function(c){ return !c.isNPC; });
 }
 
@@ -1624,7 +1639,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.2</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.3</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -2146,11 +2161,11 @@ function tplCombate(c){
         ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
         : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño" aria-label="Tirar daño">&#127922;</button>'
       )+
-      (canEditChar(c) ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
+      (isGM() ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
     '</div>'+
     '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
   });
-  if(canEditChar(c)){
+  if(isGM()){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma al equipo</button>';
   }
   html += '</div>';
@@ -2158,13 +2173,13 @@ function tplCombate(c){
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Armaduras</span></div>';
   (c.armors||[]).forEach(function(a){
     html += '<div class="list-row armor-row">'+
-      '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura">'+
-      '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción">'+
-      '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo">'+
-      (canEditChar(c) ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
+      '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura" '+(isGM()?'':'readonly')+'>'+
+      '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción" '+(isGM()?'':'readonly')+'>'+
+      '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo" '+(isGM()?'':'readonly')+'>'+
+      (isGM() ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
     '</div>';
   });
-  if(canEditChar(c)){
+  if(isGM()){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-armor">+ Añadir armadura</button>';
   }
   html += '</div>';
@@ -2228,7 +2243,7 @@ function tplMagia(c){
               '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="'+s.id+'" title="Quitar una carga o desactivar">✕ Quitar Carga ('+stacks+')</button>' :
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'">⚡ Activar (-'+num(s.coste, 1)+' Maná)</button>'
             )+
-            (canEditChar(c) ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
+            (isGM() ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
           '</div>'+
         '</div>'+
         '<div class="spell-grid">'+
@@ -2250,7 +2265,7 @@ function tplMagia(c){
     });
   }
 
-  if(canEditChar(c)){
+  if(isGM()){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-spell">+ Añadir Hechizo al Grimorio</button>';
   }
   html += '</div>';
@@ -2260,10 +2275,10 @@ function tplMagia(c){
     html += '<div class="list-row stone-row">'+
       '<input type="text" placeholder="Color" data-bind="stones.'+s.id+'.color" value="'+esc(s.color)+'">'+
       '<input type="text" placeholder="Efecto" data-bind="stones.'+s.id+'.efecto" value="'+esc(s.efecto)+'">'+
-      (canEditChar(c) ? '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>' : '')+
+      (isGM() ? '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>' : '')+
     '</div>';
   });
-  if(canEditChar(c)){
+  if(isGM()){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-stone">+ Añadir piedra</button>';
   }
   html += '</div>';
@@ -2279,7 +2294,7 @@ function tplAlquimia(c){
         '<div style="display:flex;align-items:center;gap:6px;">'+
           '<span style="font-size:.65rem;color:var(--ink-faint);">Dosis:</span>'+
           '<input type="number" style="width:40px;text-align:center;background:var(--bg-card);padding:2px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'">'+
-          (canEditChar(c) ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
+          (isGM() ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
         '</div>'+
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:6px;">'+
@@ -2294,7 +2309,7 @@ function tplAlquimia(c){
       '</div>'+
     '</div>';
   });
-  if(canEditChar(c)){
+  if(isGM()){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-poison">+ Añadir veneno / fórmula</button>';
   }
   html += '</div>';
@@ -2311,12 +2326,12 @@ function tplInventario(c){
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Equipo e Inventario</span></div>';
   (c.inventory||[]).forEach(function(it){
     html += '<div class="list-row inv-row">'+
-      '<input type="text" placeholder="Objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'">'+
+      '<input type="text" placeholder="Objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" '+(isGM()?'':'readonly')+'>'+
       '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'">'+
-      (canEditChar(c) ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
+      (isGM() ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
     '</div>';
   });
-  if(canEditChar(c)){
+  if(isGM()){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-inventory">+ Añadir objeto</button>';
   }
   html += '</div>';
@@ -2329,7 +2344,7 @@ function tplInvocaciones(c){
     html += '<div class="creature-card">' +
       '<div class="creature-card-header">' +
         '<input type="text" class="creature-name-input" placeholder="Nombre" data-bind="summons.' + s.id + '.name" value="' + esc(s.name) + '">' +
-        (canEditChar(c) ? '<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>' : '') +
+        (isGM() ? '<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>' : '') +
       '</div>' +
       '<div class="creature-grid">' +
         creatureField("Vida", "summons." + s.id + ".vida", s.vida) +
@@ -2342,7 +2357,7 @@ function tplInvocaciones(c){
       '<div class="creature-field" style="margin-top:6px;"><label>Habilidades, Tiradas y Rasgos</label><textarea class="creature-notes" placeholder="Ej: Melé 8+1d10, Rasgo..." data-bind="summons.' + s.id + '.habilidades">' + esc(s.habilidades||s.notas) + '</textarea></div>' +
     '</div>';
   });
-  if(canEditChar(c)){
+  if(isGM()){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-summon">+ Añadir invocación</button>';
   }
   html += '</div>';
@@ -2883,7 +2898,7 @@ function openCharModal(){
     }).join('');
     var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
     var isNPC = !!c.isNPC;
-    var canDelete = isGM() || !currentUser || (currentUser && c.owner_id === currentUser.id);
+    var canDelete = isGM() || (!currentUser && !c.isNPC);
 
     var avatarContent = (c.portrait && c.portrait.trim())
       ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="cli-avatar-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="cli-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
@@ -2906,8 +2921,10 @@ function openCharModal(){
       '</div>'+
     '</div>';
   });
-  html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>';
   if(isGM() || !currentUser){
+    html += '<button class="btn-compact" style="width:100%;margin-top:10px;padding:8px;" data-action="add-char">+ Crear Nuevo Personaje</button>';
+  }
+  if(isGM()){
     html += '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button>';
   }
   document.getElementById("charModal").innerHTML = html;
@@ -3096,6 +3113,10 @@ function modalClick(e){
     return;
   }
   if(action==="add-char"){
+    if(!isGM() && currentUser){
+      showToast("Solo el Máster puede crear nuevos personajes.", "warning");
+      return;
+    }
     var nName = prompt("Nombre del nuevo personaje:");
     if(nName && nName.trim()){
       var nc = blankCharacter(nName.trim());
@@ -3128,9 +3149,13 @@ function modalClick(e){
     return;
   }
   if(action==="del-char"){
+    if(!isGM() && currentUser){
+      showToast("Solo el Máster puede eliminar personajes.", "warning");
+      return;
+    }
     var targetId = btn.getAttribute("data-id");
     var targetChar = (state.characters||[]).find(function(x){return x.id===targetId;});
-    var canDelete = isGM() || !currentUser || (targetChar && currentUser && targetChar.owner_id === currentUser.id);
+    var canDelete = isGM() || (!currentUser && targetChar && !targetChar.isNPC);
     if(!canDelete){
       showToast("No tienes permiso para eliminar este personaje.", "warning");
       return;
@@ -3605,12 +3630,12 @@ async function pullAllFromSupabase(){
 
       state.characters = mergedChars;
 
+      var validChars = getUserCharacters();
       var savedActiveId = localStorage.getItem("krysalis_active_id");
-      if(savedActiveId && state.characters.some(function(x){ return x.id === savedActiveId; })){
+      if(savedActiveId && validChars.some(function(x){ return x.id === savedActiveId; })){
         state.activeId = savedActiveId;
-      } else if(!state.activeId || !state.characters.some(function(x){ return x.id === state.activeId; })){
-        var validChars = getUserCharacters();
-        state.activeId = validChars[0] ? validChars[0].id : (state.characters[0] ? state.characters[0].id : "");
+      } else if(validChars.length > 0){
+        state.activeId = validChars[0].id;
       }
       updateSyncBadge("synced");
     } else if(charRes.data && charRes.data.length === 0){
@@ -3686,7 +3711,11 @@ function pushCharacterById(charId){
   if(c.owner_id) payload.owner_id = c.owner_id;
   if(c.db_id) payload.id = c.db_id;
   supabaseClient.from('characters').upsert(payload).select().then(function(res){
-    if(res.error) { console.error('Supabase error:', res.error); return; }
+    if(res.error) {
+      console.error('Supabase error:', res.error);
+      sendKeepalivePush(c);
+      return;
+    }
     if(res.data && res.data[0]){
       c.db_id = res.data[0].id;
       c._serverUpdatedAt = res.data[0].updated_at ? new Date(res.data[0].updated_at).getTime() : Date.now();
@@ -3697,7 +3726,10 @@ function pushCharacterById(charId){
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }catch(e){}
     updateSyncBadge("synced");
-  }).catch(function(e){ console.error('Supabase error:', e); });
+  }).catch(function(e){
+    console.error('Supabase error:', e);
+    sendKeepalivePush(c);
+  });
 }
 
 function pushActiveChar(){
@@ -4370,21 +4402,21 @@ function handleClick(e){
     showToast("Buff eliminado", "info");
     return;
   }
-  if(action==="add-weapon"){ if(!canEditChar(c)) return; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-weapon"){ if(!canEditChar(c)) return; c.weapons = c.weapons.filter(function(w){return w.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-armor"){ if(!canEditChar(c)) return; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-armor"){ if(!canEditChar(c)) return; c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-inventory"){ if(!canEditChar(c)) return; c.inventory = c.inventory || []; c.inventory.push({id:uid(),name:"",qty:1}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-inventory"){ if(!canEditChar(c)) return; c.inventory = (c.inventory || []).filter(function(i){return i.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-weapon"){ if(!isGM()) return; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-weapon"){ if(!isGM()) return; c.weapons = c.weapons.filter(function(w){return w.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-armor"){ if(!isGM()) return; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-armor"){ if(!isGM()) return; c.armors = c.armors.filter(function(a){return a.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-inventory"){ if(!isGM()) return; c.inventory = c.inventory || []; c.inventory.push({id:uid(),name:"",qty:1}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-inventory"){ if(!isGM()) return; c.inventory = (c.inventory || []).filter(function(i){return i.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="add-spell"){
-    if(!canEditChar(c)) return;
+    if(!isGM()) return;
     if(!c.spells) c.spells = [];
     c.spells.push({id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false});
     c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab(); return;
   }
   if(action==="del-spell"){
-    if(!canEditChar(c)) return;
+    if(!isGM()) return;
     c.spells = (c.spells||[]).filter(function(s){return s.id!==btn.getAttribute("data-id");});
     c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab(); return;
@@ -4460,12 +4492,12 @@ function handleClick(e){
     }
     return;
   }
-  if(action==="add-stone"){ if(!canEditChar(c)) return; c.stones.push({id:uid(),color:"",efecto:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-stone"){ if(!canEditChar(c)) return; c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-summon"){ if(!canEditChar(c)) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-summon"){ if(!canEditChar(c)) return; c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-poison"){ if(!canEditChar(c)) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-poison"){ if(!canEditChar(c)) return; c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-stone"){ if(!isGM()) return; c.stones.push({id:uid(),color:"",efecto:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-stone"){ if(!isGM()) return; c.stones = c.stones.filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-summon"){ if(!isGM()) return; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-summon"){ if(!isGM()) return; c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-poison"){ if(!isGM()) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-poison"){ if(!isGM()) return; c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="add-passiveNeg"){ if(!isGM()) return; c.passivesNeg.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="del-passiveNeg"){ if(!isGM()) return; c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="add-passivePos"){ if(!isGM()) return; c.passivesPos.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
