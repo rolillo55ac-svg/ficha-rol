@@ -103,9 +103,26 @@ function hideLoadingScreen(){
     ls.classList.add("fade-out");
     setTimeout(function(){
       ls.style.display = "none";
-    }, 700);
-  }, 500);
+      try { ls.remove(); } catch(e){}
+    }, 500);
+  }, 250);
 }
+
+// Watchdog de seguridad incondicional para evitar bloqueos en la pantalla de carga
+setTimeout(function(){
+  try {
+    var ls = document.getElementById("loadingScreen");
+    if(ls && ls.style.display !== "none"){
+      console.warn("Watchdog: forzando ocultación de pantalla de carga.");
+      hideLoadingScreen();
+    }
+  } catch(e){}
+}, 2200);
+
+window.addEventListener("error", function(err){
+  console.warn("Global error listener:", err);
+  setTimeout(hideLoadingScreen, 300);
+});
 
 // === CIBERSEGURIDAD: PROTECCIÓN ANTI FUERZA BRUTA ===
 var MAX_LOGIN_ATTEMPTS = 5;
@@ -182,6 +199,55 @@ function blankCharacter(name, isNPC){
     activeBuffs: [],
     personalNotes: ""
   };
+}
+
+function ensureCharDefaults(c){
+  if(!c || typeof c !== "object") return c;
+  if(!c.id) c.id = uid();
+  if(!c.name) c.name = "Sin Nombre";
+  if(!c.attrs || typeof c.attrs !== "object") c.attrs = { fisico: 1, destreza: 1, inteligencia: 1, percepcion: 1, carisma: 1 };
+  ATTRS.forEach(function(a){ if(c.attrs[a] === undefined) c.attrs[a] = 1; });
+  
+  if(!c.combat || typeof c.combat !== "object") c.combat = { iniciativa: 0, movilidad: 0, defensa: 10, defensaMagica: 0, pvActual: 10, pvMax: 10, escudoActual: 0, manaActual: 10, manaMax: 10 };
+  if(c.combat.pvActual === undefined) c.combat.pvActual = c.combat.pvMax || 10;
+  if(c.combat.pvMax === undefined) c.combat.pvMax = 10;
+  if(c.combat.manaActual === undefined) c.combat.manaActual = c.combat.manaMax || 10;
+  if(c.combat.manaMax === undefined) c.combat.manaMax = 10;
+  if(c.combat.escudoActual === undefined) c.combat.escudoActual = 0;
+  if(c.combat.defensa === undefined) c.combat.defensa = 10;
+  if(c.combat.defensaMagica === undefined) c.combat.defensaMagica = 0;
+  if(c.combat.iniciativa === undefined) c.combat.iniciativa = 0;
+  if(c.combat.movilidad === undefined) c.combat.movilidad = 0;
+
+  if(!c.money || typeof c.money !== "object") c.money = { oro: 0, plata: 0 };
+  if(c.money.oro === undefined) c.money.oro = 0;
+  if(c.money.plata === undefined) c.money.plata = 0;
+
+  if(!c.skillBonus || typeof c.skillBonus !== "object") c.skillBonus = {};
+  if(!c.skillProgress || typeof c.skillProgress !== "object") c.skillProgress = {};
+  if(c.skillPointsUnlocked === undefined) c.skillPointsUnlocked = false;
+  if(!c.skillHybrid || typeof c.skillHybrid !== "object") c.skillHybrid = {};
+  if(!Array.isArray(c.customSkills)) c.customSkills = [];
+  if(c.skillPoints === undefined) c.skillPoints = 0;
+
+  if(!Array.isArray(c.weapons)) c.weapons = [];
+  if(!Array.isArray(c.armors)) c.armors = [];
+  if(!Array.isArray(c.inventory)) c.inventory = [];
+  if(!Array.isArray(c.spells)) c.spells = [];
+  if(!Array.isArray(c.stones)) c.stones = [];
+  if(!Array.isArray(c.passivesNeg)) c.passivesNeg = [];
+  if(!Array.isArray(c.passivesPos)) c.passivesPos = [];
+  if(!Array.isArray(c.goddessCurses)) c.goddessCurses = [];
+  if(!Array.isArray(c.goddessBlessings)) c.goddessBlessings = [];
+  if(!Array.isArray(c.goddessTable)) c.goddessTable = [];
+  if(!Array.isArray(c.summons)) c.summons = [];
+  if(!c.buffs || typeof c.buffs !== "object") c.buffs = {};
+  if(!Array.isArray(c.customBuffs)) c.customBuffs = [];
+  if(!Array.isArray(c.poisons)) c.poisons = [];
+  if(!Array.isArray(c.activeBuffs)) c.activeBuffs = [];
+  if(c.personalNotes === undefined) c.personalNotes = "";
+
+  return c;
 }
 
 function getOfficialCharacters(){
@@ -1014,6 +1080,7 @@ function migrateState(s){
     }
   });
   (s.characters||[]).forEach(function(c){
+    ensureCharDefaults(c);
     if(!c.combat) c.combat={iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10};
     if(c.combat.escudoActual===undefined) c.combat.escudoActual=0;
     if(!c.customSkills) c.customSkills=[];
@@ -1162,7 +1229,8 @@ function getUserCharacters(){
 
 function activeChar(){
   var chars = getUserCharacters();
-  return chars.find(function(x){return x.id===state.activeId;}) || chars[0] || blankCharacter("Sin Personaje");
+  var found = chars.find(function(x){return x.id===state.activeId;}) || chars[0] || (state.characters && state.characters[0]) || blankCharacter("Sin Personaje");
+  return ensureCharDefaults(found);
 }
 
 function getEffectiveAttr(aKey, c){
@@ -1606,7 +1674,7 @@ function performWeaponRoll(charName, weaponName, formulaRaw){
 
 function renderTopbar(){
   var c = activeChar();
-  document.body.setAttribute("data-theme", c.theme||"default");
+  if(document.body) document.body.setAttribute("data-theme", c.theme||"default");
   var curPv = num(c.combat.pvActual, 0);
   var maxHp = Math.max(1, num(c.combat.pvMax, 1));
   var maxMana = Math.max(1, num(c.combat.manaMax, 1));
@@ -1629,7 +1697,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.5</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.6</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -1670,7 +1738,7 @@ function renderTopbar(){
 var PLAYER_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
-  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"mundo",label:"Mundo"}
+  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
 var GM_TABS = [
@@ -1701,7 +1769,7 @@ function renderTab(){
   else if(state.activeTab==="alquimia") main.innerHTML = tplAlquimia(c);
   else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
   else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
-  else if(state.activeTab==="extra" && isGM()) main.innerHTML = tplExtra(c);
+  else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
   else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
 }
 
@@ -1983,7 +2051,8 @@ function tplHabilidades(c){
         '</span>';
       }
       
-      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+ATTR_LABELS[cs.attr].slice(0,3)+')</small></span>'+
+      var attrLbl = ATTR_LABELS[cs.attr] ? ATTR_LABELS[cs.attr].slice(0,3) : "Gen";
+      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+attrLbl+')</small></span>'+
         '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
         '<span class="skill-bonus-ctrl">'+
           (isGM() ? gmCustomTools : (
@@ -2007,16 +2076,16 @@ function tplHabilidades(c){
 function skillRowHtml(s, c, unlocked){
   var base = skillBase(s,c);
   var total = skillTotal(s,c);
-  var bonusVal = num(c.skillBonus[s.id],0);
+  var bonusVal = num(c.skillBonus ? c.skillBonus[s.id] : 0, 0);
   if(!c.skillProgress) c.skillProgress = {};
   var prog = num(c.skillProgress[s.id],0);
   var costNeeded = bonusVal + 1;
 
   var hybridSel = "";
   if(s.attr==="hybrid"){
-    var chosen = c.skillHybrid[s.id] || s.hybridOptions[0];
+    var chosen = (c.skillHybrid && c.skillHybrid[s.id]) || s.hybridOptions[0];
     hybridSel = '<div><select class="skill-hybrid-select" data-bind="skillHybrid.'+s.id+'" aria-label="Atributo para '+esc(s.name)+'">'+
-      s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+ATTR_LABELS[o].slice(0,3)+'</option>';}).join('')+
+      s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+(ATTR_LABELS[o]?ATTR_LABELS[o].slice(0,3):o)+'</option>';}).join('')+
       '</select></div>';
   }
 
@@ -2151,11 +2220,11 @@ function tplCombate(c){
         ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
         : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño" aria-label="Tirar daño">&#127922;</button>'
       )+
-      (isGM() ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
     '</div>'+
     '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma al equipo</button>';
   }
   html += '</div>';
@@ -2163,13 +2232,13 @@ function tplCombate(c){
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Armaduras</span></div>';
   (c.armors||[]).forEach(function(a){
     html += '<div class="list-row armor-row">'+
-      '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura" '+(isGM()?'':'readonly')+'>'+
-      '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción" '+(isGM()?'':'readonly')+'>'+
-      '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo" '+(isGM()?'':'readonly')+'>'+
-      (isGM() ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
+      '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura">'+
+      '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción">'+
+      '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo">'+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-armor">+ Añadir armadura</button>';
   }
   html += '</div>';
@@ -2233,7 +2302,7 @@ function tplMagia(c){
               '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="'+s.id+'" title="Quitar una carga o desactivar">✕ Quitar Carga ('+stacks+')</button>' :
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'">⚡ Activar (-'+num(s.coste, 1)+' Maná)</button>'
             )+
-            (isGM() ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
+            (canEditChar(c) ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
           '</div>'+
         '</div>'+
         '<div class="spell-grid">'+
@@ -2255,7 +2324,7 @@ function tplMagia(c){
     });
   }
 
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-spell">+ Añadir Hechizo al Grimorio</button>';
   }
   html += '</div>';
@@ -2265,10 +2334,10 @@ function tplMagia(c){
     html += '<div class="list-row stone-row">'+
       '<input type="text" placeholder="Color" data-bind="stones.'+s.id+'.color" value="'+esc(s.color)+'">'+
       '<input type="text" placeholder="Efecto" data-bind="stones.'+s.id+'.efecto" value="'+esc(s.efecto)+'">'+
-      (isGM() ? '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>' : '')+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>' : '')+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-stone">+ Añadir piedra</button>';
   }
   html += '</div>';
@@ -2284,7 +2353,7 @@ function tplAlquimia(c){
         '<div style="display:flex;align-items:center;gap:6px;">'+
           '<span style="font-size:.65rem;color:var(--ink-faint);">Dosis:</span>'+
           '<input type="number" style="width:40px;text-align:center;background:var(--bg-card);padding:2px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'">'+
-          (isGM() ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
+          (canEditChar(c) ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
         '</div>'+
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:6px;">'+
@@ -2297,9 +2366,9 @@ function tplAlquimia(c){
           '<option value="investigando" '+(p.estado==='investigando'?'selected':'')+'>Investigando...</option>'+
         '</select>'+
       '</div>'+
-    '</div>';
+      '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-poison">+ Añadir veneno / fórmula</button>';
   }
   html += '</div>';
@@ -2307,6 +2376,8 @@ function tplAlquimia(c){
 }
 
 function tplInventario(c){
+  c.money = c.money || { oro: 0, plata: 0 };
+  c.inventory = c.inventory || [];
   var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
     '<div class="money-row">'+
       '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" value="'+num(c.money.oro,0)+'"></div>'+
@@ -2316,12 +2387,12 @@ function tplInventario(c){
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Equipo e Inventario</span></div>';
   (c.inventory||[]).forEach(function(it){
     html += '<div class="list-row inv-row">'+
-      '<input type="text" placeholder="Objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" '+(isGM()?'':'readonly')+'>'+
+      '<input type="text" placeholder="Objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'">'+
       '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'">'+
-      (isGM() ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
+      (canEditChar(c) ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-inventory">+ Añadir objeto</button>';
   }
   html += '</div>';
@@ -2329,12 +2400,13 @@ function tplInventario(c){
 }
 
 function tplInvocaciones(c){
+  c.summons = c.summons || [];
   var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
   (c.summons||[]).forEach(function(s){
     html += '<div class="creature-card">' +
       '<div class="creature-card-header">' +
         '<input type="text" class="creature-name-input" placeholder="Nombre" data-bind="summons.' + s.id + '.name" value="' + esc(s.name) + '">' +
-        (isGM() ? '<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>' : '') +
+        (canEditChar(c) ? '<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>' : '') +
       '</div>' +
       '<div class="creature-grid">' +
         creatureField("Vida", "summons." + s.id + ".vida", s.vida) +
@@ -2347,7 +2419,7 @@ function tplInvocaciones(c){
       '<div class="creature-field" style="margin-top:6px;"><label>Habilidades, Tiradas y Rasgos</label><textarea class="creature-notes" placeholder="Ej: Melé 8+1d10, Rasgo..." data-bind="summons.' + s.id + '.habilidades">' + esc(s.habilidades||s.notas) + '</textarea></div>' +
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-summon">+ Añadir invocación</button>';
   }
   html += '</div>';
@@ -2455,20 +2527,23 @@ function tplBestiario(s){
 }
 
 function tplExtra(c){
+  c.passivesNeg = c.passivesNeg || [];
+  c.passivesPos = c.passivesPos || [];
+  c.goddessTable = c.goddessTable || [];
   var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Negativas</span></div>';
   (c.passivesNeg||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button></div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'">'+(canEditChar(c)?'<button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passiveNeg">+ Añadir pasiva negativa</button>';
   }
   html += '</div>';
 
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Positivas</span></div>';
   (c.passivesPos||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'"><button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button></div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'">'+(canEditChar(c)?'<button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passivePos">+ Añadir pasiva positiva</button>';
   }
   html += '</div>';
@@ -2479,10 +2554,10 @@ function tplExtra(c){
       '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'">'+
       '<input type="text" placeholder="Gustos" data-bind="goddessTable.'+g.id+'.gustos" value="'+esc(g.gustos)+'">'+
       '<input type="text" placeholder="Disgustos" data-bind="goddessTable.'+g.id+'.disgustos" value="'+esc(g.disgustos)+'">'+
-      '<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">✕</button>'+
+      (canEditChar(c)?'<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">✕</button>':'')+
     '</div>';
   });
-  if(isGM()){
+  if(canEditChar(c)){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-goddess">+ Añadir diosa</button>';
   }
   html += '</div>';
@@ -3096,7 +3171,7 @@ function modalClick(e){
     }
     flushPendingSync();
     state.activeId = btn.getAttribute("data-id");
-    saveState();
+    saveState(true);
     closeModals();
     renderTopbar();
     renderTab();
@@ -3456,9 +3531,9 @@ function handleRemoteCharacterChange(payload){
         if(localChar.id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
           c.personalNotes = localChar.personalNotes;
         }
-        state.characters[idx] = c;
+        state.characters[idx] = ensureCharDefaults(c);
       } else {
-        state.characters.push(c);
+        state.characters.push(ensureCharDefaults(c));
       }
       if(!state.activeId) state.activeId = c.id;
       saveState(true); renderTopbar(); renderTabbar();
@@ -3613,6 +3688,7 @@ async function pullAllFromSupabase(){
       });
 
       state.characters = mergedChars;
+      state.characters.forEach(function(c){ ensureCharDefaults(c); });
 
       var validChars = getUserCharacters();
       var savedActiveId = localStorage.getItem("krysalis_active_id");
@@ -3845,6 +3921,8 @@ function creatureFieldGlobal(label,bind,val){
 }
 
 function rollLogHtml(){
+  if(!state) return '';
+  state.rollLog = state.rollLog || [];
   var logs = state.rollLog.slice(0,5);
   var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span></div>';
   if(!logs.length){ html += '<div class="roll-empty">Sin tiradas recientes.</div>'; }
@@ -3861,11 +3939,11 @@ function setBind(target, path, rawValue, inputType){
   var parts = path.split(".");
   var value = inputType==="number" ? num(rawValue,0) : rawValue;
   if(parts.length===1){ target[parts[0]] = value; return; }
-  if(parts[0]==="attrs"){ target.attrs[parts[1]] = value; return; }
-  if(parts[0]==="combat"){ target.combat[parts[1]] = value; return; }
-  if(parts[0]==="money"){ target.money[parts[1]] = value; return; }
-  if(parts[0]==="skillBonus"){ target.skillBonus[parts[1]] = value; return; }
-  if(parts[0]==="skillHybrid"){ target.skillHybrid[parts[1]] = value; return; }
+  if(parts[0]==="attrs"){ target.attrs = target.attrs || {}; target.attrs[parts[1]] = value; return; }
+  if(parts[0]==="combat"){ target.combat = target.combat || {}; target.combat[parts[1]] = value; return; }
+  if(parts[0]==="money"){ target.money = target.money || { oro: 0, plata: 0 }; target.money[parts[1]] = value; return; }
+  if(parts[0]==="skillBonus"){ target.skillBonus = target.skillBonus || {}; target.skillBonus[parts[1]] = value; return; }
+  if(parts[0]==="skillHybrid"){ target.skillHybrid = target.skillHybrid || {}; target.skillHybrid[parts[1]] = value; return; }
   if(parts[0]==="customSkills"){
     var cs = target.customSkills.find(function(x){return x.id===parts[1];});
     if(cs) cs[parts[2]] = value;
@@ -4883,146 +4961,151 @@ var pendingBestiaryId = null;
 var pendingNewMapName = null;
 
 function init(){
-  updateLoadingProgress(25, "Cargando fichas...");
-  state = loadState();
-  updateLoadingProgress(60, "Preparando compendio...");
-  renderTopbar();
-  renderTabbar();
-  renderTab();
+  try {
+    updateLoadingProgress(25, "Cargando fichas...");
+    state = loadState();
+    updateLoadingProgress(60, "Preparando compendio...");
+    renderTopbar();
+    renderTabbar();
+    renderTab();
 
-  document.getElementById("main").addEventListener("click", handleClick);
-  document.getElementById("main").addEventListener("change", handleChange);
-  document.getElementById("main").addEventListener("input", handleChange);
-  
-  document.addEventListener("touchstart", handleTouchStart, {passive: true});
-  document.addEventListener("touchend", handleTouchEnd, {passive: true});
-  
-  if(window.innerWidth < 768){
-    setTimeout(showSwipeIndicator, 1000);
-  }
-  
-  document.getElementById("topbar").addEventListener("click", handleClick);
-  document.getElementById("tabbar").addEventListener("click", handleClick);
-  document.getElementById("charModal").addEventListener("click", modalClick);
-  document.getElementById("dataModal").addEventListener("click", modalClick);
-  document.getElementById("diceModal").addEventListener("click", diceModalClick);
-  document.getElementById("pinModal").addEventListener("click", pinModalClick);
-  document.getElementById("loreModal").addEventListener("click", loreModalClick);
-  
-  document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  document.getElementById("loreModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-  
-  document.getElementById("rollOverlay").addEventListener("click", function(e){
-    if(e.target===this || e.target.closest("[data-action='close-roll-modal']")){
-      this.classList.add("hidden");
-    } else if(e.target.closest("[data-action='reroll-last-dice']")){
-      if(typeof lastRollFn === "function") lastRollFn();
+    document.getElementById("main").addEventListener("click", handleClick);
+    document.getElementById("main").addEventListener("change", handleChange);
+    document.getElementById("main").addEventListener("input", handleChange);
+    
+    document.addEventListener("touchstart", handleTouchStart, {passive: true});
+    document.addEventListener("touchend", handleTouchEnd, {passive: true});
+    
+    if(window.innerWidth < 768){
+      setTimeout(showSwipeIndicator, 1000);
     }
-  });
+    
+    document.getElementById("topbar").addEventListener("click", handleClick);
+    document.getElementById("tabbar").addEventListener("click", handleClick);
+    document.getElementById("charModal").addEventListener("click", modalClick);
+    document.getElementById("dataModal").addEventListener("click", modalClick);
+    document.getElementById("diceModal").addEventListener("click", diceModalClick);
+    document.getElementById("pinModal").addEventListener("click", pinModalClick);
+    document.getElementById("loreModal").addEventListener("click", loreModalClick);
+    
+    document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+    document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+    document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+    document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+    document.getElementById("loreModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+    
+    document.getElementById("rollOverlay").addEventListener("click", function(e){
+      if(e.target===this || e.target.closest("[data-action='close-roll-modal']")){
+        this.classList.add("hidden");
+      } else if(e.target.closest("[data-action='reroll-last-dice']")){
+        if(typeof lastRollFn === "function") lastRollFn();
+      }
+    });
 
-  document.getElementById("fabDice").addEventListener("click", openDiceModal);
+    document.getElementById("fabDice").addEventListener("click", openDiceModal);
 
-  document.getElementById("portraitFileInput").addEventListener("change", function(e){
-    if(e.target.files && e.target.files[0]){
-      resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
-    }
-    e.target.value="";
-  });
-  document.getElementById("mapFileInput").addEventListener("change", function(e){
-    if(e.target.files && e.target.files[0]){
-      resizeImageFile(e.target.files[0], 900, 0.65, function(url){
-        if(pendingNewMapName){
-          var newM = { id: uid(), name: pendingNewMapName, image: url, markers: [] };
-          state.maps = state.maps || [];
-          state.maps.push(newM);
-          state.activeMapId = newM.id;
-          pendingNewMapName = null;
-          saveState(true);
-          pushMapsData();
-          renderTab();
-          showToast("Nuevo mapa creado: " + newM.name, "success");
-        } else {
-          var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-          if(curM){
-            curM.image = url;
+    document.getElementById("portraitFileInput").addEventListener("change", function(e){
+      if(e.target.files && e.target.files[0]){
+        resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
+      }
+      e.target.value="";
+    });
+    document.getElementById("mapFileInput").addEventListener("change", function(e){
+      if(e.target.files && e.target.files[0]){
+        resizeImageFile(e.target.files[0], 900, 0.65, function(url){
+          if(pendingNewMapName){
+            var newM = { id: uid(), name: pendingNewMapName, image: url, markers: [] };
+            state.maps = state.maps || [];
+            state.maps.push(newM);
+            state.activeMapId = newM.id;
+            pendingNewMapName = null;
             saveState(true);
             pushMapsData();
             renderTab();
-            showToast("Foto del mapa actualizada", "info");
+            showToast("Nuevo mapa creado: " + newM.name, "success");
+          } else {
+            var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+            if(curM){
+              curM.image = url;
+              saveState(true);
+              pushMapsData();
+              renderTab();
+              showToast("Foto del mapa actualizada", "info");
+            }
           }
-        }
-      });
-    }
-    e.target.value="";
-  });
-  var bFileInput = document.getElementById("bestiaryFileInput");
-  if(bFileInput){
-    bFileInput.addEventListener("change", function(e){
-      if(e.target.files && e.target.files[0] && pendingBestiaryId){
-        resizeImageFile(e.target.files[0], 600, 0.7, function(url){
-          var beast = (state.bestiary||[]).find(function(x){return x.id===pendingBestiaryId;});
-          if(beast){
-            beast.image = url;
-            saveState(true); pushSharedData(); renderTab();
-          }
-          pendingBestiaryId = null;
         });
       }
       e.target.value="";
     });
-  }
-  var qFileInput = document.getElementById("questFileInput");
-  if(qFileInput){
-    qFileInput.addEventListener("change", function(e){
-      if(e.target.files && e.target.files[0]){
-        resizeImageFile(e.target.files[0], 900, 0.7, function(url){
-          state.questMap = state.questMap || { name: "Mapa del Encuentro", image: null, notes: "" };
-          state.questMap.image = url;
-          saveState(true); pushSharedData(); renderTab();
-          showToast("Mapa de misión actualizado", "success");
-        });
-      }
-      e.target.value = "";
-    });
-  }
-  document.getElementById("importFileInput").addEventListener("change", function(e){
-    if(e.target.files && e.target.files[0]) importData(e.target.files[0]);
-    e.target.value="";
-  });
-
-  window.addEventListener("beforeunload", function(){
-    if(document.activeElement && document.activeElement.matches("input, textarea, select")){
-      try { document.activeElement.blur(); } catch(e){}
+    var bFileInput = document.getElementById("bestiaryFileInput");
+    if(bFileInput){
+      bFileInput.addEventListener("change", function(e){
+        if(e.target.files && e.target.files[0] && pendingBestiaryId){
+          resizeImageFile(e.target.files[0], 600, 0.7, function(url){
+            var beast = (state.bestiary||[]).find(function(x){return x.id===pendingBestiaryId;});
+            if(beast){
+              beast.image = url;
+              saveState(true); pushSharedData(); renderTab();
+            }
+            pendingBestiaryId = null;
+          });
+        }
+        e.target.value="";
+      });
     }
-    flushPendingSync();
-    (state.characters || []).forEach(function(c){
-      if(c && c._isDirty) sendKeepalivePush(c);
+    var qFileInput = document.getElementById("questFileInput");
+    if(qFileInput){
+      qFileInput.addEventListener("change", function(e){
+        if(e.target.files && e.target.files[0]){
+          resizeImageFile(e.target.files[0], 900, 0.7, function(url){
+            state.questMap = state.questMap || { name: "Mapa del Encuentro", image: null, notes: "" };
+            state.questMap.image = url;
+            saveState(true); pushSharedData(); renderTab();
+            showToast("Mapa de misión actualizado", "success");
+          });
+        }
+        e.target.value = "";
+      });
+    }
+    document.getElementById("importFileInput").addEventListener("change", function(e){
+      if(e.target.files && e.target.files[0]) importData(e.target.files[0]);
+      e.target.value="";
     });
-  });
-  window.addEventListener("pagehide", function(){
-    flushPendingSync();
-    (state.characters || []).forEach(function(c){
-      if(c && c._isDirty) sendKeepalivePush(c);
-    });
-  });
-  document.addEventListener("visibilitychange", function(){
-    if(document.visibilityState === "hidden"){
+
+    window.addEventListener("beforeunload", function(){
+      if(document.activeElement && document.activeElement.matches("input, textarea, select")){
+        try { document.activeElement.blur(); } catch(e){}
+      }
       flushPendingSync();
       (state.characters || []).forEach(function(c){
         if(c && c._isDirty) sendKeepalivePush(c);
       });
-    }
-  });
+    });
+    window.addEventListener("pagehide", function(){
+      flushPendingSync();
+      (state.characters || []).forEach(function(c){
+        if(c && c._isDirty) sendKeepalivePush(c);
+      });
+    });
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "hidden"){
+        flushPendingSync();
+        (state.characters || []).forEach(function(c){
+          if(c && c._isDirty) sendKeepalivePush(c);
+        });
+      }
+    });
 
-  updateLoadingProgress(85, "Conectando con la partida...");
-  initSupabase();
-  checkWeeklyBackup();
-  updateLoadingProgress(100, "¡Listo!");
-  setTimeout(hideLoadingScreen, 700);
-  setTimeout(hideLoadingScreen, 3500);
+    updateLoadingProgress(85, "Conectando con la partida...");
+    initSupabase();
+    checkWeeklyBackup();
+  } catch(err) {
+    console.error("Critical error in init():", err);
+  } finally {
+    updateLoadingProgress(100, "¡Listo!");
+    setTimeout(hideLoadingScreen, 350);
+    setTimeout(hideLoadingScreen, 1200);
+  }
 }
 
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
