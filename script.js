@@ -1065,7 +1065,13 @@ var dirtyCharIds = new Set();
 var isGlobalDirty = false;
 
 function markCharDirty(charId){
-  if(charId) dirtyCharIds.add(charId);
+  if(!charId) return;
+  dirtyCharIds.add(charId);
+  var target = (state.characters||[]).find(function(x){ return x.id === charId; });
+  if(target){
+    target._isDirty = true;
+    target._lastLocalEdit = Date.now();
+  }
 }
 
 function flushPendingSync(){
@@ -1075,23 +1081,32 @@ function flushPendingSync(){
   }
   if(!supabaseClient || !currentUser || isRemoteSyncing) return;
 
-  var currentC = activeChar();
-  if(currentC && currentC.id && dirtyCharIds.size === 0 && !isGlobalDirty){
-    return;
-  }
+  var toPush = new Set(dirtyCharIds);
+  (state.characters || []).forEach(function(c){
+    if(c && c._isDirty && c.id) toPush.add(c.id);
+  });
 
-  dirtyCharIds.forEach(function(cid){
+  toPush.forEach(function(cid){
     pushCharacterById(cid);
   });
   dirtyCharIds.clear();
 
-  if(isGlobalDirty){
+  if(isGlobalDirty || state._isSharedDirty){
     isGlobalDirty = false;
+    state._isSharedDirty = false;
     if(isGM()) pushSharedData();
   }
 }
 
 function saveState(skipRemote){
+  var ac = activeChar();
+  if(ac && ac.id){
+    ac._lastLocalEdit = Date.now();
+    if(!skipRemote){
+      ac._isDirty = true;
+      markCharDirty(ac.id);
+    }
+  }
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if(state.activeId) localStorage.setItem("krysalis_active_id", state.activeId);
@@ -1100,13 +1115,11 @@ function saveState(skipRemote){
     console.error("Error al guardar en localStorage:", e);
   }
   if(!skipRemote && supabaseClient && currentUser && !isRemoteSyncing){
-    var ac = activeChar();
-    if(ac && ac.id) markCharDirty(ac.id);
     updateSyncBadge("saving");
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){
       flushPendingSync();
-    }, 600);
+    }, 300);
   }
 }
 
@@ -1622,7 +1635,7 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9 Beta</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.1</span></div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
@@ -3198,7 +3211,7 @@ function exportFullBackup(){
   var dateStr = new Date().toISOString().slice(0, 10);
   var backupData = {
     krysalis_system: "Krysalis RPG",
-    version: "v0.9 Beta",
+    version: "v0.9.1",
     backup_type: "full_disaster_recovery",
     timestamp: new Date().toISOString(),
     support_contact: "rolillo55ac@gmail.com",
@@ -3388,7 +3401,7 @@ function handleRemoteCharStatUpdate(data){
   if(!data || !data.charId) return;
   var target = (state.characters||[]).find(function(x){ return x.id === data.charId; });
   if(target){
-    if(target._lastLocalEdit && Date.now() - target._lastLocalEdit < 2000) return;
+    if(target._isDirty || dirtyCharIds.has(target.id) || (target._lastLocalEdit && Date.now() - target._lastLocalEdit < 3500)) return;
     if(data.combat) target.combat = Object.assign(target.combat||{}, data.combat);
     saveState(true);
     if(state.activeId === data.charId){
@@ -3420,10 +3433,10 @@ function handleRemoteCharacterChange(payload){
       var c = row.data;
       c.db_id = row.id;
       if(row.owner_id) c.owner_id = row.owner_id;
-      var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id; });
+      var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id || (x.name && c.name && x.name.trim().toLowerCase() === c.name.trim().toLowerCase()); });
       if(idx !== -1){
         var localChar = state.characters[idx];
-        if(dirtyCharIds.has(localChar.id) || (localChar._lastLocalEdit && Date.now() - localChar._lastLocalEdit < 2500)){
+        if(localChar._isDirty || dirtyCharIds.has(localChar.id) || (localChar._lastLocalEdit && Date.now() - localChar._lastLocalEdit < 3500)){
           return;
         }
         if(localChar.id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
@@ -3566,16 +3579,26 @@ async function pullAllFromSupabase(){
 
       // Merge: never overwrite newer local modifications
       var mergedChars = pulledChars.map(function(remoteC){
-        var localC = (state.characters || []).find(function(lc){ return lc.id === remoteC.id || (lc.db_id && lc.db_id === remoteC.db_id); });
-        if(localC && localC._lastLocalEdit && (!remoteC._serverUpdatedAt || localC._lastLocalEdit > remoteC._serverUpdatedAt)){
-          markCharDirty(localC.id);
-          return localC;
+        var localC = (state.characters || []).find(function(lc){ 
+          return lc.id === remoteC.id || (lc.db_id && lc.db_id === remoteC.db_id) || (lc.name && remoteC.name && lc.name.trim().toLowerCase() === remoteC.name.trim().toLowerCase()); 
+        });
+        if(localC){
+          if(!localC.db_id && remoteC.db_id) localC.db_id = remoteC.db_id;
+          if(!remoteC.db_id && localC.db_id) remoteC.db_id = localC.db_id;
+
+          if(localC._isDirty || (localC._lastLocalEdit && (!remoteC._serverUpdatedAt || localC._lastLocalEdit >= remoteC._serverUpdatedAt))){
+            localC._isDirty = true;
+            markCharDirty(localC.id);
+            return localC;
+          }
         }
         return remoteC;
       });
 
       (state.characters || []).forEach(function(localC){
-        if(!mergedChars.some(function(mc){ return mc.id === localC.id || (mc.db_id && mc.db_id === localC.db_id); })){
+        if(!mergedChars.some(function(mc){ 
+          return mc.id === localC.id || (mc.db_id && mc.db_id === localC.db_id) || (mc.name && localC.name && mc.name.trim().toLowerCase() === localC.name.trim().toLowerCase()); 
+        })){
           mergedChars.push(localC);
           markCharDirty(localC.id);
         }
@@ -3603,7 +3626,7 @@ async function pullAllFromSupabase(){
     if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
   }catch(e){ console.error('Supabase error:', e); }
   isRemoteSyncing = false;
-  if(dirtyCharIds.size > 0){
+  if(dirtyCharIds.size > 0 || (state.characters||[]).some(function(c){ return c._isDirty; })){
     flushPendingSync();
   }
 }
@@ -3626,7 +3649,15 @@ function pushCharacterById(charId){
   if(c.db_id) payload.id = c.db_id;
   supabaseClient.from('characters').upsert(payload).select().then(function(res){
     if(res.error) { console.error('Supabase error:', res.error); return; }
-    if(res.data && res.data[0]) c.db_id = res.data[0].id;
+    if(res.data && res.data[0]){
+      c.db_id = res.data[0].id;
+      c._serverUpdatedAt = res.data[0].updated_at ? new Date(res.data[0].updated_at).getTime() : Date.now();
+    }
+    c._isDirty = false;
+    dirtyCharIds.delete(c.id);
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){}
     updateSyncBadge("synced");
   }).catch(function(e){ console.error('Supabase error:', e); });
 }
@@ -4397,12 +4428,12 @@ function handleClick(e){
   if(action==="del-summon"){ if(!canEditChar(c)) return; c.summons = c.summons.filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="add-poison"){ if(!canEditChar(c)) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="del-poison"){ if(!canEditChar(c)) return; c.poisons = c.poisons.filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-passiveNeg"){ if(!isGM()) return; c.passivesNeg.push({id:uid(),text:""}); saveState(); renderTab(); return; }
-  if(action==="del-passiveNeg"){ if(!isGM()) return; c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-passivePos"){ if(!isGM()) return; c.passivesPos.push({id:uid(),text:""}); saveState(); renderTab(); return; }
-  if(action==="del-passivePos"){ if(!isGM()) return; c.passivesPos = c.passivesPos.filter(function(p){return p.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
-  if(action==="add-goddess"){ if(!isGM()) return; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); saveState(); renderTab(); return; }
-  if(action==="del-goddess"){ if(!isGM()) return; c.goddessTable = c.goddessTable.filter(function(g){return g.id!==btn.getAttribute("data-id");}); saveState(); renderTab(); return; }
+  if(action==="add-passiveNeg"){ if(!isGM()) return; c.passivesNeg.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-passiveNeg"){ if(!isGM()) return; c.passivesNeg = c.passivesNeg.filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-passivePos"){ if(!isGM()) return; c.passivesPos.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-passivePos"){ if(!isGM()) return; c.passivesPos = c.passivesPos.filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-goddess"){ if(!isGM()) return; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="del-goddess"){ if(!isGM()) return; c.goddessTable = c.goddessTable.filter(function(g){return g.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
   if(action==="toggle-bestiary-visibility"){
     if(!isGM()) return;
     var bid = btn.getAttribute("data-id");
