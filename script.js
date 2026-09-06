@@ -261,7 +261,7 @@ function getOfficialCharacters(){
       portrait: null,
       isNPC: false,
       owner_id: "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3",
-      ownerEmail: "lolorey92@gmail.com",
+      ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Trysar",
       altura: "1,52",
@@ -374,7 +374,7 @@ function getOfficialCharacters(){
       portrait: null,
       isNPC: false,
       owner_id: "ece1cdb6-f8c6-4010-b3e8-045887dc92a3",
-      ownerEmail: "martu@gmail.com",
+      ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Krysalis",
       altura: "1,60",
@@ -508,7 +508,7 @@ function getOfficialCharacters(){
       portrait: null,
       isNPC: false,
       owner_id: "bcfb51f6-4916-4650-b842-0eaf7f8335f4",
-      ownerEmail: "piki@gmail.com",
+      ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Asland",
       altura: "1,70",
@@ -595,7 +595,7 @@ function getOfficialCharacters(){
       portrait: null,
       isNPC: false,
       owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
-      ownerEmail: "saray@gmail.com",
+      ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Krysalis",
       altura: "1,72",
@@ -713,7 +713,7 @@ function getOfficialCharacters(){
       portrait: null,
       isNPC: false,
       owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
-      ownerEmail: "saray@gmail.com",
+      ownerEmail: "",
       nivel: "1 Vástago",
       lugarNacimiento: "Krysalis",
       altura: "1,69",
@@ -1201,20 +1201,22 @@ function updateSyncBadge(st){
 }
 
 function isGM(){
-  return currentRole==='gm' ||
-    (currentUser && currentUser.email === 'rolillo55ac@gmail.com');
+  if(currentRole === 'gm' || currentRole === 'GM') return true;
+  if(state && (state.campaignRole === 'GM' || state.campaignRole === 'gm')) return true;
+  if(currentUser && currentUser.user_metadata && (currentUser.user_metadata.role === 'gm' || currentUser.user_metadata.role === 'GM')) return true;
+  return false;
 }
 
 function isCharOwner(c, user){
   if(!c || !user) return false;
   if(c.owner_id && c.owner_id === user.id) return true;
   if(c.ownerEmail && user.email && c.ownerEmail.trim().toLowerCase() === user.email.trim().toLowerCase()) return true;
-  var cName = (c.name || "").trim().toLowerCase();
-  var uEmail = (user.email || "").trim().toLowerCase();
-  if(uEmail === "lolorey92@gmail.com" && cName.includes("cherk")) return true;
-  if(uEmail === "martu@gmail.com" && cName.includes("ink")) return true;
-  if(uEmail === "piki@gmail.com" && (cName.includes("bucky") || cName.includes("baky"))) return true;
-  if(uEmail === "saray@gmail.com" && (cName.includes("scarleth") || cName.includes("winter") || cName === "derek")) return true;
+  if(state && Array.isArray(state.campaignMembers)){
+    var isMember = state.campaignMembers.some(function(m){
+      return m.user_id === user.id && (m.character_id === c.id || m.character_id === c.db_id);
+    });
+    if(isMember) return true;
+  }
   return false;
 }
 
@@ -2597,23 +2599,23 @@ function tplMundoMapas(s){
     return '<button class="f-pill '+(s.activeMapId===m.id?'active':'')+'" data-action="switch-map" data-id="'+m.id+'">'+esc(m.name)+'</button>';
   }).join('');
 
-  var canEdit = isGM() || !currentUser;
-  var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title">'+
-    '<span>'+(canEdit?'Cartografía y Mapas (GM)':'Cartografía y Mapas')+'</span>'+
+  var canEditMap = isGM() || !currentUser;
+  var html = '<div class="section'+(canEditMap?' gm-section':'')+'"><div class="section-title">'+
+    '<span>'+(canEditMap?'Cartografía y Mapas (GM)':'Cartografía y Mapas')+'</span>'+
     '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga y sincronización">🔄 Sincronizar</button>'+
   '</div>'+
-  (canEdit ? '<div class="map-toolbar">'+
+  (canEditMap ? '<div class="map-toolbar">'+
     '<button class="btn-compact" data-action="add-new-map-url" title="Crear un mapa nuevo independiente mediante enlace / URL">+ Nuevo Mapa (URL)</button>'+
     '<button class="btn-compact" data-action="add-new-map-file" title="Crear un mapa nuevo independiente subiendo archivo">+ Nuevo Mapa (Archivo)</button>'+
   '</div>' : '')+
   '<div class="filter-pills" style="margin-bottom:10px;">'+mapTabs+'</div>';
 
   if(curMap.image){
-    html += '<div class="map-viewer" data-action="'+(canEdit?'map-click':'')+'">'+
+    html += '<div class="map-viewer" data-action="map-click">'+
       '<img src="'+curMap.image+'" alt="Mapa">'+
       (curMap.markers||[]).map(function(m){
         var kindClass = m.kind==="Capital"?"pin-capital":m.kind==="Punto de Interés"?"pin-poi":m.kind==="Peligro"?"pin-peligro":"pin-ciudad";
-        return '<div class="map-pin '+kindClass+'" style="left:'+m.x+'%;top:'+m.y+'%;" data-action="'+(canEdit?'edit-pin':'')+'" data-id="'+m.id+'">'+
+        return '<div class="map-pin '+kindClass+'" style="left:'+m.x+'%;top:'+m.y+'%;" data-action="edit-pin" data-id="'+m.id+'">'+
           '<div class="pin-glyph"></div><div class="pin-tag">'+esc(m.name)+'</div>'+
         '</div>';
       }).join('')+
@@ -2622,7 +2624,7 @@ function tplMundoMapas(s){
     html += '<div class="map-viewer" style="display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:.82rem;padding:40px 10px;">Sin imagen cargada en '+esc(curMap.name)+'.</div>';
   }
   
-  if(canEdit){
+  if(canEditMap){
     html += '<div class="map-toolbar" style="margin-top:8px;">'+
       '<span style="font-size:0.75rem;color:var(--ink-dim);margin-right:2px;width:100%;">Foto de este mapa ('+esc(curMap.name)+'):</span>'+
       '<button class="btn-compact" data-action="upload-map" title="Cambiar la imagen de este mapa subiendo un archivo">Subir Foto</button>'+
@@ -2927,27 +2929,79 @@ function openPinModal(mapObj, x, y, pinId){
   document.getElementById("pinModalOverlay").classList.remove("hidden");
 }
 
+async function pushSingleMarker(marker, mapId){
+  if(!supabaseClient) return;
+  try{
+    var payload = {
+      id: marker.id,
+      map_id: mapId,
+      campaign_id: 'c0000000-0000-0000-0000-000000000001',
+      x: Number(marker.x),
+      y: Number(marker.y),
+      name: marker.name,
+      kind: marker.kind || 'Punto de Interés',
+      notes: marker.notes || '',
+      created_by: marker.created_by || (currentUser ? currentUser.id : null),
+      updated_at: new Date().toISOString()
+    };
+    var res = await supabaseClient.from('map_markers').upsert(payload);
+    if(res.error){
+      console.warn("Granular map_markers fallback:", res.error);
+      pushMapsData();
+    } else {
+      updateSyncBadge("synced");
+    }
+  }catch(e){
+    console.warn("Granular pushSingleMarker fallback:", e);
+    pushMapsData();
+  }
+}
+
+async function deleteSingleMarker(markerId, mapId){
+  if(!supabaseClient) return;
+  try{
+    var res = await supabaseClient.from('map_markers').delete().eq('id', markerId);
+    if(res.error){
+      console.warn("Granular map_markers delete fallback:", res.error);
+      pushMapsData();
+    } else {
+      updateSyncBadge("synced");
+    }
+  }catch(e){
+    console.warn("Granular deleteSingleMarker fallback:", e);
+    pushMapsData();
+  }
+}
+
 function pinModalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
   if(action==="close-modal"){ closeModals(); return; }
   if(action==="save-pin" && curM){
-    var pid = btn.getAttribute("data-id");
+    var pid = btn.getAttribute("data-id") || ("pin_" + uid());
     var existing = (curM.markers||[]).find(function(p){return p.id===pid;});
-    var pData = existing || {id:pid, x:btn.getAttribute("data-x"), y:btn.getAttribute("data-y")};
+    var pData = existing || {id:pid, x:parseFloat(btn.getAttribute("data-x"))||50, y:parseFloat(btn.getAttribute("data-y"))||50};
     pData.name = document.getElementById("pinInputName").value.trim()||"Punto de Interés";
     pData.kind = document.getElementById("pinInputKind").value;
     pData.notes = document.getElementById("pinInputNotes").value;
+    pData.created_by = currentUser ? currentUser.id : (pData.created_by || null);
     if(!existing){ if(!curM.markers) curM.markers=[]; curM.markers.push(pData); }
-    saveState(true); pushMapsData(); closeModals(); renderTab();
+    saveState(true);
+    closeModals();
+    renderTab();
     showToast("Marcador guardado", "success");
+    pushSingleMarker(pData, curM.id);
     return;
   }
   if(action==="del-pin" && curM){
-    curM.markers = (curM.markers||[]).filter(function(p){return p.id!==btn.getAttribute("data-id");});
-    saveState(true); pushMapsData(); closeModals(); renderTab();
+    var delPid = btn.getAttribute("data-id");
+    curM.markers = (curM.markers||[]).filter(function(p){return p.id!==delPid;});
+    saveState(true);
+    closeModals();
+    renderTab();
     showToast("Marcador eliminado", "info");
+    deleteSingleMarker(delPid, curM.id);
     return;
   }
 }
@@ -3455,6 +3509,12 @@ function initSupabase(){
         .on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(payload){
           handleRemoteCharacterChange(payload);
         })
+        .on('postgres_changes', {event:'*', schema:'public', table:'map_markers'}, function(payload){
+          handleRemoteMarkerChange(payload);
+        })
+        .on('postgres_changes', {event:'*', schema:'public', table:'maps'}, function(payload){
+          pullMapFromSupabase();
+        })
         .subscribe();
     }
 
@@ -3563,11 +3623,63 @@ function handleRemoteSharedDataChange(payload){
   }
 }
 
+function handleRemoteMarkerChange(payload){
+  if(!payload) return;
+  if(payload.eventType === 'DELETE' || (payload.old && !payload.new)){
+    var delId = (payload.old && payload.old.id) ? payload.old.id : payload.id;
+    var changed = false;
+    (state.maps||[]).forEach(function(m){
+      if(m.markers){
+        var beforeLen = m.markers.length;
+        m.markers = m.markers.filter(function(p){ return p.id !== delId; });
+        if(m.markers.length !== beforeLen) changed = true;
+      }
+    });
+    if(changed){
+      saveState(true);
+      if(state.activeTab === "mundo") renderTab();
+    }
+  } else if(payload.new){
+    var row = payload.new;
+    var targetMap = (state.maps||[]).find(function(m){ return m.id === row.map_id; }) || (state.maps && state.maps[0]);
+    if(targetMap){
+      if(!targetMap.markers) targetMap.markers = [];
+      var existingPin = targetMap.markers.find(function(p){ return p.id === row.id; });
+      var pinData = {
+        id: row.id,
+        x: Number(row.x),
+        y: Number(row.y),
+        name: row.name,
+        kind: row.kind,
+        notes: row.notes || '',
+        created_by: row.created_by
+      };
+      if(existingPin){
+        Object.assign(existingPin, pinData);
+      } else {
+        targetMap.markers.push(pinData);
+      }
+      saveState(true);
+      if(state.activeTab === "mundo") renderTab();
+    }
+  }
+}
+
 async function fetchUserProfile(){
   if(!supabaseClient || !currentUser) return;
   try{
     var res = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
     if(res.data && res.data.role) currentRole = res.data.role;
+
+    try{
+      var memRes = await supabaseClient.from('campaign_members').select('*').eq('user_id', currentUser.id);
+      if(memRes.data && memRes.data.length){
+        state.campaignMembers = memRes.data;
+        var gmMem = memRes.data.find(function(m){ return m.role === 'GM'; });
+        if(gmMem) { currentRole = 'gm'; state.campaignRole = 'GM'; }
+      }
+    }catch(errMem){}
+
     pullAllFromSupabase();
     pullMapFromSupabase();
     pullSharedDataFromSupabase();
@@ -3745,7 +3857,7 @@ function sendKeepalivePush(c){
   }catch(e){}
 }
 
-function pushCharacterById(charId){
+async function pushCharacterById(charId){
   if(!supabaseClient) return;
   var c = (state.characters||[]).find(function(x){ return x.id === charId; });
   if(!c || !c.name || c.id==="empty") return;
@@ -3757,6 +3869,20 @@ function pushCharacterById(charId){
     else if(n.includes("bucky") || n.includes("baky")) c.db_id = "4d8dd9b1-b5aa-430e-ae19-79c35b6c3c5e";
     else if(n.includes("cherk")) c.db_id = "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3";
     else if(n.includes("ink")) c.db_id = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
+  }
+
+  // Control de conflicto simple: verificar updated_at del servidor
+  if(c.db_id && c._serverUpdatedAt){
+    try{
+      var checkRes = await supabaseClient.from('characters').select('updated_at').eq('id', c.db_id).maybeSingle();
+      if(checkRes.data && checkRes.data.updated_at){
+        var remoteTs = new Date(checkRes.data.updated_at).getTime();
+        if(remoteTs > c._serverUpdatedAt + 2500){
+          console.warn("Conflicto detectado: la ficha fue modificada remotamente.");
+          showToast("Aviso: Esta ficha fue modificada recientemente por otro jugador.", "warning");
+        }
+      }
+    }catch(errCheck){}
   }
 
   var payload = {name: c.name, data: c, updated_at: new Date().toISOString()};
@@ -3791,6 +3917,36 @@ function pushActiveChar(){
 async function pullMapFromSupabase(){
   if(!supabaseClient) return;
   try{
+    try{
+      var mapsRes = await supabaseClient.from('maps').select('*').order('order_index');
+      if(mapsRes.data && mapsRes.data.length){
+        var markersRes = await supabaseClient.from('map_markers').select('*');
+        var allMarkers = (markersRes.data || []);
+        state.maps = mapsRes.data.map(function(m){
+          return {
+            id: m.id,
+            name: m.name,
+            image: m.image_url,
+            markers: allMarkers.filter(function(p){ return p.map_id === m.id; }).map(function(p){
+              return {
+                id: p.id,
+                x: Number(p.x),
+                y: Number(p.y),
+                name: p.name,
+                kind: p.kind,
+                notes: p.notes || '',
+                created_by: p.created_by
+              };
+            })
+          };
+        });
+        if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
+        saveState(true);
+        if(state.activeTab==="mundo") renderTab();
+        return;
+      }
+    }catch(errGranular){}
+
     var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'main_map').maybeSingle();
     if(res.error) { console.error('Supabase error:', res.error); return; }
     if(res.data && (res.data.data || res.data.markers)){
@@ -3821,22 +3977,58 @@ function pushMapsData(){
 async function pullSharedDataFromSupabase(){
   if(!supabaseClient) return;
   try{
+    var hasNormalized = false;
+    try{
+      var wRes = await supabaseClient.from('weapons_catalog').select('*');
+      var bRes = await supabaseClient.from('bestiary').select('*');
+      var bufRes = await supabaseClient.from('buff_catalog').select('*');
+      if(wRes.data && wRes.data.length){
+        state.weaponsCatalog = wRes.data;
+        hasNormalized = true;
+      }
+      if(bRes.data && bRes.data.length){
+        state.bestiary = bRes.data.map(function(b){
+          return {
+            id: b.id,
+            nombre: b.nombre,
+            tipo: b.tipo,
+            continente: b.continente,
+            rareza: b.rareza,
+            montable: b.montable,
+            absorcion: b.absorcion,
+            defensa: b.defensa,
+            movilidad: b.movilidad,
+            notas: b.notas,
+            habilidades: b.habilidades,
+            visible: b.visible,
+            image: b.image_url
+          };
+        });
+        hasNormalized = true;
+      }
+      if(bufRes.data && bufRes.data.length){
+        state.buffCatalog = bufRes.data;
+        hasNormalized = true;
+      }
+    }catch(errNorm){}
+
     var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'world_compendium').maybeSingle();
-    if(res.error) { console.error('Supabase error:', res.error); return; }
     if(res.data && res.data.data){
       var comp = res.data.data;
-      if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
-      if(comp.bestiary) state.bestiary = comp.bestiary;
+      if(!hasNormalized){
+        if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
+        if(comp.bestiary) state.bestiary = comp.bestiary;
+        if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
+      }
       if(comp.lore) state.lore = comp.lore;
-      if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
       if(comp.quests) state.quests = comp.quests;
       if(comp.questClues) state.questClues = comp.questClues;
       if(comp.questMap) state.questMap = comp.questMap;
       if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
-      saveState(true);
-      if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
-        if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
-      }
+    }
+    saveState(true);
+    if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
+      if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
     }
   }catch(e){ console.error('Supabase error:', e); }
 }
@@ -4044,6 +4236,41 @@ function handleClick(e){
     markCharDirty(c.id);
     saveState(); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
+
+    if(supabaseClient && (c.db_id || c.id)){
+      var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
+      var charDbId = c.db_id || c.id;
+      if(d1 < 0){
+        supabaseClient.rpc('apply_damage', {
+          p_character_id: charDbId,
+          p_amount: Math.abs(d1),
+          p_command_id: cmdId
+        }).then(function(res){
+          if(res.data && res.data.pvActual !== undefined){
+            c.combat.pvActual = res.data.pvActual;
+            if(res.data.escudoActual !== undefined) c.combat.escudoActual = res.data.escudoActual;
+            c._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
+            c._isDirty = false;
+            dirtyCharIds.delete(c.id);
+            renderTopbar();
+          }
+        }).catch(function(e){ console.warn('RPC apply_damage fallback:', e); });
+      } else if(d1 > 0){
+        supabaseClient.rpc('apply_heal', {
+          p_character_id: charDbId,
+          p_amount: d1,
+          p_command_id: cmdId
+        }).then(function(res){
+          if(res.data && res.data.pvActual !== undefined){
+            c.combat.pvActual = res.data.pvActual;
+            c._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
+            c._isDirty = false;
+            dirtyCharIds.delete(c.id);
+            renderTopbar();
+          }
+        }).catch(function(e){ console.warn('RPC apply_heal fallback:', e); });
+      }
+    }
     return;
   }
   if(action==="shield-mod"){
@@ -4062,6 +4289,24 @@ function handleClick(e){
     markCharDirty(c.id);
     saveState(); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
+
+    if(supabaseClient && (c.db_id || c.id)){
+      var cmdIdMana = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
+      var charDbIdMana = c.db_id || c.id;
+      supabaseClient.rpc('change_mana', {
+        p_character_id: charDbIdMana,
+        p_amount: d2,
+        p_command_id: cmdIdMana
+      }).then(function(res){
+        if(res.data && res.data.manaActual !== undefined){
+          c.combat.manaActual = res.data.manaActual;
+          c._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
+          c._isDirty = false;
+          dirtyCharIds.delete(c.id);
+          renderTopbar();
+        }
+      }).catch(function(e){ console.warn('RPC change_mana fallback:', e); });
+    }
     return;
   }
 
@@ -4746,7 +4991,6 @@ function handleClick(e){
     return;
   }
   if(action==="map-click"){
-    if(!isGM() && currentUser) return;
     var curM2 = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
     var imgEl = btn.querySelector("img");
     if(curM2 && imgEl){
@@ -4758,7 +5002,6 @@ function handleClick(e){
     return;
   }
   if(action==="edit-pin"){
-    if(!isGM() && currentUser) return;
     var curM3 = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
     if(curM3) openPinModal(curM3, null, null, btn.getAttribute("data-id"));
     return;
