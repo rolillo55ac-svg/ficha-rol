@@ -744,6 +744,11 @@ function handleClick(e){
     if(state.activeTab === "bestiario" || state.activeTab === "combate") renderTab();
     return;
   }
+  if(action==="pick-beast-mov"){
+    var bid = btn.getAttribute("data-id");
+    openBeastMobilityModal(bid);
+    return;
+  }
   if(action==="add-bestiary"){
     if(!isGM()) return;
     state.bestiary.push({

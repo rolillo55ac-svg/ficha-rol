@@ -19,18 +19,23 @@
         <div class="loading-rune-ring"></div>
         <div class="loading-glow"></div>
         <svg class="loading-emblem" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"
-          aria-label="Emblema de Krysalis">
+          aria-label="Emblema Rúnico de Krysalis">
           <defs>
-            <radialGradient id="gemGrad" cx="40%" cy="35%" r="65%">
-              <stop offset="0%" stop-color="#FF7685" />
-              <stop offset="45%" stop-color="#C84B57" />
-              <stop offset="85%" stop-color="#8C252F" />
-              <stop offset="100%" stop-color="#4A0E14" />
+            <radialGradient id="gemGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#FF8A96" />
+              <stop offset="40%" stop-color="#C84B57" />
+              <stop offset="80%" stop-color="#8C252F" />
+              <stop offset="100%" stop-color="#3D0C11" />
+            </radialGradient>
+            <radialGradient id="ringGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#DEC392" stop-opacity="0.25" />
+              <stop offset="70%" stop-color="#8C252F" stop-opacity="0.12" />
+              <stop offset="100%" stop-color="#120D0A" stop-opacity="0" />
             </radialGradient>
             <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#FFF3D4" />
-              <stop offset="30%" stop-color="#DEC392" />
-              <stop offset="70%" stop-color="#B08D57" />
+              <stop offset="0%" stop-color="#FFF5DC" />
+              <stop offset="25%" stop-color="#DEC392" />
+              <stop offset="65%" stop-color="#B08D57" />
               <stop offset="100%" stop-color="#6E4F23" />
             </linearGradient>
             <linearGradient id="goldDark" x1="0%" y1="100%" x2="100%" y2="0%">
@@ -38,67 +43,80 @@
               <stop offset="50%" stop-color="#91703C" />
               <stop offset="100%" stop-color="#DEC392" />
             </linearGradient>
-            <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+            <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
 
-          <!-- Anillo exterior ornamental -->
-          <circle cx="100" cy="100" r="92" stroke="url(#goldDark)" stroke-width="1.5" stroke-dasharray="6 3"
-            opacity="0.6" />
-          <circle cx="100" cy="100" r="86" stroke="url(#goldGrad)" stroke-width="2" opacity="0.85" />
-          <circle cx="100" cy="100" r="78" stroke="url(#goldGrad)" stroke-width="1" stroke-dasharray="2 4"
-            opacity="0.5" />
+          <!-- Resplandor místico de fondo -->
+          <circle cx="100" cy="100" r="90" fill="url(#ringGlow)" />
 
-          <!-- Puntos cardinales de la rosa de los vientos / compás -->
-          <polygon points="100,10 104,26 100,22 96,26" fill="url(#goldGrad)" />
-          <polygon points="100,190 104,174 100,178 96,174" fill="url(#goldGrad)" />
-          <polygon points="10,100 26,104 22,100 26,96" fill="url(#goldGrad)" />
-          <polygon points="190,100 174,104 178,100 174,96" fill="url(#goldGrad)" />
+          <!-- Anillos concéntricos ornamentales antiguos -->
+          <circle cx="100" cy="100" r="92" stroke="url(#goldDark)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.45" />
+          <circle cx="100" cy="100" r="86" stroke="url(#goldGrad)" stroke-width="1.8" opacity="0.8" />
+          <circle cx="100" cy="100" r="80" stroke="url(#goldGrad)" stroke-width="0.8" stroke-dasharray="2 4" opacity="0.4" />
 
-          <!-- Puntos ordinales pequeños -->
-          <polygon points="36,36 47,44 44,47" fill="url(#goldGrad)" opacity="0.8" />
-          <polygon points="164,36 153,44 156,47" fill="url(#goldGrad)" opacity="0.8" />
-          <polygon points="36,164 47,156 44,153" fill="url(#goldGrad)" opacity="0.8" />
-          <polygon points="164,164 153,156 156,153" fill="url(#goldGrad)" opacity="0.8" />
+          <!-- Ticks cardinales de compás / astrolabio -->
+          <polygon points="100,6 103,16 100,14 97,16" fill="url(#goldGrad)" />
+          <polygon points="100,194 103,184 100,186 97,184" fill="url(#goldGrad)" />
+          <polygon points="6,100 16,103 14,100 16,97" fill="url(#goldGrad)" />
+          <polygon points="194,100 184,103 186,100 184,97" fill="url(#goldGrad)" />
 
-          <!-- Alas de dragón / filigranas laterales -->
-          <path
-            d="M100 48 C75 42 42 58 35 88 C48 84 62 88 68 96 C50 104 42 120 46 138 C56 122 72 118 84 122 C78 134 80 148 92 156 C90 142 94 132 100 126 Z"
-            fill="url(#goldDark)" opacity="0.45" />
-          <path
-            d="M100 48 C125 42 158 58 165 88 C152 84 138 88 132 96 C150 104 158 120 154 138 C144 122 128 118 116 122 C122 134 120 148 108 156 C110 142 106 132 100 126 Z"
-            fill="url(#goldDark)" opacity="0.45" />
+          <!-- Puntos cardinales diagonales -->
+          <circle cx="35" cy="35" r="1.5" fill="url(#goldGrad)" opacity="0.6" />
+          <circle cx="165" cy="35" r="1.5" fill="url(#goldGrad)" opacity="0.6" />
+          <circle cx="35" cy="165" r="1.5" fill="url(#goldGrad)" opacity="0.6" />
+          <circle cx="165" cy="165" r="1.5" fill="url(#goldGrad)" opacity="0.6" />
 
-          <path
-            d="M100 52 C80 48 52 62 45 88 C56 85 68 89 74 97 C58 103 52 116 55 130 C64 117 78 114 88 118 C83 128 85 140 95 146 C93 135 96 127 100 122 Z"
-            stroke="url(#goldGrad)" stroke-width="1.8" fill="none" />
-          <path
-            d="M100 52 C120 48 148 62 155 88 C144 85 132 89 126 97 C142 103 148 116 145 130 C136 117 122 114 112 118 C117 128 115 140 105 146 C107 135 104 127 100 122 Z"
-            stroke="url(#goldGrad)" stroke-width="1.8" fill="none" />
+          <!-- ================= RUNA SAGRADA DE KRYSALIS ================= -->
+          <!-- Gancho Superior Izquierdo -->
+          <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+            stroke="#C84B57" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.55" filter="url(#goldGlow)" />
+          <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+            stroke="url(#goldDark)" stroke-width="5.2" stroke-linecap="round" fill="none" />
+          <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+            stroke="url(#goldGrad)" stroke-width="3.5" stroke-linecap="round" fill="none" />
+          <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+            stroke="#FFF8E7" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.9" />
 
-          <!-- Espada Central Mística -->
-          <polygon points="100,28 103,42 100,40 97,42" fill="url(#goldGrad)" />
-          <!-- Pomo y guarda -->
-          <circle cx="100" cy="34" r="3.5" fill="url(#goldGrad)" />
-          <line x1="88" y1="46" x2="112" y2="46" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
-          <circle cx="88" cy="46" r="2.5" fill="url(#goldGrad)" />
-          <circle cx="112" cy="46" r="2.5" fill="url(#goldGrad)" />
-          <!-- Hoja de la espada -->
-          <path d="M98 48 L102 48 L102 144 L100 158 L98 144 Z" fill="url(#goldGrad)" filter="url(#goldGlow)" />
-          <line x1="100" y1="48" x2="100" y2="152" stroke="#FFF7E6" stroke-width="1" />
+          <!-- Gancho Inferior Derecho (Rotación C2 180° perfecta) -->
+          <g transform="rotate(180 100 100)">
+            <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+              stroke="#C84B57" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.55" filter="url(#goldGlow)" />
+            <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+              stroke="url(#goldDark)" stroke-width="5.2" stroke-linecap="round" fill="none" />
+            <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+              stroke="url(#goldGrad)" stroke-width="3.5" stroke-linecap="round" fill="none" />
+            <path d="M 66 22 C 65 42, 75 64, 86 80 C 90 90, 84 98, 74 99 C 60 100, 48 91, 44 78"
+              stroke="#FFF8E7" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.9" />
+          </g>
 
-          <!-- Gema Carmesí Central Resplandeciente -->
-          <polygon points="100,82 116,98 100,114 84,98" fill="url(#gemGrad)" stroke="url(#goldGrad)" stroke-width="2" />
-          <!-- Facetas de la gema -->
-          <polygon points="100,88 110,98 100,108 90,98" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
-          <line x1="100" y1="82" x2="100" y2="88" stroke="rgba(255,255,255,0.6)" stroke-width="1" />
-          <line x1="100" y1="108" x2="100" y2="114" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
-          <line x1="84" y1="98" x2="90" y2="98" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
-          <line x1="110" y1="98" x2="116" y2="98" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
-          <!-- Brillo especular -->
-          <circle cx="95" cy="93" r="2.5" fill="#FFFFFF" opacity="0.8" />
+          <!-- Círculo / Medallón Superior Derecho (124, 70) -->
+          <circle cx="124" cy="70" r="14" fill="#1A120D" stroke="#C84B57" stroke-width="3" opacity="0.6" filter="url(#goldGlow)" />
+          <circle cx="124" cy="70" r="13" fill="#1A120D" stroke="url(#goldGrad)" stroke-width="2.4" />
+          <circle cx="124" cy="70" r="9" fill="url(#gemGrad)" stroke="url(#goldDark)" stroke-width="1" />
+          <!-- Facetas y destello de gema -->
+          <circle cx="121.5" cy="67.5" r="2.2" fill="#FFFFFF" opacity="0.9" />
+          <circle cx="127" cy="73" r="1" fill="#FF8A96" opacity="0.6" />
+
+          <!-- Círculo / Medallón Inferior Izquierdo (76, 130) (Rotación C2 180° perfecta) -->
+          <g transform="rotate(180 100 100)">
+            <circle cx="124" cy="70" r="14" fill="#1A120D" stroke="#C84B57" stroke-width="3" opacity="0.6" filter="url(#goldGlow)" />
+            <circle cx="124" cy="70" r="13" fill="#1A120D" stroke="url(#goldGrad)" stroke-width="2.4" />
+            <circle cx="124" cy="70" r="9" fill="url(#gemGrad)" stroke="url(#goldDark)" stroke-width="1" />
+            <circle cx="121.5" cy="67.5" r="2.2" fill="#FFFFFF" opacity="0.9" />
+            <circle cx="127" cy="73" r="1" fill="#FF8A96" opacity="0.6" />
+          </g>
+
+          <!-- Nexo Central de Energía Arcana -->
+          <circle cx="100" cy="100" r="4.5" fill="url(#gemGrad)" stroke="url(#goldGrad)" stroke-width="1.5" filter="url(#subtleGlow)" />
+          <circle cx="98.5" cy="98.5" r="1.2" fill="#FFFFFF" opacity="0.9" />
+          <polygon points="100,92 101.5,99 108,100 101.5,101 100,108 98.5,101 92,100 98.5,99" fill="url(#goldGrad)" opacity="0.8" />
         </svg>
       </div>
 

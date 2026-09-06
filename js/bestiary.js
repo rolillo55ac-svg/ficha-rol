@@ -82,8 +82,14 @@ function tplBestiario(s){
             (canEdit ? creatureFieldGlobal("Defensa","bestiary."+b.id+".defensa",b.defensa) : '<div class="creature-field"><label>Defensa</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.defensa||"-")+'</span></div>')+
             (canEdit ? creatureFieldGlobal("Absorción","bestiary."+b.id+".absorcion",b.absorcion) : '<div class="creature-field"><label>Absorción</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.absorcion||"-")+'</span></div>')+
             (canEdit ? creatureFieldGlobal("Daño","bestiary."+b.id+".dano",b.dano) : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.dano||"-")+'</span></div>')+
-            (canEdit ? creatureFieldGlobal("Movilidad","bestiary."+b.id+".movilidad",b.movilidad) : '<div class="creature-field"><label>Movilidad</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.movilidad||"-")+'</span></div>')+
-            (canEdit ? creatureFieldGlobal("Casillas Mov.","bestiary."+b.id+".casillasMovimiento",b.casillasMovimiento||"8") : '<div class="creature-field"><label>Casillas Mov.</label><span style="font-size:.8rem;color:var(--ink);font-weight:700;">🏃 '+(b.casillasMovimiento||"-")+' casillas</span></div>')+
+            '<div class="creature-field beast-mobility-cell">'+
+              '<label>Movilidad (Casillas)</label>'+
+              '<button type="button" class="beast-mov-btn" data-action="pick-beast-mov" data-id="'+b.id+'" title="Haz clic para seleccionar o consultar las casillas de movimiento">'+
+                '<span class="beast-mov-label">🏃 <strong>'+esc(b.casillasMovimiento || (b.movilidad ? (b.movilidad.match(/\d+/)?b.movilidad.match(/\d+/)[0]:'8') : '8'))+'</strong> casillas</span>'+
+                (b.movilidad && b.movilidad.includes('(') ? ' <span class="beast-terrain-pill">'+esc(b.movilidad.slice(b.movilidad.indexOf('(')))+'</span>' : '')+
+                '<span class="beast-mov-chevron">▾</span>'+
+              '</button>'+
+            '</div>'+
             (canEdit ? creatureFieldGlobal("Doma (Dif.)","bestiary."+b.id+".doma",b.doma||"3") : '<div class="creature-field"><label>Doma (Dif.)</label><span style="font-size:.8rem;color:var(--gold-light);font-weight:700;">🎯 Dif. '+(b.doma||"-")+'</span></div>')+
           '</div>'+
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px;flex-wrap:wrap;">'+
@@ -107,4 +113,30 @@ function tplBestiario(s){
 
 function creatureFieldGlobal(label,bind,val){
   return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-scope="global" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
+}
+
+function setBeastMobility(beastId, numVal){
+  var beast = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+  if(!beast) return;
+  var clamped = Math.max(1, Math.min(60, numVal));
+  beast.casillasMovimiento = String(clamped);
+  if(beast.movilidad && beast.movilidad.includes('(')){
+    var parenPart = beast.movilidad.slice(beast.movilidad.indexOf('('));
+    beast.movilidad = clamped + ' ' + parenPart;
+  } else {
+    beast.movilidad = String(clamped);
+  }
+  saveState(true);
+  if(isGM() || !currentUser){
+    pushSharedData();
+  }
+  if(typeof openBeastMobilityModal === 'function') openBeastMobilityModal(beastId);
+  renderTab();
+}
+
+function stepBeastMobility(beastId, delta){
+  var beast = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+  if(!beast) return;
+  var cur = parseInt(beast.casillasMovimiento || (beast.movilidad ? (beast.movilidad.match(/\d+/)?beast.movilidad.match(/\d+/)[0]:'8') : '8'), 10) || 8;
+  setBeastMobility(beastId, cur + delta);
 }

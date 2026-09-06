@@ -308,6 +308,18 @@ function modalClick(e){
   if(action==="export-data" || action==="download-full-backup"){ exportFullBackup(); return; }
   if(action==="cloud-backup-now"){ performCloudBackup(false); return; }
   if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
+  if(action==="set-beast-mov-num"){
+    var bid = btn.getAttribute("data-id");
+    var val = parseInt(btn.getAttribute("data-val"), 10);
+    setBeastMobility(bid, val);
+    return;
+  }
+  if(action==="step-beast-mov"){
+    var bid = btn.getAttribute("data-id");
+    var delta = parseInt(btn.getAttribute("data-delta"), 10);
+    stepBeastMobility(bid, delta);
+    return;
+  }
   if(action==="reset-all-characters"){
     if(confirm("¿Deseas resetear los atributos, habilidades, combate, magias y equipo de los 5 personajes oficiales (Cherk, Ink, Bucky, Scarleth, Derek) a los valores exactos de sus fichas oficiales en PDF? Se conservarán las fotos de perfil.")){
       resetCharactersToOfficial(true);
@@ -322,6 +334,56 @@ function modalClick(e){
     }
     return;
   }
+}
+
+function openBeastMobilityModal(beastId){
+  var b = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+  if(!b) return;
+  var curNum = parseInt(b.casillasMovimiento || (b.movilidad ? (b.movilidad.match(/\d+/)?b.movilidad.match(/\d+/)[0]:'8') : '8'), 10) || 8;
+  var meters = (curNum * 1.5).toFixed(1).replace('.0','');
+  var runCasillas = curNum * 2;
+  var runMeters = (runCasillas * 1.5).toFixed(1).replace('.0','');
+  var slowCasillas = Math.floor(curNum / 2);
+  var slowMeters = (slowCasillas * 1.5).toFixed(1).replace('.0','');
+
+  var numberOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24];
+
+  var numButtonsHtml = numberOptions.map(function(n){
+    var isSelected = (n === curNum);
+    return '<button type="button" class="btn-compact beast-num-pill '+(isSelected ? 'active' : '')+'" data-action="set-beast-mov-num" data-id="'+b.id+'" data-val="'+n+'">'+n+'</button>';
+  }).join('');
+
+  var terrainInfo = (b.movilidad && b.movilidad.includes('(')) ? b.movilidad.slice(b.movilidad.indexOf('(')) : '';
+
+  var html = '<h2>🏃 Movilidad: '+esc(b.nombre)+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
+    '<div class="beast-mov-modal-hero">'+
+      '<div class="beast-mov-hero-label">Casillas de movimiento en tablero:</div>'+
+      '<div class="beast-mov-stepper">'+
+        '<button type="button" class="beast-step-btn" data-action="step-beast-mov" data-id="'+b.id+'" data-delta="-1" title="Restar casilla">-</button>'+
+        '<div class="beast-mov-hero-value">'+curNum+'<span class="beast-mov-hero-unit">casillas</span></div>'+
+        '<button type="button" class="beast-step-btn" data-action="step-beast-mov" data-id="'+b.id+'" data-delta="1" title="Sumar casilla">+</button>'+
+      '</div>'+
+      '<div class="beast-mov-hero-equiv">Equivale a aprox. <strong>'+meters+' metros</strong> por turno '+esc(terrainInfo)+'</div>'+
+    '</div>'+
+
+    '<div class="field" style="margin-top:14px;">'+
+      '<label style="color:var(--gold-light);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:8px;">Seleccionar número de casillas:</label>'+
+      '<div class="beast-numbers-grid">'+numButtonsHtml+'</div>'+
+    '</div>'+
+
+    '<div class="beast-tactical-box">'+
+      '<div class="beast-tactical-title">⚡ Desplazamiento táctico en combate:</div>'+
+      '<div class="beast-tactical-row"><span>🚶 <strong>Paso Normal:</strong></span> <span><strong>'+curNum+'</strong> casillas ('+meters+' m)</span></div>'+
+      '<div class="beast-tactical-row"><span>🐎 <strong>A la Carrera / Galope:</strong></span> <span><strong>'+runCasillas+'</strong> casillas ('+runMeters+' m)</span></div>'+
+      '<div class="beast-tactical-row"><span>🌊 <strong>Terreno Difícil / Nadar:</strong></span> <span><strong>'+slowCasillas+'</strong> casillas ('+slowMeters+' m)</span></div>'+
+    '</div>'+
+
+    '<div style="display:flex;gap:8px;margin-top:14px;">'+
+      '<button type="button" class="btn-solid-gold" style="flex:1;padding:9px;" data-action="close-modal">Listo / Cerrar</button>'+
+    '</div>';
+
+  document.getElementById("dataModal").innerHTML = html;
+  document.getElementById("dataModalOverlay").classList.remove("hidden");
 }
 
 function closeModals(){
