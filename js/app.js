@@ -50,32 +50,39 @@ function init(){
     renderTabbar();
     renderTab();
 
-    document.getElementById("main").addEventListener("click", handleClick);
-    document.getElementById("main").addEventListener("change", handleChange);
-    document.getElementById("main").addEventListener("input", handleChange);
+    function safeListen(id, ev, fn, opt){
+      var el = document.getElementById(id);
+      if(el && typeof el.addEventListener === "function") el.addEventListener(ev, fn, opt);
+    }
+
+    safeListen("main", "click", handleClick);
+    safeListen("main", "change", handleChange);
+    safeListen("main", "input", handleChange);
     
-    document.addEventListener("touchstart", handleTouchStart, {passive: true});
-    document.addEventListener("touchend", handleTouchEnd, {passive: true});
+    if(typeof document.addEventListener === "function"){
+      document.addEventListener("touchstart", handleTouchStart, {passive: true});
+      document.addEventListener("touchend", handleTouchEnd, {passive: true});
+    }
     
-    if(window.innerWidth < 768){
+    if(typeof window !== "undefined" && window.innerWidth < 768){
       setTimeout(showSwipeIndicator, 1000);
     }
     
-    document.getElementById("topbar").addEventListener("click", handleClick);
-    document.getElementById("tabbar").addEventListener("click", handleClick);
-    document.getElementById("charModal").addEventListener("click", modalClick);
-    document.getElementById("dataModal").addEventListener("click", modalClick);
-    document.getElementById("diceModal").addEventListener("click", diceModalClick);
-    document.getElementById("pinModal").addEventListener("click", pinModalClick);
-    document.getElementById("loreModal").addEventListener("click", loreModalClick);
+    safeListen("topbar", "click", handleClick);
+    safeListen("tabbar", "click", handleClick);
+    safeListen("charModal", "click", modalClick);
+    safeListen("dataModal", "click", modalClick);
+    safeListen("diceModal", "click", diceModalClick);
+    safeListen("pinModal", "click", pinModalClick);
+    safeListen("loreModal", "click", loreModalClick);
     
-    document.getElementById("charModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-    document.getElementById("dataModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-    document.getElementById("diceModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-    document.getElementById("pinModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
-    document.getElementById("loreModalOverlay").addEventListener("click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("charModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("dataModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("diceModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("pinModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("loreModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     
-    document.getElementById("rollOverlay").addEventListener("click", function(e){
+    safeListen("rollOverlay", "click", function(e){
       if(e.target===this || e.target.closest("[data-action='close-roll-modal']")){
         this.classList.add("hidden");
       } else if(e.target.closest("[data-action='reroll-last-dice']")){
@@ -83,73 +90,63 @@ function init(){
       }
     });
 
-    document.getElementById("fabDice").addEventListener("click", openDiceModal);
+    safeListen("fabDice", "click", openDiceModal);
 
-    document.getElementById("portraitFileInput").addEventListener("change", function(e){
+    safeListen("portraitFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
         resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
       }
       e.target.value="";
     });
-    document.getElementById("mapFileInput").addEventListener("change", function(e){
+    safeListen("mapFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
-        resizeImageFile(e.target.files[0], 900, 0.65, function(url){
-          if(pendingNewMapName){
-            var newM = { id: uid(), name: pendingNewMapName, image: url, markers: [] };
-            state.maps = state.maps || [];
-            state.maps.push(newM);
-            state.activeMapId = newM.id;
-            pendingNewMapName = null;
+        resizeImageFile(e.target.files[0], 1920, 0.85, function(url){
+          var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+          if(curM){
+            curM.image = url;
             saveState(true);
             pushMapsData();
             renderTab();
-            showToast("Nuevo mapa creado: " + newM.name, "success");
-          } else {
-            var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-            if(curM){
-              curM.image = url;
-              saveState(true);
-              pushMapsData();
-              renderTab();
-              showToast("Foto del mapa actualizada", "info");
-            }
+            showToast("Foto subida al mapa con éxito", "success");
           }
         });
       }
       e.target.value="";
     });
-    var bFileInput = document.getElementById("bestiaryFileInput");
-    if(bFileInput){
-      bFileInput.addEventListener("change", function(e){
-        if(e.target.files && e.target.files[0] && pendingBestiaryId){
-          resizeImageFile(e.target.files[0], 600, 0.7, function(url){
-            var beast = (state.bestiary||[]).find(function(x){return x.id===pendingBestiaryId;});
-            if(beast){
-              beast.image = url;
-              saveState(true); pushSharedData(); renderTab();
-            }
-            pendingBestiaryId = null;
-          });
-        }
-        e.target.value="";
-      });
-    }
-    var qFileInput = document.getElementById("questFileInput");
-    if(qFileInput){
-      qFileInput.addEventListener("change", function(e){
-        if(e.target.files && e.target.files[0]){
-          resizeImageFile(e.target.files[0], 900, 0.7, function(url){
-            state.questMap = state.questMap || { name: "Mapa del Encuentro", image: null, notes: "" };
-            state.questMap.image = url;
-            saveState(true); pushSharedData(); renderTab();
-            showToast("Mapa de misión actualizado", "success");
-          });
-        }
-        e.target.value = "";
-      });
-    }
-    document.getElementById("importFileInput").addEventListener("change", function(e){
-      if(e.target.files && e.target.files[0]) importData(e.target.files[0]);
+    safeListen("bestiaryFileInput", "change", function(e){
+      if(e.target.files && e.target.files[0] && pendingBestiaryId){
+        var bid = pendingBestiaryId;
+        resizeImageFile(e.target.files[0], 600, 0.85, function(url){
+          var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
+          if(b){
+            b.image = url;
+            saveState(true);
+            pushSharedData();
+            renderTab();
+            showToast("Foto asignada a la criatura", "success");
+          }
+        });
+      }
+      e.target.value="";
+      pendingBestiaryId = null;
+    });
+    safeListen("questFileInput", "change", function(e){
+      if(e.target.files && e.target.files[0]){
+        resizeImageFile(e.target.files[0], 1920, 0.85, function(url){
+          if(!state.questMap) state.questMap = { name: "Mapa del Encuentro", image: null };
+          state.questMap.image = url;
+          saveState(true);
+          pushSharedData();
+          renderTab();
+          showToast("Foto del mapa de misión actualizada", "success");
+        });
+      }
+      e.target.value="";
+    });
+    safeListen("importFileInput", "change", function(e){
+      if(e.target.files && e.target.files[0]){
+        importData(e.target.files[0]);
+      }
       e.target.value="";
     });
 

@@ -167,40 +167,8 @@ function handleClick(e){
     saveState(); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
 
-    if(supabaseClient && (c.db_id || c.id)){
-      var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-      var charDbId = c.db_id || c.id;
-      if(d1 < 0){
-        supabaseClient.rpc('apply_damage', {
-          p_character_id: charDbId,
-          p_amount: Math.abs(d1),
-          p_command_id: cmdId
-        }).then(function(res){
-          if(res.data && res.data.pvActual !== undefined){
-            c.combat.pvActual = res.data.pvActual;
-            if(res.data.escudoActual !== undefined) c.combat.escudoActual = res.data.escudoActual;
-            c._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-            c._isDirty = false;
-            dirtyCharIds.delete(c.id);
-            renderTopbar();
-          }
-        }).catch(function(e){ console.warn('RPC apply_damage fallback:', e); });
-      } else if(d1 > 0){
-        supabaseClient.rpc('apply_heal', {
-          p_character_id: charDbId,
-          p_amount: d1,
-          p_command_id: cmdId
-        }).then(function(res){
-          if(res.data && res.data.pvActual !== undefined){
-            c.combat.pvActual = res.data.pvActual;
-            c._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-            c._isDirty = false;
-            dirtyCharIds.delete(c.id);
-            renderTopbar();
-          }
-        }).catch(function(e){ console.warn('RPC apply_heal fallback:', e); });
-      }
-    }
+    if(d1 < 0) applyDamageRPC(c, d1);
+    else if(d1 > 0) applyHealRPC(c, d1);
     return;
   }
   if(action==="shield-mod"){
@@ -220,23 +188,7 @@ function handleClick(e){
     saveState(); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
 
-    if(supabaseClient && (c.db_id || c.id)){
-      var cmdIdMana = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-      var charDbIdMana = c.db_id || c.id;
-      supabaseClient.rpc('change_mana', {
-        p_character_id: charDbIdMana,
-        p_amount: d2,
-        p_command_id: cmdIdMana
-      }).then(function(res){
-        if(res.data && res.data.manaActual !== undefined){
-          c.combat.manaActual = res.data.manaActual;
-          c._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-          c._isDirty = false;
-          dirtyCharIds.delete(c.id);
-          renderTopbar();
-        }
-      }).catch(function(e){ console.warn('RPC change_mana fallback:', e); });
-    }
+    changeManaRPC(c, d2);
     return;
   }
 

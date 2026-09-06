@@ -96,9 +96,9 @@ async function pullMapFromSupabase(){
     }
   }catch(e){ console.error('Supabase error:', e); }
 }
-function pushMapsData(){
+function pushMapsData(forceAllow){
   if(!supabaseClient) return;
-  if(currentUser && !isGM()) return;
+  if(currentUser && !isGM() && !forceAllow) return;
   supabaseClient.from('campaign_map').upsert({
     id: 'main_map',
     data: state.maps || [],

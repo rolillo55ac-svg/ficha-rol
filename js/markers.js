@@ -22,6 +22,8 @@ function openPinModal(mapObj, x, y, pinId){
 async function pushSingleMarker(marker, mapId){
   if(!supabaseClient) return;
   try{
+    var isValidUUID = function(s){ return typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s); };
+    var creator = (currentUser && isValidUUID(currentUser.id)) ? currentUser.id : (isValidUUID(marker.created_by) ? marker.created_by : null);
     var payload = {
       id: marker.id,
       map_id: mapId,
@@ -31,19 +33,19 @@ async function pushSingleMarker(marker, mapId){
       name: marker.name,
       kind: marker.kind || 'Punto de Interés',
       notes: marker.notes || '',
-      created_by: marker.created_by || (currentUser ? currentUser.id : null),
+      created_by: creator,
       updated_at: new Date().toISOString()
     };
     var res = await supabaseClient.from('map_markers').upsert(payload);
     if(res.error){
       console.warn("Granular map_markers fallback:", res.error);
-      pushMapsData();
+      pushMapsData(true);
     } else {
       updateSyncBadge("synced");
     }
   }catch(e){
     console.warn("Granular pushSingleMarker fallback:", e);
-    pushMapsData();
+    pushMapsData(true);
   }
 }
 
@@ -53,13 +55,13 @@ async function deleteSingleMarker(markerId, mapId){
     var res = await supabaseClient.from('map_markers').delete().eq('id', markerId);
     if(res.error){
       console.warn("Granular map_markers delete fallback:", res.error);
-      pushMapsData();
+      pushMapsData(true);
     } else {
       updateSyncBadge("synced");
     }
   }catch(e){
     console.warn("Granular deleteSingleMarker fallback:", e);
-    pushMapsData();
+    pushMapsData(true);
   }
 }
 
