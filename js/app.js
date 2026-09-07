@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: APP
-// Arranque de la aplicación, pantalla de carga y watchdog de inicialización
-// ============================================================================
-
 function updateLoadingProgress(pct, msg){
   var fill = document.getElementById("loadingBarFill");
   var txt = document.getElementById("loadingStatusText");

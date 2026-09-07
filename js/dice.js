@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: DICE
-// Sistema de tiradas, dados 3D/SVG, audio y modales de tirada
-// ============================================================================
-
 var audioCtx = null;
 function getAudioCtx(){
   if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }

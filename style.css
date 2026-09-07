@@ -165,6 +165,7 @@ body{
     radial-gradient(ellipse 900px 500px at 50% -10%, rgba(var(--accent-rgb),0.24), transparent 65%),
     radial-gradient(ellipse 700px 400px at 90% 110%, rgba(61,110,96,0.14), transparent 60%),
     radial-gradient(ellipse 520px 380px at 4% 28%, rgba(176,141,87,0.09), transparent 60%),
+    url("images/krysalis-pattern.svg") 0 0 / 56px 56px repeat,
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E") repeat,
     var(--bg);
   min-height:100vh;

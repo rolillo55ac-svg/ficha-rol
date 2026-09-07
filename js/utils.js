@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: UTILS
-// Constantes de juego, formato y helpers generales
-// ============================================================================
-
 var ATTRS = ["fisico","destreza","inteligencia","percepcion","carisma"];
 var ATTR_LABELS = {fisico:"Físico",destreza:"Destreza",inteligencia:"Inteligencia",percepcion:"Percepción",carisma:"Carisma"};
 

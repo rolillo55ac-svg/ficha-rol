@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: UI EVENTS
-// Delegación de eventos de click, cambios en inputs y gestos táctiles
-// ============================================================================
-
 var touchStartX = null;
 var touchStartY = null;
 var swipeIndicatorTimeout = null;

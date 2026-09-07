@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: COMBAT
-// Lógica de combate, cálculos atómicos de daño, curación, maná y armadura
-// ============================================================================
-
 async function applyDamageRPC(char, amount){
   if(!char || !amount) return;
   var charDbId = char.db_id || char.id;

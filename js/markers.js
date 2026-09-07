@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: MARKERS
-// Marcadores colaborativos en tiempo real (crear, editar, borrar por cualquier jugador)
-// ============================================================================
-
 function openPinModal(mapObj, x, y, pinId){
   var pin = pinId ? (mapObj.markers||[]).find(function(p){return p.id===pinId;}) : {id:uid(), x:x, y:y, name:"", kind:"Ciudad", notes:""};
   document.getElementById("pinModal").innerHTML =

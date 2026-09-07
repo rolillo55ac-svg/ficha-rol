@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: AUTH & PERMISOS
-// Gestión de sesión, roles dinámicos (GM/Player) y ownership relacional
-// ============================================================================
-
 var MAX_LOGIN_ATTEMPTS = 5;
 var LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 

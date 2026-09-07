@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: QUESTS
-// Misiones, pistas y mapa de misiones
-// ============================================================================
-
 function tplMision(c, s){
   var canEdit = isGM() || !currentUser;
   var quests = s.quests || [];

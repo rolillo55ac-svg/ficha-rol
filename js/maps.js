@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: MAPS
-// Cartografía, mapas independientes y visor cartográfico
-// ============================================================================
-
 function tplMundoMapas(s){
   var curMap = (s.maps||[]).find(function(m){return m.id===s.activeMapId;}) || s.maps[0];
   if(!curMap){ curMap={id:"world_main",name:"Mapa de Campaña",image:null,markers:[]}; s.maps=[curMap]; s.activeMapId=curMap.id; }

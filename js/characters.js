@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: CHARACTERS
-// CRUD de personajes, personajes oficiales y push/pull de fichas
-// ============================================================================
-
 function getOfficialCharacters(){
   return [
     // 1. CHERK

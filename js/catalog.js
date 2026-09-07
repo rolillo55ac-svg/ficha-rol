@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: CATALOG
-// Catálogo compartido: armas y buffs globales
-// ============================================================================
-
 function tplMundoArmas(s){
   var catalog = s.weaponsCatalog || [];
   var canEdit = isGM();

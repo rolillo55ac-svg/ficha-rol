@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: UI RENDER
-// Renderizado de pestañas, barras de navegación y vistas de juego
-// ============================================================================
-
 function renderTopbar(){
   var c = activeChar();
   if(document.body) document.body.setAttribute("data-theme", c.theme||"default");

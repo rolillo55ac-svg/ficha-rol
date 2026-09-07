@@ -793,7 +793,7 @@ CREATE POLICY "Solo GM puede borrar mapas" ON public.maps
 
 
 -- 5. TABLA: map_markers (MARCADORES COMPARTIDOS 100% COLABORATIVOS)
--- Requisito de la Fase 9: Cualquier miembro (GM o PLAYER) puede crear, editar y borrar marcadores
+-- Cualquier miembro (GM o PLAYER) puede crear, editar y borrar marcadores
 ALTER TABLE public.map_markers ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Todos los miembros pueden ver marcadores" ON public.map_markers

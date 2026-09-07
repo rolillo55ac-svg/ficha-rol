@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: UI MODALS
-// Modales de selección de ficha, lore, y gestión de ventanas emergentes
-// ============================================================================
-
 function openLoreModal(cat){
   var titleLabel = cat === "objetos" ? "Recurso / Objeto" : (cat === "pistas" ? "Pista" : "NPC");
   

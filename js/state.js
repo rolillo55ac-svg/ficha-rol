@@ -1,8 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: STATE
-// Estado global, migraciones, defaults y helpers de estadísticas
-// ============================================================================
-
 var state = null;
 var supabaseClient = null;
 var currentUser = null;

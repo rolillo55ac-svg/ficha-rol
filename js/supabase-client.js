@@ -1,9 +1,3 @@
-// ============================================================================
-// KRYSALIS RPG - MÓDULO: SUPABASE CLIENT & REALTIME
-// Conexión a base de datos y suscripciones Realtime granulares
-// ============================================================================
-
-
 function initSupabase(){
   if(!window.supabase) return;
   try{
