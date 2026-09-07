@@ -311,7 +311,7 @@ function migrateState(s){
       });
       if(existing){
         if(!existing.db_id && off.db_id) existing.db_id = off.db_id;
-        if(!existing.portrait && off.portrait) existing.portrait = off.portrait;
+        if((!existing.portrait || existing.portrait.startsWith("images/personajes/")) && off.portrait) existing.portrait = off.portrait;
         if(!existing.theme && off.theme) existing.theme = off.theme;
         if(!existing.owner_id && off.owner_id) existing.owner_id = off.owner_id;
         if(!existing.ownerEmail && off.ownerEmail) existing.ownerEmail = off.ownerEmail;
