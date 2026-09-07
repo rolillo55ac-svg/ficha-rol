@@ -6,7 +6,7 @@ function getOfficialCharacters(){
       db_id: "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3",
       name: "Cherk",
       theme: "teal",
-      portrait: "images/personajes/cherk.jpg",
+      portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/cherk.jpg",
       isNPC: false,
       owner_id: "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3",
       ownerEmail: "",
@@ -119,7 +119,7 @@ function getOfficialCharacters(){
       db_id: "ece1cdb6-f8c6-4010-b3e8-045887dc92a3",
       name: "Ink",
       theme: "purple",
-      portrait: "images/personajes/ink.jpg",
+      portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/ink.jpg",
       isNPC: false,
       owner_id: "ece1cdb6-f8c6-4010-b3e8-045887dc92a3",
       ownerEmail: "",
@@ -340,7 +340,7 @@ function getOfficialCharacters(){
       db_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
       name: "Scarleth",
       theme: "default",
-      portrait: "images/personajes/scarleth.jpg",
+      portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/scarleth.jpg",
       isNPC: false,
       owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
       ownerEmail: "",
@@ -458,7 +458,7 @@ function getOfficialCharacters(){
       db_id: "d9dee50e-051d-4058-b4a5-d46c809fbb25",
       name: "Derek",
       theme: "purple",
-      portrait: "images/personajes/derek.jpg",
+      portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/derek.jpg",
       isNPC: false,
       owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
       ownerEmail: "",
@@ -638,11 +638,28 @@ async function pullAllFromSupabase(){
         });
         if(!exists){
           var nOff = JSON.parse(JSON.stringify(off));
-          nOff.officialDataVersion = 4;
+          nOff.officialDataVersion = 5;
           pulledChars.push(nOff);
           if(isGM()){
             pushCharacterById(nOff.id);
           }
+        }
+      });
+
+      // Apply official GitHub portrait URLs if character doesn't have a valid web URL
+      pulledChars.forEach(function(c){
+        var cName = (c.name || "").trim().toLowerCase();
+        var off = officials.find(function(o){
+          var oName = o.name.trim().toLowerCase();
+          if(oName === "derek") return cName === "derek";
+          if(oName === "scarleth") return cName === "scarleth" || cName.includes("scarleth") || cName.includes("winter");
+          if(oName === "bucky") return cName === "bucky" || cName === "baky" || cName.includes("bucky") || cName.includes("baky");
+          if(oName === "cherk") return cName === "cherk" || cName.includes("cherk");
+          if(oName === "ink") return cName === "ink" || cName.includes("ink");
+          return cName === oName;
+        });
+        if(off && off.portrait && (!c.portrait || !c.portrait.startsWith("http"))){
+          c.portrait = off.portrait;
         }
       });
 

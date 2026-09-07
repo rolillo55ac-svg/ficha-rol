@@ -294,7 +294,7 @@ function migrateState(s){
   if(!s.questMap) s.questMap = { name:"Mapa de la Misión", image:null, notes:"" };
   if(s.sessionSummary === undefined) s.sessionSummary = "";
 
-  if(!s.officialDataVersion || s.officialDataVersion < 4){
+  if(!s.officialDataVersion || s.officialDataVersion < 5){
     var officials = getOfficialCharacters();
     s.characters = s.characters || [];
 
@@ -311,7 +311,9 @@ function migrateState(s){
       });
       if(existing){
         if(!existing.db_id && off.db_id) existing.db_id = off.db_id;
-        if((!existing.portrait || existing.portrait.startsWith("images/personajes/")) && off.portrait) existing.portrait = off.portrait;
+        if(off.portrait && (!existing.portrait || !existing.portrait.startsWith("http") || existing.portrait.includes("images/personajes"))){
+          existing.portrait = off.portrait;
+        }
         if(!existing.theme && off.theme) existing.theme = off.theme;
         if(!existing.owner_id && off.owner_id) existing.owner_id = off.owner_id;
         if(!existing.ownerEmail && off.ownerEmail) existing.ownerEmail = off.ownerEmail;
@@ -320,10 +322,10 @@ function migrateState(s){
         if(!existing.weapons) existing.weapons = JSON.parse(JSON.stringify(off.weapons||[]));
         if(!existing.armors) existing.armors = JSON.parse(JSON.stringify(off.armors||[]));
         if(!existing.spells) existing.spells = JSON.parse(JSON.stringify(off.spells||[]));
-        existing.officialDataVersion = 4;
+        existing.officialDataVersion = 5;
       } else {
         var nOff = JSON.parse(JSON.stringify(off));
-        nOff.officialDataVersion = 4;
+        nOff.officialDataVersion = 5;
         s.characters.push(nOff);
       }
     });
@@ -331,7 +333,7 @@ function migrateState(s){
       var n = (c.name || "").trim().toLowerCase();
       return n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
     });
-    s.officialDataVersion = 4;
+    s.officialDataVersion = 5;
     if(!s.characters.some(function(c){ return c.id === s.activeId; })){
       s.activeId = s.characters[0] ? s.characters[0].id : "";
     }
