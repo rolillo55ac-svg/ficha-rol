@@ -80,11 +80,25 @@ function setBind(target, path, rawValue, inputType){
     target.questMap[parts[1]] = value;
     return;
   }
+  if(parts[0]==="trainings" && parts[2]==="milestones"){
+    var trObj = (target.trainings||[]).find(function(x){return x.id===parts[1];});
+    if(trObj && trObj.milestones){
+      var mItem = trObj.milestones.find(function(x){return x.id===parts[3];});
+      if(mItem) mItem[parts[4]] = value;
+    }
+    return;
+  }
   var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons","activeBuffs","quests","questClues","trainings"];
   if(listFields.indexOf(parts[0])!==-1){
     var arr = target[parts[0]];
     var item = arr && arr.find(function(x){return x.id===parts[1];});
-    if(item) item[parts[2]] = value;
+    if(item){
+      if(parts[0]==="trainings" && (parts[2]==="targetGoal" || parts[2]==="narrativePercentage")){
+        item[parts[2]] = num(rawValue, parts[2]==="targetGoal"?20:0);
+      } else {
+        item[parts[2]] = value;
+      }
+    }
     return;
   }
   if(parts[0]==="lore"){
@@ -97,6 +111,14 @@ function setBind(target, path, rawValue, inputType){
 }
 
 function handleChange(e){
+  var actEl = e.target.closest("[data-action]");
+  if(actEl){
+    var actName = actEl.getAttribute("data-action");
+    if(actName === "set-training-category" || actName === "set-training-linked"){
+      handleClick(e);
+      return;
+    }
+  }
   var el = e.target.closest("[data-bind]"); if(!el) return;
   var isGlobal = el.getAttribute("data-scope")==="global";
   if(isGlobal && currentUser && !isGM()){
@@ -121,6 +143,10 @@ function handleChange(e){
   if(bind && bind.startsWith("combat.") && target && target.id){
     broadcastCharStatUpdate(target.id, target.combat);
     renderTopbar();
+  }
+  if(e.type === "change" && bind && bind.startsWith("trainings.") && (bind.includes(".targetGoal") || bind.includes(".targetStat"))){
+    renderTab();
+    return;
   }
   if(isGlobal){
     isGlobalDirty = true;
@@ -687,8 +713,16 @@ function handleClick(e){
     c.trainings.push({
       id: uid(),
       name: "Nuevo Entrenamiento",
+      category: "skill",
       type: "existing",
       sides: 10,
+      targetGoal: 20,
+      targetStat: "+10 PV",
+      linkedType: "",
+      linkedId: "",
+      narrativePercentage: 0,
+      narrativeNotes: "",
+      milestones: [],
       rolls: [],
       points: 0,
       createdAt: Date.now()
@@ -704,8 +738,74 @@ function handleClick(e){
     var trId = btn.getAttribute("data-id");
     var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
     var name = tr ? tr.name : "este entrenamiento";
-    if(confirm("¿Eliminar \"" + name + "\"? Se perderá su historial de tiradas y puntos acumulados.")){
+    if(confirm("¿Eliminar \"" + name + "\"? Se perderá su historial de tiradas y progreso acumulado.")){
       c.trainings = (c.trainings || []).filter(function(x){ return x.id !== trId; });
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="set-training-category"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-id") || (btn.closest("[data-id]") && btn.closest("[data-id]").getAttribute("data-id"));
+    var newCat = btn.value || btn.getAttribute("data-cat");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr && newCat){
+      tr.category = newCat;
+      if(newCat === "unlock"){
+        tr.sides = 20;
+        tr.type = "new";
+      } else if(newCat === "skill"){
+        tr.sides = 10;
+        tr.type = "existing";
+      } else if(newCat === "combat"){
+        tr.sides = 10;
+        tr.type = "existing";
+        if(!tr.targetGoal) tr.targetGoal = 20;
+        if(!tr.targetStat) tr.targetStat = "+10 PV";
+      } else if(newCat === "spell_summon"){
+        tr.sides = 10;
+        tr.type = "existing";
+      } else if(newCat === "narrative"){
+        tr.sides = 20;
+        tr.type = "new";
+      }
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="set-training-linked"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-id") || (btn.closest("[data-id]") && btn.closest("[data-id]").getAttribute("data-id"));
+    var val = btn.value;
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr){
+      if(!val){
+        tr.linkedType = "";
+        tr.linkedId = "";
+      } else if(val.startsWith("spell:")){
+        tr.linkedType = "spell";
+        tr.linkedId = val.replace("spell:", "");
+        var foundSpell = (c.spells || []).find(function(s){ return s.id === tr.linkedId; });
+        if(foundSpell && (!tr.name || tr.name === "Nuevo Entrenamiento")){
+          tr.name = "Maestría: " + foundSpell.name;
+        }
+      } else if(val.startsWith("summon:")){
+        tr.linkedType = "summon";
+        tr.linkedId = val.replace("summon:", "");
+        var foundSummon = (c.summons || []).find(function(s){ return s.id === tr.linkedId; });
+        if(foundSummon && (!tr.name || tr.name === "Nuevo Entrenamiento")){
+          tr.name = "Entrenar " + foundSummon.name;
+        }
+      } else if(val === "custom"){
+        tr.linkedType = "custom";
+        tr.linkedId = "";
+      }
       c._lastLocalEdit = Date.now();
       markCharDirty(c.id);
       saveState(false);
@@ -728,13 +828,64 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="add-milestone"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr){
+      tr.milestones = tr.milestones || [];
+      tr.milestones.push({ id: uid(), text: "Nueva etapa o descubrimiento...", done: false });
+      var doneCount = tr.milestones.filter(function(x){ return x.done; }).length;
+      tr.narrativePercentage = Math.round((doneCount / tr.milestones.length) * 100);
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="toggle-milestone"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-training-id");
+    var mId = btn.getAttribute("data-milestone-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr && tr.milestones){
+      var m = tr.milestones.find(function(x){ return x.id === mId; });
+      if(m){
+        m.done = !m.done;
+        var doneCount = tr.milestones.filter(function(x){ return x.done; }).length;
+        tr.narrativePercentage = Math.round((doneCount / tr.milestones.length) * 100);
+        c._lastLocalEdit = Date.now();
+        markCharDirty(c.id);
+        saveState(false);
+        renderTab();
+      }
+    }
+    return;
+  }
+  if(action==="del-milestone"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-training-id");
+    var mId = btn.getAttribute("data-milestone-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr && tr.milestones){
+      tr.milestones = tr.milestones.filter(function(x){ return x.id !== mId; });
+      var doneCount = tr.milestones.filter(function(x){ return x.done; }).length;
+      tr.narrativePercentage = tr.milestones.length ? Math.round((doneCount / tr.milestones.length) * 100) : 0;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      renderTab();
+    }
+    return;
+  }
   if(action==="roll-training"){
     if(!c || !canEditChar(c)) return;
     var trId = btn.getAttribute("data-id");
     var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
     if(!tr) return;
 
-    var sides = tr.type === "new" ? 20 : 10;
+    var sides = tr.sides || (tr.type === "new" ? 20 : 10);
     tr.sides = sides;
     var roll = Math.floor(Math.random() * sides) + 1;
 
@@ -742,16 +893,30 @@ function handleClick(e){
     var isCrit = false;
     var isFumble = false;
 
-    if(roll === 1){
-      delta = -5;
-      isFumble = true;
-    } else if(roll === sides){
-      delta = 5;
-      isCrit = true;
-    } else if(roll >= 11 && roll <= 19){
-      delta = 3;
-    } else if(roll >= 2 && roll <= 10){
-      delta = 1;
+    if(tr.category === "narrative"){
+      if(roll === 1){
+        delta = 0;
+        isFumble = false;
+      } else if(roll === sides){
+        delta = 5;
+        isCrit = true;
+      } else if(roll >= 11 && roll <= 19){
+        delta = 3;
+      } else {
+        delta = 1;
+      }
+    } else {
+      if(roll === 1){
+        delta = -5;
+        isFumble = true;
+      } else if(roll === sides){
+        delta = 5;
+        isCrit = true;
+      } else if(roll >= 11 && roll <= 19){
+        delta = 3;
+      } else if(roll >= 2 && roll <= 10){
+        delta = 1;
+      }
     }
 
     tr.rolls = tr.rolls || [];
@@ -812,7 +977,7 @@ function handleClick(e){
     if(!input) return;
 
     var val = parseInt(input.value, 10);
-    var sides = tr.type === "new" ? 20 : 10;
+    var sides = tr.sides || (tr.type === "new" ? 20 : 10);
     tr.sides = sides;
 
     if(isNaN(val) || val < 1 || val > sides){
@@ -825,16 +990,30 @@ function handleClick(e){
     var isCrit = false;
     var isFumble = false;
 
-    if(val === 1){
-      delta = -5;
-      isFumble = true;
-    } else if(val === sides){
-      delta = 5;
-      isCrit = true;
-    } else if(val >= 11 && val <= 19){
-      delta = 3;
-    } else if(val >= 2 && val <= 10){
-      delta = 1;
+    if(tr.category === "narrative"){
+      if(val === 1){
+        delta = 0;
+        isFumble = false;
+      } else if(val === sides){
+        delta = 5;
+        isCrit = true;
+      } else if(val >= 11 && val <= 19){
+        delta = 3;
+      } else {
+        delta = 1;
+      }
+    } else {
+      if(val === 1){
+        delta = -5;
+        isFumble = true;
+      } else if(val === sides){
+        delta = 5;
+        isCrit = true;
+      } else if(val >= 11 && val <= 19){
+        delta = 3;
+      } else if(val >= 2 && val <= 10){
+        delta = 1;
+      }
     }
 
     tr.rolls = tr.rolls || [];

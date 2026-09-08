@@ -302,124 +302,250 @@ function skillRowHtml(s, c, unlocked){
   '</div>';
 }
 
+var TRAINING_CATS = [
+  { id: "skill", icon: "🎯", label: "Habilidad / Destreza Existente", die: "d10", sides: 10, type: "existing", badge: "DADO D10", desc: "Perfeccionamiento y práctica de habilidades aprendidas. Progreso enigmático." },
+  { id: "unlock", icon: "🔮", label: "Nueva Disciplina / Desbloqueo", die: "d20", sides: 20, type: "new", badge: "DADO D20", desc: "Aprendizaje de nuevas artes desde cero. Progreso enigmático." },
+  { id: "combat", icon: "⚔️", label: "Mejora de Combate / Atributo", die: "d10", sides: 10, type: "existing", badge: "META NUMÉRICA", desc: "Fija un objetivo numérico de meta (ej: +10 PV, +5 Maná) con barra de progreso visual." },
+  { id: "spell_summon", icon: "✨", label: "Maestría de Hechizo / Invocación", die: "d10", sides: 10, type: "existing", badge: "FICHA ACTIVA", desc: "Vinculación directa a hechizos o invocaciones registradas en tu personaje." },
+  { id: "narrative", icon: "📜", label: "Hito de Lore / Descubrimiento Narrativo", die: "d20", sides: 20, type: "new", badge: "HITOS Y DIARIO", desc: "Descubrimientos e hitos libres sin penalizaciones de dados." }
+];
+
 function tplEntrenamiento(c){
   c.trainings = c.trainings || [];
   var canEdit = canEditChar(c);
 
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'">';
-  html += '<div class="section-title"><span>Sistema de Entrenamiento y Progresión por Esfuerzo</span></div>';
+  var html = '<div class="section bg3-training-section'+(c.isNPC?' gm-section':'')+'">';
+  
+  html += '<div class="bg3-header-banner">'+
+    '<div class="bg3-header-emblem">🥋</div>'+
+    '<div class="bg3-header-text">'+
+      '<h2 class="bg3-header-title">Sistema de Entrenamiento y Progresión por Esfuerzo</h2>'+
+      '<p class="bg3-header-subtitle">Forja el poder de tu personaje registrando sesiones de práctica, desbloqueando disciplinas arcanas y completando hitos heroicos.</p>'+
+    '</div>'+
+    (canEdit ? '<button class="btn-solid-gold bg3-new-btn" data-action="add-training"><span>+</span> Nuevo Entrenamiento</button>' : '')+
+  '</div>';
 
-  html += '<datalist id="training-cats-list">'+
-    '<option value="Magia">'+
-    '<option value="Invocación">'+
-    '<option value="Atributo">'+
-    '<option value="Alquimia">'+
-    '<option value="Pasiva">'+
-    '<option value="Mejora de Vida">'+
-    '<option value="Combate">'+
-    '<option value="Supervivencia">'+
-    '<option value="General">'+
-  '</datalist>';
-
-  html += '<div class="training-info-card">'+
-    '<div class="training-info-title">🥋 Reglas de Esfuerzo y Práctica</div>'+
-    '<div class="training-info-grid">'+
-      '<div class="training-info-item"><span class="die-tag-info d10">d10</span> <div><b>Habilidad Existente:</b> Práctica y perfeccionamiento de habilidades conocidas.</div></div>'+
-      '<div class="training-info-item"><span class="die-tag-info d20">d20</span> <div><b>Desbloqueo / Nueva Disciplina:</b> Aprendizaje y desarrollo de nuevas disciplinas.</div></div>'+
+  html += '<div class="bg3-guide-card">'+
+    '<div class="bg3-guide-header">'+
+      '<span class="bg3-guide-icon">📜</span>'+
+      '<span class="bg3-guide-title">Compendio de Modalidades y Conversión de Esfuerzo</span>'+
+    '</div>'+
+    '<div class="bg3-guide-grid">'+
+      '<div class="bg3-guide-item"><span class="die-tag-info d10">d10</span> <div><b>🎯 Habilidad Existente:</b> Práctica continua de habilidades conocidas. Progreso enigmático.</div></div>'+
+      '<div class="bg3-guide-item"><span class="die-tag-info d20">d20</span> <div><b>🔮 Desbloqueo:</b> Desarrollo de disciplinas arcanas desde cero. Progreso enigmático.</div></div>'+
+      '<div class="bg3-guide-item"><span class="die-tag-info meta">META</span> <div><b>⚔️ Combate / Atributo:</b> Fija un objetivo (+PV, +Maná) con barra de progreso y cuenta atrás.</div></div>'+
+      '<div class="bg3-guide-item"><span class="die-tag-info link">LINK</span> <div><b>✨ Hechizo / Invocación:</b> Vincula un hechizo o invocación real de tu ficha para potenciarlo.</div></div>'+
     '</div>'+
     '<div class="training-rules-bar">'+
-      '<div class="rule-chip fumble"><b>Resultado 1:</b> -5 pts (Pifia)</div>'+
-      '<div class="rule-chip normal"><b>2 a 10:</b> +1 pto</div>'+
-      '<div class="rule-chip great"><b>11 a 19 (d20):</b> +3 pts</div>'+
-      '<div class="rule-chip crit"><b>Máximo (10 / 20):</b> +5 pts (Crítico)</div>'+
+      '<div class="rule-chip fumble"><b>Resultado 1:</b> -5 pts (Pifia / Lesión)</div>'+
+      '<div class="rule-chip normal"><b>2 a 10:</b> +1 pto (Práctica constante)</div>'+
+      '<div class="rule-chip great"><b>11 a 19 (d20):</b> +3 pts (Avance notable)</div>'+
+      '<div class="rule-chip crit"><b>Máximo (10 / 20):</b> +5 pts (Crítico magistral)</div>'+
+      '<div class="rule-chip free"><b>📜 Hito Narrativo:</b> Sin penalizaciones (progreso libre / hitos)</div>'+
     '</div>'+
   '</div>';
 
-  if(canEdit){
-    html += '<div style="margin-bottom:14px;display:flex;justify-content:flex-end;">'+
-      '<button class="btn-solid-gold" data-action="add-training">+ Nuevo Entrenamiento</button>'+
-    '</div>';
-  }
-
   if(c.trainings.length === 0){
     html += '<div class="training-empty-state">'+
-      '<div style="font-size:2.2rem;margin-bottom:8px;">🥋</div>'+
-      '<p style="font-weight:600;font-size:.95rem;color:var(--gold-light);margin-bottom:4px;">No hay entrenamientos activos</p>'+
-      '<p style="font-size:.82rem;color:var(--ink-dim);">Inicia un nuevo proyecto de entrenamiento para comenzar a registrar tiradas de dados y acumular puntos de esfuerzo.</p>'+
-      (canEdit ? '<button class="btn-solid-gold" style="margin-top:12px;" data-action="add-training">+ Crear Primer Entrenamiento</button>' : '')+
+      '<div style="font-size:2.4rem;margin-bottom:10px;">🥋</div>'+
+      '<p style="font-weight:700;font-size:1.05rem;color:var(--gold-light);margin-bottom:6px;">No hay entrenamientos activos</p>'+
+      '<p style="font-size:.85rem;color:var(--ink-dim);max-width:520px;margin:0 auto 16px auto;">Comienza un nuevo entrenamiento para practicar tus habilidades, desbloquear técnicas arcanas o registrar tus hitos de rol.</p>'+
+      (canEdit ? '<button class="btn-solid-gold" data-action="add-training">+ Crear Primer Entrenamiento</button>' : '')+
     '</div>';
   } else {
     c.trainings.forEach(function(t){
-      var isNew = t.type === "new";
-      var sides = isNew ? 20 : 10;
+      var catId = t.category || "skill";
+      var catDef = TRAINING_CATS.find(function(k){ return k.id === catId; }) || TRAINING_CATS[0];
+      var sides = t.sides || (catId === "unlock" ? 20 : 10);
       var points = num(t.points, 0);
       var rolls = t.rolls || [];
-      var category = t.category || "General";
+      var targetGoal = Math.max(1, num(t.targetGoal, 20));
+      var targetStat = t.targetStat || "+10 PV";
 
-      html += '<div class="training-card" data-id="'+t.id+'">'+
-        '<div class="training-card-header">'+
-          '<div class="training-name-wrap">'+
-            '<input type="text" class="training-name-input" data-bind="trainings.'+t.id+'.name" value="'+esc(t.name)+'" placeholder="Nombre del Entrenamiento (ej: Veneno del Sueño)..." '+(canEdit?'':'readonly')+'>'+
-            '<div class="training-cat-wrap">'+
-              '<span class="training-cat-icon">🏷️</span>'+
-              '<input type="text" list="training-cats-list" class="training-cat-input" data-bind="trainings.'+t.id+'.category" value="'+esc(category)+'" placeholder="Categoría / Tipo..." '+(canEdit?'':'readonly')+'>'+
-            '</div>'+
+      html += '<div class="bg3-card" data-id="'+t.id+'">'+
+        '<div class="bg3-card-topbar">'+
+          '<div class="bg3-cat-select-wrap">'+
+            '<span class="bg3-cat-icon">'+catDef.icon+'</span>'+
+            '<select class="bg3-cat-select" data-action="set-training-category" data-id="'+t.id+'" '+(canEdit?'':'disabled')+'>'+
+              TRAINING_CATS.map(function(k){
+                return '<option value="'+k.id+'"'+(k.id===catId?' selected':'')+'>'+k.icon+' '+k.label+'</option>';
+              }).join('')+
+            '</select>'+
           '</div>'+
-          '<div class="training-header-right">'+
-            '<div class="training-points-badge" title="Puntos acumulados de esfuerzo">'+
-              '<span class="training-points-num '+(points < 0 ? 'neg' : '')+'">'+(points > 0 ? '+'+points : points)+'</span>'+
-              '<span class="training-points-label">PTS ACUMULADOS</span>'+
-            '</div>'+
-            (canEdit ? '<button class="row-del" data-action="del-training" data-id="'+t.id+'" title="Eliminar entrenamiento" aria-label="Eliminar entrenamiento">✕</button>' : '')+
+          '<div class="bg3-card-top-right">'+
+            '<span class="bg3-badge-pill '+catId+'">'+catDef.badge+'</span>'+
+            (canEdit ? '<button class="bg3-del-btn" data-action="del-training" data-id="'+t.id+'" title="Eliminar entrenamiento" aria-label="Eliminar">✕</button>' : '')+
           '</div>'+
         '</div>'+
-        '<div class="training-controls-bar">'+
-          '<div class="training-type-toggle">'+
-            '<button type="button" class="training-type-btn'+(!isNew?' active':'')+'" data-action="set-training-type" data-id="'+t.id+'" data-type="existing" '+(canEdit?'':'disabled')+'>'+
-              '<span>Habilidad Existente</span> <span class="die-tag d10">d10</span>'+
-            '</button>'+
-            '<button type="button" class="training-type-btn'+(isNew?' active':'')+'" data-action="set-training-type" data-id="'+t.id+'" data-type="new" '+(canEdit?'':'disabled')+'>'+
-              '<span>Desbloqueo / Nueva Disciplina</span> <span class="die-tag d20">d20</span>'+
-            '</button>'+
+
+        '<div class="bg3-title-row">'+
+          '<input type="text" class="bg3-title-input" data-bind="trainings.'+t.id+'.name" value="'+esc(t.name)+'" placeholder="Nombre del Entrenamiento (ej: Veneno del Sueño, +10 PV)..." '+(canEdit?'':'readonly')+'>'+
+          '<div class="bg3-points-display" title="Puntos acumulados de esfuerzo">'+
+            (catId === "combat" ?
+              '<div class="pts-val-combat"><span class="cur">'+points+'</span> <span class="sep">/</span> <span class="max">'+targetGoal+'</span> <span class="unit">PTS</span></div>'+
+              '<div class="pts-label-sub">META COMBATE</div>'
+            : catId === "narrative" ?
+              '<div class="pts-val-combat"><span class="cur">'+(t.narrativePercentage||0)+'%</span></div>'+
+              '<div class="pts-label-sub">PROGRESO HITOS</div>'
+            :
+              '<div class="pts-val-mystery">'+(points > 0 ? '+'+points : points)+' <span class="unit">PTS</span></div>'+
+              '<div class="pts-label-sub">PUNTOS ACUMULADOS</div>'
+            )+
           '</div>'+
-          (canEdit ? (
-            '<div class="training-record-actions">'+
-              '<button class="btn-solid-gold training-roll-btn" data-action="roll-training" data-id="'+t.id+'">🎲 Tirada Automática (d'+sides+')</button>'+
-              '<div class="training-manual-group">'+
-                '<input type="number" min="1" max="'+sides+'" class="training-manual-input" data-manual-for="'+t.id+'" placeholder="1-'+sides+'" title="Resultado de dado físico (1 a '+sides+')">'+
-                '<button type="button" class="btn-compact training-manual-btn" data-action="add-manual-training-roll" data-id="'+t.id+'" title="Añadir tirada física">✍️ Añadir manual</button>'+
+        '</div>';
+
+      if(catId === "combat"){
+        var pct = Math.min(100, Math.max(0, Math.round((points / targetGoal) * 100)));
+        var remaining = Math.max(0, targetGoal - points);
+
+        html += '<div class="bg3-combat-module">'+
+          '<div class="bg3-combat-inputs">'+
+            '<div class="bg3-field-inline">'+
+              '<label>Beneficio de Meta:</label>'+
+              '<input type="text" class="bg3-combat-stat-input" data-bind="trainings.'+t.id+'.targetStat" value="'+esc(targetStat)+'" placeholder="Ej: +10 PV, +5 Maná..." '+(canEdit?'':'readonly')+'>'+
+            '</div>'+
+            '<div class="bg3-field-inline">'+
+              '<label>Puntos Necesarios:</label>'+
+              '<input type="number" min="1" class="bg3-combat-goal-input" data-bind="trainings.'+t.id+'.targetGoal" value="'+targetGoal+'" '+(canEdit?'':'readonly')+'>'+
+            '</div>'+
+          '</div>'+
+          '<div class="bg3-progress-wrap">'+
+            '<div class="bg3-progress-info">'+
+              '<span class="stat-name">⚔️ Objetivo: <b>'+esc(targetStat)+'</b></span>'+
+              '<span class="stat-calc">'+pct+'% ('+points+' de '+targetGoal+' pts)</span>'+
+            '</div>'+
+            '<div class="bg3-progress-track">'+
+              '<div class="bg3-progress-fill" style="width:'+pct+'%;"></div>'+
+              '<div class="bg3-progress-glow" style="left:'+pct+'%;"></div>'+
+            '</div>'+
+            '<div class="bg3-progress-footer">'+
+              (remaining === 0 ?
+                '<span class="bg3-meta-reached">🏆 ¡HITO DE COMBATE ALCANZADO! (Esfuerzo completado con éxito)</span>' :
+                '<span class="bg3-meta-pending">⏳ Faltan <b>'+remaining+' puntos</b> para completar este hito</span>'
+              )+
+            '</div>'+
+          '</div>'+
+        '</div>';
+      }
+
+      if(catId === "spell_summon"){
+        var spells = c.spells || [];
+        var summons = c.summons || [];
+
+        html += '<div class="bg3-spell-module">'+
+          '<div class="bg3-spell-header">'+
+            '<span class="spell-icon">✨</span>'+
+            '<label>Vinculación con Ficha (Hechizo o Invocación):</label>'+
+          '</div>'+
+          '<select class="bg3-linked-select" data-action="set-training-linked" data-id="'+t.id+'" '+(canEdit?'':'disabled')+'>'+
+            '<option value="">-- Seleccionar Hechizo o Invocación de la Ficha --</option>'+
+            '<optgroup label="✨ Hechizos de la Ficha ('+spells.length+')">'+
+              spells.map(function(sp){
+                var isSel = (t.linkedType==='spell' && t.linkedId===sp.id);
+                return '<option value="spell:'+sp.id+'"'+(isSel?' selected':'')+'>'+esc(sp.name||'Sin Nombre')+' (Coste: '+num(sp.coste,1)+' Maná, '+esc(sp.rango||'Melé')+')</option>';
+              }).join('')+
+            '</optgroup>'+
+            '<optgroup label="🐾 Invocaciones de la Ficha ('+summons.length+')">'+
+              summons.map(function(su){
+                var isSel = (t.linkedType==='summon' && t.linkedId===su.id);
+                return '<option value="summon:'+su.id+'"'+(isSel?' selected':'')+'>'+esc(su.name||'Sin Nombre')+' (Def: '+esc(su.defensa||'-')+', Daño: '+esc(su.dano||'-')+')</option>';
+              }).join('')+
+            '</optgroup>'+
+            '<option value="custom" '+(t.linkedType==='custom'?'selected':'')+'>🔮 Hechizo / Invocación Externa o Personalizada</option>'+
+          '</select>'+
+        '</div>';
+      }
+
+      if(catId === "narrative"){
+        var milestones = t.milestones || [];
+        var doneM = milestones.filter(function(m){ return m.done; }).length;
+        var narrPct = milestones.length ? Math.round((doneM / milestones.length) * 100) : num(t.narrativePercentage, 0);
+
+        html += '<div class="bg3-narrative-module">'+
+          '<div class="bg3-narrative-top">'+
+            '<div class="narr-pct-bar-wrap">'+
+              '<div class="narr-pct-label"><span>📜 Progreso del Descubrimiento:</span> <b>'+narrPct+'%</b> ('+doneM+'/'+milestones.length+' hitos)</div>'+
+              '<div class="bg3-progress-track small">'+
+                '<div class="bg3-progress-fill gold" style="width:'+narrPct+'%;"></div>'+
               '</div>'+
-            '</div>'
-          ) : '')+
-        '</div>'+
-        '<div class="training-history-section">'+
-          '<div class="training-history-title">'+
-            '<span>Historial de Tiradas ('+rolls.length+')</span>'+
+            '</div>'+
+            (canEdit ? '<button type="button" class="btn-compact bg3-add-milestone-btn" data-action="add-milestone" data-id="'+t.id+'">+ Añadir Hito / Etapa</button>' : '')+
           '</div>'+
-          '<div class="training-chips-track">'+
-            (rolls.length === 0 ? '<div class="training-chips-empty">Aún no hay tiradas registradas. ¡Lanza o introduce el dado para progresar!</div>' :
-              rolls.slice().reverse().map(function(r){
-                var chipClass = "normal";
-                if(r.roll === 1) chipClass = "fumble";
-                else if(r.roll === r.sides) chipClass = "crit";
-                else if(r.roll >= 11 && r.roll <= 19) chipClass = "great";
-
-                var sign = r.pts > 0 ? "+" : "";
-                var timeStr = r.ts ? new Date(r.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
-
-                return '<div class="training-chip '+chipClass+'" title="Tirada: '+r.roll+' en d'+r.sides+(r.manual?' (Manual)':'')+(timeStr?' ['+timeStr+']':'')+'">'+
-                  '<div class="chip-main">'+
-                    '<span class="chip-roll-val">'+r.roll+'</span>'+
-                    '<span class="chip-die-val">d'+r.sides+(r.manual?' ✍️':'')+'</span>'+
-                  '</div>'+
-                  '<div class="chip-pts-val">'+sign+r.pts+' pt'+(Math.abs(r.pts)===1?'':'s')+'</div>'+
-                  (canEdit ? '<button class="chip-undo-btn" data-action="undo-training-roll" data-training-id="'+t.id+'" data-roll-id="'+r.id+'" title="Borrar tirada">✕</button>' : '')+
+          '<div class="bg3-milestones-list">'+
+            (milestones.length === 0 ?
+              '<div class="bg3-empty-milestones">No hay etapas registradas. Pulsa "+ Añadir Hito / Etapa" para definir los pasos de esta investigación o descubrimiento.</div>'
+            :
+              milestones.map(function(m){
+                return '<div class="bg3-milestone-item '+(m.done?'done':'')+'">'+
+                  '<button type="button" class="bg3-milestone-check" data-action="toggle-milestone" data-training-id="'+t.id+'" data-milestone-id="'+m.id+'" '+(canEdit?'':'disabled')+'>'+(m.done?'✓':'')+'</button>'+
+                  '<input type="text" class="bg3-milestone-text" data-bind="trainings.'+t.id+'.milestones.'+m.id+'.text" value="'+esc(m.text)+'" placeholder="Descripción del hito..." '+(canEdit?'':'readonly')+'>'+
+                  (canEdit ? '<button type="button" class="bg3-milestone-del" data-action="del-milestone" data-training-id="'+t.id+'" data-milestone-id="'+m.id+'" title="Eliminar etapa">✕</button>' : '')+
                 '</div>';
               }).join('')
             )+
           '</div>'+
+          '<div class="bg3-journal-wrap">'+
+            '<label>Diario de Investigación y Notas de Lore:</label>'+
+            '<textarea class="bg3-journal-textarea" data-bind="trainings.'+t.id+'.narrativeNotes" placeholder="Escribe aquí las crónicas, pergaminos leídos, sospechas, teorías o revelaciones...">'+esc(t.narrativeNotes||"")+'</textarea>'+
+          '</div>'+
+        '</div>';
+      }
+
+      html += '<div class="bg3-action-bar">'+
+        '<div class="bg3-die-controls">'+
+          '<div class="training-type-toggle">'+
+            '<button type="button" class="training-type-btn'+(sides===10?' active':'')+'" data-action="set-training-type" data-id="'+t.id+'" data-type="existing" '+(canEdit?'':'disabled')+'>'+
+              '<span>Dado d10</span> <span class="die-tag d10">d10</span>'+
+            '</button>'+
+            '<button type="button" class="training-type-btn'+(sides===20?' active':'')+'" data-action="set-training-type" data-id="'+t.id+'" data-type="new" '+(canEdit?'':'disabled')+'>'+
+              '<span>Dado d20</span> <span class="die-tag d20">d20</span>'+
+            '</button>'+
+          '</div>'+
+        '</div>'+
+        (canEdit ? (
+          '<div class="bg3-roll-actions">'+
+            '<button class="btn-solid-gold bg3-roll-auto-btn" data-action="roll-training" data-id="'+t.id+'">'+
+              '🎲 Tirada Automática (d'+sides+')'+
+            '</button>'+
+            '<div class="bg3-manual-input-box">'+
+              '<input type="number" min="1" max="'+sides+'" class="bg3-manual-input" data-manual-for="'+t.id+'" placeholder="1-'+sides+'" title="Resultado de dado físico (1 a '+sides+')">'+
+              '<button type="button" class="btn-compact bg3-manual-submit-btn" data-action="add-manual-training-roll" data-id="'+t.id+'" title="Añadir resultado de mesa física">+ Añadir</button>'+
+            '</div>'+
+          '</div>'
+        ) : '')+
+      '</div>';
+
+      html += '<div class="bg3-history-section">'+
+        '<div class="bg3-history-header">'+
+          '<span class="bg3-hist-title">Historial de Esfuerzo ('+rolls.length+' tiradas)</span>'+
+        '</div>'+
+        '<div class="bg3-history-track">'+
+          (rolls.length === 0 ?
+            '<div class="bg3-history-empty">Aún no hay tiradas registradas. Lanza el dado automático o introduce tus tiradas de mesa física para avanzar.</div>'
+          :
+            rolls.slice().reverse().map(function(r){
+              var chipClass = "normal";
+              if(r.roll === 1 && catId !== "narrative") chipClass = "fumble";
+              else if(r.roll === r.sides) chipClass = "crit";
+              else if(r.roll >= 11 && r.roll <= 19) chipClass = "great";
+
+              var sign = r.pts > 0 ? "+" : "";
+              var timeStr = r.ts ? new Date(r.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
+
+              return '<div class="bg3-history-chip '+chipClass+'" title="Tirada: '+r.roll+' en d'+r.sides+(r.manual?' (Mesa Física)':'')+(timeStr?' ['+timeStr+']':'')+'">'+
+                '<div class="chip-die-side">'+
+                  '<span class="chip-num">'+r.roll+'</span>'+
+                  '<span class="chip-tag">d'+r.sides+(r.manual?' ✍️':'')+'</span>'+
+                '</div>'+
+                '<div class="chip-delta-badge">'+sign+r.pts+' pt'+(Math.abs(r.pts)===1?'':'s')+'</div>'+
+                (canEdit ? '<button class="bg3-chip-del" data-action="undo-training-roll" data-training-id="'+t.id+'" data-roll-id="'+r.id+'" title="Eliminar tirada">✕</button>' : '')+
+              '</div>';
+            }).join('')
+          )+
         '</div>'+
       '</div>';
+
+      html += '</div>';
     });
   }
 

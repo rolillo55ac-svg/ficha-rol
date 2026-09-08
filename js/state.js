@@ -118,9 +118,25 @@ function ensureCharDefaults(c){
   c.trainings.forEach(function(tr){
     if(!tr.id) tr.id = uid();
     if(!tr.name) tr.name = "Nuevo Entrenamiento";
-    if(!tr.category) tr.category = "General";
-    if(!tr.type) tr.type = "existing";
-    if(tr.sides === undefined) tr.sides = tr.type === "new" ? 20 : 10;
+    if(!tr.category){
+      tr.category = tr.type === "new" ? "unlock" : "skill";
+    }
+    if(tr.category === "General" || tr.category === "existing") tr.category = "skill";
+    if(tr.category === "new") tr.category = "unlock";
+
+    if(!tr.type) tr.type = (tr.category === "unlock") ? "new" : "existing";
+    if(tr.sides === undefined) tr.sides = (tr.category === "unlock") ? 20 : 10;
+
+    if(tr.targetGoal === undefined) tr.targetGoal = 20;
+    if(tr.targetStat === undefined) tr.targetStat = "+10 PV";
+
+    if(tr.linkedType === undefined) tr.linkedType = "";
+    if(tr.linkedId === undefined) tr.linkedId = "";
+
+    if(tr.narrativePercentage === undefined) tr.narrativePercentage = 0;
+    if(tr.narrativeNotes === undefined) tr.narrativeNotes = "";
+    if(!Array.isArray(tr.milestones)) tr.milestones = [];
+
     if(!Array.isArray(tr.rolls)) tr.rolls = [];
     if(tr.points === undefined){
       tr.points = tr.rolls.reduce(function(sum, r){ return sum + (r.pts || 0); }, 0);
