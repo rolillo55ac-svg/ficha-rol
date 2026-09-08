@@ -383,6 +383,12 @@ function loadState(){
     var raw = localStorage.getItem(STORAGE_KEY);
     var parsed = raw ? JSON.parse(raw) : null;
     var loaded = parsed ? migrateState(parsed) : defaultState();
+    if(loaded && Array.isArray(loaded.characters)){
+      loaded.characters.forEach(function(c){
+        c._isDirty = false;
+        delete c._lastLocalEdit;
+      });
+    }
     var savedActiveId = localStorage.getItem("krysalis_active_id");
     if(savedActiveId && loaded.characters && loaded.characters.some(function(x){return x.id===savedActiveId;})){
       loaded.activeId = savedActiveId;

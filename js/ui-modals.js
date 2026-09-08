@@ -234,13 +234,19 @@ function modalClick(e){
   if(action==="add-npc"){
     if(!isGM()) return;
     var nName = prompt("Nombre del NPC:");
-    if(nName){
-      var nn = blankCharacter(nName, true);
+    if(nName && nName.trim()){
+      var nn = blankCharacter(nName.trim(), true);
       nn.trabajo = "Neutral";
+      if(currentUser && currentUser.id) nn.owner_id = currentUser.id;
+      nn._isDirty = true;
+      nn._lastLocalEdit = Date.now();
       state.characters.push(nn);
       state.activeId = nn.id;
-      saveState(); closeModals(); renderTopbar(); renderTab();
-      showToast("NPC creado: " + nName, "success");
+      markCharDirty(nn.id);
+      saveState(false);
+      pushCharacterById(nn.id);
+      closeModals(); renderTopbar(); renderTab();
+      showToast("NPC creado: " + nName.trim(), "success");
     }
     return;
   }
@@ -250,7 +256,7 @@ function modalClick(e){
       return;
     }
     var targetId = btn.getAttribute("data-id");
-    var targetChar = (state.characters||[]).find(function(x){return x.id===targetId;});
+    var targetChar = (state.characters||[]).find(function(x){return x.id===targetId || x.db_id===targetId;});
     var canDelete = isGM() || (!currentUser && targetChar && !targetChar.isNPC);
     if(!canDelete){
       showToast("No tienes permiso para eliminar este personaje.", "warning");
@@ -258,17 +264,30 @@ function modalClick(e){
     }
     var charName = targetChar ? targetChar.name : "este personaje";
     if(confirm("¿Eliminar definitivamente a \"" + charName + "\"?")){
-      if(targetChar && targetChar.db_id && supabaseClient){
-        supabaseClient.from('characters').delete().eq('id', targetChar.db_id).then(function(res){
-          if(res.error) console.error("Error al borrar en Supabase:", res.error);
-        }).catch(function(e){ console.error("Error al borrar en Supabase:", e); });
+      var dbId = targetChar ? (targetChar.db_id || targetChar.id) : targetId;
+      if(supabaseClient){
+        if(dbId){
+          supabaseClient.from('characters').delete().eq('id', dbId).then(function(res){
+            if(res.error) console.error("Error al borrar en Supabase:", res.error);
+          }).catch(function(e){ console.error("Error al borrar en Supabase:", e); });
+        }
+        if(targetChar && targetChar.name){
+          supabaseClient.from('characters').delete().eq('name', targetChar.name).catch(function(){});
+        }
       }
-      state.characters = (state.characters||[]).filter(function(x){return x.id!==targetId;});
+      dirtyCharIds.delete(targetId);
+      if(dbId) dirtyCharIds.delete(dbId);
+      if(targetChar && targetChar.id) dirtyCharIds.delete(targetChar.id);
+
+      state.characters = (state.characters||[]).filter(function(x){
+        return x.id!==targetId && x.db_id!==targetId && (!dbId || (x.id!==dbId && x.db_id!==dbId));
+      });
       if(!state.characters.length) state.characters.push(blankCharacter("Sin Personaje"));
-      if(state.activeId === targetId){
-        state.activeId = state.characters[0]?state.characters[0].id:"";
+      if(state.activeId === targetId || state.activeId === dbId){
+        var validChars = getUserCharacters();
+        state.activeId = validChars[0]?validChars[0].id:state.characters[0].id;
       }
-      saveState();
+      saveState(true);
       openCharModal();
       renderTopbar();
       renderTab();

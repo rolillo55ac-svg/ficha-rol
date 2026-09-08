@@ -615,6 +615,7 @@ async function pullAllFromSupabase(){
         c.db_id = r.id;
         if(r.owner_id) c.owner_id = r.owner_id;
         c._serverUpdatedAt = r.updated_at ? new Date(r.updated_at).getTime() : 0;
+        c._isDirty = false;
         return c; 
       });
 
@@ -673,24 +674,51 @@ async function pullAllFromSupabase(){
         });
       }
 
-      // Merge: Supabase is the single source of truth for character data!
-      // Only keep local copy if it has unsaved local edits (_isDirty), otherwise use remoteC.
+      // Merge: Supabase es la fuente de verdad única para personajes y NPCs
       var mergedChars = pulledChars.map(function(remoteC){
+        remoteC._isDirty = false;
+        dirtyCharIds.delete(remoteC.id);
+
         var localC = (state.characters || []).find(function(lc){ 
           return lc.id === remoteC.id || (lc.db_id && lc.db_id === remoteC.db_id) || (lc.name && remoteC.name && lc.name.trim().toLowerCase() === remoteC.name.trim().toLowerCase()); 
         });
-        if(localC && localC._isDirty && dirtyCharIds.has(localC.id)){
+
+        // Solo mantener cambios locales si el usuario tiene permiso para editar,
+        // tiene cambios sucios pendientes en ESTA sesión y son más recientes que el servidor
+        if(localC && localC._isDirty && dirtyCharIds.has(localC.id) && canEditChar(localC)){
+          if(remoteC._serverUpdatedAt && localC._lastLocalEdit && remoteC._serverUpdatedAt > localC._lastLocalEdit){
+            console.warn("El servidor tiene datos más recientes para " + remoteC.name + ", priorizando servidor.");
+            return remoteC;
+          }
           return localC;
         }
         return remoteC;
       });
 
+      // Limpiar personajes locales: si ya tenían db_id y NO vinieron de Supabase,
+      // fueron ELIMINADOS del servidor. ¡NO RESUCITAR!
       (state.characters || []).forEach(function(localC){
-        if(!mergedChars.some(function(mc){ 
+        var alreadyIn = mergedChars.some(function(mc){ 
           return mc.id === localC.id || (mc.db_id && mc.db_id === localC.db_id) || (mc.name && localC.name && mc.name.trim().toLowerCase() === localC.name.trim().toLowerCase()); 
-        })){
-          mergedChars.push(localC);
-          markCharDirty(localC.id);
+        });
+        if(!alreadyIn){
+          if(localC.db_id){
+            console.log("Personaje eliminado del servidor descartado de local:", localC.name);
+            dirtyCharIds.delete(localC.id);
+            dirtyCharIds.delete(localC.db_id);
+            return;
+          }
+          if(localC.isNPC && !isGM()){
+            console.log("Cliente jugador descarta NPC no presente en servidor:", localC.name);
+            dirtyCharIds.delete(localC.id);
+            return;
+          }
+          // Solo mantener si es un personaje nuevo creado localmente en esta sesión por un usuario autorizado
+          if(canEditChar(localC) && localC._isDirty && dirtyCharIds.has(localC.id)){
+            mergedChars.push(localC);
+          } else {
+            dirtyCharIds.delete(localC.id);
+          }
         }
       });
 
@@ -717,13 +745,19 @@ async function pullAllFromSupabase(){
     if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
   }catch(e){ console.error('Supabase error:', e); }
   isRemoteSyncing = false;
-  if(dirtyCharIds.size > 0 || (state.characters||[]).some(function(c){ return c._isDirty; })){
+  
+  var hasLegitDirty = Array.from(dirtyCharIds).some(function(cid){
+    var c = (state.characters||[]).find(function(x){ return x.id === cid || x.db_id === cid; });
+    return c && canEditChar(c);
+  });
+  if(hasLegitDirty){
     flushPendingSync();
   }
 }
 
 function sendKeepalivePush(c){
   if(!c || !c.name || c.id==="empty") return;
+  if(!canEditChar(c)) return;
   try{
     var n = (c.name||"").trim().toLowerCase();
     var dbId = c.db_id;
@@ -734,7 +768,12 @@ function sendKeepalivePush(c){
       else if(n.includes("cherk")) dbId = "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3";
       else if(n.includes("ink")) dbId = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
     }
-    var payload = { name: c.name, data: c, updated_at: new Date().toISOString() };
+    var cleanData = JSON.parse(JSON.stringify(c));
+    delete cleanData._isDirty;
+    delete cleanData._lastLocalEdit;
+    delete cleanData._serverUpdatedAt;
+
+    var payload = { name: c.name, data: cleanData, updated_at: new Date().toISOString() };
     if(dbId) payload.id = dbId;
     
     var url = SUPABASE_URL + "/rest/v1/characters";
@@ -754,8 +793,17 @@ function sendKeepalivePush(c){
 
 async function pushCharacterById(charId){
   if(!supabaseClient) return;
-  var c = (state.characters||[]).find(function(x){ return x.id === charId; });
+  var c = (state.characters||[]).find(function(x){ return x.id === charId || x.db_id === charId; });
   if(!c || !c.name || c.id==="empty") return;
+
+  // VERIFICACIÓN DE PERMISOS: Solo GM o dueño
+  if(!canEditChar(c)){
+    console.warn("pushCharacterById: Permiso denegado para", c.name);
+    dirtyCharIds.delete(c.id);
+    if(c.db_id) dirtyCharIds.delete(c.db_id);
+    c._isDirty = false;
+    return;
+  }
 
   if(!c.db_id){
     var n = (c.name||"").trim().toLowerCase();
@@ -766,21 +814,41 @@ async function pushCharacterById(charId){
     else if(n.includes("ink")) c.db_id = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
   }
 
-  // Control de conflicto simple: verificar updated_at del servidor
+  // Control de conflicto real: verificar si el servidor tiene datos más recientes
   if(c.db_id && c._serverUpdatedAt){
     try{
-      var checkRes = await supabaseClient.from('characters').select('updated_at').eq('id', c.db_id).maybeSingle();
+      var checkRes = await supabaseClient.from('characters').select('updated_at, data').eq('id', c.db_id).maybeSingle();
       if(checkRes.data && checkRes.data.updated_at){
         var remoteTs = new Date(checkRes.data.updated_at).getTime();
-        if(remoteTs > c._serverUpdatedAt + 2500){
-          console.warn("Conflicto detectado: la ficha fue modificada remotamente.");
-          showToast("Aviso: Esta ficha fue modificada recientemente por otro jugador.", "warning");
+        if(remoteTs > c._serverUpdatedAt + 2000 && (!c._lastLocalEdit || remoteTs > c._lastLocalEdit + 2000)){
+          console.warn("Conflicto detectado: la ficha en el servidor es más reciente. Actualizando local con datos del servidor.");
+          showToast("Aviso: " + c.name + " fue actualizado desde el servidor.", "info");
+          if(checkRes.data.data){
+            var updatedRemote = checkRes.data.data;
+            updatedRemote.db_id = c.db_id;
+            updatedRemote._serverUpdatedAt = remoteTs;
+            updatedRemote._isDirty = false;
+            dirtyCharIds.delete(c.id);
+            if(c.db_id) dirtyCharIds.delete(c.db_id);
+            var idx = state.characters.findIndex(function(x){ return x.id === c.id || x.db_id === c.db_id; });
+            if(idx !== -1) state.characters[idx] = ensureCharDefaults(updatedRemote);
+            saveState(true);
+            renderTopbar();
+            renderTab();
+            return;
+          }
         }
       }
     }catch(errCheck){}
   }
 
-  var payload = {name: c.name, data: c, updated_at: new Date().toISOString()};
+  // Sanitizar payload: nunca guardar banderas de runtime transitorias en Supabase
+  var cleanData = JSON.parse(JSON.stringify(c));
+  delete cleanData._isDirty;
+  delete cleanData._lastLocalEdit;
+  delete cleanData._serverUpdatedAt;
+
+  var payload = {name: c.name, data: cleanData, updated_at: new Date().toISOString()};
   if(c.db_id) payload.id = c.db_id;
 
   supabaseClient.from('characters').upsert(payload).select().then(function(res){
@@ -795,9 +863,8 @@ async function pushCharacterById(charId){
     }
     c._isDirty = false;
     dirtyCharIds.delete(c.id);
-    try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }catch(e){}
+    if(c.db_id) dirtyCharIds.delete(c.db_id);
+    saveState(true);
     updateSyncBadge("synced");
   }).catch(function(e){
     console.error('Supabase error:', e);

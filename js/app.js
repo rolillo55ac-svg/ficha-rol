@@ -151,20 +151,20 @@ function init(){
       }
       flushPendingSync();
       (state.characters || []).forEach(function(c){
-        if(c && c._isDirty) sendKeepalivePush(c);
+        if(c && c._isDirty && canEditChar(c)) sendKeepalivePush(c);
       });
     });
     window.addEventListener("pagehide", function(){
       flushPendingSync();
       (state.characters || []).forEach(function(c){
-        if(c && c._isDirty) sendKeepalivePush(c);
+        if(c && c._isDirty && canEditChar(c)) sendKeepalivePush(c);
       });
     });
     document.addEventListener("visibilitychange", function(){
       if(document.visibilityState === "hidden"){
         flushPendingSync();
         (state.characters || []).forEach(function(c){
-          if(c && c._isDirty) sendKeepalivePush(c);
+          if(c && c._isDirty && canEditChar(c)) sendKeepalivePush(c);
         });
       }
     });

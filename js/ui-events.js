@@ -104,6 +104,10 @@ function handleChange(e){
     return;
   }
   var target = isGlobal ? state : activeChar();
+  if(!isGlobal && !canEditChar(target)){
+    showToast("No tienes permiso para editar este personaje.", "warning");
+    return;
+  }
   var bind = el.getAttribute("data-bind");
   setBind(target, bind, el.value, el.type);
   if(!isGlobal && target && target.id){
@@ -154,12 +158,12 @@ function handleClick(e){
     return;
   }
   if(action==="hp-mod"){
+    if(!canEditChar(c)) return;
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
     var maxHp = num(c.combat.pvMax,0) || 999;
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, -999, maxHp);
     c._lastLocalEdit = Date.now();
-    markCharDirty(c.id);
-    saveState(); renderTopbar();
+    saveState(true); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
 
     if(d1 < 0) applyDamageRPC(c, d1);
@@ -167,20 +171,21 @@ function handleClick(e){
     return;
   }
   if(action==="shield-mod"){
+    if(!canEditChar(c)) return;
     var ds = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
     c._lastLocalEdit = Date.now();
     markCharDirty(c.id);
-    saveState(); renderTopbar();
+    saveState(false); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
     return;
   }
   if(action==="mana-mod"){
+    if(!canEditChar(c)) return;
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
     c._lastLocalEdit = Date.now();
-    markCharDirty(c.id);
-    saveState(); renderTopbar();
+    saveState(true); renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
 
     changeManaRPC(c, d2);
@@ -574,24 +579,24 @@ function handleClick(e){
     showToast("Buff eliminado", "info");
     return;
   }
-  if(action==="add-weapon"){ if(!c) return; c.weapons = c.weapons || []; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-weapon"){ if(!c) return; c.weapons = (c.weapons || []).filter(function(w){return w.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-armor"){ if(!c) return; c.armors = c.armors || []; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-armor"){ if(!c) return; c.armors = (c.armors || []).filter(function(a){return a.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-inventory"){ if(!c) return; c.inventory = c.inventory || []; c.inventory.push({id:uid(),name:"",qty:1}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-inventory"){ if(!c) return; c.inventory = (c.inventory || []).filter(function(i){return i.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-weapon"){ if(!c || !canEditChar(c)) return; c.weapons = c.weapons || []; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-weapon"){ if(!c || !canEditChar(c)) return; c.weapons = (c.weapons || []).filter(function(w){return w.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-armor"){ if(!c || !canEditChar(c)) return; c.armors = c.armors || []; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-armor"){ if(!c || !canEditChar(c)) return; c.armors = (c.armors || []).filter(function(a){return a.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-inventory"){ if(!c || !canEditChar(c)) return; c.inventory = c.inventory || []; c.inventory.push({id:uid(),name:"",qty:1}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-inventory"){ if(!c || !canEditChar(c)) return; c.inventory = (c.inventory || []).filter(function(i){return i.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
   if(action==="add-spell"){
-    if(!c) return;
+    if(!c || !canEditChar(c)) return;
     if(!c.spells) c.spells = [];
     c.spells.push({id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false});
     c._lastLocalEdit = Date.now(); markCharDirty(c.id);
-    saveState(); renderTab(); return;
+    saveState(false); renderTab(); return;
   }
   if(action==="del-spell"){
-    if(!c) return;
+    if(!c || !canEditChar(c)) return;
     c.spells = (c.spells||[]).filter(function(s){return s.id!==btn.getAttribute("data-id");});
     c._lastLocalEdit = Date.now(); markCharDirty(c.id);
-    saveState(); renderTab(); return;
+    saveState(false); renderTab(); return;
   }
   if(action==="cast-spell"){
     var spId = btn.getAttribute("data-id");
@@ -664,18 +669,18 @@ function handleClick(e){
     }
     return;
   }
-  if(action==="add-stone"){ if(!c) return; c.stones = c.stones || []; c.stones.push({id:uid(),color:"",efecto:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-stone"){ if(!c) return; c.stones = (c.stones || []).filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-summon"){ if(!c) return; c.summons = c.summons || []; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-summon"){ if(!c) return; c.summons = (c.summons || []).filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-poison"){ if(!c) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-poison"){ if(!c) return; c.poisons = (c.poisons || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-passiveNeg"){ if(!c) return; c.passivesNeg = c.passivesNeg || []; c.passivesNeg.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-passiveNeg"){ if(!c) return; c.passivesNeg = (c.passivesNeg || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-passivePos"){ if(!c) return; c.passivesPos = c.passivesPos || []; c.passivesPos.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-passivePos"){ if(!c) return; c.passivesPos = (c.passivesPos || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="add-goddess"){ if(!c) return; c.goddessTable = c.goddessTable || []; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
-  if(action==="del-goddess"){ if(!c) return; c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(); renderTab(); return; }
+  if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; c.stones.push({id:uid(),color:"",efecto:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-stone"){ if(!c || !canEditChar(c)) return; c.stones = (c.stones || []).filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-summon"){ if(!c || !canEditChar(c)) return; c.summons = (c.summons || []).filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-poison"){ if(!c || !canEditChar(c)) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-poison"){ if(!c || !canEditChar(c)) return; c.poisons = (c.poisons || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = c.passivesNeg || []; c.passivesNeg.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = (c.passivesNeg || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-passivePos"){ if(!c || !canEditChar(c)) return; c.passivesPos = c.passivesPos || []; c.passivesPos.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-passivePos"){ if(!c || !canEditChar(c)) return; c.passivesPos = (c.passivesPos || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = c.goddessTable || []; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="del-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
   if(action==="toggle-bestiary-visibility"){
     if(!isGM()) return;
     var bid = btn.getAttribute("data-id");
@@ -767,7 +772,20 @@ function handleClick(e){
     renderTab();
     return;
   }
-  if(action==="del-bestiary"){ if(!isGM()) return; state.bestiary = state.bestiary.filter(function(b){return b.id!==btn.getAttribute("data-id");}); saveState(true); pushSharedData(); renderTab(); return; }
+  if(action==="del-bestiary"){
+    if(!isGM()) return;
+    var bId = btn.getAttribute("data-id");
+    state.bestiary = (state.bestiary||[]).filter(function(b){ return b.id !== bId; });
+    saveState(true);
+    pushSharedData();
+    if(supabaseClient){
+      supabaseClient.from('bestiary').delete().eq('id', bId).then(function(res){
+        if(res.error) console.warn("Supabase bestiary delete:", res.error);
+      }).catch(function(){});
+    }
+    renderTab();
+    return;
+  }
   if(action==="toggle-lore-visibility"){
     if(!isGM()) return;
     var lcat = btn.getAttribute("data-cat");

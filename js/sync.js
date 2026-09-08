@@ -9,11 +9,15 @@ var isGlobalDirty = false;
 
 function markCharDirty(charId){
   if(!charId) return;
-  dirtyCharIds.add(charId);
-  var target = (state.characters||[]).find(function(x){ return x.id === charId; });
+  var target = (state.characters||[]).find(function(x){ return x.id === charId || x.db_id === charId; });
   if(target){
+    if(!canEditChar(target)){
+      console.warn("markCharDirty ignorado: sin permiso para editar", target.name);
+      return;
+    }
     target._isDirty = true;
     target._lastLocalEdit = Date.now();
+    dirtyCharIds.add(target.id);
   }
 }
 
@@ -24,15 +28,27 @@ function flushPendingSync(){
   }
   if(!supabaseClient || isRemoteSyncing) return;
 
-  var toPush = new Set(dirtyCharIds);
-  (state.characters || []).forEach(function(c){
-    if(c && c._isDirty && c.id) toPush.add(c.id);
+  var toPush = new Set();
+  dirtyCharIds.forEach(function(cid){
+    var c = (state.characters || []).find(function(x){ return x.id === cid || x.db_id === cid; });
+    if(c && canEditChar(c)) toPush.add(c.id);
+    else dirtyCharIds.delete(cid);
   });
 
+  (state.characters || []).forEach(function(c){
+    if(c && c._isDirty && c.id){
+      if(canEditChar(c)) toPush.add(c.id);
+      else {
+        c._isDirty = false;
+        dirtyCharIds.delete(c.id);
+      }
+    }
+  });
+
+  dirtyCharIds.clear();
   toPush.forEach(function(cid){
     pushCharacterById(cid);
   });
-  dirtyCharIds.clear();
 
   if(isGlobalDirty || state._isSharedDirty){
     isGlobalDirty = false;
@@ -42,14 +58,6 @@ function flushPendingSync(){
 }
 
 function saveState(skipRemote){
-  var ac = activeChar();
-  if(ac && ac.id){
-    ac._lastLocalEdit = Date.now();
-    if(!skipRemote){
-      ac._isDirty = true;
-      markCharDirty(ac.id);
-    }
-  }
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if(state.activeId) localStorage.setItem("krysalis_active_id", state.activeId);
@@ -57,7 +65,7 @@ function saveState(skipRemote){
   }catch(e){
     console.error("Error al guardar en localStorage:", e);
   }
-  if(!skipRemote && supabaseClient){
+  if(!skipRemote && supabaseClient && (dirtyCharIds.size > 0 || isGlobalDirty || state._isSharedDirty)){
     updateSyncBadge("saving");
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){

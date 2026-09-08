@@ -113,54 +113,45 @@ function tplMundoBuffs(s){
 async function pullSharedDataFromSupabase(){
   if(!supabaseClient) return;
   try{
-    var hasNormalized = false;
-    try{
-      var wRes = await supabaseClient.from('weapons_catalog').select('*');
-      var bRes = await supabaseClient.from('bestiary').select('*');
-      var bufRes = await supabaseClient.from('buff_catalog').select('*');
-      if(wRes.data && wRes.data.length){
-        state.weaponsCatalog = wRes.data;
-        hasNormalized = true;
-      }
-      if(bRes.data && bRes.data.length){
-        state.bestiary = bRes.data.map(function(b){
-          return {
-            id: b.id,
-            nombre: b.nombre,
-            tipo: b.tipo,
-            continente: b.continente,
-            rareza: b.rareza,
-            montable: b.montable,
-            absorcion: b.absorcion,
-            defensa: b.defensa,
-            movilidad: b.movilidad,
-            notas: b.notas,
-            habilidades: b.habilidades,
-            visible: b.visible,
-            image: b.image_url
-          };
-        });
-        hasNormalized = true;
-      }
-      if(bufRes.data && bufRes.data.length){
-        state.buffCatalog = bufRes.data;
-        hasNormalized = true;
-      }
-    }catch(errNorm){}
-
     var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'world_compendium').maybeSingle();
     if(res.data && res.data.data){
       var comp = res.data.data;
-      if(!hasNormalized){
-        if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
-        if(comp.bestiary) state.bestiary = comp.bestiary;
-        if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
-      }
+      if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
+      if(comp.bestiary) state.bestiary = comp.bestiary;
+      if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
       if(comp.lore) state.lore = comp.lore;
       if(comp.quests) state.quests = comp.quests;
       if(comp.questClues) state.questClues = comp.questClues;
       if(comp.questMap) state.questMap = comp.questMap;
       if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
+    } else {
+      // Fallback secundario si aún no existe el documento world_compendium
+      try{
+        var wRes = await supabaseClient.from('weapons_catalog').select('*');
+        var bRes = await supabaseClient.from('bestiary').select('*');
+        var bufRes = await supabaseClient.from('buff_catalog').select('*');
+        if(wRes.data && wRes.data.length) state.weaponsCatalog = wRes.data;
+        if(bRes.data && bRes.data.length){
+          state.bestiary = bRes.data.map(function(b){
+            return {
+              id: b.id,
+              nombre: b.nombre,
+              tipo: b.tipo,
+              continente: b.continente,
+              rareza: b.rareza,
+              montable: b.montable,
+              absorcion: b.absorcion,
+              defensa: b.defensa,
+              movilidad: b.movilidad,
+              notas: b.notas,
+              habilidades: b.habilidades,
+              visible: b.visible,
+              image: b.image_url
+            };
+          });
+        }
+        if(bufRes.data && bufRes.data.length) state.buffCatalog = bufRes.data;
+      }catch(errNorm){}
     }
     saveState(true);
     if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){

@@ -40,11 +40,20 @@ function isCharOwner(c, user){
     });
     if(isMember) return true;
   }
+  if(user.email && c.name){
+    var emailPrefix = user.email.split("@")[0].toLowerCase().trim();
+    var cName = c.name.toLowerCase().trim();
+    if(emailPrefix === cName || emailPrefix.includes(cName) || cName.includes(emailPrefix)) return true;
+  }
   return false;
 }
 
 function canEditChar(c){
-  return !!c;
+  if(!c) return false;
+  if(!currentUser) return true;
+  if(isGM()) return true;
+  if(c.isNPC) return false;
+  return isCharOwner(c, currentUser);
 }
 
 function getUserCharacters(){

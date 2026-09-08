@@ -92,12 +92,14 @@ function broadcastCharStatUpdate(charId, combatObj){
 
 function handleRemoteCharStatUpdate(data){
   if(!data || !data.charId) return;
-  var target = (state.characters||[]).find(function(x){ return x.id === data.charId; });
+  var target = (state.characters||[]).find(function(x){ return x.id === data.charId || x.db_id === data.charId; });
   if(target){
-    if(target._isDirty || dirtyCharIds.has(target.id) || (target._lastLocalEdit && Date.now() - target._lastLocalEdit < 3500)) return;
+    if(canEditChar(target) && target._lastLocalEdit && Date.now() - target._lastLocalEdit < 1500) return;
     if(data.combat) target.combat = Object.assign(target.combat||{}, data.combat);
+    target._isDirty = false;
+    dirtyCharIds.delete(target.id);
     saveState(true);
-    if(state.activeId === data.charId){
+    if(state.activeId === data.charId || state.activeId === target.id){
       renderTopbar();
       if((state.activeTab==="combate" || state.activeTab==="magia") && (!document.activeElement || !document.activeElement.matches("input, textarea"))){
         renderTab();
@@ -111,6 +113,12 @@ function handleRemoteCharacterChange(payload){
   if(payload.eventType === 'DELETE'){
     var delId = payload.old ? payload.old.id : null;
     if(delId){
+      dirtyCharIds.delete(delId);
+      var removed = (state.characters||[]).filter(function(x){ return x.db_id === delId || x.id === delId; });
+      removed.forEach(function(r){
+        dirtyCharIds.delete(r.id);
+        if(r.db_id) dirtyCharIds.delete(r.db_id);
+      });
       state.characters = (state.characters||[]).filter(function(x){ return x.db_id !== delId && x.id !== delId; });
       if(!state.characters.length) state.characters.push(blankCharacter("Sin Personaje"));
       if(!state.characters.some(function(x){return x.id===state.activeId;})){
@@ -125,18 +133,25 @@ function handleRemoteCharacterChange(payload){
     if(row && row.data){
       var c = row.data;
       c.db_id = row.id;
+      c._isDirty = false;
+      c._serverUpdatedAt = row.updated_at ? new Date(row.updated_at).getTime() : Date.now();
       if(row.owner_id) c.owner_id = row.owner_id;
       var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id || (x.name && c.name && x.name.trim().toLowerCase() === c.name.trim().toLowerCase()); });
       if(idx !== -1){
         var localChar = state.characters[idx];
-        if(localChar._isDirty || dirtyCharIds.has(localChar.id) || (localChar._lastLocalEdit && Date.now() - localChar._lastLocalEdit < 1200)){
+        var hasActiveLocalEdit = canEditChar(localChar) && (dirtyCharIds.has(localChar.id) || (localChar._lastLocalEdit && Date.now() - localChar._lastLocalEdit < 1500));
+        if(hasActiveLocalEdit && localChar._lastLocalEdit && localChar._lastLocalEdit > c._serverUpdatedAt){
           return;
         }
         if(localChar.id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
           c.personalNotes = localChar.personalNotes;
         }
+        dirtyCharIds.delete(localChar.id);
+        if(localChar.db_id) dirtyCharIds.delete(localChar.db_id);
         state.characters[idx] = ensureCharDefaults(c);
       } else {
+        dirtyCharIds.delete(c.id);
+        if(c.db_id) dirtyCharIds.delete(c.db_id);
         state.characters.push(ensureCharDefaults(c));
       }
       if(!state.activeId) state.activeId = c.id;
