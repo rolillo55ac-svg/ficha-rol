@@ -1356,6 +1356,9 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .training-name-wrap {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .training-name-input {
   width: 100%;
@@ -1373,6 +1376,33 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .training-name-input:focus {
   border-color: var(--gold);
   background: rgba(176,141,87,0.04);
+}
+.training-cat-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(176,141,87,0.2);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  width: fit-content;
+  max-width: 240px;
+}
+.training-cat-icon {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+.training-cat-input {
+  background: transparent;
+  border: none;
+  color: var(--gold-light);
+  font-size: 0.76rem;
+  font-weight: 600;
+  outline: none;
+  width: 140px;
+}
+.training-cat-input:focus {
+  color: #fff;
 }
 .training-header-right {
   display: flex;
@@ -1472,10 +1502,59 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   color: #d6a2e8;
   border: 1px solid rgba(155, 89, 182, 0.4);
 }
+.training-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 .training-roll-btn {
   font-size: 0.82rem;
   padding: 6px 14px;
   font-weight: 700;
+}
+.training-manual-group {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  gap: 4px;
+}
+.training-manual-input {
+  width: 55px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(176,141,87,0.25);
+  border-radius: 4px;
+  color: var(--gold-light);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 6px;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.training-manual-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 6px rgba(176,141,87,0.3);
+}
+.training-manual-btn {
+  font-size: 0.74rem;
+  padding: 4px 8px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(176,141,87,0.12);
+  border: 1px solid rgba(176,141,87,0.3);
+  color: var(--gold-light);
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+.training-manual-btn:hover {
+  background: rgba(176,141,87,0.25);
+  border-color: var(--gold);
+  color: #fff;
 }
 
 .training-history-section {

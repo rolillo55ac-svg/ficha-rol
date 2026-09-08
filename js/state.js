@@ -118,6 +118,7 @@ function ensureCharDefaults(c){
   c.trainings.forEach(function(tr){
     if(!tr.id) tr.id = uid();
     if(!tr.name) tr.name = "Nuevo Entrenamiento";
+    if(!tr.category) tr.category = "General";
     if(!tr.type) tr.type = "existing";
     if(tr.sides === undefined) tr.sides = tr.type === "new" ? 20 : 10;
     if(!Array.isArray(tr.rolls)) tr.rolls = [];

@@ -802,6 +802,88 @@ function handleClick(e){
     renderTab();
     return;
   }
+  if(action==="add-manual-training-roll"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(!tr) return;
+
+    var input = document.querySelector('input[data-manual-for="' + trId + '"]');
+    if(!input) return;
+
+    var val = parseInt(input.value, 10);
+    var sides = tr.type === "new" ? 20 : 10;
+    tr.sides = sides;
+
+    if(isNaN(val) || val < 1 || val > sides){
+      showToast("Por favor, introduce un número válido entre 1 y " + sides + " (d" + sides + ")", "warning");
+      input.focus();
+      return;
+    }
+
+    var delta = 0;
+    var isCrit = false;
+    var isFumble = false;
+
+    if(val === 1){
+      delta = -5;
+      isFumble = true;
+    } else if(val === sides){
+      delta = 5;
+      isCrit = true;
+    } else if(val >= 11 && val <= 19){
+      delta = 3;
+    } else if(val >= 2 && val <= 10){
+      delta = 1;
+    }
+
+    tr.rolls = tr.rolls || [];
+    var rollEntry = {
+      id: uid(),
+      roll: val,
+      sides: sides,
+      pts: delta,
+      manual: true,
+      ts: Date.now()
+    };
+    tr.rolls.push(rollEntry);
+    tr.points = tr.rolls.reduce(function(sum, r){ return sum + (r.pts || 0); }, 0);
+
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id);
+    saveState(false);
+
+    var ptsText = (delta >= 0 ? "+" + delta : delta) + " pto" + (Math.abs(delta) === 1 ? "" : "s");
+    showToast("Tirada manual registrada: " + val + " en d" + sides + " (" + ptsText + ")", isCrit ? "success" : (isFumble ? "error" : "info"));
+
+    if(isCrit) playDiceAudio("crit");
+    else if(isFumble) playDiceAudio("fumble");
+    else playDiceAudio("roll");
+
+    state.rollLog.unshift({
+      id: uid(),
+      charName: c.name || "Aventurero",
+      label: "🥋 Entrenar (Manual): " + (tr.name || "Habilidad") + " (d" + sides + ")",
+      total: val,
+      formulaText: "Esfuerzo: " + ptsText,
+      ts: Date.now()
+    });
+    if(state.rollLog.length > 20) state.rollLog.length = 20;
+
+    broadcastDiceRoll({
+      id: uid(),
+      charName: c.name || "Aventurero",
+      label: "🥋 Entrenar (Manual): " + (tr.name || "Habilidad") + " (d" + sides + ")",
+      total: val,
+      formulaText: "Esfuerzo: " + ptsText,
+      isCrit: isCrit,
+      isFumble: isFumble,
+      ts: Date.now()
+    });
+
+    renderTab();
+    return;
+  }
   if(action==="undo-training-roll"){
     if(!c || !canEditChar(c)) return;
     var trId = btn.getAttribute("data-training-id");
@@ -1235,6 +1317,15 @@ function handleClick(e){
   if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
   if(action==="reroll-last-dice"){ if(typeof lastRollFn==="function") lastRollFn(); return; }
+}
+
+function handleKeyDown(e){
+  if(e.key === "Enter" && e.target && e.target.matches("input[data-manual-for]")){
+    e.preventDefault();
+    var trId = e.target.getAttribute("data-manual-for");
+    var btn = document.querySelector('button[data-action="add-manual-training-roll"][data-id="' + trId + '"]');
+    if(btn) btn.click();
+  }
 }
 
 var pendingBestiaryId = null;

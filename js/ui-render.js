@@ -309,11 +309,23 @@ function tplEntrenamiento(c){
   var html = '<div class="section'+(c.isNPC?' gm-section':'')+'">';
   html += '<div class="section-title"><span>Sistema de Entrenamiento y Progresión por Esfuerzo</span></div>';
 
+  html += '<datalist id="training-cats-list">'+
+    '<option value="Magia">'+
+    '<option value="Invocación">'+
+    '<option value="Atributo">'+
+    '<option value="Alquimia">'+
+    '<option value="Pasiva">'+
+    '<option value="Mejora de Vida">'+
+    '<option value="Combate">'+
+    '<option value="Supervivencia">'+
+    '<option value="General">'+
+  '</datalist>';
+
   html += '<div class="training-info-card">'+
     '<div class="training-info-title">🥋 Reglas de Esfuerzo y Práctica</div>'+
     '<div class="training-info-grid">'+
       '<div class="training-info-item"><span class="die-tag-info d10">d10</span> <div><b>Habilidad Existente:</b> Práctica y perfeccionamiento de habilidades conocidas.</div></div>'+
-      '<div class="training-info-item"><span class="die-tag-info d20">d20</span> <div><b>Habilidad Nueva / Desbloqueo:</b> Aprendizaje y desarrollo de nuevas disciplinas.</div></div>'+
+      '<div class="training-info-item"><span class="die-tag-info d20">d20</span> <div><b>Desbloqueo / Nueva Disciplina:</b> Aprendizaje y desarrollo de nuevas disciplinas.</div></div>'+
     '</div>'+
     '<div class="training-rules-bar">'+
       '<div class="rule-chip fumble"><b>Resultado 1:</b> -5 pts (Pifia)</div>'+
@@ -342,11 +354,16 @@ function tplEntrenamiento(c){
       var sides = isNew ? 20 : 10;
       var points = num(t.points, 0);
       var rolls = t.rolls || [];
+      var category = t.category || "General";
 
       html += '<div class="training-card" data-id="'+t.id+'">'+
         '<div class="training-card-header">'+
           '<div class="training-name-wrap">'+
-            '<input type="text" class="training-name-input" data-bind="trainings.'+t.id+'.name" value="'+esc(t.name)+'" placeholder="Nombre del entrenamiento (ej: Entrenar Veneno X)..." '+(canEdit?'':'readonly')+'>'+
+            '<input type="text" class="training-name-input" data-bind="trainings.'+t.id+'.name" value="'+esc(t.name)+'" placeholder="Nombre del Entrenamiento (ej: Veneno del Sueño)..." '+(canEdit?'':'readonly')+'>'+
+            '<div class="training-cat-wrap">'+
+              '<span class="training-cat-icon">🏷️</span>'+
+              '<input type="text" list="training-cats-list" class="training-cat-input" data-bind="trainings.'+t.id+'.category" value="'+esc(category)+'" placeholder="Categoría / Tipo..." '+(canEdit?'':'readonly')+'>'+
+            '</div>'+
           '</div>'+
           '<div class="training-header-right">'+
             '<div class="training-points-badge" title="Puntos acumulados de esfuerzo">'+
@@ -362,17 +379,25 @@ function tplEntrenamiento(c){
               '<span>Habilidad Existente</span> <span class="die-tag d10">d10</span>'+
             '</button>'+
             '<button type="button" class="training-type-btn'+(isNew?' active':'')+'" data-action="set-training-type" data-id="'+t.id+'" data-type="new" '+(canEdit?'':'disabled')+'>'+
-              '<span>Habilidad Nueva / Desbloqueo</span> <span class="die-tag d20">d20</span>'+
+              '<span>Desbloqueo / Nueva Disciplina</span> <span class="die-tag d20">d20</span>'+
             '</button>'+
           '</div>'+
-          (canEdit ? '<button class="btn-solid-gold training-roll-btn" data-action="roll-training" data-id="'+t.id+'">🎲 Lanzar Tirada ('+(isNew?'d20':'d10')+')</button>' : '')+
+          (canEdit ? (
+            '<div class="training-record-actions">'+
+              '<button class="btn-solid-gold training-roll-btn" data-action="roll-training" data-id="'+t.id+'">🎲 Tirada Automática (d'+sides+')</button>'+
+              '<div class="training-manual-group">'+
+                '<input type="number" min="1" max="'+sides+'" class="training-manual-input" data-manual-for="'+t.id+'" placeholder="1-'+sides+'" title="Resultado de dado físico (1 a '+sides+')">'+
+                '<button type="button" class="btn-compact training-manual-btn" data-action="add-manual-training-roll" data-id="'+t.id+'" title="Añadir tirada física">✍️ Añadir manual</button>'+
+              '</div>'+
+            '</div>'
+          ) : '')+
         '</div>'+
         '<div class="training-history-section">'+
           '<div class="training-history-title">'+
             '<span>Historial de Tiradas ('+rolls.length+')</span>'+
           '</div>'+
           '<div class="training-chips-track">'+
-            (rolls.length === 0 ? '<div class="training-chips-empty">Aún no hay tiradas registradas. Haz clic en "Lanzar Tirada" para registrar tu primer esfuerzo.</div>' :
+            (rolls.length === 0 ? '<div class="training-chips-empty">Aún no hay tiradas registradas. ¡Lanza o introduce el dado para progresar!</div>' :
               rolls.slice().reverse().map(function(r){
                 var chipClass = "normal";
                 if(r.roll === 1) chipClass = "fumble";
@@ -382,13 +407,13 @@ function tplEntrenamiento(c){
                 var sign = r.pts > 0 ? "+" : "";
                 var timeStr = r.ts ? new Date(r.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
 
-                return '<div class="training-chip '+chipClass+'" title="Tirada: '+r.roll+' en d'+r.sides+(timeStr?' ('+timeStr+')':'')+'">'+
+                return '<div class="training-chip '+chipClass+'" title="Tirada: '+r.roll+' en d'+r.sides+(r.manual?' (Manual)':'')+(timeStr?' ['+timeStr+']':'')+'">'+
                   '<div class="chip-main">'+
                     '<span class="chip-roll-val">'+r.roll+'</span>'+
-                    '<span class="chip-die-val">d'+r.sides+'</span>'+
+                    '<span class="chip-die-val">d'+r.sides+(r.manual?' ✍️':'')+'</span>'+
                   '</div>'+
                   '<div class="chip-pts-val">'+sign+r.pts+' pt'+(Math.abs(r.pts)===1?'':'s')+'</div>'+
-                  (canEdit ? '<button class="chip-undo-btn" data-action="undo-training-roll" data-training-id="'+t.id+'" data-roll-id="'+r.id+'" title="Deshacer tirada">×</button>' : '')+
+                  (canEdit ? '<button class="chip-undo-btn" data-action="undo-training-roll" data-training-id="'+t.id+'" data-roll-id="'+r.id+'" title="Borrar tirada">✕</button>' : '')+
                 '</div>';
               }).join('')
             )+

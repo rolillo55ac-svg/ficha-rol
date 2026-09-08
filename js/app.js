@@ -53,6 +53,7 @@ function init(){
     safeListen("main", "click", handleClick);
     safeListen("main", "change", handleChange);
     safeListen("main", "input", handleChange);
+    safeListen("main", "keydown", handleKeyDown);
     
     if(typeof document.addEventListener === "function"){
       document.addEventListener("touchstart", handleTouchStart, {passive: true});
