@@ -1235,1002 +1235,302 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 
 /* ==========================================================================
-   SISTEMA DE ENTRENAMIENTO Y PROGRESIÓN POR ESFUERZO (BG3 / D&D BEYOND AESTHETIC)
+   SISTEMA DE ENTRENAMIENTO Y PROGRESIÓN (ULTRA-COMPACTO Y MÓVIL)
    ========================================================================== */
 
-/* Contenedor principal de la sección */
-.bg3-training-section {
-  position: relative;
-}
-
-/* Banner de Cabecera Épica estilo Baldur's Gate 3 */
-.bg3-header-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: linear-gradient(135deg, rgba(38, 25, 17, 0.96) 0%, rgba(20, 13, 9, 0.98) 100%);
-  border: 1px solid rgba(176, 141, 87, 0.45);
-  border-radius: var(--radius);
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(222, 195, 146, 0.2), inset 0 0 24px rgba(176, 141, 87, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-.bg3-header-banner::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(222, 195, 146, 0.6), rgba(176, 141, 87, 0.9), rgba(222, 195, 146, 0.6), transparent);
-}
-.bg3-header-emblem {
-  font-size: 2.2rem;
-  line-height: 1;
-  filter: drop-shadow(0 0 10px rgba(222, 195, 146, 0.4));
-  flex: 0 0 auto;
-}
-.bg3-header-text {
-  flex: 1;
-}
-.bg3-header-title {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--gold-light);
-  letter-spacing: 0.03em;
-  margin: 0 0 4px 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 12px rgba(176, 141, 87, 0.25);
-}
-.bg3-header-subtitle {
-  font-size: 0.82rem;
-  color: var(--ink-dim);
-  line-height: 1.4;
-  margin: 0;
-}
-.bg3-new-btn {
-  white-space: nowrap;
-  font-size: 0.88rem;
-  padding: 8px 18px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 12px rgba(176, 141, 87, 0.3);
-  flex: 0 0 auto;
-}
-@media (max-width: 680px) {
-  .bg3-header-banner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .bg3-new-btn {
-    width: 100%;
-    text-align: center;
-  }
-}
-
-/* Compendio y Guía de Modalidades */
-.bg3-guide-card {
-  background: linear-gradient(145deg, rgba(26, 17, 12, 0.95), rgba(16, 10, 7, 0.95));
-  border: 1px solid rgba(176, 141, 87, 0.25);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: 18px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 0 14px rgba(176, 141, 87, 0.05);
-}
-.bg3-guide-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--gold-light);
-  margin-bottom: 10px;
-  letter-spacing: 0.02em;
-}
-.bg3-guide-icon {
-  font-size: 1rem;
-}
-.bg3-guide-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 8px;
+/* Línea sutil de reglas */
+.tr-rules-hint {
+  font-size: 0.74rem;
+  color: var(--ink-faint);
   margin-bottom: 12px;
-}
-.bg3-guide-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 0.78rem;
-  color: var(--ink-dim);
-  background: rgba(0, 0, 0, 0.28);
-  padding: 8px 10px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.25);
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(176, 141, 87, 0.12);
+  border: 1px solid var(--line);
   line-height: 1.35;
 }
-.bg3-guide-item b {
-  color: var(--ink);
-}
-
-.die-tag-info {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  flex: 0 0 auto;
-}
-.die-tag-info.d10 {
-  background: rgba(52, 152, 219, 0.25);
-  color: #74b9ff;
-  border: 1px solid rgba(52, 152, 219, 0.45);
-  box-shadow: 0 0 6px rgba(52, 152, 219, 0.2);
-}
-.die-tag-info.d20 {
-  background: rgba(155, 89, 182, 0.25);
-  color: #d6a2e8;
-  border: 1px solid rgba(155, 89, 182, 0.45);
-  box-shadow: 0 0 6px rgba(155, 89, 182, 0.2);
-}
-.die-tag-info.meta {
-  background: rgba(230, 126, 34, 0.25);
-  color: #f39c12;
-  border: 1px solid rgba(230, 126, 34, 0.45);
-  box-shadow: 0 0 6px rgba(230, 126, 34, 0.2);
-}
-.die-tag-info.link {
-  background: rgba(61, 110, 96, 0.3);
-  color: var(--teal-light);
-  border: 1px solid rgba(61, 110, 96, 0.5);
-  box-shadow: 0 0 6px rgba(61, 110, 96, 0.2);
-}
-
-.training-rules-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(176, 141, 87, 0.2);
-}
-.rule-chip {
-  font-size: 0.72rem;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-family: var(--font-sans);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.rule-chip.fumble {
-  background: rgba(231, 76, 60, 0.15);
-  color: #ff7675;
-  border: 1px solid rgba(231, 76, 60, 0.35);
-}
-.rule-chip.normal {
-  background: rgba(176, 141, 87, 0.12);
+.tr-rules-hint b {
   color: var(--gold-light);
-  border: 1px solid rgba(176, 141, 87, 0.25);
 }
-.rule-chip.great {
-  background: rgba(26, 188, 156, 0.15);
-  color: #2ecc71;
-  border: 1px solid rgba(26, 188, 156, 0.35);
-}
-.rule-chip.crit {
-  background: rgba(241, 196, 15, 0.18);
-  color: #f9ca24;
-  border: 1px solid rgba(241, 196, 15, 0.45);
-  box-shadow: 0 0 8px rgba(241, 196, 15, 0.18);
-}
-.rule-chip.free {
-  background: rgba(52, 152, 219, 0.15);
-  color: #74b9ff;
-  border: 1px solid rgba(52, 152, 219, 0.35);
+.tr-rules-hint i {
+  color: var(--ink-dim);
 }
 
 /* Estado Vacío */
-.training-empty-state {
+.tr-empty-state {
   text-align: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, rgba(22, 15, 10, 0.8), rgba(14, 9, 6, 0.8));
-  border: 1.5px dashed rgba(176, 141, 87, 0.35);
+  padding: 24px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--line);
   border-radius: var(--radius);
-  margin-bottom: 20px;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
 }
 
-/* Tarjeta Épica de Entrenamiento (Estilo BG3 / D&D Beyond) */
-.bg3-card {
-  background: linear-gradient(160deg, rgba(28, 19, 13, 0.98) 0%, rgba(15, 10, 7, 0.99) 100%);
-  border: 1.5px solid rgba(176, 141, 87, 0.35);
-  border-radius: 12px;
-  padding: 16px 18px;
-  margin-bottom: 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(222, 195, 146, 0.12), inset 0 0 20px rgba(176, 141, 87, 0.04);
-  position: relative;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-.bg3-card:hover {
-  border-color: rgba(176, 141, 87, 0.55);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 12px rgba(176, 141, 87, 0.18);
-}
-
-/* Barra Superior de la Tarjeta */
-.bg3-card-topbar {
+/* Tarjeta Ultra-Compacta por Entrenamiento */
+.tr-compact-card {
+  background: linear-gradient(145deg, rgba(28, 18, 13, 0.95), rgba(16, 10, 7, 0.95));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-.bg3-cat-select-wrap {
-  display: inline-flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(176, 141, 87, 0.35);
-  border-radius: 8px;
-  padding: 4px 10px;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   transition: border-color var(--transition-fast);
 }
-.bg3-cat-select-wrap:hover {
-  border-color: var(--gold);
+.tr-compact-card:hover {
+  border-color: rgba(176, 141, 87, 0.45);
 }
-.bg3-cat-icon {
-  font-size: 1rem;
-  line-height: 1;
+
+/* Fila Superior: Categoría, Nombre, Dado d10/d20, Puntos y Borrar */
+.tr-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-.bg3-cat-select {
-  background: transparent;
-  border: none;
+.tr-cat-select {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--gold-light);
-  font-size: 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
   font-weight: 700;
-  font-family: var(--font-display);
+  padding: 4px 6px;
   outline: none;
   cursor: pointer;
-  padding: 2px 4px;
+  flex: 0 0 auto;
+  max-width: 140px;
 }
-.bg3-cat-select option {
+.tr-cat-select option {
   background: #19110b;
   color: var(--ink);
-  font-family: var(--font-body);
-  padding: 6px 10px;
 }
-.bg3-card-top-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.bg3-badge-pill {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 3px 8px;
-  border-radius: 20px;
-  text-transform: uppercase;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(176, 141, 87, 0.3);
-  color: var(--gold-light);
-}
-.bg3-badge-pill.skill {
-  border-color: rgba(52, 152, 219, 0.5);
-  color: #74b9ff;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.25);
-}
-.bg3-badge-pill.unlock {
-  border-color: rgba(155, 89, 182, 0.5);
-  color: #d6a2e8;
-  box-shadow: 0 0 8px rgba(155, 89, 182, 0.25);
-}
-.bg3-badge-pill.combat {
-  border-color: rgba(230, 126, 34, 0.6);
-  color: #f39c12;
-  box-shadow: 0 0 8px rgba(230, 126, 34, 0.25);
-}
-.bg3-badge-pill.spell_summon {
-  border-color: rgba(61, 110, 96, 0.6);
-  color: var(--teal-light);
-  box-shadow: 0 0 8px rgba(61, 110, 96, 0.25);
-}
-.bg3-badge-pill.narrative {
-  border-color: rgba(243, 156, 18, 0.6);
-  color: #f1c40f;
-  box-shadow: 0 0 8px rgba(243, 156, 18, 0.25);
-}
-
-.bg3-del-btn {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #ff7675;
-  border-radius: 6px;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all var(--transition-fast);
-}
-.bg3-del-btn:hover {
-  background: rgba(231, 76, 60, 0.25);
-  border-color: #e74c3c;
-  color: #fff;
-  transform: scale(1.08);
-}
-
-/* Fila de Título y Puntuación Acumulada */
-.bg3-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-.bg3-title-input {
+.tr-name-input {
   flex: 1;
-  background: transparent;
-  border: none;
-  border-bottom: 1.5px solid rgba(176, 141, 87, 0.25);
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--gold-light);
-  padding: 4px 2px;
-  outline: none;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-.bg3-title-input:focus {
-  border-color: var(--gold);
-  background: rgba(176, 141, 87, 0.05);
-  text-shadow: 0 0 10px rgba(222, 195, 146, 0.35);
-}
-
-/* Medallón de Puntuación de Esfuerzo (Estilo BG3) */
-.bg3-points-display {
-  background: radial-gradient(circle at 50% 30%, rgba(46, 31, 19, 0.95), rgba(18, 12, 8, 0.98));
-  border: 1.5px solid var(--gold);
-  border-radius: 8px;
-  padding: 5px 14px;
-  text-align: center;
-  min-width: 100px;
-  box-shadow: 0 0 14px rgba(176, 141, 87, 0.22), inset 0 0 10px rgba(0, 0, 0, 0.85);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-.pts-val-combat, .pts-val-mystery {
-  font-family: var(--font-mono);
-  font-size: 1.22rem;
-  font-weight: 700;
-  color: var(--gold-light);
-  line-height: 1.1;
-  text-shadow: 0 0 10px rgba(222, 195, 146, 0.5);
-}
-.pts-val-combat .cur {
-  color: #fff;
-}
-.pts-val-combat .sep {
-  color: var(--ink-faint);
-  margin: 0 2px;
-}
-.pts-val-combat .max {
-  color: var(--gold-light);
-}
-.pts-val-combat .unit, .pts-val-mystery .unit {
-  font-size: 0.62rem;
-  color: var(--ink-dim);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-.pts-label-sub {
-  font-size: 0.54rem;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  color: var(--ink-faint);
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-
-/* ==========================================================================
-   MÓDULOS DINÁMICOS POR CATEGORÍA
-   ========================================================================== */
-
-/* 1. MÓDULO DE COMBATE / ATRIBUTO */
-.bg3-combat-module {
-  background: rgba(0, 0, 0, 0.32);
-  border: 1px solid rgba(176, 141, 87, 0.22);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
-}
-.bg3-combat-inputs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-.bg3-field-inline {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: var(--ink-dim);
-}
-.bg3-field-inline label {
-  font-weight: 600;
-}
-.bg3-combat-stat-input {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(176, 141, 87, 0.3);
-  border-radius: 5px;
-  color: var(--gold-light);
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 4px 10px;
-  width: 140px;
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-.bg3-combat-stat-input:focus {
-  border-color: var(--gold);
-}
-.bg3-combat-goal-input {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(176, 141, 87, 0.3);
-  border-radius: 5px;
-  color: var(--gold-light);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  width: 65px;
-  text-align: center;
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-.bg3-combat-goal-input:focus {
-  border-color: var(--gold);
-}
-
-.bg3-progress-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.bg3-progress-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-}
-.bg3-progress-info .stat-name {
-  color: var(--gold-light);
-}
-.bg3-progress-info .stat-calc {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--ink-dim);
-}
-
-/* Barra de Progreso Oro / Arcana */
-.bg3-progress-track {
-  height: 12px;
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(176, 141, 87, 0.4);
-  border-radius: 6px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
-}
-.bg3-progress-track.small {
-  height: 8px;
-}
-.bg3-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #b08d57 0%, #e67e22 50%, #f1c40f 100%);
-  border-radius: 5px;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-.bg3-progress-fill.gold {
-  background: linear-gradient(90deg, #b08d57, #f1c40f);
-}
-.bg3-progress-fill::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
-  animation: barShimmer 2.2s infinite;
-}
-@keyframes barShimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-.bg3-progress-glow {
-  position: absolute;
-  top: -2px;
-  bottom: -2px;
-  width: 4px;
-  background: #fff;
-  box-shadow: 0 0 10px #f1c40f, 0 0 18px #e67e22;
-  border-radius: 3px;
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-.bg3-progress-footer {
-  margin-top: 4px;
-  font-size: 0.76rem;
-  text-align: right;
-}
-.bg3-meta-reached {
-  color: #2ecc71;
-  font-weight: 700;
-  text-shadow: 0 0 8px rgba(46, 204, 113, 0.4);
-}
-.bg3-meta-pending {
-  color: var(--ink-dim);
-}
-.bg3-meta-pending b {
-  color: var(--gold-light);
-}
-
-/* 2. MÓDULO DE HECHIZO / INVOCACIÓN */
-.bg3-spell-module {
-  background: rgba(16, 35, 30, 0.35);
-  border: 1px solid rgba(61, 110, 96, 0.4);
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 14px;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
-}
-.bg3-spell-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--teal-light);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.bg3-linked-select {
-  width: 100%;
-  background: rgba(10, 20, 18, 0.85);
-  border: 1px solid rgba(61, 110, 96, 0.5);
-  border-radius: 6px;
-  color: var(--ink);
-  font-size: 0.84rem;
-  padding: 6px 10px;
-  outline: none;
-  cursor: pointer;
-}
-.bg3-linked-select optgroup {
-  background: #0d1a16;
-  color: var(--teal-light);
-  font-weight: 700;
-}
-.bg3-linked-select option {
-  background: #122420;
-  color: var(--ink);
-  padding: 4px 8px;
-}
-
-/* 3. MÓDULO DE LORE Y DESCUBRIMIENTO NARRATIVO */
-.bg3-narrative-module {
-  background: rgba(30, 22, 14, 0.38);
-  border: 1px solid rgba(176, 141, 87, 0.28);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
-}
-.bg3-narrative-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-.narr-pct-bar-wrap {
-  flex: 1;
-  min-width: 180px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.narr-pct-label {
-  font-size: 0.76rem;
-  color: var(--ink-dim);
-}
-.narr-pct-label b {
-  color: var(--gold-light);
-}
-.bg3-add-milestone-btn {
-  font-size: 0.76rem;
-  padding: 4px 10px;
-}
-.bg3-milestones-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-.bg3-empty-milestones {
-  font-size: 0.78rem;
-  color: var(--ink-faint);
-  font-style: italic;
-  padding: 8px 0;
-  text-align: center;
-}
-.bg3-milestone-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  min-width: 130px;
   background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(176, 141, 87, 0.2);
-  border-radius: 6px;
-  padding: 5px 8px;
-  transition: all var(--transition-fast);
-}
-.bg3-milestone-item.done {
-  border-color: rgba(46, 204, 113, 0.35);
-  background: rgba(15, 30, 20, 0.35);
-}
-.bg3-milestone-check {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  border: 1.5px solid rgba(176, 141, 87, 0.4);
-  background: rgba(0, 0, 0, 0.5);
-  color: #2ecc71;
-  font-weight: 700;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex: 0 0 auto;
-  transition: all var(--transition-fast);
-}
-.bg3-milestone-check:hover {
-  border-color: var(--gold);
-}
-.bg3-milestone-item.done .bg3-milestone-check {
-  border-color: #2ecc71;
-  background: rgba(46, 204, 113, 0.2);
-}
-.bg3-milestone-text {
-  flex: 1;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   color: var(--ink);
-  font-size: 0.82rem;
-  padding: 2px 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 8px;
   outline: none;
   transition: border-color var(--transition-fast);
 }
-.bg3-milestone-text:focus {
-  border-bottom-color: var(--gold);
-}
-.bg3-milestone-item.done .bg3-milestone-text {
-  text-decoration: line-through;
-  color: var(--ink-faint);
-}
-.bg3-milestone-del {
-  background: none;
-  border: none;
-  color: var(--ink-faint);
-  cursor: pointer;
-  font-size: 0.85rem;
-  padding: 0 4px;
-  transition: color var(--transition-fast);
-}
-.bg3-milestone-del:hover {
-  color: #ff7675;
-}
-
-.bg3-journal-wrap label {
-  display: block;
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--gold-light);
-  margin-bottom: 4px;
-}
-.bg3-journal-textarea {
-  width: 100%;
-  min-height: 65px;
-  background: rgba(14, 10, 7, 0.75);
-  border: 1px solid rgba(176, 141, 87, 0.25);
-  border-radius: 6px;
-  padding: 8px 10px;
-  color: var(--ink);
-  font-size: 0.82rem;
-  line-height: 1.45;
-  resize: vertical;
-  outline: none;
-  font-family: var(--font-body);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-.bg3-journal-textarea:focus {
+.tr-name-input:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 8px rgba(176, 141, 87, 0.25);
+  background: rgba(0, 0, 0, 0.5);
 }
-
-/* ==========================================================================
-   BARRA DE ACCIONES DE TIRADA (AUTOMÁTICA Y MANUAL FÍSICA)
-   ========================================================================== */
-.bg3-action-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid rgba(176, 141, 87, 0.18);
-  margin-top: 6px;
-}
-.bg3-die-controls {
-  display: flex;
-  align-items: center;
-}
-.training-type-toggle {
+.tr-die-toggle {
   display: inline-flex;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 3px;
-  gap: 3px;
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+  flex: 0 0 auto;
 }
-.training-type-btn {
+.tr-die-btn {
   background: transparent;
   border: none;
   color: var(--ink-dim);
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 0.76rem;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   transition: all var(--transition-fast);
 }
-.training-type-btn:hover {
+.tr-die-btn:hover {
   color: var(--ink);
-  background: rgba(176, 141, 87, 0.08);
 }
-.training-type-btn.active {
-  background: rgba(176, 141, 87, 0.22);
+.tr-die-btn.active {
+  background: rgba(176, 141, 87, 0.25);
   color: var(--gold-light);
   border: 1px solid rgba(176, 141, 87, 0.45);
-  box-shadow: 0 0 8px rgba(176, 141, 87, 0.22);
 }
-
-.die-tag {
+.tr-points-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  background: radial-gradient(circle at 50% 30%, rgba(40, 26, 16, 0.95), rgba(16, 11, 7, 0.98));
+  border: 1.5px solid var(--gold);
+  border-radius: 5px;
+  padding: 2px 8px;
+  flex: 0 0 auto;
+  box-shadow: 0 0 6px rgba(176, 141, 87, 0.2);
+}
+.tr-points-val {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--gold-light);
+  line-height: 1.1;
+}
+.tr-points-label {
+  font-size: 0.55rem;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
 }
-.die-tag.d10 {
-  background: rgba(52, 152, 219, 0.25);
-  color: #74b9ff;
-  border: 1px solid rgba(52, 152, 219, 0.4);
-}
-.die-tag.d20 {
-  background: rgba(155, 89, 182, 0.25);
-  color: #d6a2e8;
-  border: 1px solid rgba(155, 89, 182, 0.4);
+.tr-del-btn {
+  flex: 0 0 auto;
+  line-height: 1;
 }
 
-.bg3-roll-actions {
+/* Fila de Controles de Tirada: Automática + Manual Física */
+.tr-controls-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  flex-wrap: nowrap;
 }
-.bg3-roll-auto-btn {
-  font-size: 0.84rem;
-  padding: 7px 16px;
+.tr-roll-btn {
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.tr-roll-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+.tr-manual-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-.bg3-roll-auto-btn:hover {
-  animation: dieShake 0.4s ease-in-out;
-  box-shadow: 0 0 14px rgba(222, 195, 146, 0.4);
-}
-@keyframes dieShake {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-8deg) scale(1.04); }
-  50% { transform: rotate(8deg) scale(1.04); }
-  75% { transform: rotate(-4deg); }
-  100% { transform: rotate(0deg); }
-}
-
-.bg3-manual-input-box {
-  display: inline-flex;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(176, 141, 87, 0.3);
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 2px 4px;
-  gap: 4px;
+  flex: 0 0 auto;
 }
-.bg3-manual-input {
-  width: 58px;
+.tr-manual-input {
+  width: 46px;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(176, 141, 87, 0.25);
   border-radius: 4px;
   color: var(--gold-light);
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 4px 6px;
+  padding: 3px 4px;
   text-align: center;
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast);
 }
-.bg3-manual-input:focus {
+.tr-manual-input:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 6px rgba(176, 141, 87, 0.35);
 }
-.bg3-manual-submit-btn {
-  font-size: 0.76rem;
-  padding: 4px 10px;
-  font-weight: 700;
+.tr-manual-btn {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-/* ==========================================================================
-   HISTORIAL INTERACTIVO DE ESFUERZO (ESTILO BG3 CHIPS)
-   ========================================================================== */
-.bg3-history-section {
-  margin-top: 6px;
-}
-.bg3-history-header {
-  margin-bottom: 6px;
-}
-.bg3-hist-title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-faint);
-}
-.bg3-history-track {
+/* Historial Minimalista en Línea Horizontal */
+.tr-history-row {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 2px 8px 2px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line) transparent;
-  -webkit-overflow-scrolling: touch;
+  align-items: center;
+  min-height: 22px;
+  border-top: 1px dashed rgba(176, 141, 87, 0.15);
+  padding-top: 5px;
 }
-.bg3-history-track::-webkit-scrollbar {
-  height: 4px;
-}
-.bg3-history-track::-webkit-scrollbar-thumb {
-  background: var(--line);
-  border-radius: 4px;
-}
-.bg3-history-empty {
-  font-size: 0.78rem;
+.tr-history-empty {
+  font-size: 0.72rem;
   color: var(--ink-faint);
   font-style: italic;
-  padding: 6px 0;
 }
-
-.bg3-history-chip {
+.tr-chips-shelf {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 1px 0;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+.tr-chips-shelf::-webkit-scrollbar {
+  height: 3px;
+}
+.tr-chips-shelf::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+.tr-mini-chip {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(22, 15, 10, 0.95);
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 4px 9px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  position: relative;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-}
-.bg3-history-chip:hover {
-  transform: translateY(-1px);
-}
-.bg3-history-chip.fumble {
-  border-color: rgba(231, 76, 60, 0.6);
-  background: linear-gradient(135deg, rgba(61, 12, 17, 0.95), rgba(22, 15, 10, 0.95));
-  box-shadow: 0 0 8px rgba(231, 76, 60, 0.3);
-}
-.bg3-history-chip.crit {
-  border-color: rgba(241, 196, 15, 0.7);
-  background: linear-gradient(135deg, rgba(60, 48, 18, 0.95), rgba(22, 15, 10, 0.95));
-  box-shadow: 0 0 10px rgba(241, 196, 15, 0.35);
-}
-.bg3-history-chip.great {
-  border-color: rgba(26, 188, 156, 0.6);
-  background: linear-gradient(135deg, rgba(16, 45, 40, 0.95), rgba(22, 15, 10, 0.95));
-  box-shadow: 0 0 8px rgba(26, 188, 156, 0.3);
-}
-
-.chip-die-side {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;
-}
-.chip-num {
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
   font-family: var(--font-mono);
+  line-height: 1.1;
+}
+.tr-mini-chip .chip-val {
   font-weight: 700;
-  font-size: 0.95rem;
   color: var(--ink);
 }
-.chip-tag {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  color: var(--ink-faint);
-}
-.chip-delta-badge {
-  font-size: 0.7rem;
+.tr-mini-chip .chip-delta {
+  font-size: 0.66rem;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-family: var(--font-mono);
+  padding: 0 3px;
+  border-radius: 2px;
 }
-.bg3-history-chip.crit .chip-delta-badge {
-  background: rgba(241, 196, 15, 0.22);
-  color: #f9ca24;
-}
-.bg3-history-chip.great .chip-delta-badge {
-  background: rgba(26, 188, 156, 0.22);
-  color: #2ecc71;
-}
-.bg3-history-chip.normal .chip-delta-badge {
-  background: rgba(176, 141, 87, 0.18);
+.tr-mini-chip.normal .chip-delta {
   color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.18);
 }
-.bg3-history-chip.fumble .chip-delta-badge {
-  background: rgba(231, 76, 60, 0.22);
+.tr-mini-chip.crit {
+  border-color: rgba(241, 196, 15, 0.55);
+  background: rgba(45, 36, 14, 0.85);
+}
+.tr-mini-chip.crit .chip-delta {
+  color: #f9ca24;
+  background: rgba(241, 196, 15, 0.25);
+}
+.tr-mini-chip.great {
+  border-color: rgba(46, 204, 113, 0.45);
+  background: rgba(14, 35, 25, 0.85);
+}
+.tr-mini-chip.great .chip-delta {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.22);
+}
+.tr-mini-chip.fumble {
+  border-color: rgba(231, 76, 60, 0.55);
+  background: rgba(45, 15, 18, 0.85);
+}
+.tr-mini-chip.fumble .chip-delta {
   color: #ff7675;
+  background: rgba(231, 76, 60, 0.25);
 }
-
-.bg3-chip-del {
+.tr-chip-del {
   background: none;
   border: none;
   color: var(--ink-faint);
   cursor: pointer;
-  font-size: 0.88rem;
+  font-size: 0.75rem;
   line-height: 1;
-  padding: 0 2px;
+  padding: 0 1px;
   opacity: 0.5;
   transition: opacity var(--transition-fast), color var(--transition-fast);
 }
-.bg3-chip-del:hover {
+.tr-chip-del:hover {
   opacity: 1;
   color: #ff7675;
 }
+
 
