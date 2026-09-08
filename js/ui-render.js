@@ -2,8 +2,10 @@ function renderTopbar(){
   var c = activeChar();
   if(document.body) document.body.setAttribute("data-theme", c.theme||"default");
   var curPv = num(c.combat.pvActual, 0);
-  var maxHp = Math.max(1, num(c.combat.pvMax, 1));
-  var maxMana = Math.max(1, num(c.combat.manaMax, 1));
+  var maxHp = getEffectiveMaxHp(c);
+  var maxMana = getEffectiveMaxMana(c);
+  var rawMaxHp = Math.max(1, num(c.combat.pvMax, 1));
+  var isHpDebuffed = maxHp < rawMaxHp;
   var hpPct = curPv <= 0 ? 0 : clamp(Math.round((curPv/maxHp)*100), 0, 100);
   var manaPct = clamp(Math.round((num(c.combat.manaActual,0)/maxMana)*100), 0, 100);
   var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
@@ -13,6 +15,7 @@ function renderTopbar(){
 
   var hpNumsClass = curPv < 0 ? 'gauge-nums dying' : (curPv === 0 ? 'gauge-nums unconscious' : 'gauge-nums');
   var hpStatusBadge = curPv < 0 ? '<span class="status-pill dying">💀 Agonizando ('+curPv+')</span>' : (curPv === 0 ? '<span class="status-pill unconscious">💤 Inconsciente</span>' : '');
+  var hpDebuffBadge = isHpDebuffed ? ' <small style="color:#E88178;font-weight:700;" title="Vida máxima reducida por debuff (Base: '+rawMaxHp+')">⚠️ Reducida de '+rawMaxHp+'</small>' : '';
 
   var crestContent = (c.portrait && c.portrait.trim())
     ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="crest-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="crest-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
@@ -35,7 +38,7 @@ function renderTopbar(){
     '</div>'+
     '<div class="gauges">'+
       '<div class="gauge-wrap">'+
-        '<div class="gauge-label"><span>Vida '+hpStatusBadge+'</span><span class="'+hpNumsClass+'">'+curPv+' / '+maxHp+'</span></div>'+
+        '<div class="gauge-label"><span>Vida '+hpStatusBadge+hpDebuffBadge+'</span><span class="'+hpNumsClass+'">'+curPv+' / '+maxHp+'</span></div>'+
         '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%;'+(curPv<=0?'background:#8C252F;':'')+'"></div></div>'+
         '<div class="gauge-adjust">'+
           '<button data-action="hp-mod" data-delta="-5" aria-label="Restar 5 vida">-5</button><button data-action="hp-mod" data-delta="-1" aria-label="Restar 1 vida">-1</button>'+
@@ -316,82 +319,164 @@ function tplEntrenamiento(c){
 
   var html = '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">';
   
-  html += '<div class="section-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+  html += '<div class="section-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
     '<span>🥋 Entrenamiento y Progresión</span>' +
     (canEdit ? '<button class="btn-compact" data-action="add-training">+ Nuevo Entrenamiento</button>' : '') +
   '</div>';
 
-  html += '<div class="tr-rules-hint">' +
-    '<span>💡 <b>Reglas:</b> 1 = -5 pts · 2-10 = +1 pt · 11-19 = +3 pts · Máx (10/20) = +5 pts <i>(en Lore el 1 no resta)</i>.</span>' +
-  '</div>';
-
   if(c.trainings.length === 0){
-    html += '<div class="tr-empty-state">' +
-      '<p style="color:var(--ink-dim);font-size:0.85rem;margin-bottom:8px;">No hay entrenamientos activos.</p>' +
-      (canEdit ? '<button class="btn-compact" data-action="add-training">+ Añadir Entrenamiento</button>' : '') +
+    html += '<div class="tr-empty-state" style="text-align:center;padding:24px 12px;background:var(--bg-elev);border:1px dashed var(--line);border-radius:var(--radius-sm);margin-bottom:12px;">' +
+      '<p style="color:var(--ink-dim);font-size:0.85rem;margin-bottom:10px;">No hay entrenamientos activos registrados.</p>' +
+      (canEdit ? '<button class="btn-compact" data-action="add-training">+ Añadir Primer Entrenamiento</button>' : '') +
     '</div>';
   } else {
     c.trainings.forEach(function(t){
       var catId = t.category || "skill";
-      var sides = t.sides || (catId === "unlock" ? 20 : 10);
+      var sides = t.sides || (catId === "unlock" || catId === "narrative" ? 20 : 10);
       var points = num(t.points, 0);
       var rolls = t.rolls || [];
+      var isQuantifiable = (catId === "combat" || catId === "skill" || catId === "spell_summon");
+      var targetGoal = num(t.targetGoal, 20);
+      var progressPct = clamp(Math.round((Math.max(0, points) / targetGoal) * 100), 0, 100);
 
-      html += '<div class="tr-compact-card" data-id="' + t.id + '">' +
-        '<div class="tr-header-row">' +
-          '<select class="tr-cat-select" data-action="set-training-category" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + '>' +
-            TRAINING_CATS.map(function(k){
-              return '<option value="' + k.id + '"' + (k.id === catId ? ' selected' : '') + '>' + k.icon + ' ' + k.label + '</option>';
+      // Selector Secundario según categoría
+      var secondaryHtml = '';
+      if(catId === "spell_summon"){
+        secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
+          '<label>Elemento a Mejorar</label>' +
+          '<select class="tr-cat-select" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+            '<option value="">-- Seleccionar Hechizo o Invocación --</option>' +
+            '<optgroup label="✨ Hechizos">' +
+              (c.spells || []).map(function(sp){
+                return '<option value="spell:' + sp.id + '" ' + (t.linkedId === sp.id ? 'selected' : '') + '>✨ ' + esc(sp.name || "Hechizo") + '</option>';
+              }).join('') +
+            '</optgroup>' +
+            '<optgroup label="🐾 Invocaciones">' +
+              (c.summons || []).map(function(sm){
+                return '<option value="summon:' + sm.id + '" ' + (t.linkedId === sm.id ? 'selected' : '') + '>🐾 ' + esc(sm.name || "Invocación") + '</option>';
+              }).join('') +
+            '</optgroup>' +
+          '</select>' +
+        '</div>';
+      } else if(catId === "combat"){
+        var curTargetStat = t.targetStat || "+10 PV";
+        secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
+          '<label>Atributo o Estadística</label>' +
+          '<select class="tr-cat-select" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+            '<option value="stat:pv" ' + (curTargetStat === "+10 PV" || t.linkedId === "stat:pv" ? 'selected' : '') + '>❤️ Vida (+10 PV)</option>' +
+            '<option value="stat:mana" ' + (curTargetStat === "+5 Maná" || t.linkedId === "stat:mana" ? 'selected' : '') + '>🔷 Maná (+5 Maná)</option>' +
+            '<option value="stat:defensa" ' + (curTargetStat === "+1 Defensa" || t.linkedId === "stat:defensa" ? 'selected' : '') + '>🛡️ Defensa (+1)</option>' +
+            '<option value="stat:iniciativa" ' + (curTargetStat === "+1 Iniciativa" || t.linkedId === "stat:iniciativa" ? 'selected' : '') + '>⚡ Iniciativa (+1)</option>' +
+            '<option value="stat:fisico" ' + (curTargetStat === "+1 Físico" || t.linkedId === "stat:fisico" ? 'selected' : '') + '>💪 Físico (+1)</option>' +
+            '<option value="stat:destreza" ' + (curTargetStat === "+1 Destreza" || t.linkedId === "stat:destreza" ? 'selected' : '') + '>🏃 Destreza (+1)</option>' +
+            '<option value="stat:inteligencia" ' + (curTargetStat === "+1 Inteligencia" || t.linkedId === "stat:inteligencia" ? 'selected' : '') + '>🧠 Inteligencia (+1)</option>' +
+            '<option value="stat:percepcion" ' + (curTargetStat === "+1 Percepción" || t.linkedId === "stat:percepcion" ? 'selected' : '') + '>👁️ Percepción (+1)</option>' +
+            '<option value="stat:carisma" ' + (curTargetStat === "+1 Carisma" || t.linkedId === "stat:carisma" ? 'selected' : '') + '>🎭 Carisma (+1)</option>' +
+          '</select>' +
+        '</div>';
+      } else if(catId === "skill"){
+        secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
+          '<label>Habilidad a Desarrollar</label>' +
+          '<select class="tr-cat-select" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+            '<option value="">-- Seleccionar Habilidad --</option>' +
+            (typeof SKILL_DEFS !== "undefined" ? SKILL_DEFS : []).map(function(sdef){
+              return '<option value="skill:' + sdef.id + '" ' + (t.linkedId === sdef.id || t.linkedId === "skill:" + sdef.id ? 'selected' : '') + '>🎯 ' + esc(sdef.name) + '</option>';
             }).join('') +
           '</select>' +
-          '<input type="text" class="tr-name-input" data-bind="trainings.' + t.id + '.name" value="' + esc(t.name) + '" placeholder="Nombre (ej: Veneno de Seta)..." ' + (canEdit ? '' : 'readonly') + '>' +
-          '<div class="tr-die-toggle" title="Tipo de dado de la tirada">' +
-            '<button type="button" class="tr-die-btn' + (sides === 10 ? ' active' : '') + '" data-action="set-training-type" data-id="' + t.id + '" data-type="existing" ' + (canEdit ? '' : 'disabled') + '>d10</button>' +
-            '<button type="button" class="tr-die-btn' + (sides === 20 ? ' active' : '') + '" data-action="set-training-type" data-id="' + t.id + '" data-type="new" ' + (canEdit ? '' : 'disabled') + '>d20</button>' +
-          '</div>' +
-          '<div class="tr-points-badge" title="Puntos acumulados de esfuerzo">' +
-            '<span class="tr-points-val">' + (points > 0 ? '+' + points : points) + '</span>' +
-            '<span class="tr-points-label">PTS</span>' +
-          '</div>' +
-          (canEdit ? '<button class="row-del tr-del-btn" data-action="del-training" data-id="' + t.id + '" title="Eliminar entrenamiento" aria-label="Eliminar">✕</button>' : '') +
-        '</div>' +
+        '</div>';
+      }
 
-        '<div class="tr-notes-row">' +
-          '<textarea class="tr-notes-input" data-bind="trainings.' + t.id + '.notes" placeholder="Notas, descripción o efecto del entrenamiento..." rows="1" ' + (canEdit ? '' : 'readonly') + '>' + esc(t.notes || t.desc || '') + '</textarea>' +
-        '</div>' +
+      // Barra de progreso visual sutil (conservando la intriga)
+      var progressHtml = '';
+      if(isQuantifiable){
+        var statusNote = points >= targetGoal ? '¡Meta casi completada / Lista para desbloquear!' : 'Progresando hacia el hito...';
+        progressHtml = '<div class="tr-progress-container" style="margin:6px 0 8px;">' +
+          '<div class="tr-progress-track" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;height:7px;overflow:hidden;position:relative;" title="Progreso de esfuerzo acumulado">' +
+            '<div class="tr-progress-fill" style="background:linear-gradient(90deg, var(--gold), var(--teal-light));height:100%;border-radius:5px;width:' + progressPct + '%;"></div>' +
+          '</div>' +
+          '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;">' +
+            '<span>' + statusNote + '</span>' +
+            '<span style="color:var(--gold-light);font-weight:600;"><b>' + (points > 0 ? '+' + points : points) + ' pts</b> acumulados</span>' +
+          '</div>' +
+        '</div>';
+      }
 
-        (canEdit ? (
-          '<div class="tr-controls-row">' +
-            '<button type="button" class="btn-compact tr-roll-btn" data-action="roll-training" data-id="' + t.id + '">' +
-              '🎲 Tirar (d' + sides + ')' +
-            '</button>' +
-            '<div class="tr-manual-group">' +
-              '<input type="number" min="1" max="' + sides + '" class="tr-manual-input" data-manual-for="' + t.id + '" placeholder="1-' + sides + '" title="Resultado de dado físico (1 a ' + sides + ')">' +
-              '<button type="button" class="btn-compact tr-manual-btn" data-action="add-manual-training-roll" data-id="' + t.id + '" title="Añadir resultado de mesa física">+ Añadir</button>' +
+      // Historial chips
+      var historyChipsHtml = '';
+      if(rolls.length > 0){
+        historyChipsHtml = '<div class="tr-chips-shelf" style="display:flex;align-items:center;gap:4px;overflow-x:auto;max-width:280px;padding:2px 0;">' +
+          rolls.slice().reverse().slice(0, 8).map(function(r){
+            var chipClass = "normal";
+            if(r.roll === 1 && catId !== "narrative") chipClass = "fumble";
+            else if(r.roll === r.sides) chipClass = "crit";
+            else if(r.roll >= 11 && r.roll <= 19) chipClass = "great";
+            var sign = r.pts > 0 ? "+" : "";
+            return '<div class="tr-mini-chip ' + chipClass + '" title="Tirada: ' + r.roll + ' (d' + r.sides + ')">' +
+              '<span class="chip-val">' + r.roll + '</span>' +
+              '<span class="chip-delta">' + sign + r.pts + '</span>' +
+              (canEdit ? '<button type="button" class="tr-chip-del" data-action="undo-training-roll" data-training-id="' + t.id + '" data-roll-id="' + r.id + '" title="Deshacer tirada">✕</button>' : '') +
+            '</div>';
+          }).join('') +
+        '</div>';
+      }
+
+      // Tarjeta limpia estilo Invocaciones (.creature-card)
+      html += '<div class="creature-card training-card" data-id="' + t.id + '" style="background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-bottom:11px;box-shadow:0 4px 14px -6px rgba(0,0,0,0.7);">' +
+        // Fila 1: Encabezado (Nombre + PTS Badge + Del)
+        '<div class="creature-card-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
+          '<input type="text" class="creature-name-input" data-bind="trainings.' + t.id + '.name" value="' + esc(t.name) + '" placeholder="Nombre del entrenamiento (ej: Veneno de Seta)..." ' + (canEdit ? '' : 'readonly') + ' style="font-family:var(--font-display);font-size:1.02rem;color:var(--gold-light);background:none;border:none;border-bottom:1px solid var(--line-strong);padding:2px 4px;flex:1;min-width:0;">' +
+          '<div style="display:flex;align-items:center;gap:6px;flex:none;">' +
+            '<div class="tr-points-badge" title="Puntos acumulados de esfuerzo" style="background:rgba(176,141,87,0.18);border:1px solid var(--line);border-radius:4px;padding:2px 6px;display:flex;align-items:center;gap:3px;">' +
+              '<span class="tr-points-val" style="font-family:var(--font-mono);font-weight:700;font-size:.85rem;color:var(--gold-light);">' + (points > 0 ? '+' + points : points) + '</span>' +
+              '<span class="tr-points-label" style="font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;">PTS</span>' +
             '</div>' +
-          '</div>'
-        ) : '') +
+            (canEdit ? '<button class="row-del" data-action="del-training" data-id="' + t.id + '" title="Eliminar entrenamiento" aria-label="Eliminar" style="width:28px;height:28px;min-width:28px;min-height:28px;">✕</button>' : '') +
+          '</div>' +
+        '</div>' +
 
-        '<div class="tr-history-row">' +
-          (rolls.length === 0 ?
-            '<span class="tr-history-empty">Sin tiradas aún</span>' :
-            '<div class="tr-chips-shelf">' +
-              rolls.slice().reverse().map(function(r){
-                var chipClass = "normal";
-                if(r.roll === 1 && catId !== "narrative") chipClass = "fumble";
-                else if(r.roll === r.sides) chipClass = "crit";
-                else if(r.roll >= 11 && r.roll <= 19) chipClass = "great";
+        // Fila 2: Cuadrícula de inputs estructurados
+        '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
+          '<div class="creature-field" style="flex:1;min-width:130px;">' +
+            '<label>Categoría</label>' +
+            '<select class="tr-cat-select" data-action="set-training-category" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+              '<option value="skill" ' + (catId === 'skill' ? 'selected' : '') + '>🎯 Habilidad</option>' +
+              '<option value="spell_summon" ' + (catId === 'spell_summon' ? 'selected' : '') + '>✨ Magia / Hechizo</option>' +
+              '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>⚔️ Atributo / Combate</option>' +
+              '<option value="narrative" ' + (catId === 'narrative' ? 'selected' : '') + '>📜 Lore / Narrativa</option>' +
+            '</select>' +
+          '</div>' +
+          secondaryHtml +
+          '<div class="creature-field" style="width:90px;flex:none;">' +
+            '<label>Dado</label>' +
+            '<div class="tr-die-toggle" style="display:flex;gap:3px;">' +
+              '<button type="button" class="btn-compact tr-die-btn' + (sides === 10 ? ' active' : '') + '" data-action="set-training-type" data-id="' + t.id + '" data-type="existing" ' + (canEdit ? '' : 'disabled') + ' style="flex:1;padding:5px 2px;font-size:.75rem;font-weight:700;' + (sides === 10 ? 'background:rgba(176,141,87,0.3);border-color:var(--gold);color:var(--gold-light);' : '') + '">d10</button>' +
+              '<button type="button" class="btn-compact tr-die-btn' + (sides === 20 ? ' active' : '') + '" data-action="set-training-type" data-id="' + t.id + '" data-type="new" ' + (canEdit ? '' : 'disabled') + ' style="flex:1;padding:5px 2px;font-size:.75rem;font-weight:700;' + (sides === 20 ? 'background:rgba(176,141,87,0.3);border-color:var(--gold);color:var(--gold-light);' : '') + '">d20</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
 
-                var sign = r.pts > 0 ? "+" : "";
-                var timeStr = r.ts ? new Date(r.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
-                return '<div class="tr-mini-chip ' + chipClass + '" title="Tirada: ' + r.roll + ' en d' + r.sides + (r.manual ? ' (Mesa Física)' : '') + (timeStr ? ' [' + timeStr + ']' : '') + '">' +
-                  '<span class="chip-val">' + r.roll + '</span>' +
-                  '<span class="chip-delta">' + sign + r.pts + '</span>' +
-                  (canEdit ? '<button type="button" class="tr-chip-del" data-action="undo-training-roll" data-training-id="' + t.id + '" data-roll-id="' + r.id + '" title="Borrar tirada">✕</button>' : '') +
-                '</div>';
-              }).join('') +
+        // Fila 3: Barra de progreso sutil (si cuantificable)
+        progressHtml +
+
+        // Fila 4: Notas breves
+        '<div class="creature-field" style="margin-bottom:8px;">' +
+          '<input type="text" data-bind="trainings.' + t.id + '.notes" placeholder="Notas, efecto o descripción breve..." value="' + esc(t.notes || t.desc || '') + '" ' + (canEdit ? '' : 'readonly') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:6px 8px;font-size:.78rem;color:var(--ink);width:100%;">' +
+        '</div>' +
+
+        // Fila 5: Barra inferior compacta de tirada y chips
+        '<div class="tr-controls-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;border-top:1px solid var(--line);flex-wrap:wrap;">' +
+          (canEdit ? (
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+              '<button type="button" class="btn-compact tr-roll-btn" data-action="roll-training" data-id="' + t.id + '" style="padding:5px 9px;font-size:.78rem;font-weight:700;">' +
+                '🎲 Tirar Automático (d' + sides + ')' +
+              '</button>' +
+              '<div class="tr-manual-group" style="display:inline-flex;align-items:center;gap:3px;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:2px 4px;">' +
+                '<input type="number" min="1" max="' + sides + '" class="tr-manual-input" data-manual-for="' + t.id + '" placeholder="1-' + sides + '" title="Tirada de dado físico" style="width:44px;background:none;border:none;color:var(--ink);font-family:var(--font-mono);font-size:.8rem;text-align:center;">' +
+                '<button type="button" class="btn-compact tr-manual-btn" data-action="add-manual-training-roll" data-id="' + t.id + '" title="Registrar tirada física" style="padding:3px 6px;font-size:.7rem;">+ Manual</button>' +
+              '</div>' +
             '</div>'
-          ) +
+          ) : '') +
+          historyChipsHtml +
         '</div>' +
       '</div>';
     });
@@ -410,12 +495,12 @@ function tplCombate(c){
 
   var buffsHtml = '';
 
-  // 1. Buffs Asignados al Personaje
+  // 1. Buffs y Debuffs Asignados al Personaje
   buffsHtml += '<div class="assigned-buffs-block">';
-  buffsHtml += '<div style="font-size:.68rem;color:var(--gold-light);text-transform:uppercase;font-weight:700;letter-spacing:.04em;margin-bottom:6px;">Buffos y Debuffos Asignados a este Personaje:</div>';
+  buffsHtml += '<div style="font-size:.68rem;color:var(--gold-light);text-transform:uppercase;font-weight:700;letter-spacing:.04em;margin-bottom:6px;">Buffs y Debuffs Asignados a este Personaje:</div>';
   
   if(assignedBuffs.length === 0){
-    buffsHtml += '<div style="font-size:.76rem;color:var(--ink-dim);font-style:italic;padding:8px 10px;background:var(--bg-elev);border:1px dashed var(--line);border-radius:6px;margin-bottom:8px;">No hay buffos asignados a este personaje. Puedes asignar buffos del catálogo global abajo.</div>';
+    buffsHtml += '<div style="font-size:.76rem;color:var(--ink-dim);font-style:italic;padding:8px 10px;background:var(--bg-elev);border:1px dashed var(--line);border-radius:6px;margin-bottom:8px;">No hay buffs ni debuffs asignados a este personaje. Puedes asignar del catálogo global inferior.</div>';
   } else {
     buffsHtml += '<div class="assigned-buffs-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">';
     assignedBuffs.forEach(function(ab){
@@ -423,17 +508,19 @@ function tplCombate(c){
       var isDebuff = ab.type === "debuff";
       var statusClass = isActive ? (isDebuff ? 'buff-status-debuff-active' : 'buff-status-active') : 'buff-status-inactive';
       var statusLabel = isActive ? 'ACTIVO ✓' : 'DESACTIVADO ⏸';
-      var statusTitle = isActive ? 'Buff activo y aplicando efectos. Haz clic para desactivar.' : 'Buff asignado pero desactivado. Haz clic para activar.';
+      var statusTitle = isActive ? (isDebuff ? 'Debuff activo y aplicando penalizaciones. Haz clic para desactivar.' : 'Buff activo y aplicando efectos. Haz clic para desactivar.') : 'Estado asignado pero desactivado. Haz clic para activar.';
+      var typeTag = isDebuff ? '<span style="font-size:.65rem;color:#E88178;font-weight:700;margin-right:2px;">[DEBUFF]</span>' : '<span style="font-size:.65rem;color:var(--teal-light);font-weight:700;margin-right:2px;">[BUFF]</span>';
 
       buffsHtml += '<div class="assigned-buff-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--bg-elev);border:1px solid '+(isActive ? (isDebuff ? 'var(--danger)' : 'var(--teal-light)') : 'var(--line)')+';border-radius:6px;transition:all var(--transition-fast);'+(isActive ? '' : 'opacity:0.75;')+'">'+
         '<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">'+
           '<span style="font-size:.85rem;">'+(isDebuff ? '⚠️' : '✨')+'</span>'+
+          typeTag+
           '<span style="font-size:.8rem;font-weight:600;color:'+(isActive ? (isDebuff ? '#E88178' : 'var(--ink)') : 'var(--ink-dim)')+';text-decoration:'+(isActive ? 'none' : 'line-through')+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(ab.name)+(ab.bonus ? ' ('+esc(ab.bonus)+')' : '')+'</span>'+
         '</div>'+
         '<div style="display:flex;align-items:center;gap:6px;flex:none;">'+
           (canEdit ? 
             '<button type="button" class="buff-toggle-btn '+statusClass+'" data-action="toggle-global-buff" data-id="'+ab.id+'" title="'+statusTitle+'" style="font-size:.68rem;padding:4px 8px;border-radius:4px;cursor:pointer;font-weight:700;min-height:28px;">'+statusLabel+'</button>'+
-            '<button type="button" class="buff-unassign-btn" data-action="remove-active-buff" data-id="'+ab.id+'" title="Desanclar este buff del personaje (no se borra del catálogo)" style="background:none;border:1px solid var(--line);border-radius:4px;color:var(--danger);font-size:.72rem;padding:4px 8px;cursor:pointer;min-height:28px;">Desanclar ✕</button>'
+            '<button type="button" class="buff-unassign-btn" data-action="remove-active-buff" data-id="'+ab.id+'" title="Desanclar este estado del personaje (no se borra del catálogo)" style="background:none;border:1px solid var(--line);border-radius:4px;color:var(--danger);font-size:.72rem;padding:4px 8px;cursor:pointer;min-height:28px;">Desanclar ✕</button>'
           : '<span class="buff-toggle-btn '+statusClass+'" style="font-size:.68rem;padding:4px 8px;border-radius:4px;font-weight:700;">'+statusLabel+'</span>')+
         '</div>'+
       '</div>';
@@ -449,22 +536,22 @@ function tplCombate(c){
 
   buffsHtml += '<div class="catalog-buffs-block" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px;">';
   buffsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap;">'+
-    '<span style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;font-weight:700;">Catálogo Global de Buffos:</span>'+
+    '<span style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;font-weight:700;">Catálogo Global de Buffs y Debuffs:</span>'+
     (canEdit && unassignedBuffs.length > 0 ?
       '<div style="display:flex;align-items:center;gap:6px;flex:1;max-width:280px;">'+
         '<select data-action="assign-buff-from-catalog" class="buff-quick-assign-select" style="font-size:.75rem;padding:4px 6px;background:var(--bg-card);border:1px solid var(--line);border-radius:5px;color:var(--ink);width:100%;">'+
-          '<option value="">+ Asignar buff del catálogo...</option>'+
+          '<option value="">+ Asignar buff o debuff del catálogo...</option>'+
           unassignedBuffs.map(function(ub){
-            return '<option value="'+ub.id+'">'+(ub.type==='debuff'?'⚠️ ':'✨ ')+esc(ub.name)+(ub.bonus?' ('+esc(ub.bonus)+')':'')+'</option>';
+            return '<option value="'+ub.id+'">'+(ub.type==='debuff'?'⚠️ [Debuff] ':'✨ [Buff] ')+esc(ub.name)+(ub.bonus?' ('+esc(ub.bonus)+')':'')+'</option>';
           }).join('')+
         '</select>'+
       '</div>'
     : '')+
   '</div>';
 
-  // Panel desplegable con los 3 estados claros para cada buff del catálogo
+  // Panel desplegable con los 3 estados claros para cada buff/debuff del catálogo
   buffsHtml += '<details class="buff-catalog-details" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-bottom:10px;">'+
-    '<summary style="font-size:.72rem;color:var(--gold-light);cursor:pointer;user-select:none;font-weight:600;">📋 Ver todos los buffos del catálogo global ('+catalogBuffs.length+' buffos) y sus 3 estados</summary>'+
+    '<summary style="font-size:.72rem;color:var(--gold-light);cursor:pointer;user-select:none;font-weight:600;">📋 Ver todos los buffs y debuffs del catálogo ('+catalogBuffs.length+' totales) y sus 3 estados</summary>'+
     '<div style="display:flex;flex-direction:column;gap:5px;margin-top:8px;">';
 
   catalogBuffs.forEach(function(cbuff){
@@ -824,7 +911,14 @@ function tplInvocaciones(c){
         creatureField("Defensa", "summons." + s.id + ".defensa", s.defensa) +
         creatureField("Absorción", "summons." + s.id + ".absorcion", s.absorcion) +
         creatureField("Daño", "summons." + s.id + ".dano", s.dano) +
-        creatureField("Movilidad", "summons." + s.id + ".movilidad", s.movilidad) +
+        '<div class="creature-field beast-mobility-cell">' +
+          '<label>Movilidad (Casillas)</label>' +
+          '<button type="button" class="beast-mov-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Haz clic para seleccionar o consultar las casillas de movimiento">' +
+            '<span class="beast-mov-label">🏃 <strong>' + esc(s.casillasMovimiento || (s.movilidad ? (s.movilidad.match(/\d+/)?s.movilidad.match(/\d+/)[0]:'6') : '6')) + '</strong> casillas</span>' +
+            (s.movilidad && s.movilidad.includes('(') ? ' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>' : '') +
+            '<span class="beast-mov-chevron">▾</span>' +
+          '</button>' +
+        '</div>' +
         creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia) +
       '</div>' +
       '<div class="creature-field" style="margin-top:6px;"><label>Habilidades, Tiradas y Rasgos</label><textarea class="creature-notes" placeholder="Ej: Melé 8+1d10, Rasgo..." data-bind="summons.' + s.id + '.habilidades">' + esc(s.habilidades||s.notas) + '</textarea></div>' +

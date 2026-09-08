@@ -590,3 +590,77 @@ function getEffectiveCombatStat(statKey, c){
 }
 
 function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
+
+function getEffectiveMaxHp(c){
+  if(!c || !c.combat) return 10;
+  var base = Math.max(1, num(c.combat.pvMax, 10));
+  var pctMod = 0;
+  var flatMod = 0;
+
+  if(c.activeBuffs){
+    c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
+      var attr = String(ab.attr || "").toLowerCase().trim();
+      if(attr === "vida" || attr === "pvmax" || attr === "pv" || attr === "vida_max" || attr === "salud"){
+        var bonusStr = String(ab.bonus || "").trim();
+        if(bonusStr.includes("%")){
+          var p = parseFloat(bonusStr);
+          if(!isNaN(p)) pctMod += p;
+        } else {
+          var f = parseFloat(bonusStr);
+          if(!isNaN(f)) flatMod += f;
+        }
+      }
+    });
+  }
+
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        var attr = String(sp.statAttr).toLowerCase().trim();
+        if(attr === "vida" || attr === "pvmax" || attr === "pv" || attr === "vida_max"){
+          var stacks = Math.max(1, num(sp.activeStacks, 1));
+          var bonusStr = String(sp.statMod).trim();
+          if(bonusStr.includes("%")){
+            var p = parseFloat(bonusStr);
+            if(!isNaN(p)) pctMod += p * stacks;
+          } else {
+            var f = parseFloat(bonusStr);
+            if(!isNaN(f)) flatMod += f * stacks;
+          }
+        }
+      }
+    });
+  }
+
+  var eff = (base + flatMod) * (1 + pctMod / 100);
+  return Math.max(1, Math.round(eff));
+}
+
+function getEffectiveMaxMana(c){
+  if(!c || !c.combat) return 10;
+  var base = Math.max(1, num(c.combat.manaMax, 10));
+  var pctMod = 0;
+  var flatMod = 0;
+
+  if(c.activeBuffs){
+    c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
+      var attr = String(ab.attr || "").toLowerCase().trim();
+      if(attr === "mana" || attr === "manamax" || attr === "maná"){
+        var bonusStr = String(ab.bonus || "").trim();
+        if(bonusStr.includes("%")){
+          var p = parseFloat(bonusStr);
+          if(!isNaN(p)) pctMod += p;
+        } else {
+          var f = parseFloat(bonusStr);
+          if(!isNaN(f)) flatMod += f;
+        }
+      }
+    });
+  }
+
+  var eff = (base + flatMod) * (1 + pctMod / 100);
+  return Math.max(1, Math.round(eff));
+}
+

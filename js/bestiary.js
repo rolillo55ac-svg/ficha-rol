@@ -110,8 +110,14 @@ function creatureFieldGlobal(label,bind,val){
   return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-scope="global" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
 }
 
-function setBeastMobility(beastId, numVal){
-  var beast = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+function setBeastMobility(beastId, numVal, isSummon){
+  var beast = null;
+  var c = activeChar();
+  if(isSummon){
+    beast = (c && c.summons ? c.summons : []).find(function(x){ return x.id === beastId; });
+  } else {
+    beast = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+  }
   if(!beast) return;
   var clamped = Math.max(1, Math.min(60, numVal));
   beast.casillasMovimiento = String(clamped);
@@ -121,17 +127,31 @@ function setBeastMobility(beastId, numVal){
   } else {
     beast.movilidad = String(clamped);
   }
-  saveState(true);
-  if(isGM() || !currentUser){
-    pushSharedData();
+  if(isSummon && c){
+    saveState(true);
+    if(typeof manageListItemRPC === 'function'){
+      manageListItemRPC(c, 'summons', 'update_item', { casillasMovimiento: beast.casillasMovimiento, movilidad: beast.movilidad }, beast.id);
+    }
+  } else {
+    saveState(true);
+    if(isGM() || !currentUser){
+      pushSharedData();
+    }
   }
-  if(typeof openBeastMobilityModal === 'function') openBeastMobilityModal(beastId);
+  if(typeof openBeastMobilityModal === 'function') openBeastMobilityModal(beastId, isSummon);
   renderTab();
 }
 
-function stepBeastMobility(beastId, delta){
-  var beast = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+function stepBeastMobility(beastId, delta, isSummon){
+  var beast = null;
+  var c = activeChar();
+  if(isSummon){
+    beast = (c && c.summons ? c.summons : []).find(function(x){ return x.id === beastId; });
+  } else {
+    beast = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+  }
   if(!beast) return;
-  var cur = parseInt(beast.casillasMovimiento || (beast.movilidad ? (beast.movilidad.match(/\d+/)?beast.movilidad.match(/\d+/)[0]:'8') : '8'), 10) || 8;
-  setBeastMobility(beastId, cur + delta);
+  var cur = parseInt(beast.casillasMovimiento || (beast.movilidad ? (beast.movilidad.match(/\d+/)?beast.movilidad.match(/\d+/)[0]:'6') : '6'), 10) || 6;
+  setBeastMobility(beastId, cur + delta, isSummon);
 }
+

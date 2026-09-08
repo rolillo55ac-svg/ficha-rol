@@ -470,7 +470,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   flex:1;min-width:0;background:transparent;border:none;border-bottom:1px solid var(--line-strong);
   color:var(--gold-light);font-family:var(--font-display);font-size:1.02rem;padding:3px;min-height:36px;width:100%;
 }
-.creature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:7px 9px;margin-bottom:9px;}
+.creature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:7px 9px;margin-bottom:9px;}
 .creature-field{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .creature-field label{font-size:.58rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.02em;}
 .creature-field input{background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:8px 6px;font-size:.8rem;font-family:var(--font-mono);min-height:36px;width:100%;}
@@ -478,6 +478,20 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   width:100%;background:var(--bg-card);border:1px solid var(--line);border-radius:5px;
   padding:8px 9px;font-size:.8rem;font-family:var(--font-body);min-height:45px;resize:vertical;line-height:1.5;
 }
+
+/* ENTRENAMIENTO Y CHIPS */
+.training-card{position:relative;transition:border-color var(--transition-fast), box-shadow var(--transition-fast);}
+.training-card:hover{border-color:var(--line-strong);}
+.tr-mini-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:.72rem;background:var(--bg-card);border:1px solid var(--line);flex-shrink:0;}
+.tr-mini-chip.crit{border-color:var(--gold);background:rgba(176,141,87,0.25);color:var(--gold-light);font-weight:700;}
+.tr-mini-chip.fumble{border-color:var(--danger);background:rgba(220,53,69,0.2);color:#ff8585;font-weight:700;}
+.tr-mini-chip.great{border-color:var(--teal-light);background:rgba(45,212,191,0.15);color:var(--teal-light);}
+.tr-mini-chip .chip-val{font-weight:700;}
+.tr-mini-chip .chip-delta{font-size:.65rem;color:var(--ink-dim);}
+.tr-mini-chip .tr-chip-del{background:none;border:none;color:var(--ink-faint);font-size:.6rem;cursor:pointer;padding:0 2px;line-height:1;margin-left:2px;}
+.tr-mini-chip .tr-chip-del:hover{color:var(--danger);}
+.buff-status-debuff-active{background:rgba(220,53,69,0.2) !important;border:1px solid var(--danger) !important;color:#ff8585 !important;}
+
 
 /* LORE & HERBORISTERÍA */
 .item-card{
@@ -1072,26 +1086,40 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .journal-textarea::placeholder{color:rgba(176,141,87,0.4);font-style:italic;}
 
-/* SELECTOR INTERACTIVO DE MOVILIDAD Y CASILLAS (BESTIARIO) */
+/* SELECTOR INTERACTIVO DE MOVILIDAD Y CASILLAS (BESTIARIO E INVOCACIONES) */
 .beast-mobility-cell {
   position: relative;
+  grid-column: span 2;
+  min-width: 130px;
+}
+@media (max-width: 480px){
+  .beast-mobility-cell {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
 }
 .beast-mov-btn {
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: linear-gradient(145deg, rgba(42,28,19,0.92), rgba(20,13,9,0.96));
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   color: var(--ink);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   padding: 5px 8px;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: left;
   box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .beast-mov-btn:hover {
   border-color: var(--gold);
@@ -1106,23 +1134,29 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .beast-mov-label strong {
   color: var(--gold-light);
   font-size: 0.94rem;
 }
 .beast-terrain-pill {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: var(--teal-light);
   background: rgba(61,110,96,0.3);
   border: 1px solid rgba(118,172,157,0.35);
-  padding: 1px 5px;
+  padding: 1px 4px;
   border-radius: 4px;
+  flex: none;
 }
 .beast-mov-chevron {
   color: var(--gold);
   font-size: 0.72rem;
   margin-left: auto;
+  flex: none;
 }
 
 /* Modal de Movilidad de la Bestia */

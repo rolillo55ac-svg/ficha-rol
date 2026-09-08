@@ -201,6 +201,26 @@ function handleChange(e){
 }
 
 
+function clampCurrentVitalsToEffectiveMax(c){
+  if(!c || !c.combat) return false;
+  var changed = false;
+  var effHp = (typeof getEffectiveMaxHp === 'function') ? getEffectiveMaxHp(c) : (num(c.combat.pvMax, 0) || 999);
+  if(effHp > 0 && num(c.combat.pvActual, 0) > effHp){
+    var hpDelta = effHp - num(c.combat.pvActual, 0);
+    c.combat.pvActual = effHp;
+    if(typeof applyDamageRPC === 'function') applyDamageRPC(c, hpDelta);
+    changed = true;
+  }
+  var effMana = (typeof getEffectiveMaxMana === 'function') ? getEffectiveMaxMana(c) : (num(c.combat.manaMax, 0) || 999);
+  if(effMana > 0 && num(c.combat.manaActual, 0) > effMana){
+    var manaDelta = effMana - num(c.combat.manaActual, 0);
+    c.combat.manaActual = effMana;
+    if(typeof changeManaRPC === 'function') changeManaRPC(c, manaDelta);
+    changed = true;
+  }
+  return changed;
+}
+
 function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
@@ -261,7 +281,7 @@ function handleClick(e){
   if(action==="hp-mod"){
     if(!canEditChar(c)) return;
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
-    var maxHp = num(c.combat.pvMax,0) || 999;
+    var maxHp = (typeof getEffectiveMaxHp === 'function' ? getEffectiveMaxHp(c) : (num(c.combat.pvMax,0) || 999));
     // Actualización visual optimista sin marcar dirty ni forzar guardado completo
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, -999, maxHp);
     renderTopbar();
@@ -285,8 +305,9 @@ function handleClick(e){
   if(action==="mana-mod"){
     if(!canEditChar(c)) return;
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
+    var maxMana = (typeof getEffectiveMaxMana === 'function' ? getEffectiveMaxMana(c) : (num(c.combat.manaMax,0) || 999));
     // Actualización visual optimista sin marcar dirty ni forzar guardado completo
-    c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
+    c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, maxMana);
     renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
 
@@ -532,10 +553,12 @@ function handleClick(e){
 
     c.activeBuffs.push(buffObj);
     manageListItemRPC(c, 'activeBuffs', 'add', buffObj);
+    clampCurrentVitalsToEffectiveMax(c);
     renderTopbar();
     renderTab();
     broadcastCharStatUpdate(c.id, c.combat);
-    showToast("Buff '" + bDef.name + "' asignado y activado", "success");
+    var assignKind = (bDef.type === "debuff") ? "Debuff" : "Buff";
+    showToast(assignKind + " '" + bDef.name + "' asignado y activado", "success");
     return;
   }
   if(action==="toggle-global-buff"){
@@ -567,10 +590,13 @@ function handleClick(e){
         }
         c.activeBuffs.push(newBuff);
         manageListItemRPC(c, 'activeBuffs', 'add', newBuff);
-        showToast("Buff '" + bToAdd.name + "' asignado y activado", "success");
+        clampCurrentVitalsToEffectiveMax(c);
+        var addKind = (bToAdd.type === "debuff") ? "Debuff" : "Buff";
+        showToast(addKind + " '" + bToAdd.name + "' asignado y activado", "success");
       }
     } else {
       var wasActive = ab.active !== false;
+      var toggleKind = (ab.type === "debuff") ? "Debuff" : "Buff";
       if(wasActive){
         ab.active = false;
         if(ab.shieldGranted){
@@ -580,7 +606,8 @@ function handleClick(e){
           ab.shieldGranted = 0;
         }
         manageListItemRPC(c, 'activeBuffs', 'update_item', { active: false, shieldGranted: 0 }, bid);
-        showToast("Buff '" + ab.name + "' desactivado", "info");
+        clampCurrentVitalsToEffectiveMax(c);
+        showToast(toggleKind + " '" + ab.name + "' desactivado", "info");
       } else {
         ab.active = true;
         var newShieldGranted = 0;
@@ -594,7 +621,8 @@ function handleClick(e){
           }
         }
         manageListItemRPC(c, 'activeBuffs', 'update_item', { active: true, shieldGranted: newShieldGranted }, bid);
-        showToast("Buff '" + ab.name + "' activado", "success");
+        clampCurrentVitalsToEffectiveMax(c);
+        showToast(toggleKind + " '" + ab.name + "' activado", "success");
       }
     }
     renderTopbar();
@@ -607,16 +635,18 @@ function handleClick(e){
     var buffId = btn.getAttribute("data-id");
     if(c.activeBuffs){
       var remBuff2 = c.activeBuffs.find(function(ab){ return ab.id === buffId; });
+      var remKind = (remBuff2 && remBuff2.type === "debuff") ? "Debuff" : "Buff";
       if(remBuff2 && remBuff2.shieldGranted){
         c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remBuff2.shieldGranted);
         changeShieldRPC(c, -remBuff2.shieldGranted);
       }
       c.activeBuffs = c.activeBuffs.filter(function(ab){ return ab.id !== buffId; });
       manageListItemRPC(c, 'activeBuffs', 'remove', null, buffId);
+      clampCurrentVitalsToEffectiveMax(c);
       renderTopbar();
       renderTab();
       broadcastCharStatUpdate(c.id, c.combat);
-      showToast("Buff desanclado del personaje (catálogo intacto)", "info");
+      showToast(remKind + " desanclado del personaje (catálogo intacto)", "info");
     }
     return;
   }
@@ -971,15 +1001,42 @@ function handleClick(e){
         tr.linkedType = "spell";
         tr.linkedId = val.replace("spell:", "");
         var foundSpell = (c.spells || []).find(function(s){ return s.id === tr.linkedId; });
-        if(foundSpell && (!tr.name || tr.name === "Nuevo Entrenamiento")){
+        if(foundSpell && (!tr.name || tr.name === "Nuevo Entrenamiento" || tr.name.startsWith("Maestría:"))){
           tr.name = "Maestría: " + foundSpell.name;
         }
       } else if(val.startsWith("summon:")){
         tr.linkedType = "summon";
         tr.linkedId = val.replace("summon:", "");
         var foundSummon = (c.summons || []).find(function(s){ return s.id === tr.linkedId; });
-        if(foundSummon && (!tr.name || tr.name === "Nuevo Entrenamiento")){
-          tr.name = "Entrenar " + foundSummon.name;
+        if(foundSummon && (!tr.name || tr.name === "Nuevo Entrenamiento" || tr.name.startsWith("Entrenar:"))){
+          tr.name = "Entrenar: " + foundSummon.name;
+        }
+      } else if(val.startsWith("stat:")){
+        var statKey = val.replace("stat:", "");
+        var statLabels = {
+          pv: "+10 PV",
+          mana: "+5 Maná",
+          defensa: "+1 Defensa",
+          iniciativa: "+1 Iniciativa",
+          fisico: "+1 Físico",
+          destreza: "+1 Destreza",
+          inteligencia: "+1 Inteligencia",
+          percepcion: "+1 Percepción",
+          carisma: "+1 Carisma"
+        };
+        tr.linkedType = "stat";
+        tr.linkedId = val;
+        tr.targetStat = statLabels[statKey] || val;
+        if(!tr.name || tr.name === "Nuevo Entrenamiento" || tr.name.startsWith("Mejora:")){
+          tr.name = "Mejora: " + tr.targetStat;
+        }
+      } else if(val.startsWith("skill:")){
+        var skId = val.replace("skill:", "");
+        tr.linkedType = "skill";
+        tr.linkedId = skId;
+        var skDef = (typeof SKILL_DEFS !== "undefined" ? SKILL_DEFS : []).find(function(s){ return s.id === skId; });
+        if(skDef && (!tr.name || tr.name === "Nuevo Entrenamiento" || tr.name.startsWith("Entrenar:"))){
+          tr.name = "Entrenar: " + skDef.name;
         }
       } else if(val === "custom"){
         tr.linkedType = "custom";
@@ -1324,6 +1381,11 @@ function handleClick(e){
   if(action==="pick-beast-mov"){
     var bid = btn.getAttribute("data-id");
     openBeastMobilityModal(bid);
+    return;
+  }
+  if(action==="pick-summon-mov"){
+    var sid = btn.getAttribute("data-id");
+    openBeastMobilityModal(sid, true);
     return;
   }
   if(action==="add-bestiary"){

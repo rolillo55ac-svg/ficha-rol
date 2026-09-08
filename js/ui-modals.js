@@ -325,13 +325,15 @@ function modalClick(e){
   if(action==="set-beast-mov-num"){
     var bid = btn.getAttribute("data-id");
     var val = parseInt(btn.getAttribute("data-val"), 10);
-    setBeastMobility(bid, val);
+    var isSummon = btn.getAttribute("data-summon") === "true";
+    setBeastMobility(bid, val, isSummon);
     return;
   }
   if(action==="step-beast-mov"){
     var bid = btn.getAttribute("data-id");
     var delta = parseInt(btn.getAttribute("data-delta"), 10);
-    stepBeastMobility(bid, delta);
+    var isSummon = btn.getAttribute("data-summon") === "true";
+    stepBeastMobility(bid, delta, isSummon);
     return;
   }
   if(action==="reset-all-characters"){
@@ -350,10 +352,16 @@ function modalClick(e){
   }
 }
 
-function openBeastMobilityModal(beastId){
-  var b = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+function openBeastMobilityModal(beastId, isSummon){
+  var b = null;
+  if(isSummon){
+    var c = activeChar();
+    b = (c && c.summons ? c.summons : []).find(function(x){ return x.id === beastId; });
+  } else {
+    b = (state.bestiary || []).find(function(x){ return x.id === beastId; });
+  }
   if(!b) return;
-  var curNum = parseInt(b.casillasMovimiento || (b.movilidad ? (b.movilidad.match(/\d+/)?b.movilidad.match(/\d+/)[0]:'8') : '8'), 10) || 8;
+  var curNum = parseInt(b.casillasMovimiento || (b.movilidad ? (b.movilidad.match(/\d+/)?b.movilidad.match(/\d+/)[0]:'6') : '6'), 10) || 6;
   var meters = (curNum * 1.5).toFixed(1).replace('.0','');
   var runCasillas = curNum * 2;
   var runMeters = (runCasillas * 1.5).toFixed(1).replace('.0','');
@@ -361,21 +369,23 @@ function openBeastMobilityModal(beastId){
   var slowMeters = (slowCasillas * 1.5).toFixed(1).replace('.0','');
 
   var numberOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24];
+  var summonAttr = isSummon ? ' data-summon="true"' : '';
 
   var numButtonsHtml = numberOptions.map(function(n){
     var isSelected = (n === curNum);
-    return '<button type="button" class="btn-compact beast-num-pill '+(isSelected ? 'active' : '')+'" data-action="set-beast-mov-num" data-id="'+b.id+'" data-val="'+n+'">'+n+'</button>';
+    return '<button type="button" class="btn-compact beast-num-pill '+(isSelected ? 'active' : '')+'" data-action="set-beast-mov-num" data-id="'+b.id+'" data-val="'+n+'"'+summonAttr+'>'+n+'</button>';
   }).join('');
 
   var terrainInfo = (b.movilidad && b.movilidad.includes('(')) ? b.movilidad.slice(b.movilidad.indexOf('(')) : '';
+  var creatureName = b.nombre || b.name || "Criatura";
 
-  var html = '<h2>🏃 Movilidad: '+esc(b.nombre)+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
+  var html = '<h2>🏃 Movilidad: '+esc(creatureName)+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
     '<div class="beast-mov-modal-hero">'+
       '<div class="beast-mov-hero-label">Casillas de movimiento en tablero:</div>'+
       '<div class="beast-mov-stepper">'+
-        '<button type="button" class="beast-step-btn" data-action="step-beast-mov" data-id="'+b.id+'" data-delta="-1" title="Restar casilla">-</button>'+
+        '<button type="button" class="beast-step-btn" data-action="step-beast-mov" data-id="'+b.id+'" data-delta="-1"'+summonAttr+' title="Restar casilla">-</button>'+
         '<div class="beast-mov-hero-value">'+curNum+'<span class="beast-mov-hero-unit">casillas</span></div>'+
-        '<button type="button" class="beast-step-btn" data-action="step-beast-mov" data-id="'+b.id+'" data-delta="1" title="Sumar casilla">+</button>'+
+        '<button type="button" class="beast-step-btn" data-action="step-beast-mov" data-id="'+b.id+'" data-delta="1"'+summonAttr+' title="Sumar casilla">+</button>'+
       '</div>'+
       '<div class="beast-mov-hero-equiv">Equivale a aprox. <strong>'+meters+' metros</strong> por turno '+esc(terrainInfo)+'</div>'+
     '</div>'+
