@@ -64,7 +64,8 @@ function blankCharacter(name, isNPC){
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
     summons:[], buffs:{}, customBuffs:[], poisons:[], skillPoints:0,
     activeBuffs: [],
-    personalNotes: ""
+    personalNotes: "",
+    trainings: []
   };
 }
 
@@ -113,6 +114,17 @@ function ensureCharDefaults(c){
   if(!Array.isArray(c.poisons)) c.poisons = [];
   if(!Array.isArray(c.activeBuffs)) c.activeBuffs = [];
   if(c.personalNotes === undefined) c.personalNotes = "";
+  if(!Array.isArray(c.trainings)) c.trainings = [];
+  c.trainings.forEach(function(tr){
+    if(!tr.id) tr.id = uid();
+    if(!tr.name) tr.name = "Nuevo Entrenamiento";
+    if(!tr.type) tr.type = "existing";
+    if(tr.sides === undefined) tr.sides = tr.type === "new" ? 20 : 10;
+    if(!Array.isArray(tr.rolls)) tr.rolls = [];
+    if(tr.points === undefined){
+      tr.points = tr.rolls.reduce(function(sum, r){ return sum + (r.pts || 0); }, 0);
+    }
+  });
 
   return c;
 }

@@ -62,13 +62,13 @@ function renderTopbar(){
 }
 
 var PLAYER_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
+  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
 var GM_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"combate",label:"Combate"},
+  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
   {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
@@ -89,6 +89,7 @@ function renderTab(){
   if(state.activeTab==="ficha") main.innerHTML = tplFicha(c);
   else if(state.activeTab==="mision") main.innerHTML = tplMision(c, state);
   else if(state.activeTab==="habilidades") main.innerHTML = tplHabilidades(c);
+  else if(state.activeTab==="entrenamiento") main.innerHTML = tplEntrenamiento(c);
   else if(state.activeTab==="combate") main.innerHTML = tplCombate(c);
   else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
   else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
@@ -299,6 +300,106 @@ function skillRowHtml(s, c, unlocked){
     '<span class="skill-total">'+total+'</span>'+
     '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'" aria-label="Tirar '+esc(s.name)+'">&#127922;</button>'+
   '</div>';
+}
+
+function tplEntrenamiento(c){
+  c.trainings = c.trainings || [];
+  var canEdit = canEditChar(c);
+
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'">';
+  html += '<div class="section-title"><span>Sistema de Entrenamiento y Progresión por Esfuerzo</span></div>';
+
+  html += '<div class="training-info-card">'+
+    '<div class="training-info-title">🥋 Reglas de Esfuerzo y Práctica</div>'+
+    '<div class="training-info-grid">'+
+      '<div class="training-info-item"><span class="die-tag-info d10">d10</span> <div><b>Habilidad Existente:</b> Práctica y perfeccionamiento de habilidades conocidas.</div></div>'+
+      '<div class="training-info-item"><span class="die-tag-info d20">d20</span> <div><b>Habilidad Nueva / Desbloqueo:</b> Aprendizaje y desarrollo de nuevas disciplinas.</div></div>'+
+    '</div>'+
+    '<div class="training-rules-bar">'+
+      '<div class="rule-chip fumble"><b>Resultado 1:</b> -5 pts (Pifia)</div>'+
+      '<div class="rule-chip normal"><b>2 a 10:</b> +1 pto</div>'+
+      '<div class="rule-chip great"><b>11 a 19 (d20):</b> +3 pts</div>'+
+      '<div class="rule-chip crit"><b>Máximo (10 / 20):</b> +5 pts (Crítico)</div>'+
+    '</div>'+
+  '</div>';
+
+  if(canEdit){
+    html += '<div style="margin-bottom:14px;display:flex;justify-content:flex-end;">'+
+      '<button class="btn-solid-gold" data-action="add-training">+ Nuevo Entrenamiento</button>'+
+    '</div>';
+  }
+
+  if(c.trainings.length === 0){
+    html += '<div class="training-empty-state">'+
+      '<div style="font-size:2.2rem;margin-bottom:8px;">🥋</div>'+
+      '<p style="font-weight:600;font-size:.95rem;color:var(--gold-light);margin-bottom:4px;">No hay entrenamientos activos</p>'+
+      '<p style="font-size:.82rem;color:var(--ink-dim);">Inicia un nuevo proyecto de entrenamiento para comenzar a registrar tiradas de dados y acumular puntos de esfuerzo.</p>'+
+      (canEdit ? '<button class="btn-solid-gold" style="margin-top:12px;" data-action="add-training">+ Crear Primer Entrenamiento</button>' : '')+
+    '</div>';
+  } else {
+    c.trainings.forEach(function(t){
+      var isNew = t.type === "new";
+      var sides = isNew ? 20 : 10;
+      var points = num(t.points, 0);
+      var rolls = t.rolls || [];
+
+      html += '<div class="training-card" data-id="'+t.id+'">'+
+        '<div class="training-card-header">'+
+          '<div class="training-name-wrap">'+
+            '<input type="text" class="training-name-input" data-bind="trainings.'+t.id+'.name" value="'+esc(t.name)+'" placeholder="Nombre del entrenamiento (ej: Entrenar Veneno X)..." '+(canEdit?'':'readonly')+'>'+
+          '</div>'+
+          '<div class="training-header-right">'+
+            '<div class="training-points-badge" title="Puntos acumulados de esfuerzo">'+
+              '<span class="training-points-num '+(points < 0 ? 'neg' : '')+'">'+(points > 0 ? '+'+points : points)+'</span>'+
+              '<span class="training-points-label">PTS ACUMULADOS</span>'+
+            '</div>'+
+            (canEdit ? '<button class="row-del" data-action="del-training" data-id="'+t.id+'" title="Eliminar entrenamiento" aria-label="Eliminar entrenamiento">✕</button>' : '')+
+          '</div>'+
+        '</div>'+
+        '<div class="training-controls-bar">'+
+          '<div class="training-type-toggle">'+
+            '<button type="button" class="training-type-btn'+(!isNew?' active':'')+'" data-action="set-training-type" data-id="'+t.id+'" data-type="existing" '+(canEdit?'':'disabled')+'>'+
+              '<span>Habilidad Existente</span> <span class="die-tag d10">d10</span>'+
+            '</button>'+
+            '<button type="button" class="training-type-btn'+(isNew?' active':'')+'" data-action="set-training-type" data-id="'+t.id+'" data-type="new" '+(canEdit?'':'disabled')+'>'+
+              '<span>Habilidad Nueva / Desbloqueo</span> <span class="die-tag d20">d20</span>'+
+            '</button>'+
+          '</div>'+
+          (canEdit ? '<button class="btn-solid-gold training-roll-btn" data-action="roll-training" data-id="'+t.id+'">🎲 Lanzar Tirada ('+(isNew?'d20':'d10')+')</button>' : '')+
+        '</div>'+
+        '<div class="training-history-section">'+
+          '<div class="training-history-title">'+
+            '<span>Historial de Tiradas ('+rolls.length+')</span>'+
+          '</div>'+
+          '<div class="training-chips-track">'+
+            (rolls.length === 0 ? '<div class="training-chips-empty">Aún no hay tiradas registradas. Haz clic en "Lanzar Tirada" para registrar tu primer esfuerzo.</div>' :
+              rolls.slice().reverse().map(function(r){
+                var chipClass = "normal";
+                if(r.roll === 1) chipClass = "fumble";
+                else if(r.roll === r.sides) chipClass = "crit";
+                else if(r.roll >= 11 && r.roll <= 19) chipClass = "great";
+
+                var sign = r.pts > 0 ? "+" : "";
+                var timeStr = r.ts ? new Date(r.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
+
+                return '<div class="training-chip '+chipClass+'" title="Tirada: '+r.roll+' en d'+r.sides+(timeStr?' ('+timeStr+')':'')+'">'+
+                  '<div class="chip-main">'+
+                    '<span class="chip-roll-val">'+r.roll+'</span>'+
+                    '<span class="chip-die-val">d'+r.sides+'</span>'+
+                  '</div>'+
+                  '<div class="chip-pts-val">'+sign+r.pts+' pt'+(Math.abs(r.pts)===1?'':'s')+'</div>'+
+                  (canEdit ? '<button class="chip-undo-btn" data-action="undo-training-roll" data-training-id="'+t.id+'" data-roll-id="'+r.id+'" title="Deshacer tirada">×</button>' : '')+
+                '</div>';
+              }).join('')
+            )+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    });
+  }
+
+  html += '</div>';
+  return html;
 }
 
 function tplCombate(c){

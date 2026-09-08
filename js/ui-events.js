@@ -80,7 +80,7 @@ function setBind(target, path, rawValue, inputType){
     target.questMap[parts[1]] = value;
     return;
   }
-  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons","activeBuffs","quests","questClues"];
+  var listFields = ["weapons","armors","inventory","spells","stones","passivesNeg","passivesPos","goddessCurses","goddessBlessings","goddessTable","customBuffs","summons","bestiary","poisons","activeBuffs","quests","questClues","trainings"];
   if(listFields.indexOf(parts[0])!==-1){
     var arr = target[parts[0]];
     var item = arr && arr.find(function(x){return x.id===parts[1];});
@@ -681,6 +681,143 @@ function handleClick(e){
   if(action==="del-passivePos"){ if(!c || !canEditChar(c)) return; c.passivesPos = (c.passivesPos || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
   if(action==="add-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = c.goddessTable || []; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
   if(action==="del-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-training"){
+    if(!c || !canEditChar(c)) return;
+    c.trainings = c.trainings || [];
+    c.trainings.push({
+      id: uid(),
+      name: "Nuevo Entrenamiento",
+      type: "existing",
+      sides: 10,
+      rolls: [],
+      points: 0,
+      createdAt: Date.now()
+    });
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id);
+    saveState(false);
+    renderTab();
+    return;
+  }
+  if(action==="del-training"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    var name = tr ? tr.name : "este entrenamiento";
+    if(confirm("¿Eliminar \"" + name + "\"? Se perderá su historial de tiradas y puntos acumulados.")){
+      c.trainings = (c.trainings || []).filter(function(x){ return x.id !== trId; });
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="set-training-type"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-id");
+    var newType = btn.getAttribute("data-type");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr && tr.type !== newType){
+      tr.type = newType;
+      tr.sides = newType === "new" ? 20 : 10;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="roll-training"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(!tr) return;
+
+    var sides = tr.type === "new" ? 20 : 10;
+    tr.sides = sides;
+    var roll = Math.floor(Math.random() * sides) + 1;
+
+    var delta = 0;
+    var isCrit = false;
+    var isFumble = false;
+
+    if(roll === 1){
+      delta = -5;
+      isFumble = true;
+    } else if(roll === sides){
+      delta = 5;
+      isCrit = true;
+    } else if(roll >= 11 && roll <= 19){
+      delta = 3;
+    } else if(roll >= 2 && roll <= 10){
+      delta = 1;
+    }
+
+    tr.rolls = tr.rolls || [];
+    var rollEntry = {
+      id: uid(),
+      roll: roll,
+      sides: sides,
+      pts: delta,
+      ts: Date.now()
+    };
+    tr.rolls.push(rollEntry);
+    tr.points = tr.rolls.reduce(function(sum, r){ return sum + (r.pts || 0); }, 0);
+
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id);
+    saveState(false);
+
+    var ptsText = (delta >= 0 ? "+" + delta : delta) + " pto" + (Math.abs(delta) === 1 ? "" : "s");
+    var detailHtml = '<div style="font-size:1.05rem;margin-top:4px;">' +
+      'Tirada de Esfuerzo (d' + sides + '): <b>' + roll + '</b>' +
+      '<div style="font-size:.92rem;margin-top:6px;color:' + (delta > 0 ? 'var(--gold-light)' : (delta < 0 ? 'var(--danger)' : 'var(--ink)')) + ';">' +
+      'Efecto: <b>' + ptsText + '</b> al progreso' +
+      '</div></div>';
+
+    openRollModal("🥋 " + (tr.name || "Entrenamiento"), roll, detailHtml, sides, isCrit, isFumble, null, null);
+
+    state.rollLog.unshift({
+      id: uid(),
+      charName: c.name || "Aventurero",
+      label: "🥋 Entrenar: " + (tr.name || "Habilidad") + " (d" + sides + ")",
+      total: roll,
+      formulaText: "Esfuerzo: " + ptsText,
+      ts: Date.now()
+    });
+    if(state.rollLog.length > 20) state.rollLog.length = 20;
+
+    broadcastDiceRoll({
+      id: uid(),
+      charName: c.name || "Aventurero",
+      label: "🥋 Entrenar: " + (tr.name || "Habilidad") + " (d" + sides + ")",
+      total: roll,
+      formulaText: "Esfuerzo: " + ptsText,
+      isCrit: isCrit,
+      isFumble: isFumble,
+      ts: Date.now()
+    });
+
+    renderTab();
+    return;
+  }
+  if(action==="undo-training-roll"){
+    if(!c || !canEditChar(c)) return;
+    var trId = btn.getAttribute("data-training-id");
+    var rollId = btn.getAttribute("data-roll-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr && tr.rolls){
+      tr.rolls = tr.rolls.filter(function(r){ return r.id !== rollId; });
+      tr.points = tr.rolls.reduce(function(sum, r){ return sum + (r.pts || 0); }, 0);
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      renderTab();
+      showToast("Tirada eliminada", "info");
+    }
+    return;
+  }
   if(action==="toggle-bestiary-visibility"){
     if(!isGM()) return;
     var bid = btn.getAttribute("data-id");

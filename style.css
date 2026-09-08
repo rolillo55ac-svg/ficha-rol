@@ -563,6 +563,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="ficha"]::before{content:'📜';}
 .tab-btn[data-tab="mision"]::before{content:'🧭';}
 .tab-btn[data-tab="habilidades"]::before{content:'🎯';}
+.tab-btn[data-tab="entrenamiento"]::before{content:'🥋';}
 .tab-btn[data-tab="combate"]::before{content:'⚔️';}
 .tab-btn[data-tab="inventario"]::before{content:'🎒';}
 .tab-btn[data-tab="magia"]::before{content:'✨';}
@@ -1233,6 +1234,364 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   border-bottom: none;
 }
 
+/* ==========================================================================
+   SISTEMA DE ENTRENAMIENTO Y PROGRESIÓN POR ESFUERZO
+   ========================================================================== */
+.training-info-card {
+  background: linear-gradient(135deg, rgba(30, 20, 14, 0.95), rgba(18, 13, 10, 0.95));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 0 12px rgba(176,141,87,0.08);
+}
+.training-info-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+.training-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+@media(max-width: 640px) {
+  .training-info-grid { grid-template-columns: 1fr; }
+}
+.training-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  background: rgba(0,0,0,0.25);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(176,141,87,0.1);
+}
+.die-tag-info {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+.die-tag-info.d10 {
+  background: rgba(52, 152, 219, 0.25);
+  color: #74b9ff;
+  border: 1px solid rgba(52, 152, 219, 0.4);
+}
+.die-tag-info.d20 {
+  background: rgba(155, 89, 182, 0.25);
+  color: #d6a2e8;
+  border: 1px solid rgba(155, 89, 182, 0.4);
+}
+.training-rules-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(176,141,87,0.2);
+}
+.rule-chip {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+}
+.rule-chip.fumble {
+  background: rgba(231, 76, 60, 0.15);
+  color: #ff7675;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+.rule-chip.normal {
+  background: rgba(176, 141, 87, 0.12);
+  color: var(--gold-light);
+  border: 1px solid rgba(176, 141, 87, 0.25);
+}
+.rule-chip.great {
+  background: rgba(26, 188, 156, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(26, 188, 156, 0.3);
+}
+.rule-chip.crit {
+  background: rgba(241, 196, 15, 0.18);
+  color: #f9ca24;
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.15);
+}
 
+.training-empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  background: rgba(20, 14, 10, 0.6);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
 
+.training-card {
+  background: linear-gradient(145deg, rgba(26, 17, 12, 0.95), rgba(16, 11, 8, 0.95));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 0 10px rgba(176,141,87,0.05);
+  transition: border-color var(--transition-fast);
+}
+.training-card:hover {
+  border-color: rgba(176, 141, 87, 0.4);
+}
+.training-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.training-name-wrap {
+  flex: 1;
+}
+.training-name-input {
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(176,141,87,0.25);
+  padding: 4px 2px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+.training-name-input:focus {
+  border-color: var(--gold);
+  background: rgba(176,141,87,0.04);
+}
+.training-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.training-points-badge {
+  background: linear-gradient(135deg, #2b1d12, #140d08);
+  border: 1.5px solid var(--gold);
+  box-shadow: 0 0 10px rgba(176,141,87,0.25), inset 0 0 8px rgba(0,0,0,0.8);
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-align: center;
+  min-width: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.training-points-num {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1.1;
+  text-shadow: 0 0 8px rgba(222, 195, 146, 0.5);
+}
+.training-points-num.neg {
+  color: #ff7675;
+  text-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
+}
+.training-points-label {
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
 
+.training-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(176,141,87,0.15);
+  margin-bottom: 10px;
+}
+.training-type-toggle {
+  display: inline-flex;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px;
+  gap: 3px;
+}
+.training-type-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink-dim);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+.training-type-btn:hover {
+  color: var(--ink);
+  background: rgba(176,141,87,0.06);
+}
+.training-type-btn.active {
+  background: rgba(176, 141, 87, 0.2);
+  color: var(--gold-light);
+  border: 1px solid rgba(176, 141, 87, 0.4);
+  box-shadow: 0 0 8px rgba(176, 141, 87, 0.2);
+}
+.die-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.die-tag.d10 {
+  background: rgba(52, 152, 219, 0.25);
+  color: #74b9ff;
+  border: 1px solid rgba(52, 152, 219, 0.4);
+}
+.die-tag.d20 {
+  background: rgba(155, 89, 182, 0.25);
+  color: #d6a2e8;
+  border: 1px solid rgba(155, 89, 182, 0.4);
+}
+.training-roll-btn {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  font-weight: 700;
+}
+
+.training-history-section {
+  margin-top: 4px;
+}
+.training-history-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.training-chips-track {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.training-chips-track::-webkit-scrollbar {
+  height: 4px;
+}
+.training-chips-track::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+.training-chips-empty {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-style: italic;
+  padding: 6px 0;
+}
+.training-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(22, 15, 10, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  position: relative;
+}
+.training-chip:hover {
+  transform: translateY(-1px);
+}
+.training-chip.fumble {
+  border-color: rgba(231, 76, 60, 0.6);
+  background: linear-gradient(135deg, rgba(61, 12, 17, 0.9), rgba(22, 15, 10, 0.9));
+  box-shadow: 0 0 6px rgba(231, 76, 60, 0.25);
+}
+.training-chip.crit {
+  border-color: rgba(241, 196, 15, 0.7);
+  background: linear-gradient(135deg, rgba(60, 48, 18, 0.9), rgba(22, 15, 10, 0.9));
+  box-shadow: 0 0 8px rgba(241, 196, 15, 0.3);
+}
+.training-chip.great {
+  border-color: rgba(26, 188, 156, 0.6);
+  background: linear-gradient(135deg, rgba(16, 45, 40, 0.9), rgba(22, 15, 10, 0.9));
+  box-shadow: 0 0 6px rgba(26, 188, 156, 0.25);
+}
+.chip-main {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.chip-roll-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+.chip-die-val {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--ink-faint);
+}
+.chip-pts-val {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+}
+.training-chip.crit .chip-pts-val {
+  background: rgba(241, 196, 15, 0.2);
+  color: #f9ca24;
+}
+.training-chip.great .chip-pts-val {
+  background: rgba(26, 188, 156, 0.2);
+  color: #2ecc71;
+}
+.training-chip.normal .chip-pts-val {
+  background: rgba(176, 141, 87, 0.15);
+  color: var(--gold-light);
+}
+.training-chip.fumble .chip-pts-val {
+  background: rgba(231, 76, 60, 0.2);
+  color: #ff7675;
+}
+.chip-undo-btn {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0 1px;
+  opacity: 0.5;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+.chip-undo-btn:hover {
+  opacity: 1;
+  color: #ff7675;
+}
