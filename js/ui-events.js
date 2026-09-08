@@ -161,6 +161,7 @@ function handleChange(e){
 function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
+  if(btn.tagName === "SELECT" && e.type !== "change") return;
   var action = btn.getAttribute("data-action");
   var c = activeChar();
 
@@ -714,6 +715,7 @@ function handleClick(e){
       id: uid(),
       name: "Nuevo Entrenamiento",
       category: "skill",
+      notes: "",
       type: "existing",
       sides: 10,
       targetGoal: 20,

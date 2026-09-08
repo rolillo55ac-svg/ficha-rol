@@ -136,6 +136,7 @@ function ensureCharDefaults(c){
     if(tr.narrativePercentage === undefined) tr.narrativePercentage = 0;
     if(tr.narrativeNotes === undefined) tr.narrativeNotes = "";
     if(!Array.isArray(tr.milestones)) tr.milestones = [];
+    if(tr.notes === undefined) tr.notes = tr.desc || "";
 
     if(!Array.isArray(tr.rolls)) tr.rolls = [];
     if(tr.points === undefined){

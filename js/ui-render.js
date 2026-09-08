@@ -356,6 +356,10 @@ function tplEntrenamiento(c){
           (canEdit ? '<button class="row-del tr-del-btn" data-action="del-training" data-id="' + t.id + '" title="Eliminar entrenamiento" aria-label="Eliminar">✕</button>' : '') +
         '</div>' +
 
+        '<div class="tr-notes-row">' +
+          '<textarea class="tr-notes-input" data-bind="trainings.' + t.id + '.notes" placeholder="Notas, descripción o efecto del entrenamiento..." rows="1" ' + (canEdit ? '' : 'readonly') + '>' + esc(t.notes || t.desc || '') + '</textarea>' +
+        '</div>' +
+
         (canEdit ? (
           '<div class="tr-controls-row">' +
             '<button type="button" class="btn-compact tr-roll-btn" data-action="roll-training" data-id="' + t.id + '">' +
