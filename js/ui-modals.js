@@ -400,8 +400,47 @@ function openBeastMobilityModal(beastId){
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 }
 
+var activeConflictData = null;
+
+function showConflictModal(localChar, remoteData, remoteTs){
+  activeConflictData = {
+    localChar: localChar,
+    remoteData: remoteData,
+    remoteTs: remoteTs
+  };
+
+  var charName = localChar ? localChar.name : "este personaje";
+  var timeStr = remoteTs ? new Date(remoteTs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "hace un instante";
+
+  var html = '<div style="padding:6px 2px;">'+
+    '<h2 style="display:flex;align-items:center;gap:8px;color:#FBBF24;margin-top:0;font-size:1.1rem;">'+
+      '<span>⚠️</span> <span>Conflicto de Edición Simultánea</span>'+
+    '</h2>'+
+    '<p style="font-size:0.88rem;color:var(--ink);line-height:1.5;margin-bottom:12px;">'+
+      'Otro jugador o dispositivo ha guardado cambios en <strong>'+esc(charName)+'</strong> ('+timeStr+') mientras realizabas modificaciones locales.'+
+    '</p>'+
+    '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:10px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.4;">'+
+      '🔒 <strong>Tus cambios locales están protegidos:</strong> Se ha guardado una copia de seguridad en tu navegador para que nunca pierdas datos.'+
+    '</div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px;">'+
+      '<button type="button" class="btn-solid-gold" style="width:100%;padding:11px 12px;font-size:0.85rem;" data-action="resolve-conflict-server">'+
+        '📥 Cargar versión del servidor (Recomendado)'+
+      '</button>'+
+      '<button type="button" class="btn-compact" style="width:100%;padding:10px 12px;font-size:0.82rem;border-color:rgba(239,68,68,0.5);color:#F87171;" data-action="resolve-conflict-local">'+
+        '⚠️ Forzar y sobrescribir con mis cambios locales'+
+      '</button>'+
+    '</div>'+
+  '</div>';
+
+  var modalEl = document.getElementById("conflictModal");
+  if(modalEl) modalEl.innerHTML = html;
+  var overlay = document.getElementById("conflictModalOverlay");
+  if(overlay) overlay.classList.remove("hidden");
+}
+
 function closeModals(){
-  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay"].forEach(function(id){
-    document.getElementById(id).classList.add("hidden");
+  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.classList.add("hidden");
   });
 }

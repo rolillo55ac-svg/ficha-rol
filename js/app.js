@@ -71,12 +71,14 @@ function init(){
     safeListen("diceModal", "click", diceModalClick);
     safeListen("pinModal", "click", pinModalClick);
     safeListen("loreModal", "click", loreModalClick);
+    safeListen("conflictModal", "click", handleClick);
     
     safeListen("charModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("dataModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("diceModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("pinModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("loreModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("conflictModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     
     safeListen("rollOverlay", "click", function(e){
       if(e.target===this || e.target.closest("[data-action='close-roll-modal']")){

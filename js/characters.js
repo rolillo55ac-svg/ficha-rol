@@ -791,7 +791,7 @@ function sendKeepalivePush(c){
   }catch(e){}
 }
 
-async function pushCharacterById(charId){
+async function pushCharacterById(charId, forceOverwrite){
   if(!supabaseClient) return;
   var c = (state.characters||[]).find(function(x){ return x.id === charId || x.db_id === charId; });
   if(!c || !c.name || c.id==="empty") return;
@@ -814,32 +814,74 @@ async function pushCharacterById(charId){
     else if(n.includes("ink")) c.db_id = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
   }
 
-  // Control de conflicto real: verificar si el servidor tiene datos más recientes
-  if(c.db_id && c._serverUpdatedAt){
+  // Control de conflicto robusto: verificar si el servidor tiene datos más recientes
+  if(c.db_id && c._serverUpdatedAt && !forceOverwrite){
     try{
       var checkRes = await supabaseClient.from('characters').select('updated_at, data').eq('id', c.db_id).maybeSingle();
       if(checkRes.data && checkRes.data.updated_at){
         var remoteTs = new Date(checkRes.data.updated_at).getTime();
-        if(remoteTs > c._serverUpdatedAt + 2000 && (!c._lastLocalEdit || remoteTs > c._lastLocalEdit + 2000)){
-          console.warn("Conflicto detectado: la ficha en el servidor es más reciente. Actualizando local con datos del servidor.");
-          showToast("Aviso: " + c.name + " fue actualizado desde el servidor.", "info");
-          if(checkRes.data.data){
-            var updatedRemote = checkRes.data.data;
-            updatedRemote.db_id = c.db_id;
-            updatedRemote._serverUpdatedAt = remoteTs;
-            updatedRemote._isDirty = false;
+        // Si el servidor fue actualizado después de nuestra última sincronización conocida (+500ms contra jitter de red)
+        if(remoteTs > (c._serverUpdatedAt || 0) + 500){
+          console.warn("Conflicto detectado: la ficha en el servidor es más reciente para", c.name, "Remoto:", remoteTs, "LocalSync:", c._serverUpdatedAt);
+
+          var hasLocalDirty = c._isDirty || dirtyCharIds.has(c.id) || (c.db_id && dirtyCharIds.has(c.db_id));
+
+          if(hasLocalDirty){
+            // 1. Guardar copia de seguridad local de inmediato para garantizar CERO pérdida de datos
+            try {
+              var backupKey = 'krysalis_conflict_backup_' + c.id;
+              var conflictEntry = {
+                timestamp: new Date().toISOString(),
+                charId: c.id,
+                charDbId: c.db_id,
+                charName: c.name,
+                serverUpdatedAt: remoteTs,
+                localLastEdit: c._lastLocalEdit || Date.now(),
+                data: JSON.parse(JSON.stringify(c))
+              };
+              localStorage.setItem(backupKey, JSON.stringify(conflictEntry));
+              var historyKey = 'krysalis_conflict_history';
+              var hist = JSON.parse(localStorage.getItem(historyKey) || '[]');
+              hist.unshift(conflictEntry);
+              if(hist.length > 10) hist.pop();
+              localStorage.setItem(historyKey, JSON.stringify(hist));
+            } catch(eB){ console.warn("Error guardando backup de conflicto:", eB); }
+
+            // 2. Detener la subida para evitar sobrescritura silenciosa en el servidor
             dirtyCharIds.delete(c.id);
             if(c.db_id) dirtyCharIds.delete(c.db_id);
-            var idx = state.characters.findIndex(function(x){ return x.id === c.id || x.db_id === c.db_id; });
-            if(idx !== -1) state.characters[idx] = ensureCharDefaults(updatedRemote);
-            saveState(true);
-            renderTopbar();
-            renderTab();
+            c._isDirty = false;
+
+            // 3. Abrir modal interactivo de resolución de conflicto
+            if(typeof showConflictModal === "function" && checkRes.data.data){
+              showConflictModal(c, checkRes.data.data, remoteTs);
+            } else {
+              showToast("⚠️ Conflicto: " + c.name + " fue modificado por otro jugador. Cambios locales respaldados.", "warning");
+            }
             return;
+          } else {
+            // Sin cambios locales pendientes: sincronizar de forma limpia con la verdad del servidor
+            if(checkRes.data.data){
+              var updatedRemote = checkRes.data.data;
+              updatedRemote.db_id = c.db_id;
+              updatedRemote._serverUpdatedAt = remoteTs;
+              updatedRemote._isDirty = false;
+              dirtyCharIds.delete(c.id);
+              if(c.db_id) dirtyCharIds.delete(c.db_id);
+              var idx = state.characters.findIndex(function(x){ return x.id === c.id || x.db_id === c.db_id; });
+              if(idx !== -1) state.characters[idx] = ensureCharDefaults(updatedRemote);
+              saveState(true);
+              renderTopbar();
+              renderTab();
+              showToast("Aviso: " + c.name + " actualizado con la versión más reciente del servidor.", "info");
+              return;
+            }
           }
         }
       }
-    }catch(errCheck){}
+    }catch(errCheck){
+      console.warn("Error verificando versión del servidor:", errCheck);
+    }
   }
 
   // Sanitizar payload: nunca guardar banderas de runtime transitorias en Supabase

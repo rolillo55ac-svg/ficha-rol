@@ -171,7 +171,38 @@ function handleClick(e){
   if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-terrain"){ loreTerrainFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
-  if(action==="set-buff-tab"){ currentBuffTab = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="resolve-conflict-server"){
+    if(activeConflictData && activeConflictData.remoteData){
+      var rem = activeConflictData.remoteData;
+      var cId = (activeConflictData.localChar && activeConflictData.localChar.id) || (rem.id);
+      var idx = state.characters.findIndex(function(x){ return x.id === cId || (rem.db_id && x.db_id === rem.db_id); });
+      if(idx !== -1){
+        var updated = ensureCharDefaults(rem);
+        updated._serverUpdatedAt = activeConflictData.remoteTs || Date.now();
+        updated._isDirty = false;
+        dirtyCharIds.delete(cId);
+        if(updated.db_id) dirtyCharIds.delete(updated.db_id);
+        state.characters[idx] = updated;
+      }
+      closeModals();
+      saveState(true);
+      renderTopbar();
+      renderTab();
+      showToast("Cargada la versión del servidor. Tus cambios previos están respaldados localmente.", "success");
+      activeConflictData = null;
+    }
+    return;
+  }
+  if(action==="resolve-conflict-local"){
+    if(activeConflictData && activeConflictData.localChar){
+      var loc = activeConflictData.localChar;
+      closeModals();
+      pushCharacterById(loc.id, true);
+      showToast("Sobrescribiendo datos del servidor con tu versión local...", "warning");
+      activeConflictData = null;
+    }
+    return;
+  }
 
   if(action==="switch-tab"){
     if(document.activeElement && document.activeElement.matches("input, textarea, select")){
