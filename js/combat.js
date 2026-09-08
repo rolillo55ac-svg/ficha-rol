@@ -130,6 +130,34 @@ async function changeGoldRPC(char, amount){
   return changeMoneyRPC(char, amount, 0);
 }
 
+async function manageListItemRPC(char, listName, action, itemData, itemId, delta){
+  if(!char || !listName || !action) return;
+  var charDbId = char.db_id || char.id;
+  var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
+
+  if(!supabaseClient || !charDbId) return;
+  try{
+    var res = await supabaseClient.rpc('manage_character_list_item', {
+      p_character_id: charDbId,
+      p_list_name: listName,
+      p_action: action,
+      p_item_data: itemData || null,
+      p_item_id: itemId || null,
+      p_delta: delta || 0,
+      p_command_id: cmdId
+    });
+    if(res.data && Array.isArray(res.data.items)){
+      char[listName] = res.data.items;
+      char._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
+      char._isDirty = false;
+      dirtyCharIds.delete(char.id);
+      if(char.db_id) dirtyCharIds.delete(char.db_id);
+    }
+  }catch(e){
+    console.warn('RPC manage_character_list_item fallback:', e);
+  }
+}
+
 function calculateTotalArmor(char){
   if(!char || !Array.isArray(char.armors)) return { totalAbsorcion: 0, totalEstorbo: 0 };
   var totAbs = 0;

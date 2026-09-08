@@ -153,6 +153,24 @@ function handleChange(e){
     }
   }
 
+  var bindParts = bind ? bind.split(".") : [];
+  var atomicLists = ["inventory","weapons","armors","stones","poisons","customBuffs","spells","summons","passivesNeg","passivesPos","goddessTable"];
+  if(!isGlobal && target && bindParts.length >= 3 && atomicLists.indexOf(bindParts[0]) !== -1){
+    setBind(target, bind, el.value, el.type);
+    if(e.type === "input"){
+      return;
+    }
+    if(e.type === "change"){
+      var it = (target[bindParts[0]] || []).find(function(x){ return x.id === bindParts[1]; });
+      if(it){
+        var patch = {};
+        patch[bindParts[2]] = it[bindParts[2]];
+        manageListItemRPC(target, bindParts[0], 'update_item', patch, bindParts[1]);
+      }
+      return;
+    }
+  }
+
   setBind(target, bind, el.value, el.type);
   if(!isGlobal && target && target.id){
     target._lastLocalEdit = Date.now();
@@ -485,8 +503,10 @@ function handleClick(e){
       var remBuff = c.activeBuffs[idx];
       if(remBuff && remBuff.shieldGranted){
         c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remBuff.shieldGranted);
+        changeShieldRPC(c, -remBuff.shieldGranted);
       }
       c.activeBuffs.splice(idx, 1);
+      manageListItemRPC(c, 'activeBuffs', 'remove', null, bid);
     } else {
       var buffToAdd = (state.buffCatalog||[]).find(function(b){ return b.id === bid; });
       if(buffToAdd){
@@ -496,12 +516,13 @@ function handleClick(e){
           if(sBonus > 0){
             c.combat.escudoActual = num(c.combat.escudoActual, 0) + sBonus;
             buffObj.shieldGranted = sBonus;
+            changeShieldRPC(c, sBonus);
           }
         }
         c.activeBuffs.push(buffObj);
+        manageListItemRPC(c, 'activeBuffs', 'add', buffObj);
       }
     }
-    saveState();
     renderTopbar();
     renderTab();
     broadcastCharStatUpdate(c.id, c.combat);
@@ -513,9 +534,10 @@ function handleClick(e){
       var remBuff2 = c.activeBuffs.find(function(ab){ return ab.id === buffId; });
       if(remBuff2 && remBuff2.shieldGranted){
         c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remBuff2.shieldGranted);
+        changeShieldRPC(c, -remBuff2.shieldGranted);
       }
       c.activeBuffs = c.activeBuffs.filter(function(ab){ return ab.id !== buffId; });
-      saveState();
+      manageListItemRPC(c, 'activeBuffs', 'remove', null, buffId);
       renderTopbar();
       renderTab();
       broadcastCharStatUpdate(c.id, c.combat);
@@ -568,15 +590,19 @@ function handleClick(e){
   if(action==="add-custom-buff"){
     if(!canEditChar(c)) return;
     if(!c.customBuffs) c.customBuffs=[];
-    c.customBuffs.push({id:uid(),name:""});
-    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
-    saveState(); renderTab(); return;
+    var newCb = {id:uid(),name:""};
+    c.customBuffs.push(newCb);
+    renderTab();
+    manageListItemRPC(c, 'customBuffs', 'add', newCb);
+    return;
   }
   if(action==="del-custom-buff"){
     if(!canEditChar(c)) return;
-    c.customBuffs = (c.customBuffs||[]).filter(function(b){return b.id!==btn.getAttribute("data-id");});
-    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
-    saveState(); renderTab(); return;
+    var cbId = btn.getAttribute("data-id");
+    c.customBuffs = (c.customBuffs||[]).filter(function(b){return b.id!==cbId;});
+    renderTab();
+    manageListItemRPC(c, 'customBuffs', 'remove', null, cbId);
+    return;
   }
   if(action==="roll-init"){ performD10Roll(c.name, "Iniciativa", c.combat.iniciativa); return; }
   if(action==="roll-weapon"){
@@ -605,8 +631,8 @@ function handleClick(e){
       wpnObj.dano = catItem.dano;
       wpnObj.alcance = catItem.alcance;
       wpnObj.catalogId = catItem.id;
-      c._lastLocalEdit = Date.now(); markCharDirty(c.id);
-      saveState(); renderTab();
+      renderTab();
+      manageListItemRPC(c, 'weapons', 'update_item', { name: catItem.name, dano: catItem.dano, alcance: catItem.alcance, catalogId: catItem.id }, wid);
       showToast("Arma equipada: " + catItem.name, "success");
     }
     return;
@@ -660,24 +686,28 @@ function handleClick(e){
     showToast("Buff eliminado", "info");
     return;
   }
-  if(action==="add-weapon"){ if(!c || !canEditChar(c)) return; c.weapons = c.weapons || []; c.weapons.push({id:uid(),name:"",dano:"",alcance:"",catalogId:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-weapon"){ if(!c || !canEditChar(c)) return; c.weapons = (c.weapons || []).filter(function(w){return w.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="add-armor"){ if(!c || !canEditChar(c)) return; c.armors = c.armors || []; c.armors.push({id:uid(),name:"",absorcion:"",estorbo:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-armor"){ if(!c || !canEditChar(c)) return; c.armors = (c.armors || []).filter(function(a){return a.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="add-inventory"){ if(!c || !canEditChar(c)) return; c.inventory = c.inventory || []; c.inventory.push({id:uid(),name:"",qty:1}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-inventory"){ if(!c || !canEditChar(c)) return; c.inventory = (c.inventory || []).filter(function(i){return i.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-weapon"){ if(!c || !canEditChar(c)) return; c.weapons = c.weapons || []; var newWpn = {id:uid(),name:"",dano:"",alcance:"",catalogId:""}; c.weapons.push(newWpn); renderTab(); manageListItemRPC(c, 'weapons', 'add', newWpn); return; }
+  if(action==="del-weapon"){ if(!c || !canEditChar(c)) return; var wid = btn.getAttribute("data-id"); c.weapons = (c.weapons || []).filter(function(w){return w.id!==wid;}); renderTab(); manageListItemRPC(c, 'weapons', 'remove', null, wid); return; }
+  if(action==="add-armor"){ if(!c || !canEditChar(c)) return; c.armors = c.armors || []; var newArm = {id:uid(),name:"",absorcion:"",estorbo:""}; c.armors.push(newArm); renderTab(); manageListItemRPC(c, 'armors', 'add', newArm); return; }
+  if(action==="del-armor"){ if(!c || !canEditChar(c)) return; var aid = btn.getAttribute("data-id"); c.armors = (c.armors || []).filter(function(a){return a.id!==aid;}); renderTab(); manageListItemRPC(c, 'armors', 'remove', null, aid); return; }
+  if(action==="add-inventory"){ if(!c || !canEditChar(c)) return; c.inventory = c.inventory || []; var newInv = {id:uid(),name:"",qty:1}; c.inventory.push(newInv); renderTab(); manageListItemRPC(c, 'inventory', 'add', newInv); return; }
+  if(action==="del-inventory"){ if(!c || !canEditChar(c)) return; var iid = btn.getAttribute("data-id"); c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;}); renderTab(); manageListItemRPC(c, 'inventory', 'remove', null, iid); return; }
   if(action==="add-spell"){
     if(!c || !canEditChar(c)) return;
     if(!c.spells) c.spells = [];
-    c.spells.push({id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false});
-    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
-    saveState(false); renderTab(); return;
+    var newSp = {id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false};
+    c.spells.push(newSp);
+    renderTab();
+    manageListItemRPC(c, 'spells', 'add', newSp);
+    return;
   }
   if(action==="del-spell"){
     if(!c || !canEditChar(c)) return;
-    c.spells = (c.spells||[]).filter(function(s){return s.id!==btn.getAttribute("data-id");});
-    c._lastLocalEdit = Date.now(); markCharDirty(c.id);
-    saveState(false); renderTab(); return;
+    var spId = btn.getAttribute("data-id");
+    c.spells = (c.spells||[]).filter(function(s){return s.id!==spId;});
+    renderTab();
+    manageListItemRPC(c, 'spells', 'remove', null, spId);
+    return;
   }
   if(action==="cast-spell"){
     var spId = btn.getAttribute("data-id");
@@ -702,12 +732,14 @@ function handleClick(e){
         sp.shieldStacks.push(shieldGain);
         sp.shieldGranted = (sp.shieldGranted || 0) + shieldGain;
         statNotice = " [🛡️ +" + shieldGain + " Escudo/Vida Falsa (Carga " + sp.activeStacks + ")]";
+        changeShieldRPC(c, shieldGain);
       }
     } else if(sp.statAttr && sp.statMod){
       statNotice = " [Carga " + sp.activeStacks + ": " + sp.statMod + " a " + sp.statAttr + "]";
     }
 
-    saveState();
+    changeManaRPC(c, -cost);
+    manageListItemRPC(c, 'spells', 'update_item', sp, sp.id);
     renderTopbar();
     renderTab();
     broadcastCharStatUpdate(c.id, c.combat);
@@ -725,11 +757,13 @@ function handleClick(e){
         c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - rem);
         sp2.shieldGranted = Math.max(0, (sp2.shieldGranted || 0) - rem);
         shieldNotice = " (-" + rem + " Escudo/Vida Falsa)";
+        changeShieldRPC(c, -rem);
       } else if(sp2.shieldGranted && sp2.shieldGranted > 0){
         var rem2 = sp2.shieldGranted;
         c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - rem2);
         sp2.shieldGranted = 0;
         shieldNotice = " (-" + rem2 + " Escudo/Vida Falsa)";
+        changeShieldRPC(c, -rem2);
       }
 
       sp2.activeStacks = Math.max(0, (sp2.activeStacks || 1) - 1);
@@ -743,25 +777,25 @@ function handleClick(e){
         showToast("Retirada 1 carga de " + (sp2.name || "Hechizo") + " (" + sp2.activeStacks + " restantes)" + shieldNotice + ".", "info");
       }
 
-      saveState();
+      manageListItemRPC(c, 'spells', 'update_item', sp2, sp2.id);
       renderTopbar();
       renderTab();
       broadcastCharStatUpdate(c.id, c.combat);
     }
     return;
   }
-  if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; c.stones.push({id:uid(),color:"",efecto:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-stone"){ if(!c || !canEditChar(c)) return; c.stones = (c.stones || []).filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; c.summons.push({id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-summon"){ if(!c || !canEditChar(c)) return; c.summons = (c.summons || []).filter(function(s){return s.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="add-poison"){ if(!c || !canEditChar(c)) return; if(!c.poisons)c.poisons=[]; c.poisons.push({id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-poison"){ if(!c || !canEditChar(c)) return; c.poisons = (c.poisons || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="add-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = c.passivesNeg || []; c.passivesNeg.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = (c.passivesNeg || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="add-passivePos"){ if(!c || !canEditChar(c)) return; c.passivesPos = c.passivesPos || []; c.passivesPos.push({id:uid(),text:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-passivePos"){ if(!c || !canEditChar(c)) return; c.passivesPos = (c.passivesPos || []).filter(function(p){return p.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="add-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = c.goddessTable || []; c.goddessTable.push({id:uid(),nombre:"",gustos:"",disgustos:""}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
-  if(action==="del-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==btn.getAttribute("data-id");}); c._lastLocalEdit = Date.now(); markCharDirty(c.id); saveState(false); renderTab(); return; }
+  if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; var newSt = {id:uid(),color:"",efecto:""}; c.stones.push(newSt); renderTab(); manageListItemRPC(c, 'stones', 'add', newSt); return; }
+  if(action==="del-stone"){ if(!c || !canEditChar(c)) return; var sid = btn.getAttribute("data-id"); c.stones = (c.stones || []).filter(function(s){return s.id!==sid;}); renderTab(); manageListItemRPC(c, 'stones', 'remove', null, sid); return; }
+  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}; c.summons.push(newSm); renderTab(); manageListItemRPC(c, 'summons', 'add', newSm); return; }
+  if(action==="del-summon"){ if(!c || !canEditChar(c)) return; var smId = btn.getAttribute("data-id"); c.summons = (c.summons || []).filter(function(s){return s.id!==smId;}); renderTab(); manageListItemRPC(c, 'summons', 'remove', null, smId); return; }
+  if(action==="add-poison"){ if(!c || !canEditChar(c)) return; if(!c.poisons)c.poisons=[]; var newPs = {id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}; c.poisons.push(newPs); renderTab(); manageListItemRPC(c, 'poisons', 'add', newPs); return; }
+  if(action==="del-poison"){ if(!c || !canEditChar(c)) return; var psId = btn.getAttribute("data-id"); c.poisons = (c.poisons || []).filter(function(p){return p.id!==psId;}); renderTab(); manageListItemRPC(c, 'poisons', 'remove', null, psId); return; }
+  if(action==="add-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = c.passivesNeg || []; var newPn = {id:uid(),text:""}; c.passivesNeg.push(newPn); renderTab(); manageListItemRPC(c, 'passivesNeg', 'add', newPn); return; }
+  if(action==="del-passiveNeg"){ if(!c || !canEditChar(c)) return; var pnId = btn.getAttribute("data-id"); c.passivesNeg = (c.passivesNeg || []).filter(function(p){return p.id!==pnId;}); renderTab(); manageListItemRPC(c, 'passivesNeg', 'remove', null, pnId); return; }
+  if(action==="add-passivePos"){ if(!c || !canEditChar(c)) return; c.passivesPos = c.passivesPos || []; var newPp = {id:uid(),text:""}; c.passivesPos.push(newPp); renderTab(); manageListItemRPC(c, 'passivesPos', 'add', newPp); return; }
+  if(action==="del-passivePos"){ if(!c || !canEditChar(c)) return; var ppId = btn.getAttribute("data-id"); c.passivesPos = (c.passivesPos || []).filter(function(p){return p.id!==ppId;}); renderTab(); manageListItemRPC(c, 'passivesPos', 'remove', null, ppId); return; }
+  if(action==="add-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = c.goddessTable || []; var newGd = {id:uid(),nombre:"",gustos:"",disgustos:""}; c.goddessTable.push(newGd); renderTab(); manageListItemRPC(c, 'goddessTable', 'add', newGd); return; }
+  if(action==="del-goddess"){ if(!c || !canEditChar(c)) return; var gdId = btn.getAttribute("data-id"); c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==gdId;}); renderTab(); manageListItemRPC(c, 'goddessTable', 'remove', null, gdId); return; }
   if(action==="add-training"){
     if(!c || !canEditChar(c)) return;
     c.trainings = c.trainings || [];
