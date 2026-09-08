@@ -131,6 +131,28 @@ function handleChange(e){
     return;
   }
   var bind = el.getAttribute("data-bind");
+  if(!isGlobal && target && (bind === "money.oro" || bind === "money.plata")){
+    var curVal = Math.max(0, num(el.value, 0));
+    var part = bind.split(".")[1];
+    target.money = target.money || { oro: 0, plata: 0 };
+    if(e.type === "input"){
+      target.money[part] = curVal;
+      return;
+    }
+    if(e.type === "change"){
+      var lastVal = el.getAttribute("data-last-val");
+      var oldVal = (lastVal !== null && lastVal !== undefined) ? num(lastVal, 0) : num(target.money[part], 0);
+      var delta = curVal - oldVal;
+      el.setAttribute("data-last-val", curVal);
+      target.money[part] = curVal;
+      if(delta !== 0){
+        if(part === "oro") changeMoneyRPC(target, delta, 0);
+        else changeMoneyRPC(target, 0, delta);
+      }
+      return;
+    }
+  }
+
   setBind(target, bind, el.value, el.type);
   if(!isGlobal && target && target.id){
     target._lastLocalEdit = Date.now();
@@ -219,9 +241,9 @@ function handleClick(e){
     if(!canEditChar(c)) return;
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
     var maxHp = num(c.combat.pvMax,0) || 999;
+    // Actualización visual optimista sin marcar dirty ni forzar guardado completo
     c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, -999, maxHp);
-    c._lastLocalEdit = Date.now();
-    saveState(true); renderTopbar();
+    renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
 
     if(d1 < 0) applyDamageRPC(c, d1);
@@ -231,19 +253,20 @@ function handleClick(e){
   if(action==="shield-mod"){
     if(!canEditChar(c)) return;
     var ds = parseInt(btn.getAttribute("data-delta"),10);
+    // Actualización visual optimista sin marcar dirty ni forzar guardado completo
     c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
-    c._lastLocalEdit = Date.now();
-    markCharDirty(c.id);
-    saveState(false); renderTopbar();
+    renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
+
+    changeShieldRPC(c, ds);
     return;
   }
   if(action==="mana-mod"){
     if(!canEditChar(c)) return;
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
+    // Actualización visual optimista sin marcar dirty ni forzar guardado completo
     c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, num(c.combat.manaMax,0)||999);
-    c._lastLocalEdit = Date.now();
-    saveState(true); renderTopbar();
+    renderTopbar();
     broadcastCharStatUpdate(c.id, c.combat);
 
     changeManaRPC(c, d2);
