@@ -232,6 +232,7 @@ function performD10Roll(charName, label, mod){
   }
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
       if(label.toLowerCase().includes("melé") && (ab.attr === "melee" || ab.attr === "melé")){
         var b1 = parseFloat(ab.bonus);
         if(!isNaN(b1)) extra += b1;

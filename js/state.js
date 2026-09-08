@@ -35,6 +35,18 @@ function getSeedWeaponsCatalog(){
   ];
 }
 
+var INVENTORY_CATEGORIES = [
+  "Armas",
+  "Armadura y vestimenta",
+  "Accesorios",
+  "Consumibles",
+  "Supervivencia",
+  "Objetos de misión",
+  "Materiales/Ingredientes",
+  "Objetos especiales/únicos",
+  "Miscelánea"
+];
+
 function getSeedBuffCatalog(){
   return [
     {id:uid(), name:"Sangre Vampírica", type:"buff", attr:"melee", bonus:"+1", duration:"permanent", durationTurns:0, desc:"+1 a ataques melé", visible:true},
@@ -101,6 +113,9 @@ function ensureCharDefaults(c){
   if(!Array.isArray(c.weapons)) c.weapons = [];
   if(!Array.isArray(c.armors)) c.armors = [];
   if(!Array.isArray(c.inventory)) c.inventory = [];
+  c.inventory.forEach(function(it){
+    if(!it.category) it.category = "Miscelánea";
+  });
   if(!Array.isArray(c.spells)) c.spells = [];
   if(!Array.isArray(c.stones)) c.stones = [];
   if(!Array.isArray(c.passivesNeg)) c.passivesNeg = [];
@@ -113,6 +128,9 @@ function ensureCharDefaults(c){
   if(!Array.isArray(c.customBuffs)) c.customBuffs = [];
   if(!Array.isArray(c.poisons)) c.poisons = [];
   if(!Array.isArray(c.activeBuffs)) c.activeBuffs = [];
+  c.activeBuffs.forEach(function(ab){
+    if(ab.active === undefined) ab.active = true;
+  });
   if(c.personalNotes === undefined) c.personalNotes = "";
   if(!Array.isArray(c.trainings)) c.trainings = [];
   c.trainings.forEach(function(tr){
@@ -440,6 +458,7 @@ function getEffectiveAttr(aKey, c){
   
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
       if(ab.attr === aKey && ab.bonus){
         var bonusNum = parseFloat(ab.bonus);
         if(!isNaN(bonusNum)) base += bonusNum;
@@ -478,6 +497,7 @@ function skillTotal(skill, c){
   var total = skillBase(skill, c) + num(c.skillBonus[skill.id],0);
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
       if(ab.attr === skill.id && ab.bonus){
         var bonusNum = parseFloat(ab.bonus);
         if(!isNaN(bonusNum)) total += bonusNum;
@@ -540,6 +560,7 @@ function getEffectiveCombatStat(statKey, c){
   var base = isShield ? num(c.combat ? c.combat.escudoActual : 0, 0) : num(c.combat ? c.combat[statKey] : 0, 0);
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
       if((ab.attr === statKey || (isShield && isShieldAttr(ab.attr, ab.name))) && ab.bonus){
         var b = parseFloat(ab.bonus);
         if(!isNaN(b)) base += b;

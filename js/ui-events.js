@@ -114,7 +114,7 @@ function handleChange(e){
   var actEl = e.target.closest("[data-action]");
   if(actEl){
     var actName = actEl.getAttribute("data-action");
-    if(actName === "set-training-category" || actName === "set-training-linked"){
+    if(actName === "set-training-category" || actName === "set-training-linked" || actName === "filter-inventory-category" || actName === "assign-buff-from-catalog"){
       handleClick(e);
       return;
     }
@@ -166,6 +166,9 @@ function handleChange(e){
         var patch = {};
         patch[bindParts[2]] = it[bindParts[2]];
         manageListItemRPC(target, bindParts[0], 'update_item', patch, bindParts[1]);
+        if(bindParts[0] === "inventory" && bindParts[2] === "category"){
+          renderTab();
+        }
       }
       return;
     }
@@ -495,32 +498,103 @@ function handleClick(e){
     return;
   }
 
-  if(action==="toggle-global-buff"){
-    var bid = btn.getAttribute("data-id");
+  if(action==="assign-buff-from-catalog"){
+    if(!c || !canEditChar(c)) return;
+    var bid = btn.getAttribute("data-id") || btn.value;
+    if(!bid) return;
     if(!c.activeBuffs) c.activeBuffs = [];
-    var idx = c.activeBuffs.findIndex(function(ab){ return ab.id === bid; });
-    if(idx !== -1){
-      var remBuff = c.activeBuffs[idx];
-      if(remBuff && remBuff.shieldGranted){
-        c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remBuff.shieldGranted);
-        changeShieldRPC(c, -remBuff.shieldGranted);
+    var existing = c.activeBuffs.find(function(ab){ return ab.id === bid; });
+    if(existing){
+      showToast("Este buff ya está asignado al personaje", "warning");
+      return;
+    }
+    var bDef = (state.buffCatalog || []).find(function(b){ return b.id === bid; });
+    if(!bDef) return;
+
+    var buffObj = {
+      id: bDef.id,
+      name: bDef.name,
+      type: bDef.type,
+      bonus: bDef.bonus,
+      attr: bDef.attr,
+      active: true,
+      shieldGranted: 0
+    };
+
+    if(isShieldAttr(bDef.attr, bDef.name)){
+      var sBonus = parseShieldBonus(bDef.bonus);
+      if(sBonus > 0){
+        c.combat.escudoActual = num(c.combat.escudoActual, 0) + sBonus;
+        buffObj.shieldGranted = sBonus;
+        changeShieldRPC(c, sBonus);
       }
-      c.activeBuffs.splice(idx, 1);
-      manageListItemRPC(c, 'activeBuffs', 'remove', null, bid);
-    } else {
-      var buffToAdd = (state.buffCatalog||[]).find(function(b){ return b.id === bid; });
-      if(buffToAdd){
-        var buffObj = {id: buffToAdd.id, name: buffToAdd.name, type: buffToAdd.type, bonus: buffToAdd.bonus, attr: buffToAdd.attr};
-        if(isShieldAttr(buffToAdd.attr, buffToAdd.name)){
-          var sBonus = parseShieldBonus(buffToAdd.bonus);
-          if(sBonus > 0){
-            c.combat.escudoActual = num(c.combat.escudoActual, 0) + sBonus;
-            buffObj.shieldGranted = sBonus;
-            changeShieldRPC(c, sBonus);
+    }
+
+    c.activeBuffs.push(buffObj);
+    manageListItemRPC(c, 'activeBuffs', 'add', buffObj);
+    renderTopbar();
+    renderTab();
+    broadcastCharStatUpdate(c.id, c.combat);
+    showToast("Buff '" + bDef.name + "' asignado y activado", "success");
+    return;
+  }
+  if(action==="toggle-global-buff"){
+    if(!c || !canEditChar(c)) return;
+    var bid = btn.getAttribute("data-id");
+    if(!bid) return;
+    if(!c.activeBuffs) c.activeBuffs = [];
+    var ab = c.activeBuffs.find(function(x){ return x.id === bid; });
+
+    if(!ab){
+      var bToAdd = (state.buffCatalog || []).find(function(b){ return b.id === bid; });
+      if(bToAdd){
+        var newBuff = {
+          id: bToAdd.id,
+          name: bToAdd.name,
+          type: bToAdd.type,
+          bonus: bToAdd.bonus,
+          attr: bToAdd.attr,
+          active: true,
+          shieldGranted: 0
+        };
+        if(isShieldAttr(bToAdd.attr, bToAdd.name)){
+          var sBonus2 = parseShieldBonus(bToAdd.bonus);
+          if(sBonus2 > 0){
+            c.combat.escudoActual = num(c.combat.escudoActual, 0) + sBonus2;
+            newBuff.shieldGranted = sBonus2;
+            changeShieldRPC(c, sBonus2);
           }
         }
-        c.activeBuffs.push(buffObj);
-        manageListItemRPC(c, 'activeBuffs', 'add', buffObj);
+        c.activeBuffs.push(newBuff);
+        manageListItemRPC(c, 'activeBuffs', 'add', newBuff);
+        showToast("Buff '" + bToAdd.name + "' asignado y activado", "success");
+      }
+    } else {
+      var wasActive = ab.active !== false;
+      if(wasActive){
+        ab.active = false;
+        if(ab.shieldGranted){
+          var remShield = ab.shieldGranted;
+          c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remShield);
+          changeShieldRPC(c, -remShield);
+          ab.shieldGranted = 0;
+        }
+        manageListItemRPC(c, 'activeBuffs', 'update_item', { active: false, shieldGranted: 0 }, bid);
+        showToast("Buff '" + ab.name + "' desactivado", "info");
+      } else {
+        ab.active = true;
+        var newShieldGranted = 0;
+        if(isShieldAttr(ab.attr, ab.name)){
+          var sBonus3 = parseShieldBonus(ab.bonus);
+          if(sBonus3 > 0){
+            c.combat.escudoActual = num(c.combat.escudoActual, 0) + sBonus3;
+            newShieldGranted = sBonus3;
+            ab.shieldGranted = sBonus3;
+            changeShieldRPC(c, sBonus3);
+          }
+        }
+        manageListItemRPC(c, 'activeBuffs', 'update_item', { active: true, shieldGranted: newShieldGranted }, bid);
+        showToast("Buff '" + ab.name + "' activado", "success");
       }
     }
     renderTopbar();
@@ -529,6 +603,7 @@ function handleClick(e){
     return;
   }
   if(action==="remove-active-buff"){
+    if(!c || !canEditChar(c)) return;
     var buffId = btn.getAttribute("data-id");
     if(c.activeBuffs){
       var remBuff2 = c.activeBuffs.find(function(ab){ return ab.id === buffId; });
@@ -541,7 +616,7 @@ function handleClick(e){
       renderTopbar();
       renderTab();
       broadcastCharStatUpdate(c.id, c.combat);
-      showToast("Buff eliminado del personaje", "info");
+      showToast("Buff desanclado del personaje (catálogo intacto)", "info");
     }
     return;
   }
@@ -690,7 +765,21 @@ function handleClick(e){
   if(action==="del-weapon"){ if(!c || !canEditChar(c)) return; var wid = btn.getAttribute("data-id"); c.weapons = (c.weapons || []).filter(function(w){return w.id!==wid;}); renderTab(); manageListItemRPC(c, 'weapons', 'remove', null, wid); return; }
   if(action==="add-armor"){ if(!c || !canEditChar(c)) return; c.armors = c.armors || []; var newArm = {id:uid(),name:"",absorcion:"",estorbo:""}; c.armors.push(newArm); renderTab(); manageListItemRPC(c, 'armors', 'add', newArm); return; }
   if(action==="del-armor"){ if(!c || !canEditChar(c)) return; var aid = btn.getAttribute("data-id"); c.armors = (c.armors || []).filter(function(a){return a.id!==aid;}); renderTab(); manageListItemRPC(c, 'armors', 'remove', null, aid); return; }
-  if(action==="add-inventory"){ if(!c || !canEditChar(c)) return; c.inventory = c.inventory || []; var newInv = {id:uid(),name:"",qty:1}; c.inventory.push(newInv); renderTab(); manageListItemRPC(c, 'inventory', 'add', newInv); return; }
+  if(action==="filter-inventory-category"){
+    state.invCategoryFilter = btn.value || "all";
+    renderTab();
+    return;
+  }
+  if(action==="add-inventory"){
+    if(!c || !canEditChar(c)) return;
+    c.inventory = c.inventory || [];
+    var defaultCat = (state.invCategoryFilter && state.invCategoryFilter !== "all") ? state.invCategoryFilter : "Miscelánea";
+    var newInv = {id:uid(), name:"", qty:1, category: defaultCat};
+    c.inventory.push(newInv);
+    renderTab();
+    manageListItemRPC(c, 'inventory', 'add', newInv);
+    return;
+  }
   if(action==="del-inventory"){ if(!c || !canEditChar(c)) return; var iid = btn.getAttribute("data-id"); c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;}); renderTab(); manageListItemRPC(c, 'inventory', 'remove', null, iid); return; }
   if(action==="add-spell"){
     if(!c || !canEditChar(c)) return;

@@ -435,16 +435,22 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .row-del:active{transform:scale(0.9);}
 .weapons-row{grid-template-columns:1fr 36px 36px;}
 .armor-row{grid-template-columns:1fr 65px 65px 36px;}
-.inv-row{grid-template-columns:1fr 55px 36px;}
+.inv-row{grid-template-columns:1fr 145px 55px 36px;}
 .spell-row{grid-template-columns:1fr 75px 85px 36px;}
 .stone-row{grid-template-columns:85px 1fr 36px;}
 .text-row{grid-template-columns:1fr 36px;}
 .god-row{grid-template-columns:1fr 1fr 1fr 36px;}
+@media(max-width:540px){
+  .inv-row{grid-template-columns:1fr 115px 48px 36px;}
+}
 @media(max-width:480px){
   .armor-row{grid-template-columns:1fr 1fr 36px;}
   .spell-row{grid-template-columns:1fr 1fr 36px;}
   .god-row{grid-template-columns:1fr 1fr 36px;}
   .stone-row{grid-template-columns:1fr 36px;}
+}
+@media(max-width:400px){
+  .inv-row{grid-template-columns:1fr 1fr 45px 32px;}
 }
 
 .money-row{display:flex;gap:12px;}
@@ -1559,5 +1565,63 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   opacity: 1;
   color: #ff7675;
 }
+
+/* BUFFS MANAGEMENT & STATES */
+.buff-status-active {
+  background: rgba(61,110,96,0.3) !important;
+  border: 1px solid var(--teal-light) !important;
+  color: var(--teal-light) !important;
+}
+.buff-status-debuff-active {
+  background: rgba(192,57,43,0.3) !important;
+  border: 1px solid var(--danger) !important;
+  color: #E88178 !important;
+}
+.buff-status-inactive {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink-dim) !important;
+}
+.buff-toggle-btn {
+  transition: all var(--transition-fast);
+}
+.buff-toggle-btn:hover {
+  filter: brightness(1.2);
+  transform: translateY(-1px);
+}
+.buff-unassign-btn {
+  transition: all var(--transition-fast);
+}
+.buff-unassign-btn:hover {
+  background: rgba(192,57,43,0.15) !important;
+  border-color: var(--danger) !important;
+  color: #ff7675 !important;
+}
+.buff-state-pill.unassigned {
+  background: rgba(255,255,255,0.06);
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+}
+.buff-state-pill.assigned-inactive {
+  background: rgba(180,130,40,0.18);
+  color: #E5B869;
+  border: 1px solid rgba(180,130,40,0.35);
+}
+.buff-state-pill.assigned-active {
+  background: rgba(61,110,96,0.25);
+  color: var(--teal-light);
+  border: 1px solid var(--teal-light);
+}
+
+/* INVENTORY CATEGORY SELECT */
+.inv-cat-select {
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--gold-light);
+}
+
 
 
