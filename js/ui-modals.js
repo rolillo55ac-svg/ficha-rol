@@ -173,6 +173,51 @@ function openDataModal(){
       '</div>';
   }
 
+  // === MONITOR DE ALMACENAMIENTO (LOCAL Y SUPABASE) ===
+  var local = typeof getLocalStorageUsage === "function" ? getLocalStorageUsage() : { pct: 0, usedStr: "0 B", totalStr: "5.0 MB", freeStr: "5.0 MB" };
+  var localPillClass = local.pct > 90 ? "critical" : (local.pct > 70 ? "warning" : "optimal");
+
+  html += '<div class="storage-monitor-box">'+
+    '<div class="storage-monitor-header">'+
+      '<div class="storage-monitor-title">📊 Espacio de Almacenamiento</div>'+
+      '<button class="btn-compact storage-refresh-btn" data-action="refresh-storage-stats" title="Calcular espacio actual">'+
+        '<span class="storage-refresh-icon">🔄</span> Actualizar'+
+      '</button>'+
+    '</div>'+
+    '<div class="storage-cards-grid">'+
+      // Tarjeta Local
+      '<div class="storage-card local">'+
+        '<div class="storage-card-head">'+
+          '<div class="storage-card-name"><span class="storage-card-icon">💾</span> Local (Navegador)</div>'+
+          '<span class="storage-pill '+localPillClass+'" id="localPill">'+local.pct+'%</span>'+
+        '</div>'+
+        '<div class="storage-bar-track">'+
+          '<div class="storage-bar-fill local '+localPillClass+'" id="localBarFill" style="width:'+Math.max(2, local.pct)+'%;"></div>'+
+        '</div>'+
+        '<div class="storage-card-stats">'+
+          '<span class="storage-stat-used" id="localUsedText"><b>'+local.usedStr+'</b> ocupados de '+local.totalStr+'</span>'+
+          '<span class="storage-stat-free" id="localFreeText"><b>'+local.freeStr+'</b> libres</span>'+
+        '</div>'+
+        '<div class="storage-card-note">Caché del personaje y configuración en este dispositivo</div>'+
+      '</div>'+
+      // Tarjeta Supabase Cloud
+      '<div class="storage-card cloud">'+
+        '<div class="storage-card-head">'+
+          '<div class="storage-card-name"><span class="storage-card-icon">☁️</span> Supabase (Nube)</div>'+
+          '<span class="storage-pill optimal" id="cloudPill">Consultando...</span>'+
+        '</div>'+
+        '<div class="storage-bar-track">'+
+          '<div class="storage-bar-fill cloud" id="cloudBarFill" style="width:0%;"></div>'+
+        '</div>'+
+        '<div class="storage-card-stats">'+
+          '<span class="storage-stat-used" id="cloudUsedText"><b>Calculando...</b> de 1.00 GB</span>'+
+          '<span class="storage-stat-free" id="cloudFreeText"><b>...</b> libres</span>'+
+        '</div>'+
+        '<div class="storage-card-note" id="cloudDetailText">Imágenes de personajes, mapas, misiones y pistas</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+
   html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">'+
     '<div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);margin-bottom:8px;">💾 Guardar y restaurar partida</div>'+
     '<div style="display:flex;gap:8px;">'+
@@ -188,6 +233,81 @@ function openDataModal(){
 
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
+
+  setTimeout(function(){
+    updateStorageStatsUI(false);
+  }, 50);
+}
+
+async function updateStorageStatsUI(showToastFeedback){
+  var btn = document.querySelector('[data-action="refresh-storage-stats"]');
+  if(btn) btn.classList.add("loading");
+
+  try {
+    // 1. Recalcular Local
+    if(typeof getLocalStorageUsage === "function"){
+      var local = getLocalStorageUsage();
+      var localPillClass = local.pct > 90 ? "critical" : (local.pct > 70 ? "warning" : "optimal");
+      var localPill = document.getElementById("localPill");
+      var localBarFill = document.getElementById("localBarFill");
+      var localUsedText = document.getElementById("localUsedText");
+      var localFreeText = document.getElementById("localFreeText");
+
+      if(localPill){
+        localPill.className = "storage-pill " + localPillClass;
+        localPill.textContent = local.pct + "%";
+      }
+      if(localBarFill){
+        localBarFill.className = "storage-bar-fill local " + localPillClass;
+        localBarFill.style.width = Math.max(2, local.pct) + "%";
+      }
+      if(localUsedText) localUsedText.innerHTML = "<b>" + local.usedStr + "</b> ocupados de " + local.totalStr;
+      if(localFreeText) localFreeText.innerHTML = "<b>" + local.freeStr + "</b> libres";
+    }
+
+    // 2. Recalcular Supabase
+    if(typeof getSupabaseStorageUsage === "function"){
+      var cloud = await getSupabaseStorageUsage();
+      var cloudPillClass = cloud.pct > 90 ? "critical" : (cloud.pct > 70 ? "warning" : "optimal");
+      var cloudPill = document.getElementById("cloudPill");
+      var cloudBarFill = document.getElementById("cloudBarFill");
+      var cloudUsedText = document.getElementById("cloudUsedText");
+      var cloudFreeText = document.getElementById("cloudFreeText");
+      var cloudDetail = document.getElementById("cloudDetailText");
+
+      if(cloudPill){
+        cloudPill.className = "storage-pill " + cloudPillClass;
+        cloudPill.textContent = (cloud.error ? "Offline" : cloud.displayPct);
+      }
+      if(cloudBarFill){
+        cloudBarFill.className = "storage-bar-fill cloud " + cloudPillClass;
+        cloudBarFill.style.width = Math.max(cloud.usedBytes > 0 ? 2 : 0, cloud.pct) + "%";
+      }
+      if(cloudUsedText){
+        cloudUsedText.innerHTML = "<b>" + cloud.usedStr + "</b> ocupados de " + cloud.totalStr;
+      }
+      if(cloudFreeText){
+        cloudFreeText.innerHTML = "<b>" + cloud.freeStr + "</b> libres";
+      }
+      if(cloudDetail){
+        if(cloud.fileCount > 0){
+          cloudDetail.textContent = cloud.fileCount + " imagen" + (cloud.fileCount > 1 ? "es" : "") + " en la nube (personajes, mapas, misiones...)";
+        } else if(cloud.error){
+          cloudDetail.textContent = "Sin acceso a Supabase Storage (" + cloud.error + ")";
+        } else {
+          cloudDetail.textContent = "Bucket de imágenes disponible (0 subidas aún)";
+        }
+      }
+    }
+
+    if(showToastFeedback){
+      showToast("Almacenamiento actualizado", "info");
+    }
+  } catch(e){
+    console.warn("Error en updateStorageStatsUI:", e);
+  } finally {
+    if(btn) btn.classList.remove("loading");
+  }
 }
 
 var diceConfig = {qty:1, sides:10, mod:0, mode:"normal"};
@@ -196,6 +316,7 @@ function modalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
+  if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="pick-char"){
     if(document.activeElement && document.activeElement.matches("input, textarea, select")){
       try { document.activeElement.blur(); } catch(e){}

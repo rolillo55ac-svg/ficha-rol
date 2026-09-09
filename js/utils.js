@@ -181,3 +181,123 @@ async function uploadImageToSupabase(file, folder, rawFileName, callback){
     if(typeof callback === "function") callback(base64Fallback);
   });
 }
+
+function formatBytes(bytes, decimals){
+  if(!bytes || bytes <= 0) return '0 B';
+  var k = 1024;
+  var dm = decimals !== undefined ? decimals : 1;
+  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  var i = Math.floor(Math.log(bytes) / Math.log(k));
+  if(i < 0) i = 0;
+  if(i >= sizes.length) i = sizes.length - 1;
+  if(sizes[i] === 'GB') dm = 2;
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function getLocalStorageUsage(){
+  var totalBytes = 0;
+  var count = 0;
+  try {
+    for(var key in localStorage){
+      if(localStorage.hasOwnProperty(key)){
+        var val = localStorage.getItem(key) || "";
+        totalBytes += (key.length + val.length) * 2;
+        count++;
+      }
+    }
+  } catch(e){}
+  var maxBytes = 5 * 1024 * 1024; // 5.0 MB estimado típico de navegador
+  var freeBytes = Math.max(0, maxBytes - totalBytes);
+  var pct = Math.min(100, Math.round((totalBytes / maxBytes) * 1000) / 10);
+  return {
+    usedBytes: totalBytes,
+    totalBytes: maxBytes,
+    freeBytes: freeBytes,
+    pct: pct,
+    usedStr: formatBytes(totalBytes),
+    totalStr: "5.0 MB",
+    freeStr: formatBytes(freeBytes),
+    count: count
+  };
+}
+
+async function getSupabaseStorageUsage(){
+  var totalBytes = 0;
+  var fileCount = 0;
+  var maxBytes = 1024 * 1024 * 1024; // 1.00 GB Límite Free Tier de Supabase
+  var knownFolders = ['personajes', 'mapas', 'misiones', 'bestiario', 'pistas'];
+
+  if(typeof supabaseClient === "undefined" || !supabaseClient || !supabaseClient.storage){
+    return {
+      usedBytes: 0,
+      totalBytes: maxBytes,
+      freeBytes: maxBytes,
+      pct: 0,
+      displayPct: "0%",
+      usedStr: "0 B",
+      totalStr: "1.00 GB",
+      freeStr: "1.00 GB",
+      fileCount: 0,
+      error: "Sin conexión"
+    };
+  }
+
+  try {
+    var foldersToScan = new Set(knownFolders);
+    var rootRes = await supabaseClient.storage.from('images').list('', { limit: 100 });
+    if(rootRes && rootRes.data){
+      rootRes.data.forEach(function(item){
+        if(item.id && item.metadata && item.metadata.size){
+          totalBytes += item.metadata.size;
+          fileCount++;
+        } else if(item.name && !item.id){
+          foldersToScan.add(item.name);
+        }
+      });
+    }
+
+    for(var folder of foldersToScan){
+      var res = await supabaseClient.storage.from('images').list(folder, { limit: 100 });
+      if(res && res.data){
+        res.data.forEach(function(item){
+          if(item.id && item.metadata && item.metadata.size){
+            totalBytes += item.metadata.size;
+            fileCount++;
+          }
+        });
+      }
+    }
+
+    var freeBytes = Math.max(0, maxBytes - totalBytes);
+    var rawPct = (totalBytes / maxBytes) * 100;
+    var pct = Math.min(100, Math.round(rawPct * 10) / 10);
+    var displayPct = pct === 0 && totalBytes > 0 ? rawPct.toFixed(2) + "%" : pct + "%";
+
+    return {
+      usedBytes: totalBytes,
+      totalBytes: maxBytes,
+      freeBytes: freeBytes,
+      pct: pct,
+      displayPct: displayPct,
+      usedStr: formatBytes(totalBytes),
+      totalStr: "1.00 GB",
+      freeStr: formatBytes(freeBytes),
+      fileCount: fileCount,
+      error: null
+    };
+  } catch(err){
+    console.warn("Error consultando Supabase Storage:", err);
+    return {
+      usedBytes: 0,
+      totalBytes: maxBytes,
+      freeBytes: maxBytes,
+      pct: 0,
+      displayPct: "0%",
+      usedStr: "0 B",
+      totalStr: "1.00 GB",
+      freeStr: "1.00 GB",
+      fileCount: 0,
+      error: err.message
+    };
+  }
+}
