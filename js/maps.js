@@ -17,13 +17,59 @@ function tplMundoMapas(s){
   '</div>' : '')+
   '<div class="filter-pills" style="margin-bottom:10px;">'+mapTabs+'</div>';
 
+  // Barra de filtrado de marcadores (Estilo videojuego)
+  var filterState = state._mapPinFilter || { hiddenTypes: {}, hideAll: false };
+  var allPins = curMap.markers || [];
+  
+  if(allPins.length > 0){
+    var typeCounts = {};
+    allPins.forEach(function(p){
+      var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(p.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
+      typeCounts[tDef.id] = (typeCounts[tDef.id] || 0) + 1;
+    });
+
+    var typePillsHtml = Object.keys(typeCounts).map(function(tid){
+      var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(tid) : { id: tid, name: tid, icon: "📍", color: "#2A9D8F" };
+      var isMuted = !!(filterState.hiddenTypes && filterState.hiddenTypes[tid]);
+      return '<button type="button" class="map-filter-pill' + (isMuted ? ' is-muted' : ' is-active') + '" data-action="toggle-map-pin-filter" data-type-id="' + tid + '" style="--pill-col:' + tDef.color + ';" title="' + (isMuted ? 'Mostrar ' : 'Ocultar ') + esc(tDef.name) + '">' +
+        '<span class="mfp-icon">' + (tDef.icon || '📍') + '</span>' +
+        '<span class="mfp-label">' + esc(tDef.name) + '</span>' +
+        '<span class="mfp-count">' + typeCounts[tid] + '</span>' +
+      '</button>';
+    }).join('');
+
+    html += '<div class="map-filter-bar">' +
+      '<div class="map-filter-header">' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">🗺️ Filtro de Marcadores:</span>' +
+          '<span style="font-size:0.7rem;color:var(--ink-faint);">(' + allPins.length + ' puntos)</span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:4px;">' +
+          '<button type="button" class="btn-compact map-filter-toggle-all' + (filterState.hideAll ? ' is-off' : '') + '" data-action="toggle-map-pins-all" style="padding:3px 8px;font-size:0.68rem;">' +
+            (filterState.hideAll ? '👁️ Mostrar Todos' : '🙈 Ocultar Todos') +
+          '</button>' +
+          ((Object.keys(filterState.hiddenTypes||{}).length > 0 || filterState.hideAll) ?
+            '<button type="button" class="btn-compact" data-action="reset-map-pin-filter" style="padding:3px 8px;font-size:0.68rem;" title="Restablecer visibilidad de todos los tipos">↺ Restablecer</button>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="map-filter-shelf">' + typePillsHtml + '</div>' +
+    '</div>';
+  }
+
   if(curMap.image){
     html += '<div class="map-viewer" data-action="map-click">'+
       '<img src="'+curMap.image+'" alt="Mapa">'+
       (curMap.markers||[]).map(function(m){
-        var kindClass = m.kind==="Capital"?"pin-capital":m.kind==="Punto de Interés"?"pin-poi":m.kind==="Peligro"?"pin-peligro":"pin-ciudad";
-        return '<div class="map-pin '+kindClass+'" style="left:'+m.x+'%;top:'+m.y+'%;" data-action="edit-pin" data-id="'+m.id+'">'+
-          '<div class="pin-glyph"></div><div class="pin-tag">'+esc(m.name)+'</div>'+
+        var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(m.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
+        var icon = m.icon || tDef.icon || "📍";
+        var isHidden = filterState.hideAll || (filterState.hiddenTypes && filterState.hiddenTypes[tDef.id]);
+        if(isHidden) return '';
+
+        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + m.x + '%;top:' + m.y + '%;" data-action="edit-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
+          '<div class="pin-balloon" style="background-color:' + tDef.color + ';box-shadow:0 0 10px ' + tDef.color + '88;">' +
+            '<div class="pin-icon">' + icon + '</div>' +
+          '</div>' +
+          '<div class="pin-tag">' + esc(m.name) + '</div>' +
         '</div>';
       }).join('')+
     '</div>';
@@ -44,7 +90,6 @@ function tplMundoMapas(s){
   return html;
 }
 
-
 async function pullMapFromSupabase(){
   if(!supabaseClient) return;
   try{
@@ -59,13 +104,15 @@ async function pullMapFromSupabase(){
             name: m.name,
             image: m.image_url,
             markers: allMarkers.filter(function(p){ return p.map_id === m.id; }).map(function(p){
+              var parsed = (typeof parsePinNotesAndMeta === "function") ? parsePinNotesAndMeta(p.notes, p.kind, p.icon) : { kind: p.kind, icon: p.icon, notes: p.notes };
               return {
                 id: p.id,
                 x: Number(p.x),
                 y: Number(p.y),
                 name: p.name,
-                kind: p.kind,
-                notes: p.notes || '',
+                kind: parsed.kind || p.kind || 'Punto de Interés',
+                icon: parsed.icon || p.icon || null,
+                notes: parsed.notes || '',
                 created_by: p.created_by
               };
             })
@@ -83,7 +130,26 @@ async function pullMapFromSupabase(){
     if(res.data && (res.data.data || res.data.markers)){
       var remoteMaps = res.data.data || res.data.markers;
       if(Array.isArray(remoteMaps) && remoteMaps.length){
-        state.maps = remoteMaps;
+        state.maps = remoteMaps.map(function(m){
+          return {
+            id: m.id,
+            name: m.name,
+            image: m.image || m.image_url,
+            markers: (m.markers || []).map(function(p){
+              var parsed = (typeof parsePinNotesAndMeta === "function") ? parsePinNotesAndMeta(p.notes, p.kind, p.icon) : { kind: p.kind, icon: p.icon, notes: p.notes };
+              return {
+                id: p.id,
+                x: Number(p.x),
+                y: Number(p.y),
+                name: p.name,
+                kind: parsed.kind || p.kind || 'Punto de Interés',
+                icon: parsed.icon || p.icon || null,
+                notes: parsed.notes || '',
+                created_by: p.created_by
+              };
+            })
+          };
+        });
         if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
         saveState(true);
         if(state.activeTab==="mundo") renderTab();
@@ -91,6 +157,7 @@ async function pullMapFromSupabase(){
     }
   }catch(e){ console.error('Supabase error:', e); }
 }
+
 function pushMapsData(forceAllow){
   if(!supabaseClient) return;
   if(currentUser && !isGM() && !forceAllow) return;

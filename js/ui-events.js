@@ -1747,6 +1747,29 @@ function handleClick(e){
 
   if(action==="sync-map-now"){ pullMapFromSupabase(); showToast("Mapas sincronizados con la nube", "success"); return; }
   if(action==="switch-map"){ state.activeMapId = btn.getAttribute("data-id"); renderTab(); return; }
+  if(action==="toggle-map-pins-all"){
+    state._mapPinFilter = state._mapPinFilter || { hiddenTypes: {}, hideAll: false };
+    state._mapPinFilter.hideAll = !state._mapPinFilter.hideAll;
+    renderTab();
+    showToast(state._mapPinFilter.hideAll ? "Marcadores ocultados" : "Marcadores visibles", "info");
+    return;
+  }
+  if(action==="toggle-map-pin-filter"){
+    var typeId = btn.getAttribute("data-type-id");
+    if(typeId){
+      state._mapPinFilter = state._mapPinFilter || { hiddenTypes: {}, hideAll: false };
+      state._mapPinFilter.hiddenTypes = state._mapPinFilter.hiddenTypes || {};
+      state._mapPinFilter.hiddenTypes[typeId] = !state._mapPinFilter.hiddenTypes[typeId];
+      renderTab();
+    }
+    return;
+  }
+  if(action==="reset-map-pin-filter"){
+    state._mapPinFilter = { hiddenTypes: {}, hideAll: false };
+    renderTab();
+    showToast("Filtros de marcadores restablecidos", "info");
+    return;
+  }
   if(action==="add-new-map-url"){
     if(!isGM() && currentUser) return;
     var mn = prompt("Nombre del nuevo mapa (ej: Mazmorra, Ciudad, Continente):");
