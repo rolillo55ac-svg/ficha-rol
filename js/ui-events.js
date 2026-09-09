@@ -113,11 +113,8 @@ function setBind(target, path, rawValue, inputType){
 function handleChange(e){
   var actEl = e.target.closest("[data-action]");
   if(actEl){
-    var actName = actEl.getAttribute("data-action");
-    if(actName === "set-training-category" || actName === "set-training-linked" || actName === "filter-inventory-category" || actName === "assign-buff-from-catalog"){
-      handleClick(e);
-      return;
-    }
+    handleClick(e);
+    return;
   }
   var el = e.target.closest("[data-bind]"); if(!el) return;
   var isGlobal = el.getAttribute("data-scope")==="global";
@@ -161,11 +158,16 @@ function handleChange(e){
       return;
     }
     if(e.type === "change"){
+      target._lastLocalEdit = Date.now();
+      markCharDirty(target.id, bindParts[0]);
+      saveState(false);
       var it = (target[bindParts[0]] || []).find(function(x){ return x.id === bindParts[1]; });
       if(it){
         var patch = {};
-        patch[bindParts[2]] = it[bindParts[2]];
-        manageListItemRPC(target, bindParts[0], 'update_item', patch, bindParts[1]);
+        patch[bindParts[0]] = target[bindParts[0]];
+        if(typeof pushCharacterPatch === 'function'){
+          pushCharacterPatch(target.id, patch);
+        }
         if(bindParts[0] === "inventory" && bindParts[2] === "category"){
           renderTab();
         }
@@ -736,14 +738,26 @@ function handleClick(e){
     var catId = selEl.value;
     var catItem = (state.weaponsCatalog||[]).find(function(ci){ return ci.id === catId; });
     var wpnObj = (c.weapons||[]).find(function(w){ return w.id === wid; });
-    if(wpnObj && catItem){
-      wpnObj.name = catItem.name;
-      wpnObj.dano = catItem.dano;
-      wpnObj.alcance = catItem.alcance;
-      wpnObj.catalogId = catItem.id;
+    if(wpnObj){
+      if(catItem){
+        wpnObj.name = catItem.name;
+        wpnObj.dano = catItem.dano;
+        wpnObj.alcance = catItem.alcance;
+        wpnObj.catalogId = catItem.id;
+        showToast("Arma equipada: " + catItem.name, "success");
+      } else {
+        wpnObj.name = "";
+        wpnObj.dano = "";
+        wpnObj.alcance = "";
+        wpnObj.catalogId = "";
+      }
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { weapons: c.weapons });
+      saveState(false);
       renderTab();
-      manageListItemRPC(c, 'weapons', 'update_item', { name: catItem.name, dano: catItem.dano, alcance: catItem.alcance, catalogId: catItem.id }, wid);
-      showToast("Arma equipada: " + catItem.name, "success");
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { weapons: c.weapons });
+      }
     }
     return;
   }
@@ -754,7 +768,7 @@ function handleClick(e){
     if(w){
       w.visible = (w.visible===false) ? true : false;
       saveState(true);
-      pushSharedData();
+      pushSharedData({ weaponsCatalog: state.weaponsCatalog });
       renderTab();
       showToast(w.name + (w.visible ? " ahora es visible y usable para todos" : " ha sido bloqueada por el Máster"), "info");
     }
@@ -764,42 +778,92 @@ function handleClick(e){
     if(!isGM()) return;
     if(!state.weaponsCatalog) state.weaponsCatalog = [];
     state.weaponsCatalog.push({id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción", visible:true});
-    saveState(true); pushSharedData(); renderTab();
+    saveState(true); pushSharedData({ weaponsCatalog: state.weaponsCatalog }); renderTab();
     showToast("Arma añadida al catálogo", "success");
     return;
   }
   if(action==="del-global-weapon"){
     if(!isGM()) return;
     state.weaponsCatalog = (state.weaponsCatalog||[]).filter(function(w){ return w.id !== btn.getAttribute("data-id"); });
-    saveState(true); pushSharedData(); renderTab();
+    saveState(true); pushSharedData({ weaponsCatalog: state.weaponsCatalog }); renderTab();
     showToast("Arma eliminada del catálogo", "info");
     return;
   }
   if(action==="toggle-buff-visibility"){
     if(!isGM()) return;
     var b = (state.buffCatalog||[]).find(function(x){return x.id===btn.getAttribute("data-id");});
-    if(b){ b.visible = b.visible===false ? true : false; saveState(true); pushSharedData(); renderTab(); }
+    if(b){ b.visible = b.visible===false ? true : false; saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab(); }
     return;
   }
   if(action==="add-global-buff"){
     if(!isGM()) return;
     if(!state.buffCatalog) state.buffCatalog = [];
     state.buffCatalog.push({id:uid(), name:"Nuevo Buff", type:"buff", attr:"", bonus:"", duration:"permanent", durationTurns:0, desc:"", visible:true});
-    saveState(true); pushSharedData(); renderTab();
+    saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab();
     showToast("Buff añadido al catálogo", "success");
     return;
   }
   if(action==="del-global-buff"){
     if(!isGM()) return;
     state.buffCatalog = (state.buffCatalog||[]).filter(function(b){ return b.id !== btn.getAttribute("data-id"); });
-    saveState(true); pushSharedData(); renderTab();
+    saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab();
     showToast("Buff eliminado", "info");
     return;
   }
-  if(action==="add-weapon"){ if(!c || !canEditChar(c)) return; c.weapons = c.weapons || []; var newWpn = {id:uid(),name:"",dano:"",alcance:"",catalogId:""}; c.weapons.push(newWpn); renderTab(); manageListItemRPC(c, 'weapons', 'add', newWpn); return; }
-  if(action==="del-weapon"){ if(!c || !canEditChar(c)) return; var wid = btn.getAttribute("data-id"); c.weapons = (c.weapons || []).filter(function(w){return w.id!==wid;}); renderTab(); manageListItemRPC(c, 'weapons', 'remove', null, wid); return; }
-  if(action==="add-armor"){ if(!c || !canEditChar(c)) return; c.armors = c.armors || []; var newArm = {id:uid(),name:"",absorcion:"",estorbo:""}; c.armors.push(newArm); renderTab(); manageListItemRPC(c, 'armors', 'add', newArm); return; }
-  if(action==="del-armor"){ if(!c || !canEditChar(c)) return; var aid = btn.getAttribute("data-id"); c.armors = (c.armors || []).filter(function(a){return a.id!==aid;}); renderTab(); manageListItemRPC(c, 'armors', 'remove', null, aid); return; }
+  if(action==="add-weapon"){
+    if(!c || !canEditChar(c)) return;
+    c.weapons = c.weapons || [];
+    var newWpn = {id:uid(), name:"", dano:"", alcance:"", catalogId:""};
+    c.weapons.push(newWpn);
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { weapons: c.weapons });
+    saveState(false);
+    renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { weapons: c.weapons });
+    }
+    return;
+  }
+  if(action==="del-weapon"){
+    if(!c || !canEditChar(c)) return;
+    var wid = btn.getAttribute("data-id");
+    c.weapons = (c.weapons || []).filter(function(w){return w.id!==wid;});
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { weapons: c.weapons });
+    saveState(false);
+    renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { weapons: c.weapons });
+    }
+    return;
+  }
+  if(action==="add-armor"){
+    if(!c || !canEditChar(c)) return;
+    c.armors = c.armors || [];
+    var newArm = {id:uid(), name:"", absorcion:"", estorbo:""};
+    c.armors.push(newArm);
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { armors: c.armors });
+    saveState(false);
+    renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { armors: c.armors });
+    }
+    return;
+  }
+  if(action==="del-armor"){
+    if(!c || !canEditChar(c)) return;
+    var aid = btn.getAttribute("data-id");
+    c.armors = (c.armors || []).filter(function(a){return a.id!==aid;});
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { armors: c.armors });
+    saveState(false);
+    renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { armors: c.armors });
+    }
+    return;
+  }
   if(action==="filter-inventory-category"){
     state.invCategoryFilter = btn.value || "all";
     renderTab();
@@ -811,26 +875,53 @@ function handleClick(e){
     var defaultCat = (state.invCategoryFilter && state.invCategoryFilter !== "all") ? state.invCategoryFilter : "Miscelánea";
     var newInv = {id:uid(), name:"", qty:1, category: defaultCat};
     c.inventory.push(newInv);
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { inventory: c.inventory });
+    saveState(false);
     renderTab();
-    manageListItemRPC(c, 'inventory', 'add', newInv);
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { inventory: c.inventory });
+    }
     return;
   }
-  if(action==="del-inventory"){ if(!c || !canEditChar(c)) return; var iid = btn.getAttribute("data-id"); c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;}); renderTab(); manageListItemRPC(c, 'inventory', 'remove', null, iid); return; }
+  if(action==="del-inventory"){
+    if(!c || !canEditChar(c)) return;
+    var iid = btn.getAttribute("data-id");
+    c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;});
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { inventory: c.inventory });
+    saveState(false);
+    renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { inventory: c.inventory });
+    }
+    return;
+  }
   if(action==="add-spell"){
     if(!c || !canEditChar(c)) return;
     if(!c.spells) c.spells = [];
     var newSp = {id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false};
     c.spells.push(newSp);
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { spells: c.spells });
+    saveState(false);
     renderTab();
-    manageListItemRPC(c, 'spells', 'add', newSp);
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { spells: c.spells });
+    }
     return;
   }
   if(action==="del-spell"){
     if(!c || !canEditChar(c)) return;
     var spId = btn.getAttribute("data-id");
     c.spells = (c.spells||[]).filter(function(s){return s.id!==spId;});
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { spells: c.spells });
+    saveState(false);
     renderTab();
-    manageListItemRPC(c, 'spells', 'remove', null, spId);
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { spells: c.spells });
+    }
     return;
   }
   if(action==="cast-spell"){
@@ -1586,21 +1677,88 @@ function handleClick(e){
   }
 
   // === ACCIONES DE LA PESTAÑA MISIÓN (ESTILO BALDUR'S GATE 3 / D&D) ===
+  if(action==="toggle-new-quest-form"){
+    if(!isGM() && currentUser) return;
+    state._showNewQuestForm = !state._showNewQuestForm;
+    renderTab();
+    return;
+  }
+  if(action==="filter-quest-type"){
+    var filterVal = btn.getAttribute("data-filter") || "all";
+    state.questTypeFilter = filterVal;
+    renderTab();
+    return;
+  }
+  if(action==="submit-new-quest"){
+    if(!isGM() && currentUser) return;
+    var titleEl = document.getElementById("newQuestTitle");
+    var title = titleEl ? titleEl.value.trim() : "";
+    if(!title){
+      showToast("Introduce un título para la misión", "warning");
+      if(titleEl) titleEl.focus();
+      return;
+    }
+    var typeEl = document.querySelector('input[name="newQuestType"]:checked') || document.getElementById("newQuestType");
+    var qType = typeEl ? typeEl.value : "principal";
+    var locEl = document.getElementById("newQuestLocation");
+    var rewardEl = document.getElementById("newQuestReward");
+    var descEl = document.getElementById("newQuestDesc");
+
+    state.quests = state.quests || [];
+    state.quests.push({
+      id: uid(),
+      title: title,
+      type: qType,
+      category: qType,
+      location: locEl ? locEl.value.trim() : "",
+      reward: rewardEl ? rewardEl.value.trim() : "",
+      desc: descEl ? descEl.value.trim() : "",
+      status: "activa",
+      tasks: []
+    });
+
+    state._showNewQuestForm = false;
+    saveState(true);
+    pushSharedData({ quests: state.quests });
+    renderTab();
+    showToast("Misión añadida: " + title, "success");
+    return;
+  }
+  if(action==="set-quest-type"){
+    if(!isGM() && currentUser) return;
+    var qidType = btn.getAttribute("data-id");
+    var newType = btn.value;
+    var qObjType = (state.quests||[]).find(function(q){ return q.id === qidType; });
+    if(qObjType){
+      qObjType.type = newType;
+      qObjType.category = newType;
+      saveState(true);
+      pushSharedData({ quests: state.quests });
+      renderTab();
+      showToast("Tipo de misión actualizado a " + (newType==="principal" ? "Principal" : "Secundaria"), "info");
+    }
+    return;
+  }
+  if(action==="set-quest-status"){
+    if(!isGM() && currentUser) return;
+    var qidStatus = btn.getAttribute("data-id");
+    var newStatus = btn.value;
+    var qObjStatus = (state.quests||[]).find(function(q){ return q.id === qidStatus; });
+    if(qObjStatus){
+      qObjStatus.status = newStatus;
+      saveState(true);
+      pushSharedData({ quests: state.quests });
+      renderTab();
+      showToast("Estado actualizado a " + newStatus, "info");
+    }
+    return;
+  }
   if(action==="add-quest"){
     if(!isGM() && currentUser) return;
-    var qTitle = prompt("Título de la nueva misión:");
-    if(qTitle && qTitle.trim()){
-      state.quests = state.quests || [];
-      state.quests.push({
-        id: uid(),
-        title: qTitle.trim(),
-        desc: "",
-        status: "activa",
-        tasks: []
-      });
-      saveState(true); pushSharedData(); renderTab();
-      showToast("Misión añadida: " + qTitle, "success");
-    }
+    state._showNewQuestForm = true;
+    renderTab();
+    var titleInp = document.getElementById("newQuestTitle");
+    if(titleInp) titleInp.focus();
     return;
   }
   if(action==="del-quest"){
@@ -1608,7 +1766,9 @@ function handleClick(e){
     var qid = btn.getAttribute("data-id");
     if(confirm("¿Eliminar esta misión y todas sus tareas asociadas?")){
       state.quests = (state.quests||[]).filter(function(q){ return q.id !== qid; });
-      saveState(true); pushSharedData(); renderTab();
+      saveState(true);
+      pushSharedData({ quests: state.quests });
+      renderTab();
       showToast("Misión eliminada", "info");
     }
     return;
@@ -1622,7 +1782,9 @@ function handleClick(e){
       if(tText && tText.trim()){
         qObj.tasks = qObj.tasks || [];
         qObj.tasks.push({ id: uid(), text: tText.trim(), done: false });
-        saveState(true); pushSharedData(); renderTab();
+        saveState(true);
+        pushSharedData({ quests: state.quests });
+        renderTab();
         showToast("Objetivo añadido", "success");
       }
     }
@@ -1635,11 +1797,17 @@ function handleClick(e){
     var qObj2 = (state.quests||[]).find(function(q){ return q.id === qid3; });
     if(qObj2 && qObj2.tasks){
       qObj2.tasks = qObj2.tasks.filter(function(t){ return t.id !== tid; });
-      saveState(true); pushSharedData(); renderTab();
+      saveState(true);
+      pushSharedData({ quests: state.quests });
+      renderTab();
     }
     return;
   }
   if(action==="toggle-quest-task"){
+    if(!isGM() && currentUser){
+      showToast("Solo el Máster puede actualizar el estado de los objetivos", "warning");
+      return;
+    }
     var qid4 = btn.getAttribute("data-qid");
     var tid2 = btn.getAttribute("data-tid");
     var qObj3 = (state.quests||[]).find(function(q){ return q.id === qid4; });
@@ -1647,7 +1815,14 @@ function handleClick(e){
       var task = qObj3.tasks.find(function(t){ return t.id === tid2; });
       if(task){
         task.done = !task.done;
-        saveState(true); pushSharedData(); renderTab();
+        var allDone = qObj3.tasks.length > 0 && qObj3.tasks.every(function(t){ return t.done; });
+        if(allDone && qObj3.status === "activa"){
+          qObj3.status = "completada";
+          showToast("¡Misión completada: " + qObj3.title + "!", "success");
+        }
+        saveState(true);
+        pushSharedData({ quests: state.quests });
+        renderTab();
       }
     }
     return;

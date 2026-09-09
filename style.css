@@ -1027,31 +1027,203 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   font-family:var(--font-display);font-size:1.15rem;color:var(--gold-light);
   letter-spacing:.04em;display:flex;align-items:center;gap:8px;margin-bottom:4px;
 }
+/* ========================================================
+   SISTEMA DE MISIONES Y CAMPAÑA MULTI-CATEGORÍA (KRYSALIS)
+   ======================================================== */
 .quest-status-badge{
   font-size:.65rem;padding:2px 8px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  display:inline-flex;align-items:center;white-space:nowrap;
 }
-.quest-status-badge.activa{background:rgba(241,196,15,0.2);color:#F1C40F;border:1px solid rgba(241,196,15,0.45);}
-.quest-status-badge.completada{background:rgba(46,204,113,0.2);color:#2ECC71;border:1px solid rgba(46,204,113,0.45);}
-.quest-status-badge.fallida{background:rgba(231,76,60,0.2);color:#E74C3C;border:1px solid rgba(231,76,60,0.45);}
+.quest-status-badge.activa{background:rgba(241,196,15,0.18);color:#F1C40F;border:1px solid rgba(241,196,15,0.45);}
+.quest-status-badge.completada{background:rgba(46,204,113,0.18);color:#2ECC71;border:1px solid rgba(46,204,113,0.45);}
+.quest-status-badge.fallida{background:rgba(231,76,60,0.18);color:#E74C3C;border:1px solid rgba(231,76,60,0.45);}
 
+.quest-type-badge{
+  font-size:.65rem;padding:2px 7px;border-radius:4px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  display:inline-flex;align-items:center;white-space:nowrap;
+}
+.quest-type-badge.principal{
+  background:linear-gradient(135deg, rgba(241,196,15,0.22), rgba(176,141,87,0.12));
+  color:#FDE047;border:1px solid rgba(241,196,15,0.5);
+  box-shadow:0 0 8px rgba(241,196,15,0.2);
+}
+.quest-type-badge.secundaria{
+  background:linear-gradient(135deg, rgba(56,189,248,0.22), rgba(61,110,96,0.15));
+  color:#7DD3FC;border:1px solid rgba(56,189,248,0.45);
+  box-shadow:0 0 8px rgba(56,189,248,0.18);
+}
+
+/* Barra de filtros de misiones */
+.quest-filter-bar{
+  display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none;flex-wrap:wrap;
+  margin-top:6px;
+}
+.quest-filter-btn{
+  background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
+  padding:5px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;transition:all var(--transition-fast);white-space:nowrap;
+}
+.quest-filter-btn:hover{
+  border-color:var(--line-strong);color:var(--ink);background:var(--bg-elev);
+}
+.quest-filter-btn.active{
+  background:rgba(176,141,87,0.2);border-color:var(--gold);color:var(--gold-light);
+  box-shadow:0 0 8px rgba(176,141,87,0.25);
+}
+.quest-filter-btn.principal.active{
+  background:rgba(241,196,15,0.18);border-color:#F1C40F;color:#FDE047;
+  box-shadow:0 0 8px rgba(241,196,15,0.25);
+}
+.quest-filter-btn.secundaria.active{
+  background:rgba(56,189,248,0.18);border-color:#38BDF8;color:#7DD3FC;
+  box-shadow:0 0 8px rgba(56,189,248,0.25);
+}
+.quest-filter-btn.completed.active{
+  background:rgba(46,204,113,0.18);border-color:#2ECC71;color:#2ECC71;
+  box-shadow:0 0 8px rgba(46,204,113,0.25);
+}
+.quest-filter-btn .badge-count{
+  background:rgba(0,0,0,0.35);padding:1px 6px;border-radius:10px;font-size:0.7rem;font-family:var(--font-mono);
+}
+
+/* Creador de nueva misión (GM) */
+.new-quest-form-card{
+  background:linear-gradient(150deg, rgba(35,24,18,0.98), rgba(20,13,9,0.98));
+  border:1.5px solid var(--gold);border-radius:var(--radius-sm);
+  padding:14px;margin-bottom:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.7), inset 0 0 15px rgba(176,141,87,0.1);
+}
+.new-quest-form-title{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--font-display);font-size:0.96rem;color:var(--gold-light);
+  margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:6px;
+}
+.new-quest-type-selector{
+  display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;
+}
+.quest-type-radio-label{
+  cursor:pointer;display:inline-flex;align-items:center;position:relative;
+}
+.quest-type-radio-label input[type="radio"]{
+  position:absolute;opacity:0;pointer-events:none;
+}
+.radio-pill{
+  padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;
+  border:1px solid var(--line);background:rgba(0,0,0,0.3);color:var(--ink-dim);
+  transition:all var(--transition-fast);display:inline-flex;align-items:center;gap:4px;
+}
+.quest-type-radio-label input[type="radio"]:checked + .radio-pill.principal{
+  background:linear-gradient(135deg, rgba(241,196,15,0.25), rgba(176,141,87,0.2));
+  border-color:#F1C40F;color:#FDE047;box-shadow:0 0 10px rgba(241,196,15,0.3);
+}
+.quest-type-radio-label input[type="radio"]:checked + .radio-pill.secundaria{
+  background:linear-gradient(135deg, rgba(56,189,248,0.25), rgba(61,110,96,0.2));
+  border-color:#38BDF8;color:#7DD3FC;box-shadow:0 0 10px rgba(56,189,248,0.3);
+}
+.form-row-2col{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+@media (max-width: 600px){
+  .form-row-2col{grid-template-columns:1fr;}
+}
+
+/* Encabezados de categorías */
+.quest-section-header{
+  font-family:var(--font-display);font-size:0.86rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.06em;margin-bottom:8px;padding-bottom:4px;display:flex;align-items:center;gap:6px;
+}
+.quest-section-header.principal{
+  color:var(--gold-light);border-bottom:1.5px solid rgba(241,196,15,0.4);
+}
+.quest-section-header.secundaria{
+  color:#7DD3FC;border-bottom:1.5px solid rgba(56,189,248,0.4);
+}
+.quest-section-header.completed{
+  color:#2ECC71;border-bottom:1.5px solid rgba(46,204,113,0.4);
+}
+
+/* Tarjeta de Misión */
 .quest-card{
   background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));
   border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:12px;margin-bottom:10px;box-shadow:0 4px 14px -6px rgba(0,0,0,0.6);
-  transition:border-color var(--transition-fast);
+  padding:14px;margin-bottom:12px;box-shadow:0 4px 16px -4px rgba(0,0,0,0.65);
+  position:relative;transition:border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .quest-card:hover{border-color:var(--line-strong);}
-.quest-card.completed{border-left:3px solid #2ECC71;}
-.quest-card.active{border-left:3px solid #F1C40F;}
-.quest-card.failed{border-left:3px solid #E74C3C;opacity:.75;}
+.quest-card.principal{border-left:4px solid #F1C40F;}
+.quest-card.secundaria{border-left:4px solid #38BDF8;}
+.quest-card.completed{border-left:4px solid #2ECC71;opacity:0.88;}
+.quest-card.failed{border-left:4px solid #E74C3C;opacity:0.75;}
 
+.quest-card-header{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap;
+}
+.quest-card-title-col{flex:1;min-width:200px;}
+.quest-card-badge-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+.quest-title-input{
+  font-family:var(--font-display);font-size:1.05rem;font-weight:700;color:var(--gold-light);
+  background:transparent;border:none;border-bottom:1px solid var(--line);width:100%;padding:2px 0;outline:none;
+}
+.quest-card-title{
+  font-family:var(--font-display);font-size:1.05rem;font-weight:700;color:var(--gold-light);margin:0;line-height:1.3;
+}
+.quest-card-gm-actions{display:flex;align-items:center;gap:6px;}
+.quest-status-select, .quest-type-select{
+  font-size:0.7rem;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;
+  color:var(--ink);padding:2px 6px;cursor:pointer;
+}
+
+/* Metadatos (Ubicación y Recompensa) */
+.quest-meta-chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
+.quest-meta-chip{
+  background:rgba(0,0,0,0.32);border:1px solid var(--line);border-radius:4px;
+  padding:3px 8px;font-size:0.76rem;color:var(--ink-dim);display:inline-flex;align-items:center;gap:5px;
+}
+.quest-meta-chip.reward{color:#FDE047;border-color:rgba(241,196,15,0.35);}
+.quest-meta-chip.editable{padding:2px 6px;}
+.quest-meta-chip.editable input{
+  background:transparent;border:none;color:var(--ink);font-size:0.76rem;outline:none;min-width:130px;
+}
+
+/* Descripción */
+.quest-desc-textarea{
+  width:100%;min-height:42px;background:rgba(0,0,0,0.18);border:1px solid var(--line);
+  border-radius:4px;padding:6px 8px;font-size:0.82rem;color:var(--ink-dim);resize:vertical;margin-bottom:8px;
+}
+.quest-desc-text{
+  font-size:0.83rem;color:var(--ink-dim);line-height:1.5;margin-bottom:8px;
+  background:rgba(0,0,0,0.15);padding:6px 8px;border-radius:4px;border-left:2px solid var(--line-strong);
+}
+
+/* Barra de progreso de objetivos */
+.quest-progress-section{margin:10px 0 6px;}
+.quest-progress-info{
+  display:flex;justify-content:space-between;align-items:center;font-size:0.74rem;color:var(--ink-faint);margin-bottom:4px;
+}
+.quest-progress-label b{color:var(--gold-light);}
+.quest-all-done-badge{color:#2ECC71;font-weight:700;font-size:0.72rem;letter-spacing:0.04em;}
+.quest-progress-track{
+  height:6px;width:100%;background:rgba(0,0,0,0.45);border-radius:3px;overflow:hidden;
+  border:1px solid rgba(176,141,87,0.15);
+}
+.quest-progress-fill{height:100%;transition:width 0.35s cubic-bezier(0.4,0,0.2,1);}
+.quest-progress-fill.principal{background:linear-gradient(90deg, #B08D57, #F1C40F);}
+.quest-progress-fill.secundaria{background:linear-gradient(90deg, #0284C7, #38BDF8);}
+.quest-progress-fill.completed{background:linear-gradient(90deg, #16A34A, #2ECC71);}
+
+/* Lista de tareas / objetivos */
 .quest-task-list{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:5px;}
 .quest-task-item{
-  display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--ink-dim);
-  padding:5px 7px;border-radius:4px;background:rgba(0,0,0,0.16);
+  display:flex;align-items:center;gap:8px;font-size:0.83rem;color:var(--ink-dim);
+  padding:5px 8px;border-radius:4px;background:rgba(0,0,0,0.18);transition:background var(--transition-fast);
 }
+.quest-task-item:hover{background:rgba(0,0,0,0.28);}
 .quest-task-item.done{color:var(--ink-faint);text-decoration:line-through;}
 .quest-task-cb{cursor:pointer;accent-color:var(--gold);width:16px;height:16px;}
+.quest-task-text{line-height:1.3;}
+.quest-empty-tasks{font-size:0.78rem;color:var(--ink-faint);font-style:italic;padding:4px 0;}
+.quest-empty-cat{font-size:0.8rem;color:var(--ink-faint);font-style:italic;padding:8px 12px;background:rgba(0,0,0,0.12);border-radius:4px;margin-bottom:10px;}
+.quest-empty-box{text-align:center;padding:30px 16px;background:var(--bg-elev);border:1.5px dashed var(--line);border-radius:var(--radius-sm);margin-bottom:14px;}
 
 /* PISTAS Y SECRETOS */
 .clues-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:8px;}
