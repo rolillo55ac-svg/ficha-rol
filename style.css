@@ -1181,6 +1181,95 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   transform: scale(1.08);
 }
 
+/* Selector de Color de Marcadores */
+.pin-colors-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.pin-color-opt {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+.pin-color-opt:hover {
+  transform: scale(1.18);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 10px var(--col, #FFF);
+}
+.pin-color-opt.active {
+  transform: scale(1.22);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 12px var(--col, #FFF), inset 0 0 0 2px rgba(0, 0, 0, 0.5);
+}
+.pco-check {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 0.9);
+  line-height: 1;
+}
+.pin-custom-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 1px dashed var(--line);
+}
+.pin-custom-color-row input[type="color"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+.pin-custom-color-row input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.pin-custom-color-row input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+/* Visores de Marcadores en Misión */
+.quest-map-viewer {
+  min-height: 240px;
+  margin-top: 6px;
+}
+.quest-card-image-wrap.map-viewer {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  cursor: crosshair;
+}
+.quest-card-image-wrap.map-viewer img {
+  width: 100%;
+  display: block;
+  user-select: none;
+}
 
 /* BOTONES Y GENERAL */
 .btn-compact{

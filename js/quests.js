@@ -71,17 +71,34 @@ function renderQuestCard(q, canEdit){
     html += '</div>';
   }
 
-  // Ilustración de la misión (banner visual proporcionado y responsive)
+  // Ilustración de la misión (visor interactivo con marcadores y pines de mapa)
   if(q.image){
-    html += '<div class="quest-card-image-wrap">'+
+    var cardMarkers = q.markers || [];
+    html += '<div class="quest-card-image-wrap map-viewer" data-action="quest-card-map-click" data-quest-id="'+q.id+'" style="position:relative;cursor:crosshair;min-height:150px;">'+
       '<img src="'+esc(q.image)+'" alt="'+esc(q.title)+'" class="quest-card-img" onerror="this.parentElement.style.display=\'none\';">'+
-      (canEdit ?
-        '<div class="quest-card-img-actions">'+
+      cardMarkers.map(function(m){
+        var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(m.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
+        var icon = m.icon || tDef.icon || "📍";
+        var pinColor = m.color || tDef.color || "#2A9D8F";
+        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + m.x + '%;top:' + m.y + '%;" data-action="edit-quest-card-pin" data-quest-id="' + q.id + '" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
+          '<div class="pin-balloon" style="background-color:' + pinColor + ';box-shadow:0 0 10px ' + pinColor + '88;">' +
+            '<div class="pin-icon">' + icon + '</div>' +
+          '</div>' +
+          '<div class="pin-tag">' + esc(m.name) + '</div>' +
+        '</div>';
+      }).join('')+
+      '<div class="quest-card-img-actions" style="position:absolute;bottom:6px;right:6px;display:flex;gap:4px;z-index:15;">'+
+        (cardMarkers.length ? '<span class="quest-markers-badge" style="background:rgba(0,0,0,0.8);color:var(--gold-light);padding:2px 7px;border-radius:4px;font-size:0.68rem;border:1px solid var(--line);align-self:center;backdrop-filter:blur(4px);">📍 '+cardMarkers.length+'</span>' : '')+
+        (canEdit ?
           '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Cambiar foto de la misión">📷 Cambiar</button>'+
           '<button class="btn-compact" data-action="url-quest-img" data-id="'+q.id+'" title="Cambiar por URL">URL</button>'+
-          '<button class="row-del" data-action="remove-quest-img" data-id="'+q.id+'" title="Quitar foto">✕</button>'+
-        '</div>' : ''
-      )+
+          '<button class="row-del" data-action="remove-quest-img" data-id="'+q.id+'" title="Quitar foto">✕</button>'
+        : '')+
+      '</div>'+
+    '</div>'+
+    '<div style="font-size:0.68rem;color:var(--ink-faint);margin:2px 0 6px;display:flex;justify-content:space-between;">'+
+      '<span>🗺️ Haz clic en la imagen para fijar puntos, secretos o peligros en esta misión.</span>'+
+      (cardMarkers.length ? '<span>'+cardMarkers.length+' marcado(s)</span>' : '')+
     '</div>';
   }
 
@@ -168,7 +185,27 @@ function tplMision(c, s){
     )+
   '</div>';
 
-  // 2. Mapa táctico del encuentro / misión actual
+  // 2. Mapa táctico del encuentro / misión actual (con marcadores interactivos)
+  var qMarkers = qMap.markers || [];
+  var qmFilter = state.questMapFilter || { hideAll: false, hiddenTypes: {} };
+
+  // Agrupar conteos por tipo para la barra de filtros
+  var qmCounts = {};
+  qMarkers.forEach(function(p){
+    var td = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(p.kind) : { id: "poi" };
+    qmCounts[td.id] = (qmCounts[td.id] || 0) + 1;
+  });
+
+  var qmTypePillsHtml = Object.keys(qmCounts).map(function(tid){
+    var tDef = (typeof MAP_MARKER_TYPES !== "undefined") ? (MAP_MARKER_TYPES.find(function(x){return x.id===tid;}) || {id:tid, name:tid, icon:"📍", color:"#2A9D8F"}) : {id:tid, name:tid, icon:"📍", color:"#2A9D8F"};
+    var isMuted = qmFilter.hiddenTypes && qmFilter.hiddenTypes[tid];
+    return '<button type="button" class="map-filter-pill' + (isMuted ? ' is-muted' : ' is-active') + '" data-action="toggle-quest-map-pin-filter" data-type-id="' + tid + '" style="--pill-col:' + tDef.color + ';" title="' + (isMuted ? 'Mostrar ' : 'Ocultar ') + esc(tDef.name) + '">' +
+      '<span class="mfp-icon">' + tDef.icon + '</span>' +
+      '<span class="mfp-name">' + esc(tDef.name) + '</span>' +
+      '<span class="mfp-count">' + qmCounts[tid] + '</span>' +
+    '</button>';
+  }).join('');
+
   html += '<div class="quest-map-box">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">'+
       '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:0.92rem;display:flex;align-items:center;gap:6px;">'+
@@ -182,7 +219,44 @@ function tplMision(c, s){
     '</div>';
 
   if(qMap.image){
-    html += '<img src="'+qMap.image+'" alt="Mapa de Misión" class="quest-map-img">';
+    if(qMarkers.length > 0){
+      html += '<div class="map-filter-bar quest-map-filter-bar" style="margin-top:6px;margin-bottom:8px;">' +
+        '<div class="map-filter-header">' +
+          '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">📍 Marcadores del Encuentro (' + qMarkers.length + '):</span>' +
+          '<div style="display:flex;gap:5px;align-items:center;">' +
+            '<button type="button" class="btn-compact map-filter-toggle-all' + (qmFilter.hideAll ? ' is-off' : '') + '" data-action="toggle-quest-map-pins-all" style="padding:3px 8px;font-size:0.68rem;">' +
+              (qmFilter.hideAll ? '👁️ Mostrar todos' : '🚫 Ocultar todos') +
+            '</button>' +
+            ((Object.keys(qmFilter.hiddenTypes||{}).length > 0 || qmFilter.hideAll) ?
+              '<button type="button" class="btn-compact" data-action="reset-quest-map-pin-filter" style="padding:3px 8px;font-size:0.68rem;" title="Restablecer visibilidad">↺ Restablecer</button>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="map-filter-shelf">' + qmTypePillsHtml + '</div>' +
+      '</div>';
+    }
+
+    html += '<div class="map-viewer quest-map-viewer" data-action="quest-map-click">'+
+      '<img src="'+qMap.image+'" alt="Mapa de Misión">'+
+      qMarkers.map(function(m){
+        var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(m.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
+        var icon = m.icon || tDef.icon || "📍";
+        var pinColor = m.color || tDef.color || "#2A9D8F";
+        var isHidden = qmFilter.hideAll || (qmFilter.hiddenTypes && qmFilter.hiddenTypes[tDef.id]);
+        if(isHidden) return '';
+
+        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + m.x + '%;top:' + m.y + '%;" data-action="edit-quest-map-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
+          '<div class="pin-balloon" style="background-color:' + pinColor + ';box-shadow:0 0 10px ' + pinColor + '88;">' +
+            '<div class="pin-icon">' + icon + '</div>' +
+          '</div>' +
+          '<div class="pin-tag">' + esc(m.name) + '</div>' +
+        '</div>';
+      }).join('')+
+    '</div>';
+
+    html += '<div style="font-size:0.7rem;color:var(--ink-faint);margin-top:4px;display:flex;justify-content:space-between;">'+
+      '<span>🗺️ Haz clic en cualquier parte del plano para fijar puntos clave, emboscadas, rutas o secretos.</span>'+
+      '<span>'+qMarkers.length+' marcador(es)</span>'+
+    '</div>';
   } else {
     html += '<div style="padding:20px 10px;text-align:center;color:var(--ink-faint);font-size:0.8rem;border:1px dashed var(--line);border-radius:var(--radius-sm);">No hay plano fijado para esta misión actualmente.</div>';
   }

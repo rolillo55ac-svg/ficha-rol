@@ -1857,13 +1857,78 @@ function handleClick(e){
       var r = imgEl.getBoundingClientRect();
       var px = ((e.clientX - r.left)/r.width*100).toFixed(2);
       var py = ((e.clientY - r.top)/r.height*100).toFixed(2);
-      openPinModal(curM2, px, py);
+      openPinModal(curM2, px, py, null, "map", curM2.id);
     }
     return;
   }
   if(action==="edit-pin"){
     var curM3 = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-    if(curM3) openPinModal(curM3, null, null, btn.getAttribute("data-id"));
+    if(curM3) openPinModal(curM3, null, null, btn.getAttribute("data-id"), "map", curM3.id);
+    return;
+  }
+
+  // === MARCADORES EN PLANO DE MISIÓN Y TARJETAS DE MISIÓN ===
+  if(action==="quest-map-click"){
+    var qm = state.questMap;
+    var imgElQm = btn.querySelector("img");
+    if(qm && imgElQm){
+      var rQm = imgElQm.getBoundingClientRect();
+      var pxQm = Math.max(0, Math.min(100, ((e.clientX - rQm.left)/rQm.width*100))).toFixed(2);
+      var pyQm = Math.max(0, Math.min(100, ((e.clientY - rQm.top)/rQm.height*100))).toFixed(2);
+      openPinModal(qm, pxQm, pyQm, null, "questMap");
+    }
+    return;
+  }
+  if(action==="edit-quest-map-pin"){
+    var qm2 = state.questMap;
+    var pidQm = btn.getAttribute("data-id");
+    if(qm2 && pidQm){
+      openPinModal(qm2, null, null, pidQm, "questMap");
+    }
+    return;
+  }
+  if(action==="quest-card-map-click"){
+    var qid = btn.getAttribute("data-quest-id");
+    var quest = (state.quests || []).find(function(q){ return q.id === qid; });
+    var imgElQc = btn.querySelector("img");
+    if(quest && imgElQc){
+      var rQc = imgElQc.getBoundingClientRect();
+      var pxQc = Math.max(0, Math.min(100, ((e.clientX - rQc.left)/rQc.width*100))).toFixed(2);
+      var pyQc = Math.max(0, Math.min(100, ((e.clientY - rQc.top)/rQc.height*100))).toFixed(2);
+      openPinModal(quest, pxQc, pyQc, null, "questCard", quest.id);
+    }
+    return;
+  }
+  if(action==="edit-quest-card-pin"){
+    var qid2 = btn.getAttribute("data-quest-id");
+    var pidQc = btn.getAttribute("data-id");
+    var quest2 = (state.quests || []).find(function(q){ return q.id === qid2; });
+    if(quest2 && pidQc){
+      openPinModal(quest2, null, null, pidQc, "questCard", quest2.id);
+    }
+    return;
+  }
+  if(action==="toggle-quest-map-pins-all"){
+    state.questMapFilter = state.questMapFilter || { hideAll: false, hiddenTypes: {} };
+    state.questMapFilter.hideAll = !state.questMapFilter.hideAll;
+    renderTab();
+    showToast(state.questMapFilter.hideAll ? "Marcadores de misión ocultados" : "Marcadores de misión visibles", "info");
+    return;
+  }
+  if(action==="toggle-quest-map-pin-filter"){
+    var typeIdQm = btn.getAttribute("data-type-id");
+    if(typeIdQm){
+      state.questMapFilter = state.questMapFilter || { hideAll: false, hiddenTypes: {} };
+      state.questMapFilter.hiddenTypes = state.questMapFilter.hiddenTypes || {};
+      state.questMapFilter.hiddenTypes[typeIdQm] = !state.questMapFilter.hiddenTypes[typeIdQm];
+      renderTab();
+    }
+    return;
+  }
+  if(action==="reset-quest-map-pin-filter"){
+    state.questMapFilter = { hideAll: false, hiddenTypes: {} };
+    renderTab();
+    showToast("Filtros de plano de misión restablecidos", "info");
     return;
   }
 

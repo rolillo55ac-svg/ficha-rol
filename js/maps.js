@@ -62,11 +62,12 @@ function tplMundoMapas(s){
       (curMap.markers||[]).map(function(m){
         var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(m.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
         var icon = m.icon || tDef.icon || "📍";
+        var pinColor = m.color || tDef.color || "#2A9D8F";
         var isHidden = filterState.hideAll || (filterState.hiddenTypes && filterState.hiddenTypes[tDef.id]);
         if(isHidden) return '';
 
         return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + m.x + '%;top:' + m.y + '%;" data-action="edit-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
-          '<div class="pin-balloon" style="background-color:' + tDef.color + ';box-shadow:0 0 10px ' + tDef.color + '88;">' +
+          '<div class="pin-balloon" style="background-color:' + pinColor + ';box-shadow:0 0 10px ' + pinColor + '88;">' +
             '<div class="pin-icon">' + icon + '</div>' +
           '</div>' +
           '<div class="pin-tag">' + esc(m.name) + '</div>' +
@@ -104,7 +105,7 @@ async function pullMapFromSupabase(){
             name: m.name,
             image: m.image_url,
             markers: allMarkers.filter(function(p){ return p.map_id === m.id; }).map(function(p){
-              var parsed = (typeof parsePinNotesAndMeta === "function") ? parsePinNotesAndMeta(p.notes, p.kind, p.icon) : { kind: p.kind, icon: p.icon, notes: p.notes };
+              var parsed = (typeof parsePinNotesAndMeta === "function") ? parsePinNotesAndMeta(p.notes, p.kind, p.icon, p.color) : { kind: p.kind, icon: p.icon, color: p.color, notes: p.notes };
               return {
                 id: p.id,
                 x: Number(p.x),
@@ -112,6 +113,7 @@ async function pullMapFromSupabase(){
                 name: p.name,
                 kind: parsed.kind || p.kind || 'Punto de Interés',
                 icon: parsed.icon || p.icon || null,
+                color: parsed.color || p.color || null,
                 notes: parsed.notes || '',
                 created_by: p.created_by
               };
@@ -136,7 +138,7 @@ async function pullMapFromSupabase(){
             name: m.name,
             image: m.image || m.image_url,
             markers: (m.markers || []).map(function(p){
-              var parsed = (typeof parsePinNotesAndMeta === "function") ? parsePinNotesAndMeta(p.notes, p.kind, p.icon) : { kind: p.kind, icon: p.icon, notes: p.notes };
+              var parsed = (typeof parsePinNotesAndMeta === "function") ? parsePinNotesAndMeta(p.notes, p.kind, p.icon, p.color) : { kind: p.kind, icon: p.icon, color: p.color, notes: p.notes };
               return {
                 id: p.id,
                 x: Number(p.x),
@@ -144,6 +146,7 @@ async function pullMapFromSupabase(){
                 name: p.name,
                 kind: parsed.kind || p.kind || 'Punto de Interés',
                 icon: parsed.icon || p.icon || null,
+                color: parsed.color || p.color || null,
                 notes: parsed.notes || '',
                 created_by: p.created_by
               };
