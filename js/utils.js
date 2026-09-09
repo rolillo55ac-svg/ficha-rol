@@ -81,3 +81,28 @@ function resizeImageFile(file, maxDim, quality, callback){
   };
   reader.readAsDataURL(file);
 }
+
+function autoResizeTextarea(el){
+  if(!el || el.tagName !== "TEXTAREA") return;
+  el.style.height = "auto";
+  var scrollH = el.scrollHeight;
+  if(scrollH > 0){
+    el.style.height = (scrollH + 4) + "px";
+  }
+}
+
+function autoResizeAllTextareas(){
+  if(typeof window === "undefined" || typeof document === "undefined") return;
+  requestAnimationFrame(function(){
+    var textareas = document.querySelectorAll("textarea");
+    textareas.forEach(function(ta){
+      if(ta.offsetParent !== null){
+        ta.style.height = "auto";
+        var scrollH = ta.scrollHeight;
+        if(scrollH > 0){
+          ta.style.height = (scrollH + 4) + "px";
+        }
+      }
+    });
+  });
+}

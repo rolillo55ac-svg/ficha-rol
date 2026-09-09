@@ -201,9 +201,18 @@ function modalClick(e){
       try { document.activeElement.blur(); } catch(e){}
     }
     flushPendingSync();
-    state.activeId = btn.getAttribute("data-id");
+    var pickedId = btn.getAttribute("data-id");
+    state.activeId = pickedId;
+    var pickedChar = (state.characters||[]).find(function(x){ return x.id === pickedId || x.db_id === pickedId; });
+    if(pickedChar){
+      state.activeId = pickedChar.id;
+      try{
+        localStorage.setItem("krysalis_active_id", pickedChar.id);
+        if(pickedChar.db_id) localStorage.setItem("krysalis_active_db_id", pickedChar.db_id);
+        if(pickedChar.name) localStorage.setItem("krysalis_active_name", pickedChar.name);
+      }catch(errStorage){}
+    }
     saveState(true);
-    var pickedChar = (state.characters||[]).find(function(x){ return x.id === state.activeId; });
     if(pickedChar && pickedChar.db_id && typeof subscribeToActiveCharacter === 'function'){
       subscribeToActiveCharacter(pickedChar.db_id);
     }

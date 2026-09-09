@@ -1185,14 +1185,26 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   background:transparent;border:none;color:var(--ink);font-size:0.76rem;outline:none;min-width:130px;
 }
 
-/* Descripción */
+/* Descripción y Áreas de Texto Auto-expandibles */
+textarea,
+.quest-desc-textarea,
+.journal-textarea,
+.quest-banner textarea,
+.new-quest-form-card textarea,
+.clue-card textarea,
+.creature-notes,
+.spell-notes {
+  field-sizing: content;
+}
 .quest-desc-textarea{
-  width:100%;min-height:42px;background:rgba(0,0,0,0.18);border:1px solid var(--line);
+  width:100%;min-height:46px;background:rgba(0,0,0,0.18);border:1px solid var(--line);
   border-radius:4px;padding:6px 8px;font-size:0.82rem;color:var(--ink-dim);resize:vertical;margin-bottom:8px;
+  line-height:1.45;
 }
 .quest-desc-text{
   font-size:0.83rem;color:var(--ink-dim);line-height:1.5;margin-bottom:8px;
   background:rgba(0,0,0,0.15);padding:6px 8px;border-radius:4px;border-left:2px solid var(--line-strong);
+  white-space:pre-wrap;
 }
 
 /* Barra de progreso de objetivos */

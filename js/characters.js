@@ -602,6 +602,7 @@ async function pullAllFromSupabase(){
       var pulledChars = charRes.data.map(function(r){ 
         var c = r.data || {}; 
         c.db_id = r.id;
+        if(!c.id) c.id = r.id;
         if(r.owner_id) c.owner_id = r.owner_id;
         c._serverUpdatedAt = r.updated_at ? new Date(r.updated_at).getTime() : 0;
         c._isDirty = false;
@@ -719,11 +720,27 @@ async function pullAllFromSupabase(){
       });
 
       var validChars = getUserCharacters();
-      var savedActiveId = localStorage.getItem("krysalis_active_id");
-      if(savedActiveId && validChars.some(function(x){ return x.id === savedActiveId; })){
-        state.activeId = savedActiveId;
+      var savedActiveId = localStorage.getItem("krysalis_active_id") || state.activeId;
+      var savedActiveDbId = localStorage.getItem("krysalis_active_db_id");
+      var savedActiveName = localStorage.getItem("krysalis_active_name");
+      var matchedChar = null;
+
+      if(savedActiveId){
+        matchedChar = validChars.find(function(x){ return x.id === savedActiveId || x.db_id === savedActiveId; });
+      }
+      if(!matchedChar && savedActiveDbId){
+        matchedChar = validChars.find(function(x){ return x.db_id === savedActiveDbId || x.id === savedActiveDbId; });
+      }
+      if(!matchedChar && savedActiveName){
+        matchedChar = validChars.find(function(x){ return x.name && x.name.trim().toLowerCase() === savedActiveName.trim().toLowerCase(); });
+      }
+
+      if(matchedChar){
+        state.activeId = matchedChar.id;
       } else if(validChars.length > 0){
-        state.activeId = validChars[0].id;
+        if(!state.activeId || !validChars.some(function(x){ return x.id === state.activeId || x.db_id === state.activeId; })){
+          state.activeId = validChars[0].id;
+        }
       }
       var curActive = activeChar();
       if(curActive && curActive.db_id && typeof subscribeToActiveCharacter === 'function'){

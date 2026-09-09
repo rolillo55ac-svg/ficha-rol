@@ -62,7 +62,23 @@ function getUserCharacters(){
 
 function activeChar(){
   var chars = getUserCharacters();
-  var found = chars.find(function(x){return x.id===state.activeId;}) || chars[0] || (state.characters && state.characters[0]) || blankCharacter("Sin Personaje");
+  var savedActiveId = (typeof state !== 'undefined' && state.activeId) ? state.activeId : localStorage.getItem("krysalis_active_id");
+  var savedActiveDbId = localStorage.getItem("krysalis_active_db_id");
+  var savedActiveName = localStorage.getItem("krysalis_active_name");
+
+  var found = null;
+  if(savedActiveId){
+    found = chars.find(function(x){ return x.id === savedActiveId || x.db_id === savedActiveId; });
+  }
+  if(!found && savedActiveDbId){
+    found = chars.find(function(x){ return x.db_id === savedActiveDbId || x.id === savedActiveDbId; });
+  }
+  if(!found && savedActiveName){
+    found = chars.find(function(x){ return x.name && x.name.trim().toLowerCase() === savedActiveName.trim().toLowerCase(); });
+  }
+  if(!found){
+    found = chars[0] || (state.characters && state.characters[0]) || blankCharacter("Sin Personaje");
+  }
   return ensureCharDefaults(found);
 }
 

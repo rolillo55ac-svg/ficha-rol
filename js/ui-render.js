@@ -101,6 +101,10 @@ function renderTab(){
   else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
   else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
   else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
+
+  if(typeof autoResizeAllTextareas === "function"){
+    autoResizeAllTextareas();
+  }
 }
 
 function tplFicha(c){

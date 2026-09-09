@@ -129,7 +129,14 @@ function flushPendingSync(){
 function saveState(skipRemote){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if(state.activeId) localStorage.setItem("krysalis_active_id", state.activeId);
+    if(state.activeId){
+      localStorage.setItem("krysalis_active_id", state.activeId);
+      var curC = (state.characters||[]).find(function(x){ return x.id === state.activeId || x.db_id === state.activeId; });
+      if(curC){
+        if(curC.db_id) localStorage.setItem("krysalis_active_db_id", curC.db_id);
+        if(curC.name) localStorage.setItem("krysalis_active_name", curC.name);
+      }
+    }
     if(state.activeTab) localStorage.setItem("krysalis_active_tab", state.activeTab);
   }catch(e){
     console.error("Error al guardar en localStorage:", e);

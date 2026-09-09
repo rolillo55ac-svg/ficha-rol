@@ -111,6 +111,9 @@ function setBind(target, path, rawValue, inputType){
 }
 
 function handleChange(e){
+  if(e.target && e.target.tagName === "TEXTAREA" && typeof autoResizeTextarea === "function"){
+    autoResizeTextarea(e.target);
+  }
   var actEl = e.target.closest("[data-action]");
   if(actEl){
     handleClick(e);

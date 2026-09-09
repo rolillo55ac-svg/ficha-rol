@@ -83,7 +83,7 @@ function blankCharacter(name, isNPC){
 
 function ensureCharDefaults(c){
   if(!c || typeof c !== "object") return c;
-  if(!c.id) c.id = uid();
+  if(!c.id) c.id = c.db_id || uid();
   if(!c.name) c.name = "Sin Nombre";
   if(!c.attrs || typeof c.attrs !== "object") c.attrs = { fisico: 1, destreza: 1, inteligencia: 1, percepcion: 1, carisma: 1 };
   ATTRS.forEach(function(a){ if(c.attrs[a] === undefined) c.attrs[a] = 1; });
@@ -438,8 +438,23 @@ function loadState(){
       });
     }
     var savedActiveId = localStorage.getItem("krysalis_active_id");
-    if(savedActiveId && loaded.characters && loaded.characters.some(function(x){return x.id===savedActiveId;})){
-      loaded.activeId = savedActiveId;
+    var savedActiveDbId = localStorage.getItem("krysalis_active_db_id");
+    var savedActiveName = localStorage.getItem("krysalis_active_name");
+
+    if(loaded && loaded.characters && loaded.characters.length){
+      var matched = null;
+      if(savedActiveId){
+        matched = loaded.characters.find(function(x){ return x.id === savedActiveId || x.db_id === savedActiveId; });
+      }
+      if(!matched && savedActiveDbId){
+        matched = loaded.characters.find(function(x){ return x.db_id === savedActiveDbId || x.id === savedActiveDbId; });
+      }
+      if(!matched && savedActiveName){
+        matched = loaded.characters.find(function(x){ return x.name && x.name.trim().toLowerCase() === savedActiveName.trim().toLowerCase(); });
+      }
+      if(matched){
+        loaded.activeId = matched.id;
+      }
     }
     var savedTab = localStorage.getItem("krysalis_active_tab");
     if(savedTab){
