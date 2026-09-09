@@ -957,6 +957,23 @@ function parseSummonRollItem(itemStr){
   return { raw: s, label: label, formula: formula, icon: icon };
 }
 
+function getSummonRollList(tiradasStr){
+  var items = [];
+  if(tiradasStr){
+    tiradasStr.split(/[\n,]+/).forEach(function(part){
+      var parsed = parseSummonRollItem(part);
+      if(parsed) items.push(parsed);
+    });
+  }
+  return items;
+}
+
+function serializeSummonRolls(items){
+  return (items || []).map(function(it){
+    return it.label + (it.formula ? " " + it.formula : "");
+  }).join(", ");
+}
+
 function tplInvocaciones(c){
   c.summons = c.summons || [];
   var canEdit = canEditChar(c);
@@ -971,14 +988,9 @@ function tplInvocaciones(c){
     var tiradasVal = split.tiradas;
     var rasgosVal = split.rasgos;
     var imgStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
+    var isEditingSkills = !!(state._summonEditingSkills && state._summonEditingSkills[s.id]);
 
-    var rollPills = [];
-    if(tiradasVal){
-      tiradasVal.split(/[\n,]+/).forEach(function(part){
-        var parsed = parseSummonRollItem(part);
-        if(parsed) rollPills.push(parsed);
-      });
-    }
+    var rollPills = getSummonRollList(tiradasVal);
     if(s.dano && /(\d*d\d+)/i.test(s.dano)){
       var hasDano = rollPills.some(function(it){ return it.label.toLowerCase().includes("daño") || it.label.toLowerCase().includes("dano"); });
       if(!hasDano){
@@ -991,19 +1003,45 @@ function tplInvocaciones(c){
       }
     }
 
-    var pillsHtml = '';
-    if(rollPills.length > 0){
-      pillsHtml = rollPills.map(function(rp){
-        var actName = rp.label;
-        var fStr = rp.formula || rp.raw;
-        return '<button type="button" class="summon-roll-pill" data-action="roll-summon-action" data-summon-name="' + esc(s.name || 'Invocación') + '" data-action-name="' + esc(actName) + '" data-formula="' + esc(fStr) + '" title="Haz clic para lanzar: ' + esc(actName) + ' (' + esc(fStr) + ')">' +
-          '<span class="pill-icon">' + rp.icon + '</span>' +
-          '<span class="pill-label">' + esc(actName) + '</span>' +
-          (rp.formula ? ('<span class="pill-formula">' + esc(rp.formula) + '</span>') : '') +
-        '</button>';
-      }).join('');
+    var skillsContentHtml = '';
+    if(isEditingSkills && canEdit){
+      skillsContentHtml = '<div class="summon-skills-editor-table">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(176,141,87,0.2);">' +
+          '<span style="font-size:0.72rem;color:var(--gold-light);font-weight:700;">Edita el nombre o bono de cada tirada:</span>' +
+          '<button type="button" class="btn-compact" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" style="padding:2px 8px;font-size:0.68rem;">✕ Cerrar</button>' +
+        '</div>' +
+        (rollPills.length > 0 ? rollPills.map(function(rp, idx){
+          return '<div class="summon-skill-edit-row">' +
+            '<span class="summon-skill-row-icon">' + rp.icon + '</span>' +
+            '<input type="text" class="summon-skill-input-name" placeholder="Nombre (ej: Melé)" value="' + esc(rp.label) + '" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + idx + '">' +
+            '<input type="text" class="summon-skill-input-formula" placeholder="Fórmula (ej: 8+1d10)" value="' + esc(rp.formula) + '" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + idx + '">' +
+            '<button type="button" class="row-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + idx + '" title="Eliminar ' + esc(rp.label) + '">✕</button>' +
+          '</div>';
+        }).join('') : '<div style="font-size:0.75rem;color:var(--ink-faint);padding:6px 0;font-style:italic;">No hay tiradas todavía. Pulsa "+ Añadir tirada" para crear una.</div>') +
+        '<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap;">' +
+          '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '">+ Añadir tirada</button>' +
+          '<button type="button" class="btn-solid-gold" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" style="padding:6px 14px;font-size:0.75rem;">✓ Guardar y Ver Botones</button>' +
+        '</div>' +
+      '</div>';
     } else {
-      pillsHtml = '<span style="font-size:0.75rem;color:var(--ink-faint);font-style:italic;">' + (canEdit ? 'Sin tiradas configuradas. Escribe abajo para crearlas.' : 'Sin tiradas registradas.') + '</span>';
+      var pillsHtml = '';
+      if(rollPills.length > 0){
+        pillsHtml = rollPills.map(function(rp, idx){
+          var actName = rp.label;
+          var fStr = rp.formula || rp.raw;
+          return '<div class="summon-roll-pill" title="' + esc(actName) + ' (' + esc(fStr) + ')">' +
+            '<button type="button" class="pill-roll-act" data-action="roll-summon-action" data-summon-name="' + esc(s.name || 'Invocación') + '" data-action-name="' + esc(actName) + '" data-formula="' + esc(fStr) + '">' +
+              '<span class="pill-icon">' + rp.icon + '</span>' +
+              '<span class="pill-label">' + esc(actName) + '</span>' +
+              (rp.formula ? ('<span class="pill-formula">' + esc(rp.formula) + '</span>') : '') +
+            '</button>' +
+            (canEdit ? ('<button type="button" class="pill-edit-act" data-action="edit-summon-roll" data-summon-id="' + s.id + '" data-action-name="' + esc(actName) + '" data-formula="' + esc(rp.formula || fStr) + '" data-index="' + idx + '" title="Modificar bono de ' + esc(actName) + '">✏️</button>') : '') +
+          '</div>';
+        }).join('');
+      } else {
+        pillsHtml = '<span style="font-size:0.75rem;color:var(--ink-faint);font-style:italic;">' + (canEdit ? 'Sin tiradas configuradas. Pulsa [+ Añadir] para crearlas.' : 'Sin tiradas registradas.') + '</span>';
+      }
+      skillsContentHtml = '<div class="summon-pills-wrap">' + pillsHtml + '</div>';
     }
 
     html += '<div class="creature-card summon-card">' +
@@ -1042,13 +1080,18 @@ function tplInvocaciones(c){
       '<div class="summon-modules-container">' +
         '<div class="summon-block summon-rolls-block">' +
           '<div class="summon-block-header">' +
-            '<span class="summon-block-title">⚔️ Tiradas y Habilidades de Acción</span>' +
-            '<span class="summon-block-sub">Toca para tirar</span>' +
+            '<div style="display:flex;align-items:center;gap:6px;">' +
+              '<span class="summon-block-title">⚔️ Tiradas y Habilidades de Acción</span>' +
+              '<span class="summon-block-sub">Toca para tirar</span>' +
+            '</div>' +
+            (canEdit ? ('<div style="display:flex;gap:4px;align-items:center;">' +
+              '<button type="button" class="btn-compact' + (isEditingSkills ? ' btn-solid-gold' : '') + '" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" title="Editar lista de habilidades">' +
+                (isEditingSkills ? '✓ Ver Botones' : '✏️ Editar Habilidades') +
+              '</button>' +
+              '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '" title="Añadir nueva tirada">+ Añadir</button>' +
+            '</div>') : '') +
           '</div>' +
-          '<div class="summon-pills-wrap">' + pillsHtml + '</div>' +
-          (canEdit ? ('<div class="summon-inline-edit">' +
-            '<input type="text" class="summon-edit-input" placeholder="Editar tiradas separadas por comas (ej: Melé 8+1d10, Atletismo 2+1d10, Sigilo 12+1d10...)" data-bind="summons.' + s.id + '.tiradas" value="' + esc(tiradasVal) + '">' +
-          '</div>') : '') +
+          skillsContentHtml +
         '</div>' +
 
         '<div class="summon-block summon-traits-block">' +

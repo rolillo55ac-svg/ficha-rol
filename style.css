@@ -610,19 +610,19 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   background: linear-gradient(135deg, rgba(32, 22, 16, 0.95), rgba(18, 12, 9, 0.95));
   border: 1.5px solid var(--gold);
   border-radius: 9999px;
-  padding: 5px 12px;
   color: var(--ink-bright);
   font-size: 0.76rem;
   font-family: var(--font-mono);
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  align-items: stretch;
   cursor: pointer;
   transition: all var(--transition-fast);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 0 6px rgba(176, 141, 87, 0.12);
   user-select: none;
   min-height: 32px;
   white-space: nowrap;
+  overflow: hidden;
+  padding: 0;
 }
 .summon-roll-pill:hover {
   border-color: #ffd700;
@@ -633,6 +633,45 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .summon-roll-pill:active {
   transform: scale(0.97);
+}
+.pill-roll-act {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px 5px 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.pill-roll-act:hover {
+  background: rgba(176, 141, 87, 0.16);
+}
+.pill-roll-act:active {
+  background: rgba(176, 141, 87, 0.3);
+}
+.pill-edit-act {
+  background: rgba(0, 0, 0, 0.4);
+  border: none;
+  border-left: 1px solid rgba(176, 141, 87, 0.35);
+  color: var(--gold-light);
+  font-size: 0.72rem;
+  padding: 0 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+.pill-edit-act:hover {
+  background: rgba(176, 141, 87, 0.35);
+  color: #fff;
+}
+.pill-edit-act:active {
+  background: var(--gold);
+  color: #000;
 }
 .summon-roll-pill .pill-icon {
   font-size: 0.85rem;
@@ -653,23 +692,68 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   font-weight: 600;
   border: 1px solid rgba(176, 141, 87, 0.4);
 }
-.summon-edit-input {
-  width: 100%;
-  background: var(--bg-card);
-  border: 1px dashed rgba(176, 141, 87, 0.35);
+
+/* Structured Skills Editor */
+.summon-skills-editor-table {
+  background: rgba(12, 8, 5, 0.75);
+  border: 1px solid rgba(176, 141, 87, 0.25);
   border-radius: var(--radius-sm);
-  padding: 6px 9px;
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  color: var(--ink-dim);
-  margin-top: 6px;
-  transition: border-color var(--transition-fast);
+  padding: 10px;
+  margin-top: 4px;
 }
-.summon-edit-input:focus {
+.summon-skill-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.summon-skill-row-icon {
+  font-size: 1rem;
+  width: 22px;
+  text-align: center;
+  flex: none;
+}
+.summon-skill-input-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  color: var(--gold-light);
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+.summon-skill-input-name:focus {
   border-color: var(--gold);
-  border-style: solid;
-  color: var(--ink-bright);
 }
+.summon-skill-input-formula {
+  width: 96px;
+  flex: 0 0 96px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: #fff;
+  text-align: center;
+}
+.summon-skill-input-formula:focus {
+  border-color: var(--gold);
+}
+@media (max-width: 420px) {
+  .summon-skill-input-formula {
+    width: 82px;
+    flex: 0 0 82px;
+    font-size: 0.74rem;
+  }
+  .summon-skill-input-name {
+    font-size: 0.74rem;
+  }
+}
+
 
 /* Component 2: Highlighted Traits Box */
 .summon-traits-block {

@@ -1061,6 +1061,113 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="edit-summon-roll"){
+    if(!c || !canEditChar(c)) return;
+    var smId = btn.getAttribute("data-summon-id");
+    var sm = (c.summons || []).find(function(x){ return x.id === smId; });
+    if(!sm) return;
+    var actName = btn.getAttribute("data-action-name") || "Tirada";
+    var curFormula = btn.getAttribute("data-formula") || "1d10";
+    var idx = parseInt(btn.getAttribute("data-index"), 10);
+
+    var newForm = prompt("Modificar bono o fórmula de '" + actName + "':\n(Ej: 9+1d10, 1d6+2, 12+1d10)", curFormula);
+    if(newForm !== null && newForm.trim()){
+      var split = splitSummonHabilidades(sm);
+      var list = getSummonRollList(split.tiradas);
+      if(actName.toLowerCase() === "daño" || actName.toLowerCase() === "dano"){
+        sm.dano = newForm.trim();
+      } else if(idx >= 0 && idx < list.length && list[idx].label.toLowerCase() === actName.toLowerCase()){
+        list[idx].formula = newForm.trim();
+        sm.tiradas = serializeSummonRolls(list);
+      } else {
+        var found = list.find(function(it){ return it.label.toLowerCase() === actName.toLowerCase(); });
+        if(found){
+          found.formula = newForm.trim();
+          sm.tiradas = serializeSummonRolls(list);
+        } else {
+          list.push({ label: actName, formula: newForm.trim() });
+          sm.tiradas = serializeSummonRolls(list);
+        }
+      }
+      sm.habilidades = (sm.tiradas ? sm.tiradas.trim() : "") + (sm.rasgos ? (sm.tiradas ? ". " : "") + sm.rasgos.trim() : "");
+      saveState(true);
+      pushSharedData();
+      manageListItemRPC(c, 'summons', 'update_item', sm, sm.id);
+      renderTab();
+      showToast("Tirada '" + actName + "' actualizada a " + newForm.trim(), "success");
+    }
+    return;
+  }
+  if(action==="toggle-summon-skills-edit"){
+    var smId = btn.getAttribute("data-id");
+    state._summonEditingSkills = state._summonEditingSkills || {};
+    state._summonEditingSkills[smId] = !state._summonEditingSkills[smId];
+    renderTab();
+    return;
+  }
+  if(action==="add-summon-skill"){
+    if(!c || !canEditChar(c)) return;
+    var smId = btn.getAttribute("data-id");
+    var sm = (c.summons || []).find(function(x){ return x.id === smId; });
+    if(!sm) return;
+    var newName = prompt("Nombre de la nueva habilidad o tirada (ej: Mordisco, Sigilo, Esquivar):");
+    if(newName && newName.trim()){
+      var newFormula = prompt("Bono o fórmula para '" + newName.trim() + "' (ej: 8+1d10, 1d6+2, 4+1d10):", "1d10");
+      var split = splitSummonHabilidades(sm);
+      var list = getSummonRollList(split.tiradas);
+      list.push({ label: newName.trim(), formula: (newFormula && newFormula.trim()) ? newFormula.trim() : "1d10" });
+      sm.tiradas = serializeSummonRolls(list);
+      sm.habilidades = (sm.tiradas ? sm.tiradas.trim() : "") + (sm.rasgos ? (sm.tiradas ? ". " : "") + sm.rasgos.trim() : "");
+      saveState(true);
+      pushSharedData();
+      manageListItemRPC(c, 'summons', 'update_item', sm, sm.id);
+      renderTab();
+      showToast("Habilidad '" + newName.trim() + "' creada", "success");
+    }
+    return;
+  }
+  if(action==="del-summon-skill"){
+    if(!c || !canEditChar(c)) return;
+    var smId = btn.getAttribute("data-summon-id");
+    var sm = (c.summons || []).find(function(x){ return x.id === smId; });
+    if(!sm) return;
+    var idx = parseInt(btn.getAttribute("data-index"), 10);
+    var split = splitSummonHabilidades(sm);
+    var list = getSummonRollList(split.tiradas);
+    if(idx >= 0 && idx < list.length){
+      var removed = list.splice(idx, 1)[0];
+      sm.tiradas = serializeSummonRolls(list);
+      sm.habilidades = (sm.tiradas ? sm.tiradas.trim() : "") + (sm.rasgos ? (sm.tiradas ? ". " : "") + sm.rasgos.trim() : "");
+      saveState(true);
+      pushSharedData();
+      manageListItemRPC(c, 'summons', 'update_item', sm, sm.id);
+      renderTab();
+      showToast("Habilidad '" + (removed ? removed.label : "") + "' eliminada", "info");
+    }
+    return;
+  }
+  if(action==="change-summon-skill-name" || action==="change-summon-skill-formula"){
+    if(!c || !canEditChar(c)) return;
+    var smId = btn.getAttribute("data-summon-id");
+    var sm = (c.summons || []).find(function(x){ return x.id === smId; });
+    if(!sm) return;
+    var idx = parseInt(btn.getAttribute("data-index"), 10);
+    var isName = action === "change-summon-skill-name";
+    var split = splitSummonHabilidades(sm);
+    var list = getSummonRollList(split.tiradas);
+    if(idx >= 0 && idx < list.length){
+      if(isName) list[idx].label = btn.value;
+      else list[idx].formula = btn.value;
+      sm.tiradas = serializeSummonRolls(list);
+      sm.habilidades = (sm.tiradas ? sm.tiradas.trim() : "") + (sm.rasgos ? (sm.tiradas ? ". " : "") + sm.rasgos.trim() : "");
+      if(e.type === "change"){
+        saveState(false);
+        pushSharedData();
+        manageListItemRPC(c, 'summons', 'update_item', sm, sm.id);
+      }
+    }
+    return;
+  }
   if(action==="add-poison"){ if(!c || !canEditChar(c)) return; if(!c.poisons)c.poisons=[]; var newPs = {id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}; c.poisons.push(newPs); renderTab(); manageListItemRPC(c, 'poisons', 'add', newPs); return; }
   if(action==="del-poison"){ if(!c || !canEditChar(c)) return; var psId = btn.getAttribute("data-id"); c.poisons = (c.poisons || []).filter(function(p){return p.id!==psId;}); renderTab(); manageListItemRPC(c, 'poisons', 'remove', null, psId); return; }
   if(action==="add-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = c.passivesNeg || []; var newPn = {id:uid(),text:""}; c.passivesNeg.push(newPn); renderTab(); manageListItemRPC(c, 'passivesNeg', 'add', newPn); return; }
