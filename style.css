@@ -1185,6 +1185,55 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   background:transparent;border:none;color:var(--ink);font-size:0.76rem;outline:none;min-width:130px;
 }
 
+/* Ilustración de Tarjeta de Misión (tamaño intermedio, estético y responsive) */
+.quest-card-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 165px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: 8px 0 10px;
+  border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 30%, rgba(176,141,87,0.12), transparent 70%), #0d0a08;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(176,141,87,0.15);
+}
+.quest-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.2,0,0.2,1);
+}
+.quest-card-image-wrap:hover .quest-card-img {
+  transform: scale(1.025);
+}
+.quest-card-img-actions {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  gap: 5px;
+  background: rgba(18, 13, 10, 0.85);
+  backdrop-filter: blur(6px);
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  opacity: 0.88;
+  transition: opacity var(--transition-fast);
+  z-index: 2;
+}
+.quest-card-image-wrap:hover .quest-card-img-actions {
+  opacity: 1;
+}
+@media (max-width: 600px) {
+  .quest-card-image-wrap {
+    height: 135px;
+    margin: 6px 0 8px;
+  }
+}
+
+
 /* Descripción y Áreas de Texto Auto-expandibles */
 textarea,
 .quest-desc-textarea,

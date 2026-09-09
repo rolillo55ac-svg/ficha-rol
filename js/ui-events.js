@@ -1706,6 +1706,8 @@ function handleClick(e){
     var locEl = document.getElementById("newQuestLocation");
     var rewardEl = document.getElementById("newQuestReward");
     var descEl = document.getElementById("newQuestDesc");
+    var imgEl = document.getElementById("newQuestImage");
+    var qImage = imgEl ? imgEl.value.trim() : "";
 
     state.quests = state.quests || [];
     state.quests.push({
@@ -1716,6 +1718,7 @@ function handleClick(e){
       location: locEl ? locEl.value.trim() : "",
       reward: rewardEl ? rewardEl.value.trim() : "",
       desc: descEl ? descEl.value.trim() : "",
+      image: qImage || null,
       status: "activa",
       tasks: []
     });
@@ -1830,6 +1833,44 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="upload-quest-img"){
+    if(!isGM() && currentUser) return;
+    pendingQuestCardId = btn.getAttribute("data-id");
+    var qCardInput = document.getElementById("questCardFileInput");
+    if(qCardInput) qCardInput.click();
+    return;
+  }
+  if(action==="url-quest-img"){
+    if(!isGM() && currentUser) return;
+    var qidImg = btn.getAttribute("data-id");
+    var qObjImg = (state.quests||[]).find(function(q){ return q.id === qidImg; });
+    if(qObjImg){
+      var curQImg = qObjImg.image || "";
+      var qLink = prompt("Introduce el enlace de la imagen para esta misión (de GitHub, web, etc.):", curQImg.startsWith("data:") ? "" : curQImg);
+      if(qLink !== null){
+        qObjImg.image = qLink.trim() || null;
+        saveState(true);
+        pushSharedData({ quests: state.quests });
+        renderTab();
+        showToast(qObjImg.image ? "Ilustración de misión asignada" : "Ilustración quitada", "info");
+      }
+    }
+    return;
+  }
+  if(action==="remove-quest-img"){
+    if(!isGM() && currentUser) return;
+    var qidRem = btn.getAttribute("data-id");
+    var qObjRem = (state.quests||[]).find(function(q){ return q.id === qidRem; });
+    if(qObjRem){
+      qObjRem.image = null;
+      saveState(true);
+      pushSharedData({ quests: state.quests });
+      renderTab();
+      showToast("Ilustración de misión eliminada", "info");
+    }
+    return;
+  }
+
   if(action==="add-clue"){
     if(!isGM() && currentUser) return;
     var clTitle = prompt("Título del descubrimiento o pista:");
@@ -1849,6 +1890,13 @@ function handleClick(e){
       saveState(true); pushSharedData(); renderTab();
       showToast("Pista eliminada", "info");
     }
+    return;
+  }
+  if(action==="upload-clue-img"){
+    if(!isGM() && currentUser) return;
+    pendingClueId = btn.getAttribute("data-id");
+    var clueInput = document.getElementById("clueFileInput");
+    if(clueInput) clueInput.click();
     return;
   }
   if(action==="url-clue-img"){
@@ -1933,3 +1981,5 @@ function handleKeyDown(e){
 
 var pendingBestiaryId = null;
 var pendingNewMapName = null;
+var pendingQuestCardId = null;
+var pendingClueId = null;

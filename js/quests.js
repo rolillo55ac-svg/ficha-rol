@@ -35,6 +35,8 @@ function renderQuestCard(q, canEdit){
     '</div>'+
     (canEdit ?
       '<div class="quest-card-gm-actions">'+
+        (!q.image ? '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Subir foto de la misión">📷 Foto</button>' : '')+
+        (!q.image ? '<button class="btn-compact" data-action="url-quest-img" data-id="'+q.id+'" title="Pegar enlace de foto">URL</button>' : '')+
         '<select class="quest-type-select" data-action="set-quest-type" data-id="'+q.id+'" title="Cambiar categoría">'+
           '<option value="principal" '+(isPrincipal?'selected':'')+'>⭐ Principal</option>'+
           '<option value="secundaria" '+(!isPrincipal?'selected':'')+'>◈ Secundaria</option>'+
@@ -67,6 +69,20 @@ function renderQuestCard(q, canEdit){
       }
     }
     html += '</div>';
+  }
+
+  // Ilustración de la misión (banner visual proporcionado y responsive)
+  if(q.image){
+    html += '<div class="quest-card-image-wrap">'+
+      '<img src="'+esc(q.image)+'" alt="'+esc(q.title)+'" class="quest-card-img" onerror="this.parentElement.style.display=\'none\';">'+
+      (canEdit ?
+        '<div class="quest-card-img-actions">'+
+          '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Cambiar foto de la misión">📷 Cambiar</button>'+
+          '<button class="btn-compact" data-action="url-quest-img" data-id="'+q.id+'" title="Cambiar por URL">URL</button>'+
+          '<button class="row-del" data-action="remove-quest-img" data-id="'+q.id+'" title="Quitar foto">✕</button>'+
+        '</div>' : ''
+      )+
+    '</div>';
   }
 
   // Descripción de la misión
@@ -208,6 +224,10 @@ function tplMision(c, s){
           '<label style="font-size:0.75rem;color:var(--ink-dim);">Descripción / Contexto / Pistas</label>'+
           '<textarea id="newQuestDesc" class="field" style="width:100%;min-height:55px;resize:vertical;font-size:0.82rem;" placeholder="Detalles conocidos, contactos, secretos o peligros..."></textarea>'+
         '</div>'+
+        '<div class="form-group" style="margin-top:8px;">'+
+          '<label style="font-size:0.75rem;color:var(--ink-dim);">🖼️ Ilustración / Imagen (URL opcional o súbela tras crearla)</label>'+
+          '<input type="text" id="newQuestImage" class="field" style="width:100%;font-size:0.82rem;" placeholder="https://... (o déjalo vacío y súbela con 📷 Foto tras crearla)">'+
+        '</div>'+
         '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">'+
           '<button class="btn-compact" data-action="toggle-new-quest-form">Cancelar</button>'+
           '<button class="btn-compact highlight" data-action="submit-new-quest" style="background:var(--gold);color:#120D0A;font-weight:700;">⚔️ Guardar Misión</button>'+
@@ -331,6 +351,7 @@ function tplMision(c, s){
       }
       if(canEdit){
         html += '<div style="display:flex;gap:4px;margin-top:4px;">'+
+          '<button class="btn-compact" data-action="upload-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">📷 Foto</button>'+
           '<button class="btn-compact" data-action="url-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">'+(cl.image?'Cambiar URL':'Pegar URL')+'</button>'+
           (cl.image ? '<button class="btn-compact" data-action="remove-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">Quitar Foto</button>' : '')+
         '</div>';

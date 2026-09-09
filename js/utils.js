@@ -106,3 +106,78 @@ function autoResizeAllTextareas(){
     });
   });
 }
+
+function optimizeImageForUpload(file, maxDim, quality, callback){
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var img = new Image();
+    img.onload = function(){
+      var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      var canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      var dataUrl = canvas.toDataURL("image/jpeg", quality || 0.85);
+      if(canvas.toBlob){
+        canvas.toBlob(function(blob){
+          callback(blob || file, dataUrl);
+        }, "image/jpeg", quality || 0.85);
+      } else {
+        callback(file, dataUrl);
+      }
+    };
+    img.onerror = function(){ callback(file, null); };
+    img.src = ev.target.result;
+  };
+  reader.onerror = function(){ callback(file, null); };
+  reader.readAsDataURL(file);
+}
+
+async function uploadImageToSupabase(file, folder, rawFileName, callback){
+  if(!file){
+    if(typeof callback === "function") callback(null);
+    return;
+  }
+
+  var maxDim = (folder === "mapas") ? 1920 : 1000;
+  optimizeImageForUpload(file, maxDim, 0.85, async function(uploadBlob, base64Fallback){
+    // 1. Intentar subir al bucket 'images' de Supabase Storage
+    if(typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.storage){
+      showToast("Subiendo imagen a la nube...", "info");
+      try{
+        var cleanFolder = (folder || "general").replace(/[^a-zA-Z0-9_\-]/g, "");
+        var safeName = (rawFileName || "img").toLowerCase().replace(/[^a-zA-Z0-9_\-]/g, "_").slice(0, 30);
+        var filePath = cleanFolder + "/" + safeName + "_" + Date.now().toString(36) + ".jpg";
+
+        var res = await supabaseClient.storage
+          .from('images')
+          .upload(filePath, uploadBlob, {
+            contentType: 'image/jpeg',
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if(res.error){
+          console.warn("Supabase Storage no disponible (" + res.error.message + "), usando almacenamiento local.");
+          showToast("Storage: usando imagen local optimizada.", "info");
+          if(typeof callback === "function") callback(base64Fallback);
+          return;
+        }
+
+        var pubRes = supabaseClient.storage.from('images').getPublicUrl(filePath);
+        var publicUrl = (pubRes && pubRes.data && pubRes.data.publicUrl) ? pubRes.data.publicUrl : null;
+        if(publicUrl){
+          showToast("¡Imagen guardada en la nube con éxito!", "success");
+          if(typeof callback === "function") callback(publicUrl);
+          return;
+        }
+      }catch(err){
+        console.warn("Error inesperado en storage:", err);
+      }
+    }
+
+    // 2. Respaldo local base64
+    if(typeof callback === "function") callback(base64Fallback);
+  });
+}

@@ -92,20 +92,31 @@ function init(){
 
     safeListen("portraitFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
-        resizeImageFile(e.target.files[0], 400, 0.85, function(url){ activeChar().portrait = url; saveState(); renderTopbar(); renderTab(); });
+        var c = activeChar();
+        uploadImageToSupabase(e.target.files[0], "personajes", c ? c.name : "personaje", function(url){
+          if(c && url){
+            c.portrait = url;
+            c._lastLocalEdit = Date.now();
+            markCharDirty(c.id, { portrait: url });
+            saveState(false);
+            if(typeof pushCharacterPatch === "function") pushCharacterPatch(c.id, { portrait: url });
+            renderTopbar();
+            renderTab();
+          }
+        });
       }
       e.target.value="";
     });
     safeListen("mapFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
-        resizeImageFile(e.target.files[0], 1920, 0.85, function(url){
-          var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
-          if(curM){
+        var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});
+        var mapName = curM ? curM.name : "mapa";
+        uploadImageToSupabase(e.target.files[0], "mapas", mapName, function(url){
+          if(curM && url){
             curM.image = url;
             saveState(true);
             pushMapsData();
             renderTab();
-            showToast("Foto subida al mapa con éxito", "success");
           }
         });
       }
@@ -114,14 +125,14 @@ function init(){
     safeListen("bestiaryFileInput", "change", function(e){
       if(e.target.files && e.target.files[0] && pendingBestiaryId){
         var bid = pendingBestiaryId;
-        resizeImageFile(e.target.files[0], 600, 0.85, function(url){
-          var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
-          if(b){
+        var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
+        var bName = b ? b.name : "criatura";
+        uploadImageToSupabase(e.target.files[0], "bestiario", bName, function(url){
+          if(b && url){
             b.image = url;
             saveState(true);
-            pushSharedData();
+            pushSharedData({ bestiary: state.bestiary });
             renderTab();
-            showToast("Foto asignada a la criatura", "success");
           }
         });
       }
@@ -130,16 +141,52 @@ function init(){
     });
     safeListen("questFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
-        resizeImageFile(e.target.files[0], 1920, 0.85, function(url){
-          if(!state.questMap) state.questMap = { name: "Mapa del Encuentro", image: null };
-          state.questMap.image = url;
-          saveState(true);
-          pushSharedData();
-          renderTab();
-          showToast("Foto del mapa de misión actualizada", "success");
+        if(!state.questMap) state.questMap = { name: "Mapa del Encuentro", image: null };
+        var qmName = state.questMap.name || "mapa_mision";
+        uploadImageToSupabase(e.target.files[0], "mapas", qmName, function(url){
+          if(url){
+            state.questMap.image = url;
+            saveState(true);
+            pushSharedData({ questMap: state.questMap });
+            renderTab();
+          }
         });
       }
       e.target.value="";
+    });
+    safeListen("questCardFileInput", "change", function(e){
+      if(e.target.files && e.target.files[0] && pendingQuestCardId){
+        var qid = pendingQuestCardId;
+        var qObj = (state.quests||[]).find(function(q){ return q.id === qid; });
+        var qName = qObj ? qObj.title : "mision";
+        uploadImageToSupabase(e.target.files[0], "misiones", qName, function(url){
+          if(qObj && url){
+            qObj.image = url;
+            saveState(true);
+            pushSharedData({ quests: state.quests });
+            renderTab();
+          }
+        });
+      }
+      e.target.value="";
+      pendingQuestCardId = null;
+    });
+    safeListen("clueFileInput", "change", function(e){
+      if(e.target.files && e.target.files[0] && pendingClueId){
+        var cid = pendingClueId;
+        var clObj = (state.questClues||[]).find(function(c){ return c.id === cid; });
+        var clName = clObj ? clObj.title : "pista";
+        uploadImageToSupabase(e.target.files[0], "pistas", clName, function(url){
+          if(clObj && url){
+            clObj.image = url;
+            saveState(true);
+            pushSharedData({ questClues: state.questClues });
+            renderTab();
+          }
+        });
+      }
+      e.target.value="";
+      pendingClueId = null;
     });
     safeListen("importFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
