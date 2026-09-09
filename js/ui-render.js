@@ -901,34 +901,182 @@ function tplInventario(c){
   return html;
 }
 
+function splitSummonHabilidades(s){
+  var tiradas = (s.tiradas !== undefined && s.tiradas !== null) ? s.tiradas : "";
+  var rasgos = (s.rasgos !== undefined && s.rasgos !== null) ? s.rasgos : "";
+  if(!tiradas && !rasgos && (s.habilidades || s.notas)){
+    var raw = String(s.habilidades || s.notas).trim();
+    var dotIdx = raw.indexOf('.');
+    if(dotIdx !== -1){
+      var firstPart = raw.slice(0, dotIdx).trim();
+      var secondPart = raw.slice(dotIdx + 1).trim();
+      if(/(\d+d\d+|\d+\+\d+d\d+|d\d+|\+\d+)/i.test(firstPart)){
+        tiradas = firstPart;
+        rasgos = secondPart;
+      } else {
+        rasgos = raw;
+      }
+    } else {
+      if(/(\d+d\d+|\d+\+\d+d\d+|d\d+|\+\d+)/i.test(raw)){
+        tiradas = raw;
+      } else {
+        rasgos = raw;
+      }
+    }
+  }
+  return { tiradas: tiradas, rasgos: rasgos };
+}
+
+function parseSummonRollItem(itemStr){
+  var s = String(itemStr || "").trim();
+  if(!s) return null;
+  var m = s.match(/^(.*?)(?:[:\s]+)?(\d+\s*\+\s*\d*d\d+|\d*d\d+\s*[+-]\s*\d+|\d*d\d+|\+\d+)$/i);
+  var label = s;
+  var formula = "";
+  if(m){
+    label = m[1].trim() || "Tirada";
+    formula = m[2].trim();
+  } else {
+    var m2 = s.match(/(.*?)(?:[:\s]+)?(\d*d\d+.*)/i);
+    if(m2){
+      label = m2[1].trim() || "Tirada";
+      formula = m2[2].trim();
+    }
+  }
+  var icon = "🎲";
+  var lLower = label.toLowerCase();
+  if(lLower.includes("melé") || lLower.includes("mele") || lLower.includes("ataque") || lLower.includes("mordisco") || lLower.includes("garra") || lLower.includes("picotazo")) icon = "⚔️";
+  else if(lLower.includes("atletismo") || lLower.includes("fuerza") || lLower.includes("carrera")) icon = "🏃";
+  else if(lLower.includes("inteligencia") || lLower.includes("conocimiento") || lLower.includes("arcana")) icon = "🧠";
+  else if(lLower.includes("percepción") || lLower.includes("percepcion") || lLower.includes("vista") || lLower.includes("oído") || lLower.includes("oido")) icon = "👁️";
+  else if(lLower.includes("sigilo") || lLower.includes("ocultar") || lLower.includes("esconder")) icon = "🥷";
+  else if(lLower.includes("supervivencia") || lLower.includes("rastreo") || lLower.includes("naturaleza")) icon = "🌿";
+  else if(lLower.includes("esquivar") || lLower.includes("evasión") || lLower.includes("evasion") || lLower.includes("agilidad")) icon = "💨";
+  else if(lLower.includes("daño") || lLower.includes("dano")) icon = "🩸";
+
+  return { raw: s, label: label, formula: formula, icon: icon };
+}
+
 function tplInvocaciones(c){
   c.summons = c.summons || [];
+  var canEdit = canEditChar(c);
   var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
+
+  if((c.summons||[]).length === 0){
+    html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:16px 8px;font-style:italic;">No hay invocaciones ni familiares registrados.</div>';
+  }
+
   (c.summons||[]).forEach(function(s){
-    html += '<div class="creature-card">' +
-      '<div class="creature-card-header">' +
-        '<input type="text" class="creature-name-input" placeholder="Nombre" data-bind="summons.' + s.id + '.name" value="' + esc(s.name) + '">' +
-        (canEditChar(c) ? '<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>' : '') +
-      '</div>' +
-      '<div class="creature-grid">' +
-        creatureField("Vida", "summons." + s.id + ".vida", s.vida) +
-        creatureField("Defensa", "summons." + s.id + ".defensa", s.defensa) +
-        creatureField("Absorción", "summons." + s.id + ".absorcion", s.absorcion) +
-        creatureField("Daño", "summons." + s.id + ".dano", s.dano) +
-        '<div class="creature-field beast-mobility-cell">' +
-          '<label>Movilidad (Casillas)</label>' +
-          '<button type="button" class="beast-mov-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Haz clic para seleccionar o consultar las casillas de movimiento">' +
-            '<span class="beast-mov-label">🏃 <strong>' + esc(s.casillasMovimiento || (s.movilidad ? (s.movilidad.match(/\d+/)?s.movilidad.match(/\d+/)[0]:'6') : '6')) + '</strong> casillas</span>' +
-            (s.movilidad && s.movilidad.includes('(') ? ' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>' : '') +
-            '<span class="beast-mov-chevron">▾</span>' +
-          '</button>' +
+    var split = splitSummonHabilidades(s);
+    var tiradasVal = split.tiradas;
+    var rasgosVal = split.rasgos;
+    var imgStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
+
+    var rollPills = [];
+    if(tiradasVal){
+      tiradasVal.split(/[\n,]+/).forEach(function(part){
+        var parsed = parseSummonRollItem(part);
+        if(parsed) rollPills.push(parsed);
+      });
+    }
+    if(s.dano && /(\d*d\d+)/i.test(s.dano)){
+      var hasDano = rollPills.some(function(it){ return it.label.toLowerCase().includes("daño") || it.label.toLowerCase().includes("dano"); });
+      if(!hasDano){
+        rollPills.push({
+          raw: "Daño " + s.dano,
+          label: "Daño",
+          formula: s.dano,
+          icon: "🩸"
+        });
+      }
+    }
+
+    var pillsHtml = '';
+    if(rollPills.length > 0){
+      pillsHtml = rollPills.map(function(rp){
+        var actName = rp.label;
+        var fStr = rp.formula || rp.raw;
+        return '<button type="button" class="summon-roll-pill" data-action="roll-summon-action" data-summon-name="' + esc(s.name || 'Invocación') + '" data-action-name="' + esc(actName) + '" data-formula="' + esc(fStr) + '" title="Haz clic para lanzar: ' + esc(actName) + ' (' + esc(fStr) + ')">' +
+          '<span class="pill-icon">' + rp.icon + '</span>' +
+          '<span class="pill-label">' + esc(actName) + '</span>' +
+          (rp.formula ? ('<span class="pill-formula">' + esc(rp.formula) + '</span>') : '') +
+        '</button>';
+      }).join('');
+    } else {
+      pillsHtml = '<span style="font-size:0.75rem;color:var(--ink-faint);font-style:italic;">' + (canEdit ? 'Sin tiradas configuradas. Escribe abajo para crearlas.' : 'Sin tiradas registradas.') + '</span>';
+    }
+
+    html += '<div class="creature-card summon-card">' +
+      '<div class="summon-card-top">' +
+        '<div class="summon-profile-box">' +
+          '<div class="summon-avatar-img"' + imgStyle + ' title="' + esc(s.name || 'Invocación') + '">' + (s.image ? '' : '🐾') + '</div>' +
+          (canEdit ? ('<div class="summon-img-actions">' +
+            '<button class="btn-compact" data-action="upload-summon-img" data-id="' + s.id + '" title="Subir foto desde archivo">Foto</button>' +
+            '<button class="btn-compact" data-action="url-summon-img" data-id="' + s.id + '" title="Pegar URL de foto">URL</button>' +
+            (s.image ? ('<button class="btn-compact" data-action="remove-summon-img" data-id="' + s.id + '" title="Quitar foto">✕</button>') : '') +
+          '</div>') : '') +
         '</div>' +
-        creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia) +
+        '<div class="summon-stats-col">' +
+          '<div class="creature-card-header" style="margin-bottom:6px;">' +
+            '<input type="text" class="creature-name-input" placeholder="Nombre de la Invocación / Familiar" data-bind="summons.' + s.id + '.name" value="' + esc(s.name) + '"' + (!canEdit ? ' readonly' : '') + '>' +
+            (canEdit ? ('<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>') : '') +
+          '</div>' +
+          '<div class="creature-grid summon-stats-grid">' +
+            creatureField("Vida", "summons." + s.id + ".vida", s.vida) +
+            creatureField("Defensa", "summons." + s.id + ".defensa", s.defensa) +
+            creatureField("Absorción", "summons." + s.id + ".absorcion", s.absorcion) +
+            creatureField("Daño", "summons." + s.id + ".dano", s.dano) +
+            '<div class="creature-field beast-mobility-cell">' +
+              '<label>Movilidad (Casillas)</label>' +
+              '<button type="button" class="beast-mov-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Haz clic para seleccionar o consultar las casillas de movimiento">' +
+                '<span class="beast-mov-label">🏃 <strong>' + esc(s.casillasMovimiento || (s.movilidad ? (s.movilidad.match(/\d+/)?s.movilidad.match(/\d+/)[0]:'6') : '6')) + '</strong> casillas</span>' +
+                (s.movilidad && s.movilidad.includes('(') ? (' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>') : '') +
+                '<span class="beast-mov-chevron">▾</span>' +
+              '</button>' +
+            '</div>' +
+            creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia) +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="creature-field" style="margin-top:6px;"><label>Habilidades, Tiradas y Rasgos</label><textarea class="creature-notes" placeholder="Ej: Melé 8+1d10, Rasgo..." data-bind="summons.' + s.id + '.habilidades">' + esc(s.habilidades||s.notas) + '</textarea></div>' +
+
+      '<div class="summon-modules-container">' +
+        '<div class="summon-block summon-rolls-block">' +
+          '<div class="summon-block-header">' +
+            '<span class="summon-block-title">⚔️ Tiradas y Habilidades de Acción</span>' +
+            '<span class="summon-block-sub">Toca para tirar</span>' +
+          '</div>' +
+          '<div class="summon-pills-wrap">' + pillsHtml + '</div>' +
+          (canEdit ? ('<div class="summon-inline-edit">' +
+            '<input type="text" class="summon-edit-input" placeholder="Editar tiradas separadas por comas (ej: Melé 8+1d10, Atletismo 2+1d10, Sigilo 12+1d10...)" data-bind="summons.' + s.id + '.tiradas" value="' + esc(tiradasVal) + '">' +
+          '</div>') : '') +
+        '</div>' +
+
+        '<div class="summon-block summon-traits-block">' +
+          '<div class="summon-block-header">' +
+            '<span class="summon-block-title">✨ Rasgos Especiales y Pasivas</span>' +
+            '<span class="summon-block-sub">Efectos</span>' +
+          '</div>' +
+          '<div class="summon-traits-box">' +
+            (canEdit ? ('<textarea class="summon-traits-textarea" placeholder="Rasgos pasivos y efectos de la criatura (ej: Obtienen un +1 a acertar los ataques cuando otra rata o Ink están al lado...)" data-bind="summons.' + s.id + '.rasgos">' + esc(rasgosVal) + '</textarea>') :
+              (rasgosVal ? ('<div class="summon-traits-text">' + esc(rasgosVal) + '</div>') : '<div style="font-size:0.75rem;color:var(--ink-faint);font-style:italic;">Sin rasgos especiales registrados.</div>')) +
+          '</div>' +
+        '</div>' +
+
+        ((canEdit || s.notas) ? ('<div class="summon-block summon-notes-block">' +
+          '<div class="summon-block-header">' +
+            '<span class="summon-block-title">📝 Notas Tácticas / Comportamiento</span>' +
+            '<span class="summon-block-sub">Táctica</span>' +
+          '</div>' +
+          '<div class="summon-notes-box">' +
+            (canEdit ? ('<textarea class="summon-notes-textarea" placeholder="Notas sobre el estado, táctica o invocador..." data-bind="summons.' + s.id + '.notas">' + esc(s.notas || '') + '</textarea>') :
+              ('<div class="summon-notes-text">' + esc(s.notas || '') + '</div>')) +
+          '</div>' +
+        '</div>') : '') +
+      '</div>' +
     '</div>';
   });
-  if(canEditChar(c)){
+
+  if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-summon">+ Añadir invocación</button>';
   }
   html += '</div>';

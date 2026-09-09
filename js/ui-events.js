@@ -98,6 +98,11 @@ function setBind(target, path, rawValue, inputType){
       } else {
         item[parts[2]] = value;
       }
+      if(parts[0]==="summons" && (parts[2]==="tiradas" || parts[2]==="rasgos")){
+        var t = parts[2]==="tiradas" ? value : (item.tiradas || "");
+        var r = parts[2]==="rasgos" ? value : (item.rasgos || "");
+        item.habilidades = (t ? t.trim() : "") + (r ? (t ? ". " : "") + r.trim() : "");
+      }
     }
     return;
   }
@@ -172,6 +177,9 @@ function handleChange(e){
           pushCharacterPatch(target.id, patch);
         }
         if(bindParts[0] === "inventory" && bindParts[2] === "category"){
+          renderTab();
+        }
+        if(bindParts[0] === "summons" && bindParts[2] === "tiradas"){
           renderTab();
         }
       }
@@ -1004,8 +1012,55 @@ function handleClick(e){
   }
   if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; var newSt = {id:uid(),color:"",efecto:""}; c.stones.push(newSt); renderTab(); manageListItemRPC(c, 'stones', 'add', newSt); return; }
   if(action==="del-stone"){ if(!c || !canEditChar(c)) return; var sid = btn.getAttribute("data-id"); c.stones = (c.stones || []).filter(function(s){return s.id!==sid;}); renderTab(); manageListItemRPC(c, 'stones', 'remove', null, sid); return; }
-  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",inteligencia:"",habilidades:""}; c.summons.push(newSm); renderTab(); manageListItemRPC(c, 'summons', 'add', newSm); return; }
+  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",casillasMovimiento:"6",inteligencia:"",habilidades:"",tiradas:"",rasgos:"",notas:"",image:null}; c.summons.push(newSm); renderTab(); manageListItemRPC(c, 'summons', 'add', newSm); return; }
   if(action==="del-summon"){ if(!c || !canEditChar(c)) return; var smId = btn.getAttribute("data-id"); c.summons = (c.summons || []).filter(function(s){return s.id!==smId;}); renderTab(); manageListItemRPC(c, 'summons', 'remove', null, smId); return; }
+  if(action==="upload-summon-img"){
+    if(!c || !canEditChar(c)) return;
+    pendingSummonId = btn.getAttribute("data-id");
+    var smFileEl = document.getElementById("summonFileInput");
+    if(smFileEl) smFileEl.click();
+    return;
+  }
+  if(action==="url-summon-img"){
+    if(!c || !canEditChar(c)) return;
+    var smId = btn.getAttribute("data-id");
+    var sm = (c.summons || []).find(function(s){return s.id===smId;});
+    if(sm){
+      var prevSmImg = sm.image || "";
+      var smLink = prompt("Introduce el enlace de la imagen de la invocación (GitHub, Imgur, web, etc.):", prevSmImg.startsWith("data:")?"":prevSmImg);
+      if(smLink !== null){
+        sm.image = smLink.trim() || null;
+        saveState(true); pushSharedData();
+        manageListItemRPC(c, 'summons', 'update_item', { image: sm.image }, sm.id);
+        renderTab();
+        showToast(sm.image ? "Imagen asignada" : "Imagen quitada", "info");
+      }
+    }
+    return;
+  }
+  if(action==="remove-summon-img"){
+    if(!c || !canEditChar(c)) return;
+    var smId2 = btn.getAttribute("data-id");
+    var sm2 = (c.summons || []).find(function(s){return s.id===smId2;});
+    if(sm2){
+      sm2.image = null;
+      saveState(true); pushSharedData();
+      manageListItemRPC(c, 'summons', 'update_item', { image: null }, sm2.id);
+      renderTab();
+      showToast("Imagen de invocación eliminada", "info");
+    }
+    return;
+  }
+  if(action==="roll-summon-action"){
+    var sName = btn.getAttribute("data-summon-name") || "Invocación";
+    var aName = btn.getAttribute("data-action-name") || "Tirada";
+    var formula = btn.getAttribute("data-formula") || "1d10";
+    var charName = c ? c.name : "Personaje";
+    if(typeof performSummonRoll === "function"){
+      performSummonRoll(charName, sName, aName, formula);
+    }
+    return;
+  }
   if(action==="add-poison"){ if(!c || !canEditChar(c)) return; if(!c.poisons)c.poisons=[]; var newPs = {id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}; c.poisons.push(newPs); renderTab(); manageListItemRPC(c, 'poisons', 'add', newPs); return; }
   if(action==="del-poison"){ if(!c || !canEditChar(c)) return; var psId = btn.getAttribute("data-id"); c.poisons = (c.poisons || []).filter(function(p){return p.id!==psId;}); renderTab(); manageListItemRPC(c, 'poisons', 'remove', null, psId); return; }
   if(action==="add-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = c.passivesNeg || []; var newPn = {id:uid(),text:""}; c.passivesNeg.push(newPn); renderTab(); manageListItemRPC(c, 'passivesNeg', 'add', newPn); return; }
@@ -1983,3 +2038,4 @@ var pendingBestiaryId = null;
 var pendingNewMapName = null;
 var pendingQuestCardId = null;
 var pendingClueId = null;
+var pendingSummonId = null;

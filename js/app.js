@@ -188,6 +188,25 @@ function init(){
       e.target.value="";
       pendingClueId = null;
     });
+    safeListen("summonFileInput", "change", function(e){
+      if(e.target.files && e.target.files[0] && pendingSummonId){
+        var sid = pendingSummonId;
+        var c = activeChar();
+        var sm = (c && c.summons ? c.summons : []).find(function(x){ return x.id === sid; });
+        var smName = sm ? sm.name : "invocacion";
+        uploadImageToSupabase(e.target.files[0], "invocaciones", smName, function(url){
+          if(sm && url){
+            sm.image = url;
+            saveState(true);
+            pushSharedData();
+            if(c && typeof manageListItemRPC === "function") manageListItemRPC(c, 'summons', 'update_item', { image: url }, sm.id);
+            renderTab();
+          }
+        });
+      }
+      e.target.value="";
+      pendingSummonId = null;
+    });
     safeListen("importFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
         importData(e.target.files[0]);

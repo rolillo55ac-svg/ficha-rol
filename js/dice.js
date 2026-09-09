@@ -300,6 +300,58 @@ function performWeaponRoll(charName, weaponName, formulaRaw){
   renderTab();
 }
 
+function parseSummonFormula(raw){
+  var str = String(raw || "").trim();
+  var mRev = str.match(/^(\d+)\s*\+\s*(\d*)d(\d+)$/i);
+  if(mRev){
+    return { qty: mRev[2] ? parseInt(mRev[2], 10) : 1, sides: parseInt(mRev[3], 10), mod: parseInt(mRev[1], 10) };
+  }
+  var mNorm = str.match(/^(\d*)d(\d+)(?:\s*([+-])\s*(\d+))?$/i);
+  if(mNorm){
+    var mod = (mNorm[3] && mNorm[4]) ? parseInt(mNorm[4], 10) * (mNorm[3] === '-' ? -1 : 1) : 0;
+    return { qty: mNorm[1] ? parseInt(mNorm[1], 10) : 1, sides: parseInt(mNorm[2], 10), mod: mod };
+  }
+  var mNum = str.match(/^([+-]?\d+)$/);
+  if(mNum) return { qty: 1, sides: 10, mod: parseInt(mNum[1], 10) };
+  return { qty: 1, sides: 10, mod: 0 };
+}
+
+function performSummonRoll(charName, summonName, actionName, formulaRaw){
+  var parsed = parseSummonFormula(formulaRaw);
+  var rolls = [], sum = 0;
+  for(var i = 0; i < parsed.qty; i++){
+    var r = rollDie(parsed.sides);
+    rolls.push(r);
+    sum += r;
+  }
+  var total = sum + parsed.mod;
+  var isCrit = rolls.every(function(x){ return x === parsed.sides; });
+  var isFumble = rolls.every(function(x){ return x === 1; });
+  var formulaText = "";
+  if(parsed.qty === 1 && parsed.sides === 10){
+    formulaText = "1d10 (" + rolls[0] + ")" + (parsed.mod !== 0 ? (parsed.mod > 0 ? " + " + parsed.mod : " - " + Math.abs(parsed.mod)) : "");
+  } else {
+    formulaText = parsed.qty + "d" + parsed.sides + " [" + rolls.join(", ") + "]" + (parsed.mod !== 0 ? (parsed.mod > 0 ? " + " + parsed.mod : " - " + Math.abs(parsed.mod)) : "");
+  }
+  var label = summonName ? (summonName + " — " + actionName) : actionName;
+  var rollItem = {
+    id: uid(),
+    charName: charName,
+    label: label,
+    total: total,
+    formulaText: formulaText,
+    isCrit: isCrit,
+    isFumble: isFumble,
+    ts: Date.now()
+  };
+  state.rollLog.unshift(rollItem);
+  if(state.rollLog.length > 20) state.rollLog.length = 20;
+  saveState();
+  broadcastDiceRoll(rollItem);
+  openRollModal(label, total, formulaText, parsed.sides, isCrit, isFumble);
+  renderTab();
+}
+
 
 function openDiceModal(){
   var sidesList = [4, 6, 8, 10, 12, 20, 100];
