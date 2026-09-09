@@ -1,3 +1,65 @@
+var activeCharChannel = null;
+var campaignMapChannel = null;
+
+function subscribeToActiveCharacter(charDbId){
+  if(!supabaseClient) return;
+  if(!charDbId){
+    var c = (typeof activeChar === 'function') ? activeChar() : null;
+    charDbId = c ? (c.db_id || (c.id && c.id.includes('-') ? c.id : null)) : null;
+  }
+  if(!charDbId) return;
+
+  var topicName = 'character_' + charDbId;
+  if(activeCharChannel && activeCharChannel.topic === 'realtime:' + topicName){
+    return;
+  }
+
+  if(activeCharChannel){
+    try { supabaseClient.removeChannel(activeCharChannel); } catch(e){}
+    activeCharChannel = null;
+  }
+
+  try {
+    activeCharChannel = supabaseClient.channel(topicName)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'characters',
+        filter: 'id=eq.' + charDbId
+      }, function(payload){
+        handleRemoteCharacterChange(payload);
+      })
+      .subscribe(function(status){
+        if(status === 'SUBSCRIBED'){
+          console.log('Realtime activo para personaje:', charDbId);
+        }
+      });
+  } catch(e){
+    console.error('Error suscribiendo a Realtime de personaje:', e);
+  }
+}
+
+function subscribeToCampaignMap(){
+  if(!supabaseClient || campaignMapChannel) return;
+  try {
+    campaignMapChannel = supabaseClient.channel('realtime_campaign_map')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'campaign_map'
+      }, function(payload){
+        handleRemoteCampaignMapChange(payload);
+      })
+      .subscribe(function(status){
+        if(status === 'SUBSCRIBED'){
+          console.log('Realtime activo para campaign_map');
+        }
+      });
+  } catch(e){
+    console.error('Error suscribiendo a Realtime de campaign_map:', e);
+  }
+}
+
 function initSupabase(){
   if(!window.supabase) return;
   try{
@@ -10,7 +72,7 @@ function initSupabase(){
     });
     
     if(!realtimeChannel){
-      realtimeChannel = supabaseClient.channel('realtime_all_changes', {
+      realtimeChannel = supabaseClient.channel('realtime_broadcasts', {
         config: { broadcast: { self: false } }
       })
         .on('broadcast', { event: 'dice_roll' }, function(payload){
@@ -18,39 +80,6 @@ function initSupabase(){
         })
         .on('broadcast', { event: 'char_stat_update' }, function(payload){
           if(payload && payload.payload) handleRemoteCharStatUpdate(payload.payload);
-        })
-        .on('postgres_changes', {event:'*', schema:'public', table:'campaign_map'}, function(payload){
-          if(payload && payload.new){
-            var row = payload.new;
-            if(row.id === 'main_map'){
-              var remoteMaps = row.data || row.markers;
-              if(Array.isArray(remoteMaps) && remoteMaps.length){
-                state.maps = remoteMaps;
-                if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
-                saveState(true);
-                if(state.activeTab==="mundo") renderTab();
-              }
-            } else if(row.id === 'world_compendium'){
-              var comp = row.data;
-              if(comp){
-                if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
-                if(comp.bestiary) state.bestiary = comp.bestiary;
-                if(comp.lore) state.lore = comp.lore;
-                if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
-                if(comp.quests) state.quests = comp.quests;
-                if(comp.questClues) state.questClues = comp.questClues;
-                if(comp.questMap) state.questMap = comp.questMap;
-                if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
-                saveState(true);
-                if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
-                  if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
-                }
-              }
-            }
-          }
-        })
-        .on('postgres_changes', {event:'*', schema:'public', table:'characters'}, function(payload){
-          handleRemoteCharacterChange(payload);
         })
         .on('postgres_changes', {event:'*', schema:'public', table:'map_markers'}, function(payload){
           handleRemoteMarkerChange(payload);
@@ -60,6 +89,11 @@ function initSupabase(){
         })
         .subscribe();
     }
+
+    subscribeToCampaignMap();
+
+    var cur = (typeof activeChar === 'function') ? activeChar() : null;
+    if(cur && cur.db_id) subscribeToActiveCharacter(cur.db_id);
 
     pullMapFromSupabase();
     pullSharedDataFromSupabase();
@@ -108,16 +142,48 @@ function handleRemoteCharStatUpdate(data){
   }
 }
 
+function handleRemoteCampaignMapChange(payload){
+  if(!payload || !payload.new) return;
+  var row = payload.new;
+  if(row.id === 'main_map'){
+    var remoteMaps = row.data || row.markers;
+    if(Array.isArray(remoteMaps) && remoteMaps.length){
+      state.maps = remoteMaps;
+      if(!state.activeMapId && state.maps.length) state.activeMapId = state.maps[0].id;
+      saveState(true);
+      if(state.activeTab === "mundo") renderTab();
+    }
+  } else if(row.id === 'world_compendium'){
+    var comp = row.data;
+    if(comp){
+      if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
+      if(comp.bestiary) state.bestiary = comp.bestiary;
+      if(comp.lore) state.lore = comp.lore;
+      if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
+      if(comp.quests) state.quests = comp.quests;
+      if(comp.questClues) state.questClues = comp.questClues;
+      if(comp.questMap) state.questMap = comp.questMap;
+      if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
+      saveState(true);
+      if(["mundo","bestiario","mision"].indexOf(state.activeTab) !== -1){
+        if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
+      }
+    }
+  }
+}
+
 function handleRemoteCharacterChange(payload){
   if(!payload || !payload.eventType) return;
   if(payload.eventType === 'DELETE'){
     var delId = payload.old ? payload.old.id : null;
     if(delId){
       dirtyCharIds.delete(delId);
+      if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(delId);
       var removed = (state.characters||[]).filter(function(x){ return x.db_id === delId || x.id === delId; });
       removed.forEach(function(r){
         dirtyCharIds.delete(r.id);
         if(r.db_id) dirtyCharIds.delete(r.db_id);
+        if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(r.id);
       });
       state.characters = (state.characters||[]).filter(function(x){ return x.db_id !== delId && x.id !== delId; });
       if(!state.characters.length) state.characters.push(blankCharacter("Sin Personaje"));
@@ -136,48 +202,45 @@ function handleRemoteCharacterChange(payload){
       c._isDirty = false;
       c._serverUpdatedAt = row.updated_at ? new Date(row.updated_at).getTime() : Date.now();
       if(row.owner_id) c.owner_id = row.owner_id;
-      var idx = state.characters.findIndex(function(x){ return x.db_id === row.id || x.id === c.id || (x.name && c.name && x.name.trim().toLowerCase() === c.name.trim().toLowerCase()); });
+
+      var idx = state.characters.findIndex(function(x){
+        return x.db_id === row.id || x.id === c.id || (x.name && c.name && x.name.trim().toLowerCase() === c.name.trim().toLowerCase());
+      });
+
       if(idx !== -1){
         var localChar = state.characters[idx];
-        var hasActiveLocalEdit = canEditChar(localChar) && (dirtyCharIds.has(localChar.id) || (localChar._lastLocalEdit && Date.now() - localChar._lastLocalEdit < 1500));
-        if(hasActiveLocalEdit && localChar._lastLocalEdit && localChar._lastLocalEdit > c._serverUpdatedAt){
-          return;
+        var activeEl = document.activeElement;
+        var activeBind = (activeEl && activeEl.matches("input, textarea")) ? activeEl.getAttribute("data-bind") : null;
+        var activeVal = activeBind ? activeEl.value : null;
+
+        var updated = ensureCharDefaults(c);
+        if(typeof snapshotCharacterSynced === 'function') snapshotCharacterSynced(updated);
+
+        if(localChar.id === state.activeId && activeBind && activeVal !== null){
+          setBind(updated, activeBind, activeVal, activeEl.type);
         }
-        if(localChar.id === state.activeId && document.activeElement && document.activeElement.getAttribute("data-bind") === "personalNotes"){
-          c.personalNotes = localChar.personalNotes;
-        }
+
         dirtyCharIds.delete(localChar.id);
         if(localChar.db_id) dirtyCharIds.delete(localChar.db_id);
-        state.characters[idx] = ensureCharDefaults(c);
+        if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(localChar.id);
+        state.characters[idx] = updated;
       } else {
         dirtyCharIds.delete(c.id);
         if(c.db_id) dirtyCharIds.delete(c.db_id);
-        state.characters.push(ensureCharDefaults(c));
+        if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
+        var newChar = ensureCharDefaults(c);
+        if(typeof snapshotCharacterSynced === 'function') snapshotCharacterSynced(newChar);
+        state.characters.push(newChar);
       }
+
       if(!state.activeId) state.activeId = c.id;
-      saveState(true); renderTopbar(); renderTabbar();
+      saveState(true);
+      renderTopbar();
+      renderTabbar();
+
       if(!document.activeElement || !document.activeElement.matches("input, textarea")){
         renderTab();
       }
-    }
-  }
-}
-
-function handleRemoteSharedDataChange(payload){
-  if(!payload || !payload.new || !payload.new.data) return;
-  var sharedData = payload.new.data;
-  if(sharedData.weaponsCatalog) state.weaponsCatalog = sharedData.weaponsCatalog;
-  if(sharedData.bestiary) state.bestiary = sharedData.bestiary;
-  if(sharedData.lore) state.lore = sharedData.lore;
-  if(sharedData.buffCatalog) state.buffCatalog = sharedData.buffCatalog;
-  if(sharedData.quests) state.quests = sharedData.quests;
-  if(sharedData.questClues) state.questClues = sharedData.questClues;
-  if(sharedData.questMap) state.questMap = sharedData.questMap;
-  if(sharedData.sessionSummary !== undefined) state.sessionSummary = sharedData.sessionSummary;
-  saveState(true);
-  if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
-    if(!document.activeElement || !document.activeElement.matches("input, textarea")){
-      renderTab();
     }
   }
 }

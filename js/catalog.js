@@ -160,25 +160,24 @@ async function pullSharedDataFromSupabase(){
   }catch(e){ console.error('Supabase error:', e); }
 }
 
-function pushSharedData(){
+function pushSharedData(patch){
   if(!supabaseClient) return;
   if(currentUser && !isGM()) return;
-  supabaseClient.from('campaign_map').upsert({
-    id: 'world_compendium',
-    data: {
-      weaponsCatalog: state.weaponsCatalog || [],
-      bestiary: state.bestiary || [],
-      lore: state.lore || getSeedLore(),
-      buffCatalog: state.buffCatalog || getSeedBuffCatalog(),
-      quests: state.quests || [],
-      questClues: state.questClues || [],
-      questMap: state.questMap || { name: "Mapa de la Misión", image: null, notes: "" },
-      sessionSummary: state.sessionSummary || ""
-    },
-    markers: [],
-    updated_at: new Date().toISOString()
-  }).select().then(function(res){
-    if(res.error) { console.error('Supabase error:', res.error); return; }
+  var dataPatch = patch || {
+    weaponsCatalog: state.weaponsCatalog || [],
+    bestiary: state.bestiary || [],
+    lore: state.lore || getSeedLore(),
+    buffCatalog: state.buffCatalog || getSeedBuffCatalog(),
+    quests: state.quests || [],
+    questClues: state.questClues || [],
+    questMap: state.questMap || { name: "Mapa de la Misión", image: null, notes: "" },
+    sessionSummary: state.sessionSummary || ""
+  };
+  supabaseClient.rpc('update_campaign_map', {
+    map_id: 'world_compendium',
+    patch: dataPatch
+  }).then(function(res){
+    if(res.error) { console.error('Error en update_campaign_map (world_compendium):', res.error); return; }
     updateSyncBadge("synced");
   }).catch(function(e){ console.error('Supabase error:', e); });
 }

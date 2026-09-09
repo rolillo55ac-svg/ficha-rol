@@ -1,97 +1,32 @@
 async function applyDamageRPC(char, amount){
-  if(!char || !amount) return;
-  var charDbId = char.db_id || char.id;
-  var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-  
-  if(!supabaseClient || !charDbId) return;
-  try{
-    var res = await supabaseClient.rpc('apply_damage', {
-      p_character_id: charDbId,
-      p_amount: Math.abs(amount),
-      p_command_id: cmdId
-    });
-    if(res.data && res.data.pvActual !== undefined){
-      char.combat.pvActual = res.data.pvActual;
-      if(res.data.escudoActual !== undefined) char.combat.escudoActual = res.data.escudoActual;
-      char._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-      char._isDirty = false;
-      dirtyCharIds.delete(char.id);
-      renderTopbar();
-    }
-  }catch(e){
-    console.warn('RPC apply_damage fallback:', e);
+  if(!char) return;
+  renderTopbar();
+  if(typeof pushCharacterPatch === 'function'){
+    await pushCharacterPatch(char.id, { combat: char.combat });
   }
 }
 
 async function applyHealRPC(char, amount){
-  if(!char || !amount) return;
-  var charDbId = char.db_id || char.id;
-  var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-  
-  if(!supabaseClient || !charDbId) return;
-  try{
-    var res = await supabaseClient.rpc('apply_heal', {
-      p_character_id: charDbId,
-      p_amount: Math.abs(amount),
-      p_command_id: cmdId
-    });
-    if(res.data && res.data.pvActual !== undefined){
-      char.combat.pvActual = res.data.pvActual;
-      char._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-      char._isDirty = false;
-      dirtyCharIds.delete(char.id);
-      renderTopbar();
-    }
-  }catch(e){
-    console.warn('RPC apply_heal fallback:', e);
+  if(!char) return;
+  renderTopbar();
+  if(typeof pushCharacterPatch === 'function'){
+    await pushCharacterPatch(char.id, { combat: char.combat });
   }
 }
 
 async function changeManaRPC(char, amount){
   if(!char || amount === 0) return;
-  var charDbId = char.db_id || char.id;
-  var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-  
-  if(!supabaseClient || !charDbId) return;
-  try{
-    var res = await supabaseClient.rpc('change_mana', {
-      p_character_id: charDbId,
-      p_amount: amount,
-      p_command_id: cmdId
-    });
-    if(res.data && res.data.manaActual !== undefined){
-      char.combat.manaActual = res.data.manaActual;
-      char._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-      char._isDirty = false;
-      dirtyCharIds.delete(char.id);
-      renderTopbar();
-    }
-  }catch(e){
-    console.warn('RPC change_mana fallback:', e);
+  renderTopbar();
+  if(typeof pushCharacterPatch === 'function'){
+    await pushCharacterPatch(char.id, { combat: char.combat });
   }
 }
 
 async function changeShieldRPC(char, amount){
   if(!char || amount === 0) return;
-  var charDbId = char.db_id || char.id;
-  var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-
-  if(!supabaseClient || !charDbId) return;
-  try{
-    var res = await supabaseClient.rpc('change_shield', {
-      p_character_id: charDbId,
-      p_amount: amount,
-      p_command_id: cmdId
-    });
-    if(res.data && res.data.escudoActual !== undefined){
-      char.combat.escudoActual = res.data.escudoActual;
-      char._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-      char._isDirty = false;
-      dirtyCharIds.delete(char.id);
-      renderTopbar();
-    }
-  }catch(e){
-    console.warn('RPC change_shield fallback:', e);
+  renderTopbar();
+  if(typeof pushCharacterPatch === 'function'){
+    await pushCharacterPatch(char.id, { combat: char.combat });
   }
 }
 
@@ -101,29 +36,10 @@ async function changeMoneyRPC(char, deltaOro, deltaPlata){
   deltaPlata = parseInt(deltaPlata, 10) || 0;
   if(deltaOro === 0 && deltaPlata === 0) return;
 
-  var charDbId = char.db_id || char.id;
-  var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-
-  if(!supabaseClient || !charDbId) return;
-  try{
-    var res = await supabaseClient.rpc('change_gold', {
-      p_character_id: charDbId,
-      p_amount_oro: deltaOro,
-      p_amount_plata: deltaPlata,
-      p_command_id: cmdId
-    });
-    if(res.data && res.data.oro !== undefined){
-      char.money = char.money || { oro: 0, plata: 0 };
-      char.money.oro = res.data.oro;
-      char.money.plata = res.data.plata;
-      char._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-      char._isDirty = false;
-      dirtyCharIds.delete(char.id);
-      if(state.activeTab === 'inventario') renderTab();
-    }
-  }catch(e){
-    console.warn('RPC change_gold fallback:', e);
+  if(typeof pushCharacterPatch === 'function'){
+    await pushCharacterPatch(char.id, { money: char.money });
   }
+  if(state.activeTab === 'inventario') renderTab();
 }
 
 async function changeGoldRPC(char, amount){
@@ -131,30 +47,11 @@ async function changeGoldRPC(char, amount){
 }
 
 async function manageListItemRPC(char, listName, action, itemData, itemId, delta){
-  if(!char || !listName || !action) return;
-  var charDbId = char.db_id || char.id;
-  var cmdId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : uid();
-
-  if(!supabaseClient || !charDbId) return;
-  try{
-    var res = await supabaseClient.rpc('manage_character_list_item', {
-      p_character_id: charDbId,
-      p_list_name: listName,
-      p_action: action,
-      p_item_data: itemData || null,
-      p_item_id: itemId || null,
-      p_delta: delta || 0,
-      p_command_id: cmdId
-    });
-    if(res.data && Array.isArray(res.data.items)){
-      char[listName] = res.data.items;
-      char._serverUpdatedAt = res.data.updated_at ? new Date(res.data.updated_at).getTime() : Date.now();
-      char._isDirty = false;
-      dirtyCharIds.delete(char.id);
-      if(char.db_id) dirtyCharIds.delete(char.db_id);
-    }
-  }catch(e){
-    console.warn('RPC manage_character_list_item fallback:', e);
+  if(!char || !listName) return;
+  var patch = {};
+  patch[listName] = char[listName];
+  if(typeof pushCharacterPatch === 'function'){
+    await pushCharacterPatch(char.id, patch);
   }
 }
 

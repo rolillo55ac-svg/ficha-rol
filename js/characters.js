@@ -8,7 +8,7 @@ function getOfficialCharacters(){
       theme: "teal",
       portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/cherk.jpg",
       isNPC: false,
-      owner_id: "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3",
+      owner_id: null,
       ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Trysar",
@@ -121,7 +121,7 @@ function getOfficialCharacters(){
       theme: "purple",
       portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/ink.jpg",
       isNPC: false,
-      owner_id: "ece1cdb6-f8c6-4010-b3e8-045887dc92a3",
+      owner_id: null,
       ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Krysalis",
@@ -255,7 +255,7 @@ function getOfficialCharacters(){
       theme: "blue",
       portrait: null,
       isNPC: false,
-      owner_id: "bcfb51f6-4916-4650-b842-0eaf7f8335f4",
+      owner_id: null,
       ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Asland",
@@ -342,7 +342,7 @@ function getOfficialCharacters(){
       theme: "default",
       portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/scarleth.jpg",
       isNPC: false,
-      owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
+      owner_id: null,
       ownerEmail: "",
       nivel: "1",
       lugarNacimiento: "Krysalis",
@@ -460,7 +460,7 @@ function getOfficialCharacters(){
       theme: "purple",
       portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/derek.jpg",
       isNPC: false,
-      owner_id: "5e9c545e-176a-4e99-a3e7-299f89fa0779",
+      owner_id: null,
       ownerEmail: "",
       nivel: "1 Vástago",
       lugarNacimiento: "Krysalis",
@@ -549,13 +549,6 @@ function resetCharactersToOfficial(keepPortraits){
   var officials = getOfficialCharacters();
   state.characters = state.characters || [];
 
-  var scarlethChar = state.characters.find(function(c){
-    var n = (c.name || "").toLowerCase();
-    return n === "scarleth" || n.includes("scarleth") || n.includes("winter");
-  });
-  var scarlethOwner = scarlethChar ? scarlethChar.owner_id : null;
-  var scarlethEmail = scarlethChar ? scarlethChar.ownerEmail : "";
-
   officials.forEach(function(off){
     var existing = state.characters.find(function(c){
       var cName = (c.name || "").trim().toLowerCase();
@@ -569,10 +562,10 @@ function resetCharactersToOfficial(keepPortraits){
     });
     if(existing){
       var savedPortrait = (keepPortraits !== false) ? (existing.portrait || off.portrait) : off.portrait;
-      var savedOwner = existing.owner_id || (off.name === "Derek" && scarlethOwner ? scarlethOwner : off.owner_id);
+      var savedOwner = existing.owner_id || off.owner_id;
       var savedTheme = existing.theme || off.theme;
       var savedDbId = existing.db_id;
-      var savedEmail = existing.ownerEmail || (off.name === "Derek" && scarlethEmail ? scarlethEmail : off.ownerEmail);
+      var savedEmail = existing.ownerEmail || off.ownerEmail;
       var savedId = existing.id;
       Object.assign(existing, JSON.parse(JSON.stringify(off)));
       existing.id = savedId;
@@ -584,10 +577,6 @@ function resetCharactersToOfficial(keepPortraits){
       existing.officialDataVersion = 4;
     } else {
       var nOff = JSON.parse(JSON.stringify(off));
-      if(nOff.name === "Derek" && scarlethOwner){
-        nOff.owner_id = scarlethOwner;
-        nOff.ownerEmail = scarlethEmail;
-      }
       nOff.officialDataVersion = 4;
       state.characters.push(nOff);
     }
@@ -616,6 +605,7 @@ async function pullAllFromSupabase(){
         if(r.owner_id) c.owner_id = r.owner_id;
         c._serverUpdatedAt = r.updated_at ? new Date(r.updated_at).getTime() : 0;
         c._isDirty = false;
+        if(typeof snapshotCharacterSynced === 'function') snapshotCharacterSynced(c);
         return c; 
       });
 
@@ -723,7 +713,10 @@ async function pullAllFromSupabase(){
       });
 
       state.characters = mergedChars;
-      state.characters.forEach(function(c){ ensureCharDefaults(c); });
+      state.characters.forEach(function(c){
+        ensureCharDefaults(c);
+        if(typeof snapshotCharacterSynced === 'function') snapshotCharacterSynced(c);
+      });
 
       var validChars = getUserCharacters();
       var savedActiveId = localStorage.getItem("krysalis_active_id");
@@ -731,6 +724,10 @@ async function pullAllFromSupabase(){
         state.activeId = savedActiveId;
       } else if(validChars.length > 0){
         state.activeId = validChars[0].id;
+      }
+      var curActive = activeChar();
+      if(curActive && curActive.db_id && typeof subscribeToActiveCharacter === 'function'){
+        subscribeToActiveCharacter(curActive.db_id);
       }
       updateSyncBadge("synced");
     } else if(charRes.data && charRes.data.length === 0){
@@ -791,7 +788,7 @@ function sendKeepalivePush(c){
   }catch(e){}
 }
 
-async function pushCharacterById(charId, forceOverwrite){
+async function pushCharacterById(charId, forceOverwrite, explicitPatch){
   if(!supabaseClient) return;
   var c = (state.characters||[]).find(function(x){ return x.id === charId || x.db_id === charId; });
   if(!c || !c.name || c.id==="empty") return;
@@ -801,117 +798,115 @@ async function pushCharacterById(charId, forceOverwrite){
     console.warn("pushCharacterById: Permiso denegado para", c.name);
     dirtyCharIds.delete(c.id);
     if(c.db_id) dirtyCharIds.delete(c.db_id);
+    if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
     c._isDirty = false;
     return;
   }
 
+  // 1. SI NO TIENE db_id: Es un personaje nuevo que debe INSERTARSE
   if(!c.db_id){
-    var n = (c.name||"").trim().toLowerCase();
-    if(n === "derek") c.db_id = "d9dee50e-051d-4058-b4a5-d46c809fbb25";
-    else if(n.includes("scarleth") || n.includes("winter")) c.db_id = "5e9c545e-176a-4e99-a3e7-299f89fa0779";
-    else if(n.includes("bucky") || n.includes("baky")) c.db_id = "4d8dd9b1-b5aa-430e-ae19-79c35b6c3c5e";
-    else if(n.includes("cherk")) c.db_id = "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3";
-    else if(n.includes("ink")) c.db_id = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
-  }
+    var cleanData = JSON.parse(JSON.stringify(c));
+    delete cleanData._isDirty;
+    delete cleanData._lastLocalEdit;
+    delete cleanData._serverUpdatedAt;
+    delete cleanData._lastSyncedData;
 
-  // Control de conflicto robusto: verificar si el servidor tiene datos más recientes
-  if(c.db_id && c._serverUpdatedAt && !forceOverwrite){
+    var ownerId = (currentUser && currentUser.id) ? currentUser.id : c.owner_id;
+    c.owner_id = ownerId;
+    cleanData.owner_id = ownerId;
+
+    var payload = {
+      name: c.name,
+      data: cleanData,
+      owner_id: ownerId,
+      updated_at: new Date().toISOString()
+    };
+
     try{
-      var checkRes = await supabaseClient.from('characters').select('updated_at, data').eq('id', c.db_id).maybeSingle();
-      if(checkRes.data && checkRes.data.updated_at){
-        var remoteTs = new Date(checkRes.data.updated_at).getTime();
-        // Si el servidor fue actualizado después de nuestra última sincronización conocida (+500ms contra jitter de red)
-        if(remoteTs > (c._serverUpdatedAt || 0) + 500){
-          console.warn("Conflicto detectado: la ficha en el servidor es más reciente para", c.name, "Remoto:", remoteTs, "LocalSync:", c._serverUpdatedAt);
-
-          var hasLocalDirty = c._isDirty || dirtyCharIds.has(c.id) || (c.db_id && dirtyCharIds.has(c.db_id));
-
-          if(hasLocalDirty){
-            // 1. Guardar copia de seguridad local de inmediato para garantizar CERO pérdida de datos
-            try {
-              var backupKey = 'krysalis_conflict_backup_' + c.id;
-              var conflictEntry = {
-                timestamp: new Date().toISOString(),
-                charId: c.id,
-                charDbId: c.db_id,
-                charName: c.name,
-                serverUpdatedAt: remoteTs,
-                localLastEdit: c._lastLocalEdit || Date.now(),
-                data: JSON.parse(JSON.stringify(c))
-              };
-              localStorage.setItem(backupKey, JSON.stringify(conflictEntry));
-              var historyKey = 'krysalis_conflict_history';
-              var hist = JSON.parse(localStorage.getItem(historyKey) || '[]');
-              hist.unshift(conflictEntry);
-              if(hist.length > 10) hist.pop();
-              localStorage.setItem(historyKey, JSON.stringify(hist));
-            } catch(eB){ console.warn("Error guardando backup de conflicto:", eB); }
-
-            // 2. Detener la subida para evitar sobrescritura silenciosa en el servidor
-            dirtyCharIds.delete(c.id);
-            if(c.db_id) dirtyCharIds.delete(c.db_id);
-            c._isDirty = false;
-
-            // 3. Abrir modal interactivo de resolución de conflicto
-            if(typeof showConflictModal === "function" && checkRes.data.data){
-              showConflictModal(c, checkRes.data.data, remoteTs);
-            } else {
-              showToast("⚠️ Conflicto: " + c.name + " fue modificado por otro jugador. Cambios locales respaldados.", "warning");
-            }
-            return;
-          } else {
-            // Sin cambios locales pendientes: sincronizar de forma limpia con la verdad del servidor
-            if(checkRes.data.data){
-              var updatedRemote = checkRes.data.data;
-              updatedRemote.db_id = c.db_id;
-              updatedRemote._serverUpdatedAt = remoteTs;
-              updatedRemote._isDirty = false;
-              dirtyCharIds.delete(c.id);
-              if(c.db_id) dirtyCharIds.delete(c.db_id);
-              var idx = state.characters.findIndex(function(x){ return x.id === c.id || x.db_id === c.db_id; });
-              if(idx !== -1) state.characters[idx] = ensureCharDefaults(updatedRemote);
-              saveState(true);
-              renderTopbar();
-              renderTab();
-              showToast("Aviso: " + c.name + " actualizado con la versión más reciente del servidor.", "info");
-              return;
-            }
-          }
-        }
+      var insertRes = await supabaseClient.from('characters').insert(payload).select();
+      if(insertRes.error){
+        console.error('Error creando personaje en Supabase:', insertRes.error);
+        return;
       }
-    }catch(errCheck){
-      console.warn("Error verificando versión del servidor:", errCheck);
+      if(insertRes.data && insertRes.data[0]){
+        c.db_id = insertRes.data[0].id;
+        c._serverUpdatedAt = insertRes.data[0].updated_at ? new Date(insertRes.data[0].updated_at).getTime() : Date.now();
+        if(typeof snapshotCharacterSynced === 'function') snapshotCharacterSynced(c);
+        if(typeof subscribeToActiveCharacter === 'function') subscribeToActiveCharacter(c.db_id);
+      }
+      c._isDirty = false;
+      dirtyCharIds.delete(c.id);
+      if(c.db_id) dirtyCharIds.delete(c.db_id);
+      if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
+      saveState(true);
+      updateSyncBadge("synced");
+    }catch(errIns){
+      console.error('Excepción insertando personaje:', errIns);
     }
+    return;
   }
 
-  // Sanitizar payload: nunca guardar banderas de runtime transitorias en Supabase
-  var cleanData = JSON.parse(JSON.stringify(c));
-  delete cleanData._isDirty;
-  delete cleanData._lastLocalEdit;
-  delete cleanData._serverUpdatedAt;
+  // 2. PERSONAJE EXISTENTE: NUNCA enviar data completo, solo las claves modificadas
+  var patchToPush = explicitPatch;
+  if(!patchToPush || Object.keys(patchToPush).length === 0){
+    var accumulated = (typeof dirtyCharPatches !== 'undefined' && dirtyCharPatches.get(c.id)) ? dirtyCharPatches.get(c.id) : {};
+    var diffPatch = (typeof getCharacterDiffPatch === 'function') ? getCharacterDiffPatch(c) : {};
+    patchToPush = Object.assign({}, accumulated, diffPatch);
+  }
 
-  var payload = {name: c.name, data: cleanData, updated_at: new Date().toISOString()};
-  if(c.db_id) payload.id = c.db_id;
+  // Sanitizar parche: retirar campos volátiles de memoria
+  delete patchToPush._isDirty;
+  delete patchToPush._lastLocalEdit;
+  delete patchToPush._serverUpdatedAt;
+  delete patchToPush._lastSyncedData;
+  delete patchToPush.db_id;
 
-  supabaseClient.from('characters').upsert(payload).select().then(function(res){
-    if(res.error) {
-      console.error('Supabase error:', res.error);
-      sendKeepalivePush(c);
-      return;
-    }
-    if(res.data && res.data[0]){
-      c.db_id = res.data[0].id;
-      c._serverUpdatedAt = res.data[0].updated_at ? new Date(res.data[0].updated_at).getTime() : Date.now();
-    }
+  if(!patchToPush || Object.keys(patchToPush).length === 0){
     c._isDirty = false;
     dirtyCharIds.delete(c.id);
     if(c.db_id) dirtyCharIds.delete(c.db_id);
+    if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
+    return;
+  }
+
+  try{
+    var rpcRes = await supabaseClient.rpc('update_character_data', {
+      char_id: c.db_id,
+      patch: patchToPush
+    });
+
+    if(rpcRes.error){
+      console.error('Supabase update_character_data error:', rpcRes.error);
+      return;
+    }
+
+    if(rpcRes.data){
+      c._serverUpdatedAt = rpcRes.data.updated_at ? new Date(rpcRes.data.updated_at).getTime() : Date.now();
+      if(!c._lastSyncedData) c._lastSyncedData = {};
+      Object.keys(patchToPush).forEach(function(k){
+        try{
+          c._lastSyncedData[k] = JSON.parse(JSON.stringify(c[k]));
+        }catch(e){
+          c._lastSyncedData[k] = c[k];
+        }
+      });
+    }
+
+    c._isDirty = false;
+    dirtyCharIds.delete(c.id);
+    if(c.db_id) dirtyCharIds.delete(c.db_id);
+    if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
     saveState(true);
     updateSyncBadge("synced");
-  }).catch(function(e){
-    console.error('Supabase error:', e);
-    sendKeepalivePush(c);
-  });
+  }catch(e){
+    console.error('Supabase update_character_data error:', e);
+  }
+}
+
+async function pushCharacterPatch(charId, patch){
+  if(!charId || !patch) return;
+  markCharDirty(charId, patch);
+  return pushCharacterById(charId, false, patch);
 }
 
 function pushActiveChar(){

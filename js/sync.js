@@ -5,9 +5,55 @@ var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 var syncDebounceTimer = null;
 var dirtyCharIds = new Set();
+var dirtyCharPatches = new Map();
 var isGlobalDirty = false;
 
-function markCharDirty(charId){
+var CHAR_DATA_KEYS = [
+  "name", "theme", "portrait", "isNPC", "owner_id", "ownerEmail",
+  "nivel", "lugarNacimiento", "altura", "peso", "edad", "ojos", "pelo", "trabajo", "descripcion",
+  "attrs", "skillBonus", "skillProgress", "skillPointsUnlocked", "skillHybrid", "customSkills",
+  "combat", "weapons", "armors", "inventory", "money",
+  "magiaTipo", "spells", "stones", "passivesNeg", "passivesPos",
+  "goddessCurses", "goddessBlessings", "goddessTable",
+  "summons", "buffs", "customBuffs", "poisons", "skillPoints",
+  "activeBuffs", "personalNotes", "trainings"
+];
+
+function getCharacterDiffPatch(c){
+  if(!c) return {};
+  var patch = {};
+  if(!c._lastSyncedData){
+    return patch;
+  }
+  CHAR_DATA_KEYS.forEach(function(k){
+    if(c[k] !== undefined){
+      try {
+        var curJson = JSON.stringify(c[k]);
+        var lastJson = JSON.stringify(c._lastSyncedData[k]);
+        if(curJson !== lastJson){
+          patch[k] = JSON.parse(curJson);
+        }
+      } catch(e){}
+    }
+  });
+  return patch;
+}
+
+function snapshotCharacterSynced(c){
+  if(!c) return;
+  c._lastSyncedData = {};
+  CHAR_DATA_KEYS.forEach(function(k){
+    if(c[k] !== undefined){
+      try {
+        c._lastSyncedData[k] = JSON.parse(JSON.stringify(c[k]));
+      } catch(e){
+        c._lastSyncedData[k] = c[k];
+      }
+    }
+  });
+}
+
+function markCharDirty(charId, patchOrKey){
   if(!charId) return;
   var target = (state.characters||[]).find(function(x){ return x.id === charId || x.db_id === charId; });
   if(target){
@@ -18,6 +64,25 @@ function markCharDirty(charId){
     target._isDirty = true;
     target._lastLocalEdit = Date.now();
     dirtyCharIds.add(target.id);
+    if(target.db_id) dirtyCharIds.add(target.db_id);
+
+    if(!dirtyCharPatches.has(target.id)){
+      dirtyCharPatches.set(target.id, {});
+    }
+    var p = dirtyCharPatches.get(target.id);
+
+    if(patchOrKey && typeof patchOrKey === 'object'){
+      Object.assign(p, patchOrKey);
+    } else if(typeof patchOrKey === 'string'){
+      var rootKey = patchOrKey.split(".")[0];
+      if(target[rootKey] !== undefined){
+        try {
+          p[rootKey] = JSON.parse(JSON.stringify(target[rootKey]));
+        } catch(e){
+          p[rootKey] = target[rootKey];
+        }
+      }
+    }
   }
 }
 
@@ -32,15 +97,19 @@ function flushPendingSync(){
   dirtyCharIds.forEach(function(cid){
     var c = (state.characters || []).find(function(x){ return x.id === cid || x.db_id === cid; });
     if(c && canEditChar(c)) toPush.add(c.id);
-    else dirtyCharIds.delete(cid);
+    else {
+      dirtyCharIds.delete(cid);
+      dirtyCharPatches.delete(cid);
+    }
   });
 
   (state.characters || []).forEach(function(c){
-    if(c && c._isDirty && c.id){
+    if(c && (c._isDirty || dirtyCharPatches.has(c.id)) && c.id){
       if(canEditChar(c)) toPush.add(c.id);
       else {
         c._isDirty = false;
         dirtyCharIds.delete(c.id);
+        dirtyCharPatches.delete(c.id);
       }
     }
   });
@@ -65,7 +134,7 @@ function saveState(skipRemote){
   }catch(e){
     console.error("Error al guardar en localStorage:", e);
   }
-  if(!skipRemote && supabaseClient && (dirtyCharIds.size > 0 || isGlobalDirty || state._isSharedDirty)){
+  if(!skipRemote && supabaseClient && (dirtyCharIds.size > 0 || dirtyCharPatches.size > 0 || isGlobalDirty || state._isSharedDirty)){
     updateSyncBadge("saving");
     clearTimeout(syncDebounceTimer);
     syncDebounceTimer = setTimeout(function(){

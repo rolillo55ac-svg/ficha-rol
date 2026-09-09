@@ -203,20 +203,30 @@ function modalClick(e){
     flushPendingSync();
     state.activeId = btn.getAttribute("data-id");
     saveState(true);
+    var pickedChar = (state.characters||[]).find(function(x){ return x.id === state.activeId; });
+    if(pickedChar && pickedChar.db_id && typeof subscribeToActiveCharacter === 'function'){
+      subscribeToActiveCharacter(pickedChar.db_id);
+    }
     closeModals();
     renderTopbar();
     renderTab();
     return;
   }
   if(action==="add-char"){
-    if(!isGM() && currentUser){
+    if(!currentUser || !currentUser.id){
+      showToast("Debes iniciar sesión para crear un personaje.", "warning");
+      openDataModal();
+      return;
+    }
+    if(!isGM()){
       showToast("Solo el Máster puede crear nuevos personajes.", "warning");
       return;
     }
     var nName = prompt("Nombre del nuevo personaje:");
     if(nName && nName.trim()){
       var nc = blankCharacter(nName.trim());
-      if(currentUser && currentUser.id) nc.owner_id = currentUser.id;
+      nc.owner_id = currentUser.id;
+      nc.ownerEmail = currentUser.email || "";
       nc._isDirty = true;
       nc._lastLocalEdit = Date.now();
       state.characters.push(nc);
@@ -232,12 +242,18 @@ function modalClick(e){
     return;
   }
   if(action==="add-npc"){
+    if(!currentUser || !currentUser.id){
+      showToast("Debes iniciar sesión con cuenta de Máster para crear un NPC.", "warning");
+      openDataModal();
+      return;
+    }
     if(!isGM()) return;
     var nName = prompt("Nombre del NPC:");
     if(nName && nName.trim()){
       var nn = blankCharacter(nName.trim(), true);
       nn.trabajo = "Neutral";
-      if(currentUser && currentUser.id) nn.owner_id = currentUser.id;
+      nn.owner_id = currentUser.id;
+      nn.ownerEmail = currentUser.email || "";
       nn._isDirty = true;
       nn._lastLocalEdit = Date.now();
       state.characters.push(nn);

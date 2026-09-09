@@ -24,9 +24,13 @@ function clearAuthAttempts(){
 
 
 function isGM(){
-  if(currentRole === 'gm' || currentRole === 'GM') return true;
-  if(state && (state.campaignRole === 'GM' || state.campaignRole === 'gm')) return true;
-  if(currentUser && currentUser.user_metadata && (currentUser.user_metadata.role === 'gm' || currentUser.user_metadata.role === 'GM')) return true;
+  var r = (currentRole || '').toLowerCase();
+  if(r === 'master' || r === 'gm') return true;
+  if(state && state.campaignRole && (state.campaignRole.toLowerCase() === 'master' || state.campaignRole.toLowerCase() === 'gm')) return true;
+  if(currentUser && currentUser.user_metadata && currentUser.user_metadata.role){
+    var mr = currentUser.user_metadata.role.toLowerCase();
+    if(mr === 'master' || mr === 'gm') return true;
+  }
   return false;
 }
 
@@ -39,11 +43,6 @@ function isCharOwner(c, user){
       return m.user_id === user.id && (m.character_id === c.id || m.character_id === c.db_id);
     });
     if(isMember) return true;
-  }
-  if(user.email && c.name){
-    var emailPrefix = user.email.split("@")[0].toLowerCase().trim();
-    var cName = c.name.toLowerCase().trim();
-    if(emailPrefix === cName || emailPrefix.includes(cName) || cName.includes(emailPrefix)) return true;
   }
   return false;
 }
@@ -78,8 +77,8 @@ async function fetchUserProfile(){
       var memRes = await supabaseClient.from('campaign_members').select('*').eq('user_id', currentUser.id);
       if(memRes.data && memRes.data.length){
         state.campaignMembers = memRes.data;
-        var gmMem = memRes.data.find(function(m){ return m.role === 'GM'; });
-        if(gmMem) { currentRole = 'gm'; state.campaignRole = 'GM'; }
+        var gmMem = memRes.data.find(function(m){ var mr = (m.role || '').toLowerCase(); return mr === 'gm' || mr === 'master'; });
+        if(gmMem) { currentRole = 'master'; state.campaignRole = 'master'; }
       }
     }catch(errMem){}
 

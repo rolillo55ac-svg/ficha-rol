@@ -94,13 +94,14 @@ async function pullMapFromSupabase(){
 function pushMapsData(forceAllow){
   if(!supabaseClient) return;
   if(currentUser && !isGM() && !forceAllow) return;
-  supabaseClient.from('campaign_map').upsert({
-    id: 'main_map',
-    data: state.maps || [],
-    markers: state.maps || [],
-    updated_at: new Date().toISOString()
-  }).select().then(function(res){
-    if(res.error) { console.error('Supabase error:', res.error); return; }
+  supabaseClient.rpc('update_campaign_map', {
+    map_id: 'main_map',
+    patch: state.maps || []
+  }).then(function(res){
+    if(res.error) {
+      console.error('Error en update_campaign_map (main_map):', res.error);
+      return;
+    }
     updateSyncBadge("synced");
   }).catch(function(e){ console.error('Supabase error:', e); });
 }

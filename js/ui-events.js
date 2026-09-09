@@ -177,7 +177,7 @@ function handleChange(e){
   setBind(target, bind, el.value, el.type);
   if(!isGlobal && target && target.id){
     target._lastLocalEdit = Date.now();
-    markCharDirty(target.id);
+    markCharDirty(target.id, bind);
     if(currentUser && !target.owner_id && !target.isNPC){
       target.owner_id = currentUser.id;
       if(currentUser.email) target.ownerEmail = currentUser.email;
@@ -194,7 +194,12 @@ function handleChange(e){
   if(isGlobal){
     isGlobalDirty = true;
     saveState(true);
-    pushSharedData();
+    var sharedRoot = bind ? bind.split(".")[0] : null;
+    var sharedPatch = {};
+    if(sharedRoot && target[sharedRoot] !== undefined){
+      sharedPatch[sharedRoot] = target[sharedRoot];
+    }
+    pushSharedData(sharedPatch);
   } else {
     saveState(false);
   }
