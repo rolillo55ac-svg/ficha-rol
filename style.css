@@ -236,6 +236,15 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .role-badge.gm{border-color:var(--gm-light);color:var(--gm-light);background:linear-gradient(135deg, rgba(139,69,19,0.35), rgba(210,105,30,0.15));box-shadow:0 0 10px -2px rgba(210,105,30,0.6);}
 .role-badge.player{border-color:var(--teal);color:var(--teal-light);}
+.role-badge.spectator{border-color:rgba(176,141,87,0.3);color:var(--ink-dim);background:rgba(0,0,0,0.35);}
+.char-owner-topbar-tag{
+  font-size:.58rem;font-family:var(--font-mono);padding:2px 6px;border-radius:12px;
+  background:rgba(176,141,87,0.15);border:1px solid rgba(176,141,87,0.35);color:var(--gold-light);
+  white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;
+}
+.char-owner-topbar-tag.unassigned{
+  background:rgba(0,0,0,0.25);border:1px dashed var(--line);color:var(--ink-faint);
+}
 .sync-status{
   font-size:.58rem;font-family:var(--font-mono);padding:2px 6px;border-radius:20px;
   border:1px solid var(--line);color:var(--ink-faint);white-space:nowrap;
@@ -2427,6 +2436,103 @@ textarea,
   background: var(--bg-card);
   border: 1px solid var(--line);
   border-radius: 5px;
+  color: var(--gold-light);
+}
+
+/* === GESTIÓN DE PROPIETARIOS Y ESPECTADORES === */
+.char-owner-assign-box {
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(176, 141, 87, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.char-owner-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.char-owner-label {
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.char-owner-email {
+  color: var(--teal-light);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  background: rgba(61, 110, 96, 0.18);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(61, 110, 96, 0.35);
+  word-break: break-all;
+}
+
+.char-owner-empty {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.char-owner-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.char-owner-badge {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.char-owner-badge.mine {
+  background: rgba(46, 139, 87, 0.22);
+  color: #4ADE80;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  font-weight: 600;
+}
+
+.char-owner-badge.other {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+}
+
+.char-owner-badge.unassigned {
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink-faint);
+  border: 1px dashed var(--line);
+}
+
+.tr-spectator-banner {
+  background: linear-gradient(135deg, rgba(20, 24, 33, 0.95), rgba(15, 18, 26, 0.9));
+  border: 1px solid rgba(176, 141, 87, 0.3);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  line-height: 1.45;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.6);
+}
+
+.tr-spectator-banner strong {
   color: var(--gold-light);
 }
 

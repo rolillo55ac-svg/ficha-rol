@@ -126,6 +126,35 @@ function openCharModal(){
       ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="cli-avatar-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="cli-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
       : '<span class="cli-initial">' + esc(c.name.charAt(0).toUpperCase()) + '</span>';
 
+    var ownerHtml = '';
+    if(!isNPC){
+      if(isGM()){
+        ownerHtml = '<div class="char-owner-assign-box">' +
+          '<div class="char-owner-info">' +
+            '<span class="char-owner-label">👤 Jugador:</span> ' +
+            (c.ownerEmail ? '<span class="char-owner-email">● ' + esc(c.ownerEmail) + '</span>' : '<span class="char-owner-empty">○ Sin asignar</span>') +
+          '</div>' +
+          '<div class="char-owner-actions">' +
+            '<button type="button" class="btn-compact" data-action="assign-char-owner" data-id="' + c.id + '" style="font-size:0.7rem;padding:3px 7px;">' +
+              (c.ownerEmail ? '✏️ Cambiar' : '➕ Asignar') +
+            '</button>' +
+            (c.ownerEmail ? '<button type="button" class="btn-compact" data-action="clear-char-owner" data-id="' + c.id + '" title="Desvincular jugador" style="font-size:0.7rem;padding:3px 6px;color:var(--crimson-light);">✕</button>' : '') +
+          '</div>' +
+        '</div>';
+      } else if(currentUser) {
+        var isMine = isCharOwner(c, currentUser);
+        ownerHtml = '<div style="margin-top:6px;font-size:0.72rem;display:flex;align-items:center;gap:4px;">' +
+          (isMine
+            ? '<span class="char-owner-badge mine">⭐ Tu Personaje (Control total)</span>'
+            : (c.ownerEmail
+                ? '<span class="char-owner-badge other">👁️ De: ' + esc(c.ownerEmail) + ' (Espectador)</span>'
+                : '<span class="char-owner-badge unassigned">○ Sin asignar (Solo lectura)</span>'
+              )
+          ) +
+        '</div>';
+      }
+    }
+
     html += '<div class="char-list-item'+(c.id===state.activeId?' active':'')+(isNPC?' npc-item':'')+'" data-theme="'+cTheme+'">'+
       '<div style="display:flex;align-items:center;gap:12px;width:100%;">'+
         '<div class="cli-main-select" data-action="pick-char" data-id="'+c.id+'" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer;">'+
@@ -137,6 +166,7 @@ function openCharModal(){
         '</div>'+
         (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;">✕</button>':'')+
       '</div>'+
+      ownerHtml +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(176,141,87,0.15);width:100%;flex-wrap:wrap;">'+
         '<span style="font-size:0.72rem;color:var(--ink-dim);letter-spacing:0.02em;">🎨 Color de acento:</span>'+
         '<div class="theme-swatches">'+swatches+'</div>'+
@@ -464,6 +494,61 @@ function modalClick(e){
       renderTopbar();
       renderTab();
       showToast("Personaje eliminado", "info");
+    }
+    return;
+  }
+  if(action==="assign-char-owner"){
+    if(!isGM()){
+      showToast("Solo el Máster puede asignar personajes a jugadores.", "warning");
+      return;
+    }
+    var targetId = btn.getAttribute("data-id");
+    var targetChar = (state.characters||[]).find(function(x){ return x.id===targetId || x.db_id===targetId; });
+    if(!targetChar) return;
+
+    var curEmail = targetChar.ownerEmail || "";
+    var newEmail = prompt("Introduce el email de la cuenta del jugador para " + targetChar.name + ":", curEmail);
+    if(newEmail === null) return;
+
+    newEmail = newEmail.trim().toLowerCase();
+    targetChar.ownerEmail = newEmail;
+    targetChar.owner_id = null;
+    targetChar._lastLocalEdit = Date.now();
+    markCharDirty(targetChar.id, "ownerEmail");
+    saveState(false);
+    pushCharacterById(targetChar.id);
+
+    openCharModal();
+    renderTopbar();
+    renderTab();
+    if(newEmail){
+      showToast("Personaje " + targetChar.name + " asignado a " + newEmail, "success");
+    } else {
+      showToast("Personaje " + targetChar.name + " liberado (sin asignar)", "info");
+    }
+    return;
+  }
+  if(action==="clear-char-owner"){
+    if(!isGM()){
+      showToast("Solo el Máster puede desvincular personajes.", "warning");
+      return;
+    }
+    var targetId = btn.getAttribute("data-id");
+    var targetChar = (state.characters||[]).find(function(x){ return x.id===targetId || x.db_id===targetId; });
+    if(!targetChar) return;
+
+    if(confirm("¿Desvincular a \"" + (targetChar.ownerEmail || "este jugador") + "\" de " + targetChar.name + "? El personaje quedará libre.")){
+      targetChar.ownerEmail = "";
+      targetChar.owner_id = null;
+      targetChar._lastLocalEdit = Date.now();
+      markCharDirty(targetChar.id, "ownerEmail");
+      saveState(false);
+      pushCharacterById(targetChar.id);
+
+      openCharModal();
+      renderTopbar();
+      renderTab();
+      showToast("Personaje " + targetChar.name + " desvinculado (libre)", "info");
     }
     return;
   }

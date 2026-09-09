@@ -21,6 +21,27 @@ function renderTopbar(){
     ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="crest-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="crest-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
     : '<span class="crest-initial">' + esc(c.name.charAt(0).toUpperCase()) + '</span>';
 
+  var canEdit = canEditChar(c);
+  var roleBadgeHtml = '';
+  if(isGM()){
+    roleBadgeHtml = '<span class="role-badge gm">★ GM</span>';
+    if(!isNPC){
+      if(c.ownerEmail){
+        roleBadgeHtml += '<span class="char-owner-topbar-tag" title="Asignado a ' + esc(c.ownerEmail) + '">👤 ' + esc(c.ownerEmail) + '</span>';
+      } else {
+        roleBadgeHtml += '<span class="char-owner-topbar-tag unassigned" title="Personaje sin jugador asignado">○ Libre</span>';
+      }
+    }
+  } else if(currentUser){
+    if(canEdit){
+      roleBadgeHtml = '<span class="role-badge player" title="Tu personaje (Control total)">Jugador</span>';
+    } else {
+      roleBadgeHtml = '<span class="role-badge spectator" title="Modo Espectador: Solo lectura">👁️ Espectador</span>';
+    }
+  } else {
+    roleBadgeHtml = '<span class="role-badge player">Local</span>';
+  }
+
   document.getElementById("topbar").innerHTML =
     '<div class="topbar-row">'+
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
@@ -32,7 +53,7 @@ function renderTopbar(){
       '</button>'+
       '<div style="display:flex;align-items:center;gap:4px;">'+
         '<span id="syncBadge" class="sync-status">'+(currentUser?'● Nube':'○ Local')+'</span>'+
-        (isGM() ? '<span class="role-badge gm">★ GM</span>' : '<span class="role-badge player">Jugador</span>')+
+        roleBadgeHtml+
         '<button class="icon-btn" data-action="open-data-modal" title="Ajustes y Sesión" aria-label="Ajustes">&#9881;</button>'+
       '</div>'+
     '</div>'+
@@ -40,26 +61,26 @@ function renderTopbar(){
       '<div class="gauge-wrap">'+
         '<div class="gauge-label"><span>Vida '+hpStatusBadge+hpDebuffBadge+'</span><span class="'+hpNumsClass+'">'+curPv+' / '+maxHp+'</span></div>'+
         '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%;'+(curPv<=0?'background:#8C252F;':'')+'"></div></div>'+
-        '<div class="gauge-adjust">'+
+        (canEdit ? ('<div class="gauge-adjust">'+
           '<button data-action="hp-mod" data-delta="-5" aria-label="Restar 5 vida">-5</button><button data-action="hp-mod" data-delta="-1" aria-label="Restar 1 vida">-1</button>'+
           '<button data-action="hp-mod" data-delta="1" aria-label="Sumar 1 vida">+1</button><button data-action="hp-mod" data-delta="5" aria-label="Sumar 5 vida">+5</button>'+
-        '</div>'+
+        '</div>') : '')+
       '</div>'+
       '<div class="gauge-wrap">'+
         '<div class="gauge-label"><span style="color:var(--shield-light);" title="El Escudo y la Vida Falsa son equivalentes">🛡️ Escudo / Vida Falsa</span><span class="gauge-nums">'+num(c.combat.escudoActual,0)+'</span></div>'+
         '<div class="gauge"><div class="gauge-fill shield" style="width:'+clamp(num(c.combat.escudoActual,0)*10,0,100)+'%;"></div></div>'+
-        '<div class="gauge-adjust">'+
+        (canEdit ? ('<div class="gauge-adjust">'+
           '<button data-action="shield-mod" data-delta="-3" aria-label="Restar 3 escudo">-3</button><button data-action="shield-mod" data-delta="-1" aria-label="Restar 1 escudo">-1</button>'+
           '<button data-action="shield-mod" data-delta="1" aria-label="Sumar 1 escudo">+1</button><button data-action="shield-mod" data-delta="3" aria-label="Sumar 3 escudo">+3</button>'+
-        '</div>'+
+        '</div>') : '')+
       '</div>'+
       '<div class="gauge-wrap">'+
         '<div class="gauge-label"><span>Maná</span><span class="gauge-nums">'+num(c.combat.manaActual,0)+' / '+maxMana+'</span></div>'+
         '<div class="gauge"><div class="gauge-fill mana" style="width:'+manaPct+'%;"></div></div>'+
-        '<div class="gauge-adjust">'+
+        (canEdit ? ('<div class="gauge-adjust">'+
           '<button data-action="mana-mod" data-delta="-5" aria-label="Restar 5 maná">-5</button><button data-action="mana-mod" data-delta="-1" aria-label="Restar 1 maná">-1</button>'+
           '<button data-action="mana-mod" data-delta="1" aria-label="Sumar 1 maná">+1</button><button data-action="mana-mod" data-delta="5" aria-label="Sumar 5 maná">+5</button>'+
-        '</div>'+
+        '</div>') : '')+
       '</div>'+
     '</div>';
 }
@@ -141,6 +162,7 @@ function tplFicha(c){
       '<div>'+
         '<div class="field-grid">'+
           field("Nombre", "name", c.name, "text")+
+          (isGM() && !c.isNPC ? '<div class="field"><label>👤 Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
           '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(c.isNPC?'':'readonly')+'>'+levelControl+'</div></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text")+
           field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text")+
@@ -327,6 +349,19 @@ function tplEntrenamiento(c){
     '<span>🥋 Entrenamiento y Progresión</span>' +
     (canEdit ? '<button class="btn-compact" data-action="add-training">+ Nuevo Entrenamiento</button>' : '') +
   '</div>';
+
+  if(!canEdit && currentUser){
+    html += '<div class="tr-spectator-banner">' +
+      '<span style="font-size:1.15rem;flex:none;">👁️</span>' +
+      '<div>' +
+        '<strong>Modo Espectador (Solo lectura):</strong> ' +
+        (c.ownerEmail
+          ? 'Esta ficha pertenece a <b>' + esc(c.ownerEmail) + '</b>.'
+          : 'Este personaje no tiene jugador asignado.') +
+        ' Solo el propietario de la ficha o el Máster pueden crear o registrar tiradas de entrenamiento.' +
+      '</div>' +
+    '</div>';
+  }
 
   if(c.trainings.length === 0){
     html += '<div class="tr-empty-state" style="text-align:center;padding:24px 12px;background:var(--bg-elev);border:1px dashed var(--line);border-radius:var(--radius-sm);margin-bottom:12px;">' +

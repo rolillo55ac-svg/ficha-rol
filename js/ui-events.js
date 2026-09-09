@@ -136,6 +136,20 @@ function handleChange(e){
     return;
   }
   var bind = el.getAttribute("data-bind");
+  if(!isGlobal && target && bind === "ownerEmail"){
+    if(!isGM()){
+      showToast("Solo el Máster puede cambiar el propietario de un personaje.", "warning");
+      return;
+    }
+    var val = (el.value || "").trim().toLowerCase();
+    target.ownerEmail = val;
+    target.owner_id = null;
+    target._lastLocalEdit = Date.now();
+    markCharDirty(target.id, "ownerEmail");
+    saveState(false);
+    pushCharacterById(target.id);
+    return;
+  }
   if(!isGlobal && target && (bind === "money.oro" || bind === "money.plata")){
     var curVal = Math.max(0, num(el.value, 0));
     var part = bind.split(".")[1];
@@ -191,7 +205,7 @@ function handleChange(e){
   if(!isGlobal && target && target.id){
     target._lastLocalEdit = Date.now();
     markCharDirty(target.id, bind);
-    if(currentUser && !target.owner_id && !target.isNPC){
+    if(!isGM() && currentUser && !target.owner_id && !target.isNPC && isCharOwner(target, currentUser)){
       target.owner_id = currentUser.id;
       if(currentUser.email) target.ownerEmail = currentUser.email;
     }

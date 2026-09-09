@@ -36,8 +36,11 @@ function isGM(){
 
 function isCharOwner(c, user){
   if(!c || !user) return false;
+  if(c.ownerEmail && c.ownerEmail.trim()){
+    if(user.email && c.ownerEmail.trim().toLowerCase() === user.email.trim().toLowerCase()) return true;
+    return false;
+  }
   if(c.owner_id && c.owner_id === user.id) return true;
-  if(c.ownerEmail && user.email && c.ownerEmail.trim().toLowerCase() === user.email.trim().toLowerCase()) return true;
   if(state && Array.isArray(state.campaignMembers)){
     var isMember = state.campaignMembers.some(function(m){
       return m.user_id === user.id && (m.character_id === c.id || m.character_id === c.db_id);
