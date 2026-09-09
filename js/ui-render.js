@@ -148,32 +148,41 @@ function tplFicha(c){
     levelControl = '<button class="btn-solid-gold" data-action="grant-level">+ Nivel</button>';
   }
 
+  var canEdit = canEditChar(c);
+  var ro = !canEdit;
+
   return '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
-    '<div class="section-title"><span>'+(c.isNPC?'Ficha de NPC (Solo GM)':'Datos del Personaje')+'</span></div>'+
+    '<div class="section-title"><span>'+(c.isNPC?'Ficha de NPC (Solo GM)':(canEdit ? 'Datos del Personaje' : 'Datos del Personaje (Solo Lectura)'))+'</span></div>'+
+    (!canEdit && currentUser ?
+      '<div class="tr-spectator-banner" style="margin-bottom:12px;">'+
+        '<span style="font-size:1.15rem;flex:none;">👁️</span>'+
+        '<div><strong>Modo Espectador:</strong> Consultando la ficha de <b>'+esc(c.name)+'</b> en modo solo lectura. No puedes modificar sus datos ni su equipo.</div>'+
+      '</div>' : '')+
     '<div class="ficha-layout">'+
       '<div class="portrait-box">'+
         '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':'👤')+'</div>'+
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+
-          '<button class="btn-compact" data-action="upload-portrait" title="Subir foto desde archivo">Foto</button>'+
-          '<button class="btn-compact" data-action="url-portrait" title="Pegar enlace de GitHub o web">URL</button>'+
-          (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">✕</button>' : '')+
-        '</div>'+
+        (canEdit ?
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+
+            '<button class="btn-compact" data-action="upload-portrait" title="Subir foto desde archivo">Foto</button>'+
+            '<button class="btn-compact" data-action="url-portrait" title="Pegar enlace de GitHub o web">URL</button>'+
+            (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">✕</button>' : '')+
+          '</div>' : '')+
       '</div>'+
       '<div>'+
         '<div class="field-grid">'+
-          field("Nombre", "name", c.name, "text")+
+          field("Nombre", "name", c.name, "text", ro)+
           (isGM() && !c.isNPC ? '<div class="field"><label>👤 Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
-          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(c.isNPC?'':'readonly')+'>'+levelControl+'</div></div>'+
-          field("Trabajo / Rol","trabajo",c.trabajo,"text")+
-          field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text")+
-          field("Altura","altura",c.altura,"text")+
-          field("Peso","peso",c.peso,"text")+
-          field("Edad","edad",c.edad,"text")+
-          field("Color de Ojos","ojos",c.ojos,"text")+
-          field("Color de Pelo","pelo",c.pelo,"text")+
+          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(c.isNPC && isGM() ? '' : 'readonly')+'>'+levelControl+'</div></div>'+
+          field("Trabajo / Rol","trabajo",c.trabajo,"text", ro)+
+          field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text", ro)+
+          field("Altura","altura",c.altura,"text", ro)+
+          field("Peso","peso",c.peso,"text", ro)+
+          field("Edad","edad",c.edad,"text", ro)+
+          field("Color de Ojos","ojos",c.ojos,"text", ro)+
+          field("Color de Pelo","pelo",c.pelo,"text", ro)+
         '</div>'+
         '<div style="margin-top:10px;">'+
-          fieldArea("Descripción Física y Notas","descripcion",c.descripcion)+
+          fieldArea("Descripción Física y Notas","descripcion",c.descripcion, ro)+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -185,25 +194,32 @@ function tplFicha(c){
 }
 
 
-function field(label,bind,val,type){
-  return '<div class="field"><label>'+esc(label)+'</label><input type="'+type+'" data-bind="'+bind+'" value="'+esc(val)+'" aria-label="'+esc(label)+'"></div>';
+function field(label,bind,val,type,readonly){
+  return '<div class="field"><label>'+esc(label)+'</label><input type="'+type+'" data-bind="'+bind+'" value="'+esc(val)+'" aria-label="'+esc(label)+'"'+(readonly?' readonly':'')+'></div>';
 }
-function fieldArea(label,bind,val){
-  return '<div class="field"><label>'+esc(label)+'</label><textarea data-bind="'+bind+'" aria-label="'+esc(label)+'">'+esc(val)+'</textarea></div>';
+function fieldArea(label,bind,val,readonly){
+  return '<div class="field"><label>'+esc(label)+'</label><textarea data-bind="'+bind+'" aria-label="'+esc(label)+'"'+(readonly?' readonly':'')+'>'+esc(val)+'</textarea></div>';
 }
 
 function tplHabilidades(c){
+  var canEdit = canEditChar(c);
   var groups = {}; ATTRS.forEach(function(a){groups[a]=[];});
   var hybrids = [];
   SKILL_DEFS.forEach(function(s){ if(s.attr==="hybrid") hybrids.push(s); else groups[s.attr].push(s); });
 
   var unlocked = c.skillPointsUnlocked || false;
-  if(c.isNPC){
+  if(!canEdit){
+    unlocked = false;
+  } else if(c.isNPC){
     unlocked = true;
   }
   
   var banner = '';
-  if(isGM() && !c.isNPC){
+  if(!canEdit && currentUser){
+    banner = '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni asignar puntos de habilidad en esta ficha.</span>'+
+    '</div>';
+  } else if(isGM() && !c.isNPC){
     banner = '<div class="skill-pool-banner">'+
       '<span>Puntos de mejora disponibles: <b>'+num(c.skillPoints,0)+'</b></span>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
@@ -211,9 +227,7 @@ function tplHabilidades(c){
         '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>'+
       '</div>'+
     '</div>';
-  }
-  
-  if(c.isNPC && isGM()){
+  } else if(c.isNPC && isGM()){
     banner = '<div class="skill-pool-banner">'+
       '<span>NPC - Puntos disponibles: <b>'+num(c.skillPoints,0)+'</b>. Habilidades editables.</span>'+
       '<button class="btn-solid-gold" data-action="gm-add-skill-point">+1 Pto (GM)</button>'+
@@ -224,12 +238,12 @@ function tplHabilidades(c){
   ATTRS.forEach(function(a){
     html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
     html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
-    groups[a].forEach(function(s){ html += skillRowHtml(s, c, unlocked); });
+    groups[a].forEach(function(s){ html += skillRowHtml(s, c, unlocked, canEdit); });
     html += '</div>';
   });
   html += '<div class="attr-group"><div class="attr-group-title">Híbridas</div>';
   html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
-  hybrids.forEach(function(s){ html += skillRowHtml(s, c, unlocked); });
+  hybrids.forEach(function(s){ html += skillRowHtml(s, c, unlocked, canEdit); });
   html += '</div>';
 
   if(c.customSkills && c.customSkills.length){
@@ -240,9 +254,9 @@ function tplHabilidades(c){
       if(!c.skillProgress) c.skillProgress = {};
       var prog = num(c.skillProgress[cs.id], 0);
       var costNeeded = bonusVal + 1;
-      var canSub = prog > 0;
+      var canSub = canEdit && prog > 0;
       var canAdd = false;
-      if(bonusVal > 0 && bonusVal < 8){
+      if(canEdit && bonusVal > 0 && bonusVal < 8){
         if(c.isNPC){
           canAdd = num(c.skillPoints,0) >= 1;
         } else {
@@ -281,7 +295,7 @@ function tplHabilidades(c){
   return html;
 }
 
-function skillRowHtml(s, c, unlocked){
+function skillRowHtml(s, c, unlocked, canEdit){
   var base = skillBase(s,c);
   var total = skillTotal(s,c);
   var bonusVal = num(c.skillBonus ? c.skillBonus[s.id] : 0, 0);
@@ -292,14 +306,14 @@ function skillRowHtml(s, c, unlocked){
   var hybridSel = "";
   if(s.attr==="hybrid"){
     var chosen = (c.skillHybrid && c.skillHybrid[s.id]) || s.hybridOptions[0];
-    hybridSel = '<div><select class="skill-hybrid-select" data-bind="skillHybrid.'+s.id+'" aria-label="Atributo para '+esc(s.name)+'">'+
+    hybridSel = '<div><select class="skill-hybrid-select" data-bind="skillHybrid.'+s.id+'" aria-label="Atributo para '+esc(s.name)+'" '+(canEdit?'':'disabled')+'>'+
       s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+(ATTR_LABELS[o]?ATTR_LABELS[o].slice(0,3):o)+'</option>';}).join('')+
       '</select></div>';
   }
 
-  var canSub = prog > 0;
+  var canSub = canEdit && prog > 0;
   var canAdd = false;
-  if(bonusVal > 0 && bonusVal < 8){
+  if(canEdit && bonusVal > 0 && bonusVal < 8){
     if(c.isNPC){
       canAdd = num(c.skillPoints,0) >= 1;
     } else {
@@ -375,8 +389,27 @@ function tplEntrenamiento(c){
       var points = num(t.points, 0);
       var rolls = t.rolls || [];
       var isQuantifiable = (catId === "combat" || catId === "skill" || catId === "spell_summon");
-      var targetGoal = num(t.targetGoal, 20);
-      var progressPct = clamp(Math.round((Math.max(0, points) / targetGoal) * 100), 0, 100);
+      var targetGoal = num(t.targetGoal, 100);
+      var isCompleted = targetGoal > 0 && points >= targetGoal;
+      var progressPct = targetGoal > 0 ? clamp(Math.round((Math.max(0, points) / targetGoal) * 100), 0, 100) : 0;
+
+      // Hito exclusivo del Máster (Puntos meta ocultos para jugadores)
+      var gmMilestoneHtml = '';
+      if(isGM()){
+        gmMilestoneHtml = '<div class="tr-gm-milestone-box">' +
+          '<div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;">' +
+            '<span style="color:var(--gold-light);font-weight:700;">👑 Hito del Máster (Puntos Meta):</span>' +
+            '<input type="number" min="1" step="5" data-action="set-training-goal" data-id="' + t.id + '" value="' + targetGoal + '" title="Puntos para completar este hito (Invisible para jugadores)" style="width:60px;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:3px 6px;color:var(--gold-light);font-family:var(--font-mono);font-weight:700;font-size:0.82rem;text-align:center;">' +
+            '<span style="color:var(--ink-faint);font-size:0.7rem;">pts meta (Oculto a jugadores)</span>' +
+          '</div>' +
+          '<div style="font-size:0.72rem;display:flex;align-items:center;gap:6px;">' +
+            (isCompleted
+              ? '<span style="color:#4ADE80;font-weight:700;background:rgba(46,139,87,0.25);border:1px solid rgba(74,222,128,0.4);padding:2px 8px;border-radius:4px;">🏆 ¡Hito alcanzado! (' + points + ' / ' + targetGoal + ' pts)</span>'
+              : '<span style="color:var(--gold-light);font-family:var(--font-mono);font-weight:600;">Progreso real: ' + points + ' / ' + targetGoal + ' pts (' + progressPct + '%)</span>'
+            ) +
+          '</div>' +
+        '</div>';
+      }
 
       // Selector Secundario según categoría
       var secondaryHtml = '';
@@ -425,19 +458,40 @@ function tplEntrenamiento(c){
         '</div>';
       }
 
-      // Barra de progreso visual sutil (conservando la intriga)
+      // Barra de progreso visual (secreta para jugadores, completa para Máster)
       var progressHtml = '';
       if(isQuantifiable){
-        var statusNote = points >= targetGoal ? '¡Meta casi completada / Lista para desbloquear!' : 'Progresando hacia el hito...';
-        progressHtml = '<div class="tr-progress-container" style="margin:6px 0 8px;">' +
-          '<div class="tr-progress-track" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;height:7px;overflow:hidden;position:relative;" title="Progreso de esfuerzo acumulado">' +
-            '<div class="tr-progress-fill" style="background:linear-gradient(90deg, var(--gold), var(--teal-light));height:100%;border-radius:5px;width:' + progressPct + '%;"></div>' +
-          '</div>' +
-          '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;">' +
-            '<span>' + statusNote + '</span>' +
-            '<span style="color:var(--gold-light);font-weight:600;"><b>' + (points > 0 ? '+' + points : points) + ' pts</b> acumulados</span>' +
-          '</div>' +
-        '</div>';
+        if(isGM()){
+          progressHtml = '<div class="tr-progress-container" style="margin:6px 0 8px;">' +
+            '<div class="tr-progress-track" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;height:8px;overflow:hidden;position:relative;" title="Progreso hacia la meta del Máster">' +
+              '<div class="tr-progress-fill" style="background:linear-gradient(90deg, var(--gold), var(--teal-light));height:100%;border-radius:5px;width:' + progressPct + '%;"></div>' +
+            '</div>' +
+            '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;">' +
+              '<span>' + (isCompleted ? '🏆 ¡Hito completado! Listo para otorgar recompensa.' : 'Progreso hacia el hito del Máster...') + '</span>' +
+              '<span style="color:var(--gold-light);font-weight:600;"><b>' + points + ' / ' + targetGoal + ' pts</b> (' + progressPct + '%)</span>' +
+            '</div>' +
+          '</div>';
+        } else {
+          if(isCompleted){
+            progressHtml = '<div class="tr-player-complete-box">' +
+              '<div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#4ADE80;font-weight:700;">' +
+                '<span>✨ ¡Hito de Entrenamiento Completado!</span>' +
+                '<span style="font-weight:400;color:var(--ink-dim);font-size:0.72rem;">Has alcanzado suficiente dominio. Habla con el Máster para recibir tu mejora.</span>' +
+              '</div>' +
+              '<span style="font-size:0.78rem;color:var(--gold-light);font-weight:700;font-family:var(--font-mono);flex:none;">' + points + ' pts acumulados</span>' +
+            '</div>';
+          } else {
+            progressHtml = '<div class="tr-progress-container" style="margin:6px 0 8px;">' +
+              '<div class="tr-progress-track" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;height:7px;overflow:hidden;position:relative;" title="Entrenamiento en progreso">' +
+                '<div class="tr-progress-fill" style="background:linear-gradient(90deg, var(--gold), var(--teal-light));height:100%;border-radius:5px;width:' + Math.min(100, Math.max(8, points * 2)) + '%;opacity:0.85;"></div>' +
+              '</div>' +
+              '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;">' +
+                '<span>⏳ Entrenamiento en progreso... (Acumulando puntos de esfuerzo)</span>' +
+                '<span style="color:var(--gold-light);font-weight:600;"><b>' + (points > 0 ? '+' + points : points) + ' pts</b> acumulados</span>' +
+              '</div>' +
+            '</div>';
+          }
+        }
       }
 
       // Historial chips
@@ -494,6 +548,9 @@ function tplEntrenamiento(c){
           '</div>' +
         '</div>' +
 
+        // Fila 2.5: Hito Secreto del Máster (Solo visible y configurable por el GM)
+        gmMilestoneHtml +
+
         // Fila 3: Barra de progreso sutil (si cuantificable)
         progressHtml +
 
@@ -533,6 +590,11 @@ function tplCombate(c){
   var canEdit = canEditChar(c);
 
   var buffsHtml = '';
+  if(!canEdit && currentUser){
+    buffsHtml += '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar combate, buffs, armas ni armaduras en esta ficha.</span>'+
+    '</div>';
+  }
 
   // 1. Buffs y Debuffs Asignados al Personaje
   buffsHtml += '<div class="assigned-buffs-block">';
@@ -638,13 +700,13 @@ function tplCombate(c){
   var activeSpells = (c.spells||[]).filter(function(sp){ return sp.active; });
   if(activeSpells.length > 0){
     buffsHtml += '<div style="margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;">'+
-      '<div style="font-size:.65rem;color:var(--teal-light);text-transform:uppercase;margin-bottom:5px;font-weight:700;">✨ Magias y Hechizos Activos (toca ✕ para retirar carga):</div>';
+      '<div style="font-size:.65rem;color:var(--teal-light);text-transform:uppercase;margin-bottom:5px;font-weight:700;">✨ Magias y Hechizos Activos'+(canEdit ? ' (toca ✕ para retirar carga)' : '')+':</div>';
     activeSpells.forEach(function(asp){
       var stacks = asp.activeStacks || 1;
       var statNote = (asp.statAttr && asp.statMod) ? ' ('+asp.statMod+' a '+asp.statAttr+(stacks>1?' x'+stacks:'')+')' : (stacks>1?' (x'+stacks+')':'');
       buffsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:rgba(61,110,96,0.15);border:1px solid var(--teal-light);border-radius:5px;margin-bottom:4px;">'+
         '<span style="font-size:.75rem;color:var(--teal-light);">✨ '+esc(asp.name || "Hechizo")+(stacks>1?' <b>(Cargas: '+stacks+')</b>':'')+statNote+'</span>'+
-        '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Quitar carga de magia" style="min-width:28px;min-height:28px;width:28px;height:28px;" title="Quitar 1 carga">✕</button>'+
+        (canEdit ? '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Quitar carga de magia" style="min-width:28px;min-height:28px;width:28px;height:28px;" title="Quitar 1 carga">✕</button>' : '')+
       '</div>';
     });
     buffsHtml += '</div>';
@@ -655,12 +717,12 @@ function tplCombate(c){
   if(c.customBuffs && c.customBuffs.length){
     c.customBuffs.forEach(function(cbuff){
       html += '<div class="list-row text-row">'+
-        '<input type="text" placeholder="Efecto de estado" data-bind="customBuffs.'+cbuff.id+'.name" value="'+esc(cbuff.name)+'">'+
-        (canEditChar(c) ? '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">✕</button>' : '')+
+        '<input type="text" placeholder="Efecto de estado" data-bind="customBuffs.'+cbuff.id+'.name" value="'+esc(cbuff.name)+'" '+(canEdit?'':'readonly')+'>'+
+        (canEdit ? '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">✕</button>' : '')+
       '</div>';
     });
   }
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-custom-buff">+ Añadir buff temporal</button>';
   }
   html += '</div>';
@@ -692,7 +754,7 @@ function tplCombate(c){
     }
 
     html += '<div class="list-row weapons-row'+(isBlocked?' weapon-row-blocked':'')+'" style="grid-template-columns:1fr 36px 36px;">'+
-      '<select data-action="select-weapon-catalog" data-id="'+w.id+'" aria-label="Seleccionar arma">'+
+      '<select data-action="select-weapon-catalog" data-id="'+w.id+'" aria-label="Seleccionar arma" '+(canEdit?'':'disabled')+'>'+
         '<option value="">-- Seleccionar Arma del Compendio --</option>'+
         catalog.map(function(catItem){
           var isLockedOpt = catItem.visible === false;
@@ -703,11 +765,11 @@ function tplCombate(c){
         ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
         : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño" aria-label="Tirar daño">&#127922;</button>'
       )+
-      (canEditChar(c) ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
+      (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
     '</div>'+
     '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
   });
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma al equipo</button>';
   }
   html += '</div>';
@@ -715,13 +777,13 @@ function tplCombate(c){
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Armaduras</span></div>';
   (c.armors||[]).forEach(function(a){
     html += '<div class="list-row armor-row">'+
-      '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura">'+
-      '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción">'+
-      '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo">'+
-      (canEditChar(c) ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
+      '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura" '+(canEdit?'':'readonly')+'>'+
+      '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción" '+(canEdit?'':'readonly')+'>'+
+      '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo" '+(canEdit?'':'readonly')+'>'+
+      (canEdit ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
     '</div>';
   });
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-armor">+ Añadir armadura</button>';
   }
   html += '</div>';
@@ -732,11 +794,12 @@ function tplCombate(c){
 
 function combatStat(label,bind,val,rollable){
   var c = activeChar();
+  var canEdit = canEditChar(c);
   var eff = getEffectiveCombatStat(bind, c);
   var diff = eff - num(val, 0);
   var diffBadge = diff !== 0 ? '<span class="stat-eff-tag '+(diff>0?'pos':'neg')+'" title="Valor efectivo">'+(diff>0?'+'+diff:diff)+' (Total: '+eff+')</span>' : '';
   return '<div class="combat-stat"><label>'+esc(label)+diffBadge+'</label>'+
-    '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'">'+
+    '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'" '+(canEdit?'':'readonly')+'>'+
     (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa">&#127922;</button>':'')+
   '</div>';
 }
@@ -761,8 +824,15 @@ function renderSpellStatOptions(curVal){
 }
 
 function tplMagia(c){
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Grimorio y Artes Mágicas</span></div>'+
-    '<div class="field" style="margin-bottom:12px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'" placeholder="Ej: Piroclástica, Nigromancia, Sanación..."></div>';
+  var canEdit = canEditChar(c);
+  var html = '';
+  if(!canEdit && currentUser){
+    html += '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes lanzar hechizos, gastar maná ni modificar el grimorio en esta ficha.</span>'+
+    '</div>';
+  }
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Grimorio y Artes Mágicas</span></div>'+
+    '<div class="field" style="margin-bottom:12px;"><label>Tipo de Magia</label><input type="text" data-bind="magiaTipo" value="'+esc(c.magiaTipo)+'" placeholder="Ej: Piroclástica, Nigromancia, Sanación..." '+(canEdit?'':'readonly')+'></div>';
 
   if(!c.spells || !c.spells.length){
     html += '<div style="font-size:.82rem;color:var(--ink-faint);font-style:italic;padding:8px 2px;">Sin hechizos conocidos en el grimorio.</div>';
@@ -776,38 +846,38 @@ function tplMagia(c){
 
       html += '<div class="spell-card'+(isActive?' active-spell':'')+'">'+
         '<div class="spell-card-header">'+
-          '<input type="text" class="spell-name-input" placeholder="Nombre del Hechizo" data-bind="spells.'+s.id+'.name" value="'+esc(s.name)+'">'+
+          '<input type="text" class="spell-name-input" placeholder="Nombre del Hechizo" data-bind="spells.'+s.id+'.name" value="'+esc(s.name)+'" '+(canEdit?'':'readonly')+'>'+
           '<div class="spell-badges">'+
             activeBadge+
             statBadge+
-            (isActive ?
+            (canEdit ? (isActive ?
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'" title="Lanzar de nuevo y superponer">+ Superponer (-'+num(s.coste, 1)+' Maná)</button>'+
               '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="'+s.id+'" title="Quitar una carga o desactivar">✕ Quitar Carga ('+stacks+')</button>' :
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="'+s.id+'">⚡ Activar (-'+num(s.coste, 1)+' Maná)</button>'
-            )+
-            (canEditChar(c) ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
+            ) : '')+
+            (canEdit ? '<button class="row-del" data-action="del-spell" data-id="'+s.id+'" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '')+
           '</div>'+
         '</div>'+
         '<div class="spell-grid">'+
-          '<div class="creature-field"><label>Coste (Maná)</label><input type="number" min="0" data-bind="spells.'+s.id+'.coste" value="'+num(s.coste, 1)+'"></div>'+
-          '<div class="creature-field"><label>Alcance / Rango</label><input type="text" placeholder="Melé, 30m, Personal..." data-bind="spells.'+s.id+'.rango" value="'+esc(s.rango)+'"></div>'+
+          '<div class="creature-field"><label>Coste (Maná)</label><input type="number" min="0" data-bind="spells.'+s.id+'.coste" value="'+num(s.coste, 1)+'" '+(canEdit?'':'readonly')+'></div>'+
+          '<div class="creature-field"><label>Alcance / Rango</label><input type="text" placeholder="Melé, 30m, Personal..." data-bind="spells.'+s.id+'.rango" value="'+esc(s.rango)+'" '+(canEdit?'':'readonly')+'></div>'+
         '</div>'+
         '<div class="spell-grid" style="margin-top:6px;">'+
           '<div class="creature-field"><label>Stat que Afecta (Opcional)</label>'+
-            '<select style="font-size:.74rem;background:var(--bg-card);padding:3px 6px;border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);" data-bind="spells.'+s.id+'.statAttr">'+
+            '<select style="font-size:.74rem;background:var(--bg-card);padding:3px 6px;border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);" data-bind="spells.'+s.id+'.statAttr" '+(canEdit?'':'disabled')+'>'+
               renderSpellStatOptions(s.statAttr)+
             '</select>'+
           '</div>'+
-          '<div class="creature-field"><label>Modificador de Stat</label><input type="text" placeholder="+2, -1, +1d4..." data-bind="spells.'+s.id+'.statMod" value="'+esc(s.statMod)+'"></div>'+
+          '<div class="creature-field"><label>Modificador de Stat</label><input type="text" placeholder="+2, -1, +1d4..." data-bind="spells.'+s.id+'.statMod" value="'+esc(s.statMod)+'" '+(canEdit?'':'readonly')+'></div>'+
         '</div>'+
         '<div class="creature-field" style="margin-top:6px;"><label>Efecto y Descripción Narrativa</label>'+
-          '<textarea class="spell-notes" placeholder="Efectos mágicos, reglas específicas o descripción..." data-bind="spells.'+s.id+'.efecto">'+esc(s.efecto)+'</textarea>'+
+          '<textarea class="spell-notes" placeholder="Efectos mágicos, reglas específicas o descripción..." data-bind="spells.'+s.id+'.efecto" '+(canEdit?'':'readonly')+'>'+esc(s.efecto)+'</textarea>'+
         '</div>'+
       '</div>';
     });
   }
 
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-spell">+ Añadir Hechizo al Grimorio</button>';
   }
   html += '</div>';
@@ -815,12 +885,12 @@ function tplMagia(c){
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Piedras Mágicas</span></div>';
   (c.stones||[]).forEach(function(s){
     html += '<div class="list-row stone-row">'+
-      '<input type="text" placeholder="Color" data-bind="stones.'+s.id+'.color" value="'+esc(s.color)+'">'+
-      '<input type="text" placeholder="Efecto" data-bind="stones.'+s.id+'.efecto" value="'+esc(s.efecto)+'">'+
-      (canEditChar(c) ? '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>' : '')+
+      '<input type="text" placeholder="Color" data-bind="stones.'+s.id+'.color" value="'+esc(s.color)+'" '+(canEdit?'':'readonly')+'>'+
+      '<input type="text" placeholder="Efecto" data-bind="stones.'+s.id+'.efecto" value="'+esc(s.efecto)+'" '+(canEdit?'':'readonly')+'>'+
+      (canEdit ? '<button class="row-del" data-action="del-stone" data-id="'+s.id+'" aria-label="Eliminar piedra">✕</button>' : '')+
     '</div>';
   });
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-stone">+ Añadir piedra</button>';
   }
   html += '</div>';
@@ -828,30 +898,37 @@ function tplMagia(c){
 }
 
 function tplAlquimia(c){
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>';
+  var canEdit = canEditChar(c);
+  var html = '';
+  if(!canEdit && currentUser){
+    html += '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar fórmulas ni venenos en esta ficha.</span>'+
+    '</div>';
+  }
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>';
   (c.poisons||[]).forEach(function(p){
     html += '<div class="creature-card">'+
       '<div class="creature-card-header">'+
-        '<input type="text" class="creature-name-input" data-bind="poisons.'+p.id+'.name" value="'+esc(p.name)+'" placeholder="Nombre del veneno">'+
+        '<input type="text" class="creature-name-input" data-bind="poisons.'+p.id+'.name" value="'+esc(p.name)+'" placeholder="Nombre del veneno" '+(canEdit?'':'readonly')+'>'+
         '<div style="display:flex;align-items:center;gap:6px;">'+
           '<span style="font-size:.65rem;color:var(--ink-faint);">Dosis:</span>'+
-          '<input type="number" style="width:40px;text-align:center;background:var(--bg-card);padding:2px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'">'+
-          (canEditChar(c) ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
+          '<input type="number" style="width:40px;text-align:center;background:var(--bg-card);padding:2px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'" '+(canEdit?'':'readonly')+'>'+
+          (canEdit ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
         '</div>'+
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:6px;">'+
-        '<div class="creature-field"><label style="color:#E74C3C;">Efecto en Enemigos</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoEnemigo">'+esc(p.efectoEnemigo)+'</textarea></div>'+
-        '<div class="creature-field"><label style="color:var(--teal-light);">Efecto Propio (Buff)</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoCherk">'+esc(p.efectoCherk)+'</textarea></div>'+
+        '<div class="creature-field"><label style="color:#E74C3C;">Efecto en Enemigos</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoEnemigo" '+(canEdit?'':'readonly')+'>'+esc(p.efectoEnemigo)+'</textarea></div>'+
+        '<div class="creature-field"><label style="color:var(--teal-light);">Efecto Propio (Buff)</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoCherk" '+(canEdit?'':'readonly')+'>'+esc(p.efectoCherk)+'</textarea></div>'+
       '</div>'+
       '<div style="margin-top:6px;">'+
-        '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 6px;" data-bind="poisons.'+p.id+'.estado">'+
+        '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 6px;" data-bind="poisons.'+p.id+'.estado" '+(canEdit?'':'disabled')+'>'+
           '<option value="descubierto" '+(p.estado==='descubierto'?'selected':'')+'>Descubierto</option>'+
           '<option value="investigando" '+(p.estado==='investigando'?'selected':'')+'>Investigando...</option>'+
         '</select>'+
       '</div>'+
       '</div>';
   });
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-poison">+ Añadir veneno / fórmula</button>';
   }
   html += '</div>';
@@ -864,11 +941,18 @@ function tplInventario(c){
   c.inventory.forEach(function(it){
     if(!it.category) it.category = "Miscelánea";
   });
+  var canEdit = canEditChar(c);
 
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
+  var html = '';
+  if(!canEdit && currentUser){
+    html += '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar el dinero ni los objetos del inventario en esta ficha.</span>'+
+    '</div>';
+  }
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
     '<div class="money-row">'+
-      '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'"></div>'+
-      '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'"></div>'+
+      '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'" '+(canEdit?'':'readonly')+'></div>'+
+      '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'" '+(canEdit?'':'readonly')+'></div>'+
     '</div></div>';
 
   var currentCat = state.invCategoryFilter || "all";
@@ -916,19 +1000,19 @@ function tplInventario(c){
     filteredItems.forEach(function(it){
       var itCat = it.category || "Miscelánea";
       html += '<div class="list-row inv-row">'+
-        '<input type="text" placeholder="Nombre del objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'">'+
-        '<select class="inv-cat-select" data-bind="inventory.'+it.id+'.category" aria-label="Categoría">'+
+        '<input type="text" placeholder="Nombre del objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" '+(canEdit?'':'readonly')+'>'+
+        '<select class="inv-cat-select" data-bind="inventory.'+it.id+'.category" aria-label="Categoría" '+(canEdit?'':'disabled')+'>'+
           categories.map(function(cat){
             return '<option value="'+cat+'" '+(itCat===cat?'selected':'')+'>'+cat+'</option>';
           }).join('')+
         '</select>'+
-        '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'">'+
-        (canEditChar(c) ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
+        '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'" '+(canEdit?'':'readonly')+'>'+
+        (canEdit ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
       '</div>';
     });
   }
 
-  if(canEditChar(c)){
+  if(canEdit){
     var addBtnLabel = (currentCat !== "all") ? ('+ Añadir objeto a ' + currentCat) : '+ Añadir objeto';
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-inventory">'+addBtnLabel+'</button>';
   }
@@ -1012,7 +1096,13 @@ function serializeSummonRolls(items){
 function tplInvocaciones(c){
   c.summons = c.summons || [];
   var canEdit = canEditChar(c);
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
+  var html = '';
+  if(!canEdit && currentUser){
+    html += '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni gestionar invocaciones en esta ficha.</span>'+
+    '</div>';
+  }
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
 
   if((c.summons||[]).length === 0){
     html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:16px 8px;font-style:italic;">No hay invocaciones ni familiares registrados.</div>';
@@ -1095,19 +1185,19 @@ function tplInvocaciones(c){
             (canEdit ? ('<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>') : '') +
           '</div>' +
           '<div class="creature-grid summon-stats-grid">' +
-            creatureField("Vida", "summons." + s.id + ".vida", s.vida) +
-            creatureField("Defensa", "summons." + s.id + ".defensa", s.defensa) +
-            creatureField("Absorción", "summons." + s.id + ".absorcion", s.absorcion) +
-            creatureField("Daño", "summons." + s.id + ".dano", s.dano) +
+            creatureField("Vida", "summons." + s.id + ".vida", s.vida, !canEdit) +
+            creatureField("Defensa", "summons." + s.id + ".defensa", s.defensa, !canEdit) +
+            creatureField("Absorción", "summons." + s.id + ".absorcion", s.absorcion, !canEdit) +
+            creatureField("Daño", "summons." + s.id + ".dano", s.dano, !canEdit) +
             '<div class="creature-field beast-mobility-cell">' +
               '<label>Movilidad (Casillas)</label>' +
-              '<button type="button" class="beast-mov-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Haz clic para seleccionar o consultar las casillas de movimiento">' +
+              '<button type="button" class="beast-mov-btn" ' + (canEdit ? 'data-action="pick-summon-mov" data-id="' + s.id + '"' : 'disabled style="cursor:default;"') + ' title="Casillas de movimiento">' +
                 '<span class="beast-mov-label">🏃 <strong>' + esc(s.casillasMovimiento || (s.movilidad ? (s.movilidad.match(/\d+/)?s.movilidad.match(/\d+/)[0]:'6') : '6')) + '</strong> casillas</span>' +
                 (s.movilidad && s.movilidad.includes('(') ? (' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>') : '') +
-                '<span class="beast-mov-chevron">▾</span>' +
+                (canEdit ? '<span class="beast-mov-chevron">▾</span>' : '') +
               '</button>' +
             '</div>' +
-            creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia) +
+            creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia, !canEdit) +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -1162,23 +1252,30 @@ function tplInvocaciones(c){
 }
 
 function tplExtra(c){
+  var canEdit = canEditChar(c);
+  var html = '';
+  if(!canEdit && currentUser){
+    html += '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar pasivas ni la tabla de diosas en esta ficha.</span>'+
+    '</div>';
+  }
   c.passivesNeg = c.passivesNeg || [];
   c.passivesPos = c.passivesPos || [];
   c.goddessTable = c.goddessTable || [];
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Negativas</span></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Negativas</span></div>';
   (c.passivesNeg||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'">'+(canEditChar(c)?'<button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
   });
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passiveNeg">+ Añadir pasiva negativa</button>';
   }
   html += '</div>';
 
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Positivas</span></div>';
   (c.passivesPos||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'">'+(canEditChar(c)?'<button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
   });
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passivePos">+ Añadir pasiva positiva</button>';
   }
   html += '</div>';
@@ -1186,13 +1283,13 @@ function tplExtra(c){
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Tabla de Diosas</span></div>';
   (c.goddessTable||[]).forEach(function(g){
     html += '<div class="list-row god-row">'+
-      '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'">'+
-      '<input type="text" placeholder="Gustos" data-bind="goddessTable.'+g.id+'.gustos" value="'+esc(g.gustos)+'">'+
-      '<input type="text" placeholder="Disgustos" data-bind="goddessTable.'+g.id+'.disgustos" value="'+esc(g.disgustos)+'">'+
-      (canEditChar(c)?'<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">✕</button>':'')+
+      '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'" '+(canEdit?'':'readonly')+'>'+
+      '<input type="text" placeholder="Gustos" data-bind="goddessTable.'+g.id+'.gustos" value="'+esc(g.gustos)+'" '+(canEdit?'':'readonly')+'>'+
+      '<input type="text" placeholder="Disgustos" data-bind="goddessTable.'+g.id+'.disgustos" value="'+esc(g.disgustos)+'" '+(canEdit?'':'readonly')+'>'+
+      (canEdit?'<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">✕</button>':'')+
     '</div>';
   });
-  if(canEditChar(c)){
+  if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-goddess">+ Añadir diosa</button>';
   }
   html += '</div>';

@@ -1,5 +1,5 @@
-function creatureField(label,bind,val){
-  return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-bind="'+bind+'" value="'+esc(val)+'"></div>';
+function creatureField(label,bind,val,readonly){
+  return '<div class="creature-field"><label>'+esc(label)+'</label><input type="text" data-bind="'+bind+'" value="'+esc(val)+'"'+(readonly?' readonly':'')+'></div>';
 }
 
 function tplBestiario(s){

@@ -2536,5 +2536,94 @@ textarea,
   color: var(--gold-light);
 }
 
+/* Universal Spectator Banner */
+.spectator-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(20, 24, 33, 0.95), rgba(15, 18, 26, 0.9));
+  border: 1px solid rgba(180, 130, 40, 0.4);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  margin-bottom: 12px;
+  color: var(--gold-light);
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.6);
+}
 
+/* Training GM Milestone & Player Complete Boxes */
+.tr-gm-milestone-box {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  background: rgba(180, 130, 40, 0.12);
+  border: 1px dashed var(--gold);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
+.tr-player-complete-box {
+  margin: 8px 0;
+  padding: 10px 14px;
+  background: rgba(46, 139, 87, 0.2);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tr-mini-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.tr-mini-chip.crit {
+  background: rgba(74, 222, 128, 0.18);
+  border-color: #4ADE80;
+  color: #4ADE80;
+}
+
+.tr-mini-chip.fumble {
+  background: rgba(232, 129, 120, 0.18);
+  border-color: var(--danger);
+  color: #E88178;
+}
+
+.tr-mini-chip.great {
+  background: rgba(180, 130, 40, 0.2);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+.tr-chip-del {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  cursor: pointer;
+  padding: 0 2px;
+  margin-left: 2px;
+  line-height: 1;
+}
+.tr-chip-del:hover {
+  color: var(--danger);
+}

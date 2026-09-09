@@ -950,6 +950,7 @@ function handleClick(e){
     return;
   }
   if(action==="cast-spell"){
+    if(!c || !canEditChar(c)) return;
     var spId = btn.getAttribute("data-id");
     var sp = (c.spells||[]).find(function(s){ return s.id === spId; });
     if(!sp) return;
@@ -988,6 +989,7 @@ function handleClick(e){
     return;
   }
   if(action==="toggle-spell-active"){
+    if(!c || !canEditChar(c)) return;
     var spId2 = btn.getAttribute("data-id");
     var sp2 = (c.spells||[]).find(function(s){ return s.id === spId2; });
     if(sp2){
@@ -1113,6 +1115,7 @@ function handleClick(e){
     return;
   }
   if(action==="toggle-summon-skills-edit"){
+    if(!c || !canEditChar(c)) return;
     var smId = btn.getAttribute("data-id");
     state._summonEditingSkills = state._summonEditingSkills || {};
     state._summonEditingSkills[smId] = !state._summonEditingSkills[smId];
@@ -1590,6 +1593,25 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="set-training-goal"){
+    if(!isGM() || !c) return;
+    if(e.type !== "change" && e.type !== "input") return;
+    var trId = btn.getAttribute("data-id");
+    var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
+    if(tr){
+      var newGoal = Math.max(1, parseInt(btn.value, 10) || 100);
+      tr.targetGoal = newGoal;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id);
+      saveState(false);
+      pushCharacterById(c.id);
+      if(e.type === "change"){
+        renderTab();
+        showToast("Hito secreto actualizado a " + newGoal + " puntos", "info");
+      }
+    }
+    return;
+  }
   if(action==="toggle-bestiary-visibility"){
     if(!isGM()) return;
     var bid = btn.getAttribute("data-id");
@@ -1659,6 +1681,7 @@ function handleClick(e){
     return;
   }
   if(action==="pick-summon-mov"){
+    if(!c || !canEditChar(c)) return;
     var sid = btn.getAttribute("data-id");
     openBeastMobilityModal(sid, true);
     return;
@@ -2130,8 +2153,13 @@ function handleClick(e){
   if(action==="open-char-modal"){ openCharModal(); return; }
   if(action==="open-data-modal"){ openDataModal(); return; }
   if(action==="open-free-dice"){ openDiceModal(); return; }
-  if(action==="upload-portrait"){ document.getElementById("portraitFileInput").click(); return; }
+  if(action==="upload-portrait"){
+    if(!c || !canEditChar(c)) return;
+    document.getElementById("portraitFileInput").click();
+    return;
+  }
   if(action==="url-portrait"){
+    if(!c || !canEditChar(c)) return;
     var curP = c.portrait || "";
     var uLink = prompt("Introduce el enlace de la foto (de GitHub, Imgur, web, etc.):", curP.startsWith("data:")?"":curP);
     if(uLink !== null){
@@ -2141,7 +2169,10 @@ function handleClick(e){
     }
     return;
   }
-  if(action==="remove-portrait"){ c.portrait=null; saveState(); renderTopbar(); renderTab(); return; }
+  if(action==="remove-portrait"){
+    if(!c || !canEditChar(c)) return;
+    c.portrait=null; saveState(); renderTopbar(); renderTab(); return;
+  }
   if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
   if(action==="reroll-last-dice"){ if(typeof lastRollFn==="function") lastRollFn(); return; }
 }
