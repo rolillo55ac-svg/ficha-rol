@@ -197,6 +197,9 @@ function formatBytes(bytes, decimals){
 function getLocalStorageUsage(){
   var totalBytes = 0;
   var count = 0;
+  var base64Count = 0;
+  var base64Bytes = 0;
+
   try {
     for(var key in localStorage){
       if(localStorage.hasOwnProperty(key)){
@@ -205,20 +208,199 @@ function getLocalStorageUsage(){
         count++;
       }
     }
+
+    if(typeof state !== "undefined" && state){
+      (state.characters||[]).forEach(function(c){
+        if(c.portrait && c.portrait.startsWith("data:")){ base64Count++; base64Bytes += c.portrait.length * 2; }
+      });
+      (state.maps||[]).forEach(function(m){
+        if(m.image && m.image.startsWith("data:")){ base64Count++; base64Bytes += m.image.length * 2; }
+      });
+      if(state.questMap && state.questMap.image && state.questMap.image.startsWith("data:")){
+        base64Count++; base64Bytes += state.questMap.image.length * 2;
+      }
+      (state.bestiary||[]).forEach(function(b){
+        if(b.image && b.image.startsWith("data:")){ base64Count++; base64Bytes += b.image.length * 2; }
+      });
+      (state.quests||[]).forEach(function(q){
+        if(q.image && q.image.startsWith("data:")){ base64Count++; base64Bytes += q.image.length * 2; }
+      });
+      (state.questClues||[]).forEach(function(cl){
+        if(cl.image && cl.image.startsWith("data:")){ base64Count++; base64Bytes += cl.image.length * 2; }
+      });
+    }
   } catch(e){}
-  var maxBytes = 5 * 1024 * 1024; // 5.0 MB estimado típico de navegador
+
+  // Límite estándar del navegador en UTF-16 (10 MB)
+  var maxBytes = 10 * 1024 * 1024;
+  if(totalBytes > maxBytes) maxBytes = totalBytes;
   var freeBytes = Math.max(0, maxBytes - totalBytes);
   var pct = Math.min(100, Math.round((totalBytes / maxBytes) * 1000) / 10);
+
   return {
     usedBytes: totalBytes,
     totalBytes: maxBytes,
     freeBytes: freeBytes,
     pct: pct,
     usedStr: formatBytes(totalBytes),
-    totalStr: "5.0 MB",
+    totalStr: formatBytes(maxBytes),
     freeStr: formatBytes(freeBytes),
-    count: count
+    count: count,
+    base64Count: base64Count,
+    base64Bytes: base64Bytes,
+    base64BytesStr: formatBytes(base64Bytes)
   };
+}
+
+function dataURItoBlob(dataURI){
+  try {
+    var parts = dataURI.split(',');
+    var byteString = atob(parts[1]);
+    var mimeString = parts[0].split(':')[1].split(';')[0];
+    var ab = new ArrayBuffer(byteString.length);
+    var ia = new Uint8Array(ab);
+    for(var i = 0; i < byteString.length; i++){
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  } catch(e){
+    console.error("Error convirtiendo dataURI a blob:", e);
+    return null;
+  }
+}
+
+async function migrateLocalImagesToSupabase(){
+  if(typeof supabaseClient === "undefined" || !supabaseClient || !supabaseClient.storage){
+    showToast("No hay conexión activa con Supabase Storage", "warning");
+    return;
+  }
+
+  var targets = [];
+  if(typeof state !== "undefined" && state){
+    (state.characters || []).forEach(function(c){
+      if(c.portrait && c.portrait.startsWith("data:image")){
+        targets.push({ type: "character", id: c.id, obj: c, field: "portrait", folder: "personajes", name: c.name || "personaje" });
+      }
+    });
+    (state.maps || []).forEach(function(m){
+      if(m.image && m.image.startsWith("data:image")){
+        targets.push({ type: "map", obj: m, field: "image", folder: "mapas", name: m.name || "mapa" });
+      }
+    });
+    if(state.questMap && state.questMap.image && state.questMap.image.startsWith("data:image")){
+      targets.push({ type: "questMap", obj: state.questMap, field: "image", folder: "mapas", name: state.questMap.name || "mapa_mision" });
+    }
+    (state.bestiary || []).forEach(function(b){
+      if(b.image && b.image.startsWith("data:image")){
+        targets.push({ type: "bestiary", obj: b, field: "image", folder: "bestiario", name: b.name || "criatura" });
+      }
+    });
+    (state.quests || []).forEach(function(q){
+      if(q.image && q.image.startsWith("data:image")){
+        targets.push({ type: "quest", obj: q, field: "image", folder: "misiones", name: q.title || "mision" });
+      }
+    });
+    (state.questClues || []).forEach(function(cl){
+      if(cl.image && cl.image.startsWith("data:image")){
+        targets.push({ type: "clue", obj: cl, field: "image", folder: "pistas", name: cl.title || "pista" });
+      }
+    });
+  }
+
+  // Limpiar también claves residuales de versiones viejas en localStorage
+  var cleanedKeys = 0;
+  var knownPrefixes = [STORAGE_KEY, "krysalis_active_", "krysalis_auth_", "krysalis_last_", "sb-", "supabase.auth."];
+  try {
+    for(var k in localStorage){
+      if(localStorage.hasOwnProperty(k)){
+        var isKnown = knownPrefixes.some(function(p){ return k.startsWith(p); });
+        if(!isKnown){
+          localStorage.removeItem(k);
+          cleanedKeys++;
+        }
+      }
+    }
+  } catch(errKey){}
+
+  if(targets.length === 0){
+    if(cleanedKeys > 0){
+      showToast("Se limpiaron " + cleanedKeys + " registros residuales. Memoria liberada.", "success");
+      saveState(false);
+      if(typeof updateStorageStatsUI === "function") updateStorageStatsUI(true);
+    } else {
+      showToast("No hay fotos pesadas en local pendientes de migrar.", "info");
+      if(typeof updateStorageStatsUI === "function") updateStorageStatsUI(true);
+    }
+    return;
+  }
+
+  showToast("Migrando " + targets.length + " imagen(es) a Supabase...", "info");
+
+  var migratedCount = 0;
+  for(var item of targets){
+    try {
+      var base64Data = item.obj[item.field];
+      var blob = dataURItoBlob(base64Data);
+      if(!blob) continue;
+
+      var cleanFolder = (item.folder || "general").replace(/[^a-zA-Z0-9_\-]/g, "");
+      var safeName = (item.name || "img").toLowerCase().replace(/[^a-zA-Z0-9_\-]/g, "_").slice(0, 30);
+      var filePath = cleanFolder + "/" + safeName + "_" + Date.now().toString(36) + ".jpg";
+
+      var res = await supabaseClient.storage.from('images').upload(filePath, blob, {
+        contentType: 'image/jpeg',
+        cacheControl: '3600',
+        upsert: true
+      });
+
+      if(!res.error){
+        var pubRes = supabaseClient.storage.from('images').getPublicUrl(filePath);
+        if(pubRes && pubRes.data && pubRes.data.publicUrl){
+          item.obj[item.field] = pubRes.data.publicUrl;
+          if(item.type === "character" && item.id){
+            markCharDirty(item.id, { portrait: pubRes.data.publicUrl });
+            if(typeof pushCharacterPatch === "function") pushCharacterPatch(item.id, { portrait: pubRes.data.publicUrl });
+          }
+          migratedCount++;
+        }
+      }
+    } catch(errItem){
+      console.warn("Error migrando imagen individual:", errItem);
+    }
+  }
+
+  saveState(true);
+  if(typeof pushSharedData === "function") pushSharedData();
+  if(typeof pushMapsData === "function") pushMapsData();
+  if(typeof renderTopbar === "function") renderTopbar();
+  if(typeof renderTab === "function") renderTab();
+
+  showToast("¡" + migratedCount + " imagen(es) migradas a Supabase! Espacio local liberado.", "success");
+  if(typeof updateStorageStatsUI === "function") updateStorageStatsUI(true);
+}
+
+function cleanOrphanStorage(){
+  var cleaned = 0;
+  var knownPrefixes = [STORAGE_KEY, "krysalis_active_", "krysalis_auth_", "krysalis_last_", "sb-", "supabase.auth."];
+  try {
+    for(var k in localStorage){
+      if(localStorage.hasOwnProperty(k)){
+        var isKnown = knownPrefixes.some(function(p){ return k.startsWith(p); });
+        if(!isKnown){
+          localStorage.removeItem(k);
+          cleaned++;
+        }
+      }
+    }
+  } catch(e){}
+
+  if(cleaned > 0){
+    showToast("Se eliminaron " + cleaned + " registros de versiones anteriores.", "success");
+    saveState(false);
+  } else {
+    showToast("No hay registros obsoletos en la memoria.", "info");
+  }
+  if(typeof updateStorageStatsUI === "function") updateStorageStatsUI(true);
 }
 
 async function getSupabaseStorageUsage(){

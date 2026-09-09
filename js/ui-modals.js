@@ -199,6 +199,17 @@ function openDataModal(){
           '<span class="storage-stat-free" id="localFreeText"><b>'+local.freeStr+'</b> libres</span>'+
         '</div>'+
         '<div class="storage-card-note">Caché del personaje y configuración en este dispositivo</div>'+
+        '<div id="localActionContainer">'+
+          (local.base64Count > 0 ?
+            '<div style="margin-top:4px;padding:6px 8px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:4px;display:flex;flex-direction:column;gap:5px;">'+
+              '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">⚠️ Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
+              '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
+            '</div>' :
+            '<div style="display:flex;justify-content:flex-end;margin-top:2px;">'+
+              '<button class="btn-compact" data-action="clean-orphan-storage" style="font-size:0.65rem;padding:2px 7px;color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">🧹 Limpiar caché residual</button>'+
+            '</div>'
+          )+
+        '</div>'+
       '</div>'+
       // Tarjeta Supabase Cloud
       '<div class="storage-card cloud">'+
@@ -252,6 +263,7 @@ async function updateStorageStatsUI(showToastFeedback){
       var localBarFill = document.getElementById("localBarFill");
       var localUsedText = document.getElementById("localUsedText");
       var localFreeText = document.getElementById("localFreeText");
+      var localAction = document.getElementById("localActionContainer");
 
       if(localPill){
         localPill.className = "storage-pill " + localPillClass;
@@ -263,6 +275,18 @@ async function updateStorageStatsUI(showToastFeedback){
       }
       if(localUsedText) localUsedText.innerHTML = "<b>" + local.usedStr + "</b> ocupados de " + local.totalStr;
       if(localFreeText) localFreeText.innerHTML = "<b>" + local.freeStr + "</b> libres";
+
+      if(localAction){
+        localAction.innerHTML = (local.base64Count > 0 ?
+          '<div style="margin-top:4px;padding:6px 8px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:4px;display:flex;flex-direction:column;gap:5px;">'+
+            '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">⚠️ Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
+            '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
+          '</div>' :
+          '<div style="display:flex;justify-content:flex-end;margin-top:2px;">'+
+            '<button class="btn-compact" data-action="clean-orphan-storage" style="font-size:0.65rem;padding:2px 7px;color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">🧹 Limpiar caché residual</button>'+
+          '</div>'
+        );
+      }
     }
 
     // 2. Recalcular Supabase
@@ -317,6 +341,8 @@ function modalClick(e){
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
+  if(action==="migrate-local-images"){ migrateLocalImagesToSupabase(); return; }
+  if(action==="clean-orphan-storage"){ cleanOrphanStorage(); return; }
   if(action==="pick-char"){
     if(document.activeElement && document.activeElement.matches("input, textarea, select")){
       try { document.activeElement.blur(); } catch(e){}
