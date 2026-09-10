@@ -731,7 +731,7 @@ function closeModals(){
 // ==============================================================================
 // SISTEMA AUTOMATIZADO DE REPORTES CON TRIAGE IA Y ALERTAS EN DISCORD
 // ==============================================================================
-var DEFAULT_DISCORD_WEBHOOK = "";
+var DEFAULT_DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1547672027035472003/8soKhpr6HxuSSvJDOhwsDxrhn5Sqgn8rRRPEpyxfQQDSYMnklfLOam6vO7sop4qMHcIM";
 var currentFeedbackCategory = "bug";
 var lastGeneratedReport = null;
 
