@@ -1,5 +1,5 @@
 /* ==========================================================================
-   KRYSALIS - SISTEMA DE DADOS 3D ESTILO BALDUR'S GATE 3 Y AUDIO D&D
+   KRYSALIS - MOTOR DE DADOS 3D REAL (THREE.JS) ESTILO BALDUR'S GATE 3
    ========================================================================== */
 
 var audioCtx = null;
@@ -15,13 +15,12 @@ function getAudioCtx(){
   return audioCtx;
 }
 
-/* --- MOTOR DE AUDIO PROCEDURAL D&D (SUAVE, ORGÁNICO, NO ESTRIDENTE) --- */
+/* --- MOTOR DE AUDIO PROCEDURAL D&D --- */
 
 function playBg3DiceRoll(){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
 
-  // 1. Fricción suave de rodadura en fieltro/cuero
   try {
     var bufferSize = Math.floor(ctx.sampleRate * 0.45);
     var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -44,7 +43,6 @@ function playBg3DiceRoll(){
     noise.start(now); noise.stop(now + 0.45);
   } catch(e){}
 
-  // 2. Traqueteo escalonado de caras de resina densa
   var taps = [0.02, 0.08, 0.15, 0.23, 0.31, 0.39];
   taps.forEach(function(dt, idx){
     var t = now + dt;
@@ -66,7 +64,6 @@ function playBg3DiceLand(){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
 
-  // Impacto grave sordo en bandeja de madera/cuero
   var thud = ctx.createOscillator();
   var tGain = ctx.createGain();
   thud.type = "sine";
@@ -78,7 +75,6 @@ function playBg3DiceLand(){
   thud.connect(tGain); tGain.connect(ctx.destination);
   thud.start(now); thud.stop(now + 0.2);
 
-  // Chasquido de contacto final
   var click = ctx.createOscillator();
   var cGain = ctx.createGain();
   click.type = "triangle";
@@ -94,7 +90,6 @@ function playBg3DiceLand(){
 function playBg3ModifierAdd(){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
-  // Campana cristalina etérea suave para la suma de bonificadores
   [880, 1320].forEach(function(f, idx){
     var osc = ctx.createOscillator();
     var gain = ctx.createGain();
@@ -111,7 +106,6 @@ function playBg3ModifierAdd(){
 function playBg3Crit(){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
-  // Fanfarria armónica celestial dorada (Acorde heroico pentatónico mayor)
   var notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
   notes.forEach(function(freq, i){
     var t = now + i * 0.045;
@@ -130,7 +124,6 @@ function playBg3Crit(){
 function playBg3Fumble(){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
-  // Campana de advertencia y resonancia oscura en piedra fría
   var osc = ctx.createOscillator();
   var gain = ctx.createGain();
   osc.type = "sawtooth";
@@ -200,7 +193,6 @@ function playBg3RuneActivate(){
   osc.start(now); osc.stop(now + 0.16);
 }
 
-/* Compatibilidad con código anterior */
 function playCupRattleAudio(){ playBg3DiceRoll(); }
 function playDiceDropAudio(){ playBg3DiceLand(); }
 function playDiceAudio(type){
@@ -209,215 +201,418 @@ function playDiceAudio(type){
   else { playBg3DiceRoll(); setTimeout(playBg3DiceLand, 380); }
 }
 
-/* --- GENERADOR DE DADOS 3D POLIÉDRICOS (ESTILO BALDUR'S GATE 3) --- */
+/* --- GEOMETRÍAS POLIÉDRICAS 3D --- */
+
+function createD10Geometry(radius){
+  if(typeof THREE === 'undefined') return null;
+  var H = radius * 1.35;
+  var h = radius * 0.32;
+  var R = radius * 0.95;
+  var north = new THREE.Vector3(0, H, 0);
+  var south = new THREE.Vector3(0, -H, 0);
+  var upper = [], lower = [];
+  for(var i = 0; i < 5; i++){
+    var aU = (i * 72) * Math.PI / 180;
+    upper.push(new THREE.Vector3(R * Math.cos(aU), h, R * Math.sin(aU)));
+    var aL = ((i * 72) + 36) * Math.PI / 180;
+    lower.push(new THREE.Vector3(R * Math.cos(aL), -h, R * Math.sin(aL)));
+  }
+  var positions = [];
+  for(var j = 0; j < 5; j++){
+    var uCurr = upper[j], uNext = upper[(j + 1) % 5], lCurr = lower[j];
+    positions.push(north.x, north.y, north.z, uCurr.x, uCurr.y, uCurr.z, lCurr.x, lCurr.y, lCurr.z);
+    positions.push(north.x, north.y, north.z, lCurr.x, lCurr.y, lCurr.z, uNext.x, uNext.y, uNext.z);
+  }
+  for(var k = 0; k < 5; k++){
+    var lC = lower[k], lN = lower[(k + 1) % 5], uN = upper[(k + 1) % 5];
+    positions.push(south.x, south.y, south.z, lC.x, lC.y, lC.z, uN.x, uN.y, uN.z);
+    positions.push(south.x, south.y, south.z, uN.x, uN.y, uN.z, lN.x, lN.y, lN.z);
+  }
+  var geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function getPolyhedralGeometry(sides){
+  if(typeof THREE === 'undefined') return null;
+  if(sides === 4) return new THREE.TetrahedronGeometry(1.65, 0);
+  if(sides === 6) return new THREE.BoxGeometry(1.85, 1.85, 1.85);
+  if(sides === 8) return new THREE.OctahedronGeometry(1.7, 0);
+  if(sides === 10) return createD10Geometry(1.55);
+  if(sides === 12) return new THREE.DodecahedronGeometry(1.55, 0);
+  return new THREE.IcosahedronGeometry(1.6, 0);
+}
+
+function extractDistinctFaces(geom){
+  if(typeof THREE === 'undefined') return [];
+  var pos = geom.attributes.position.array;
+  var faces = [];
+  var triangleCount = pos.length / 9;
+
+  for(var i = 0; i < triangleCount; i++){
+    var vA = new THREE.Vector3(pos[i*9], pos[i*9+1], pos[i*9+2]);
+    var vB = new THREE.Vector3(pos[i*9+3], pos[i*9+4], pos[i*9+5]);
+    var vC = new THREE.Vector3(pos[i*9+6], pos[i*9+7], pos[i*9+8]);
+
+    var center = new THREE.Vector3().add(vA).add(vB).add(vC).divideScalar(3);
+    var cb = new THREE.Vector3().subVectors(vC, vB);
+    var ab = new THREE.Vector3().subVectors(vA, vB);
+    var normal = new THREE.Vector3().crossVectors(cb, ab).normalize();
+
+    var existing = faces.find(function(f){ return f.normal.distanceTo(normal) < 0.08; });
+    if(!existing){
+      faces.push({ id: faces.length + 1, center: center, normal: normal });
+    } else {
+      existing.center.add(center).multiplyScalar(0.5);
+    }
+  }
+  return faces;
+}
+
+function createFaceNumeralTexture(labelStr, isTriangle){
+  if(typeof document === 'undefined') return null;
+  var c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  var ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 128, 128);
+
+  ctx.strokeStyle = 'rgba(222, 195, 146, 0.42)';
+  ctx.lineWidth = 2.4;
+  if(isTriangle){
+    ctx.beginPath();
+    ctx.moveTo(64, 20);
+    ctx.lineTo(112, 108);
+    ctx.lineTo(16, 108);
+    ctx.closePath();
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(64, 64, 46, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = '#FFF5DC';
+  var fontSize = (labelStr.length > 2) ? 36 : (labelStr.length > 1 ? 42 : 50);
+  ctx.font = 'bold ' + fontSize + "px 'Cinzel', serif, Georgia";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(labelStr, 64, isTriangle ? 72 : 64);
+
+  var tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function create3DDieObject(sides, isTens){
+  if(typeof THREE === 'undefined') return null;
+  var geom = getPolyhedralGeometry(sides);
+  if(!geom) return null;
+
+  var faces = extractDistinctFaces(geom);
+  var dieGroup = new THREE.Group();
+
+  var baseMat = new THREE.MeshStandardMaterial({
+    color: 0x1f142b,
+    roughness: 0.18,
+    metalness: 0.22,
+    transparent: true,
+    opacity: 1
+  });
+  var baseMesh = new THREE.Mesh(geom, baseMat);
+  dieGroup.add(baseMesh);
+
+  var edgeGeom = new THREE.EdgesGeometry(geom);
+  var edgeMat = new THREE.LineBasicMaterial({ color: 0xdec392, linewidth: 2 });
+  var edges = new THREE.LineSegments(edgeGeom, edgeMat);
+  dieGroup.add(edges);
+
+  var isTri = (sides === 4 || sides === 8 || sides === 20);
+  var decalScale = (sides === 4) ? 0.95 : (sides === 6 ? 1.3 : (sides === 8 ? 1.05 : (sides === 10 ? 0.85 : 0.9)));
+  var decals = [];
+
+  faces.forEach(function(f, idx){
+    var valNum = idx + 1;
+    var labelStr = String(valNum);
+    if(isTens){
+      var tVal = (idx * 10);
+      labelStr = (tVal < 10 ? "0" : "") + tVal;
+    }
+    var tex = createFaceNumeralTexture(labelStr, isTri);
+    var planeGeom = new THREE.PlaneGeometry(decalScale, decalScale);
+    var planeMat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -1
+    });
+    var decal = new THREE.Mesh(planeGeom, planeMat);
+    decal.position.copy(f.center).add(f.normal.clone().multiplyScalar(0.018));
+    decal.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), f.normal);
+    decal.userData = { faceIndex: idx, value: valNum, label: labelStr };
+    dieGroup.add(decal);
+    decals.push(decal);
+  });
+
+  return {
+    group: dieGroup,
+    baseMesh: baseMesh,
+    edges: edges,
+    decals: decals,
+    faces: faces,
+    sides: sides,
+    isTens: isTens
+  };
+}
+
+/* --- ESCENA THREE.JS (CANVAS 3D EN EL SANTUARIO BG3) --- */
+
+var bg3ThreeScene = null;
+var bg3ThreeCamera = null;
+var bg3ThreeRenderer = null;
+var bg3ThreeAnimId = null;
+var bg3Die1Obj = null;
+var bg3Die2Obj = null;
+
+var bg3PhysicsState = {
+  rolling: false,
+  startTime: 0,
+  duration: 850,
+  targetQ1: null,
+  targetQ2: null,
+  spinV1: { x: 0, y: 0, z: 0 },
+  spinV2: { x: 0, y: 0, z: 0 },
+  onComplete: null
+};
+
+function initBg3ThreeScene(sides, mode){
+  var canvas = document.getElementById("bg3DiceCanvas");
+  if(!canvas || typeof THREE === 'undefined') return false;
+
+  stopBg3ThreeLoop();
+
+  var width = canvas.clientWidth || 380;
+  var height = canvas.clientHeight || 210;
+
+  if(!bg3ThreeRenderer){
+    try {
+      bg3ThreeRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+      bg3ThreeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    } catch(e){
+      console.warn("WebGL not supported:", e);
+      return false;
+    }
+  }
+  bg3ThreeRenderer.setSize(width, height, false);
+
+  bg3ThreeScene = new THREE.Scene();
+  bg3ThreeCamera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+  bg3ThreeCamera.position.set(0, 0, 8.2);
+
+  var amb = new THREE.AmbientLight(0x351d45, 1.4);
+  bg3ThreeScene.add(amb);
+
+  var keyLight = new THREE.DirectionalLight(0xfff5dc, 2.2);
+  keyLight.position.set(4, 6, 7);
+  bg3ThreeScene.add(keyLight);
+
+  var rimLight = new THREE.DirectionalLight(0x7c4da0, 1.6);
+  rimLight.position.set(-5, -3, 4);
+  bg3ThreeScene.add(rimLight);
+
+  var isAdv = (mode === "adv" || mode === "disadv");
+  var isPercentile = (sides === 100);
+
+  if(isPercentile){
+    bg3Die1Obj = create3DDieObject(10, true);
+    bg3Die2Obj = create3DDieObject(10, false);
+    bg3Die1Obj.group.position.set(-1.65, 0, 0);
+    bg3Die2Obj.group.position.set(1.65, 0, 0);
+    bg3ThreeScene.add(bg3Die1Obj.group);
+    bg3ThreeScene.add(bg3Die2Obj.group);
+  } else if(isAdv){
+    bg3Die1Obj = create3DDieObject(sides, false);
+    bg3Die2Obj = create3DDieObject(sides, false);
+    bg3Die1Obj.group.position.set(-1.65, 0, 0);
+    bg3Die2Obj.group.position.set(1.65, 0, 0);
+    bg3ThreeScene.add(bg3Die1Obj.group);
+    bg3ThreeScene.add(bg3Die2Obj.group);
+  } else {
+    bg3Die1Obj = create3DDieObject(sides, false);
+    bg3Die2Obj = null;
+    bg3Die1Obj.group.position.set(0, 0, 0);
+    bg3ThreeScene.add(bg3Die1Obj.group);
+  }
+
+  startBg3ThreeLoop();
+  return true;
+}
+
+function startBg3ThreeLoop(){
+  if(bg3ThreeAnimId) cancelAnimationFrame(bg3ThreeAnimId);
+
+  function animate(time){
+    bg3ThreeAnimId = requestAnimationFrame(animate);
+
+    if(!bg3PhysicsState.rolling){
+      // Rotación suave e hipnótica en estado inactivo
+      var t = time * 0.0012;
+      if(bg3Die1Obj && bg3Die1Obj.group){
+        bg3Die1Obj.group.rotation.x = Math.sin(t) * 0.25;
+        bg3Die1Obj.group.rotation.y = t * 0.5;
+        bg3Die1Obj.group.position.y = Math.sin(t * 1.5) * 0.08;
+      }
+      if(bg3Die2Obj && bg3Die2Obj.group){
+        bg3Die2Obj.group.rotation.x = Math.cos(t * 0.9) * 0.25;
+        bg3Die2Obj.group.rotation.y = -t * 0.45;
+        bg3Die2Obj.group.position.y = Math.cos(t * 1.5) * 0.08;
+      }
+    } else {
+      // Lanzamiento físico y rodadura 3D
+      var elapsed = performance.now() - bg3PhysicsState.startTime;
+      var p = Math.min(1, elapsed / bg3PhysicsState.duration);
+      var easeOut = 1 - Math.pow(1 - p, 3);
+
+      if(p < 0.65){
+        var dt = 0.016;
+        var spinDecay = 1 - (p / 0.65) * 0.4;
+        if(bg3Die1Obj && bg3Die1Obj.group){
+          bg3Die1Obj.group.rotation.x += bg3PhysicsState.spinV1.x * dt * spinDecay;
+          bg3Die1Obj.group.rotation.y += bg3PhysicsState.spinV1.y * dt * spinDecay;
+          bg3Die1Obj.group.rotation.z += bg3PhysicsState.spinV1.z * dt * spinDecay;
+          // Salto en el aire
+          bg3Die1Obj.group.position.y = Math.sin(p * Math.PI) * 1.1;
+        }
+        if(bg3Die2Obj && bg3Die2Obj.group){
+          bg3Die2Obj.group.rotation.x += bg3PhysicsState.spinV2.x * dt * spinDecay;
+          bg3Die2Obj.group.rotation.y += bg3PhysicsState.spinV2.y * dt * spinDecay;
+          bg3Die2Obj.group.rotation.z += bg3PhysicsState.spinV2.z * dt * spinDecay;
+          bg3Die2Obj.group.position.y = Math.sin(p * Math.PI) * 1.1;
+        }
+      } else {
+        // Asentamiento progresivo y slerp final hacia la cara resultante
+        var slerpP = (p - 0.65) / 0.35;
+        var slerpEase = 1 - Math.pow(1 - slerpP, 2);
+        if(bg3Die1Obj && bg3Die1Obj.group && bg3PhysicsState.targetQ1){
+          bg3Die1Obj.group.quaternion.slerp(bg3PhysicsState.targetQ1, slerpEase);
+          // Rebote al caer
+          var bTime = (p - 0.65) * 6;
+          bg3Die1Obj.group.position.y = Math.max(0, Math.sin(bTime * Math.PI) * Math.exp(-bTime * 2) * 0.35);
+        }
+        if(bg3Die2Obj && bg3Die2Obj.group && bg3PhysicsState.targetQ2){
+          bg3Die2Obj.group.quaternion.slerp(bg3PhysicsState.targetQ2, slerpEase);
+          var bTime2 = (p - 0.65) * 6;
+          bg3Die2Obj.group.position.y = Math.max(0, Math.sin(bTime2 * Math.PI) * Math.exp(-bTime2 * 2) * 0.35);
+        }
+      }
+
+      if(p >= 1){
+        bg3PhysicsState.rolling = false;
+        if(bg3Die1Obj && bg3Die1Obj.group && bg3PhysicsState.targetQ1){
+          bg3Die1Obj.group.quaternion.copy(bg3PhysicsState.targetQ1);
+          bg3Die1Obj.group.position.y = 0;
+        }
+        if(bg3Die2Obj && bg3Die2Obj.group && bg3PhysicsState.targetQ2){
+          bg3Die2Obj.group.quaternion.copy(bg3PhysicsState.targetQ2);
+          bg3Die2Obj.group.position.y = 0;
+        }
+        if(typeof bg3PhysicsState.onComplete === 'function'){
+          bg3PhysicsState.onComplete();
+          bg3PhysicsState.onComplete = null;
+        }
+      }
+    }
+
+    if(bg3ThreeRenderer && bg3ThreeScene && bg3ThreeCamera){
+      bg3ThreeRenderer.render(bg3ThreeScene, bg3ThreeCamera);
+    }
+  }
+  bg3ThreeAnimId = requestAnimationFrame(animate);
+}
+
+function stopBg3ThreeLoop(){
+  if(bg3ThreeAnimId){
+    cancelAnimationFrame(bg3ThreeAnimId);
+    bg3ThreeAnimId = null;
+  }
+}
+
+function computeTargetQuaternion(dieObj, targetValue){
+  if(!dieObj || !dieObj.faces || !dieObj.faces.length) return new THREE.Quaternion();
+  var idx = (targetValue - 1) % dieObj.faces.length;
+  if(idx < 0) idx = 0;
+  var face = dieObj.faces[idx];
+  var q = new THREE.Quaternion();
+  q.setFromUnitVectors(face.normal, new THREE.Vector3(0, 0, 1));
+  return q;
+}
+
+function startBg3ThreePhysicsTumble(r1, r2, onComplete){
+  if(typeof THREE === 'undefined' || !bg3Die1Obj){
+    if(typeof onComplete === 'function') onComplete();
+    return;
+  }
+
+  bg3PhysicsState.rolling = true;
+  bg3PhysicsState.startTime = performance.now();
+  bg3PhysicsState.duration = 850;
+  bg3PhysicsState.onComplete = onComplete;
+
+  bg3PhysicsState.spinV1 = {
+    x: 18 + Math.random() * 10,
+    y: 22 + Math.random() * 12,
+    z: 14 + Math.random() * 8
+  };
+  bg3PhysicsState.targetQ1 = computeTargetQuaternion(bg3Die1Obj, r1);
+
+  if(bg3Die2Obj){
+    bg3PhysicsState.spinV2 = {
+      x: 16 + Math.random() * 10,
+      y: -20 - Math.random() * 12,
+      z: 12 + Math.random() * 8
+    };
+    bg3PhysicsState.targetQ2 = computeTargetQuaternion(bg3Die2Obj, r2 || 1);
+  }
+}
+
+function disposeBg3ThreeScene(){
+  stopBg3ThreeLoop();
+  if(bg3ThreeScene){
+    while(bg3ThreeScene.children.length > 0){
+      var obj = bg3ThreeScene.children[0];
+      bg3ThreeScene.remove(obj);
+      if(obj.geometry) obj.geometry.dispose();
+      if(obj.material){
+        if(Array.isArray(obj.material)) obj.material.forEach(function(m){ m.dispose(); });
+        else obj.material.dispose();
+      }
+    }
+  }
+  bg3Die1Obj = null;
+  bg3Die2Obj = null;
+}
+
+/* --- COMPATIBILIDAD CON SVG PLANO SI WEBGL NO ESTÁ DISPONIBLE --- */
 
 function getBg3DieSvg(sides, value){
   var val = (value !== undefined && value !== null) ? value : sides;
-  var valStr = String(val);
-
-  // Gradientes e iluminación de cristal amatista / obsidiana con filigrana dorada
-  var defs = '<defs>'+
-    '<radialGradient id="dieGlowGrad" cx="50%" cy="40%" r="60%">'+
-      '<stop offset="0%" stop-color="#4e3365" stop-opacity="0.9"/>'+
-      '<stop offset="60%" stop-color="#241732" stop-opacity="0.95"/>'+
-      '<stop offset="100%" stop-color="#110919" stop-opacity="1"/>'+
-    '</radialGradient>'+
-    '<linearGradient id="dieFacetLight" x1="0%" y1="0%" x2="100%" y2="100%">'+
-      '<stop offset="0%" stop-color="#654483"/>'+
-      '<stop offset="50%" stop-color="#342247"/>'+
-      '<stop offset="100%" stop-color="#190e24"/>'+
-    '</linearGradient>'+
-    '<linearGradient id="dieFacetDark" x1="0%" y1="100%" x2="100%" y2="0%">'+
-      '<stop offset="0%" stop-color="#0e0614"/>'+
-      '<stop offset="50%" stop-color="#1d1226"/>'+
-      '<stop offset="100%" stop-color="#301d40"/>'+
-    '</linearGradient>'+
-    '<linearGradient id="goldEdge" x1="0%" y1="0%" x2="100%" y2="100%">'+
-      '<stop offset="0%" stop-color="#FFF5DC"/>'+
-      '<stop offset="35%" stop-color="#DEC392"/>'+
-      '<stop offset="75%" stop-color="#B08D57"/>'+
-      '<stop offset="100%" stop-color="#6E4F23"/>'+
-    '</linearGradient>'+
-    '<filter id="runeGlow" x="-20%" y="-20%" width="140%" height="140%">'+
-      '<feGaussianBlur stdDeviation="1.5" result="blur"/>'+
-      '<feComposite in="SourceGraphic" in2="blur" operator="over"/>'+
-    '</filter>'+
-  '</defs>';
-
-  // D20: Icosaedro auténtico estilo Baldur's Gate 3 con facetas en perspectiva
-  if(sides === 20){
-    return '<svg class="bg3-die-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">'+
-      defs+
-      '<g filter="drop-shadow(0 8px 14px rgba(0,0,0,0.85))">'+
-        // Silueta exterior
-        '<polygon points="80,10 138,42 138,118 80,150 22,118 22,42" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="2"/>'+
-        // Facetas superiores laterales
-        '<polygon points="80,10 138,42 110,60" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.85"/>'+
-        '<polygon points="80,10 22,42 50,60" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.85"/>'+
-        // Facetas laterales
-        '<polygon points="22,42 50,60 38,102 22,118" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.9"/>'+
-        '<polygon points="138,42 110,60 122,102 138,118" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.9"/>'+
-        // Faceta triangular adyacente superior
-        '<polygon points="50,60 110,60 80,30" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.5"/>'+
-        '<text x="80" y="48" font-family="var(--font-display)" font-size="11" font-weight="700" fill="#DEC392" text-anchor="middle" opacity="0.65">18</text>'+
-        // Faceta triangular adyacente izquierda
-        '<polygon points="50,60 80,115 38,102" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.5"/>'+
-        '<text x="56" y="94" font-family="var(--font-display)" font-size="11" font-weight="700" fill="#DEC392" text-anchor="middle" opacity="0.65">2</text>'+
-        // Faceta triangular adyacente derecha
-        '<polygon points="110,60 80,115 122,102" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.5"/>'+
-        '<text x="104" y="94" font-family="var(--font-display)" font-size="11" font-weight="700" fill="#DEC392" text-anchor="middle" opacity="0.65">8</text>'+
-        // Facetas inferiores
-        '<polygon points="38,102 80,115 80,150 22,118" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.8"/>'+
-        '<polygon points="122,102 80,115 80,150 138,118" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.8"/>'+
-        '<text x="80" y="136" font-family="var(--font-display)" font-size="10" font-weight="700" fill="#DEC392" text-anchor="middle" opacity="0.5">14</text>'+
-        // Gran Faceta Frontal Central (Donde aterriza el resultado)
-        '<polygon points="50,60 110,60 80,115" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.6"/>'+
-        // Destello místico y número resultante
-        '<polygon points="55,64 105,64 80,110" fill="none" stroke="#FFF5DC" stroke-width="0.8" opacity="0.45"/>'+
-        '<text x="80" y="95" font-family="var(--font-display)" font-size="'+(valStr.length > 1 ? "28" : "32")+'" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)" letter-spacing="1">'+valStr+'</text>'+
-      '</g>'+
-    '</svg>';
-  }
-
-  // D12: Dodecaedro con pentágono frontal
-  if(sides === 12){
-    return '<svg class="bg3-die-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">'+
-      defs+
-      '<g filter="drop-shadow(0 8px 14px rgba(0,0,0,0.85))">'+
-        '<polygon points="80,12 138,32 150,92 102,146 58,146 10,92 22,32" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="2"/>'+
-        // Facetas periféricas
-        '<polygon points="80,12 138,32 116,56 80,44" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.8"/>'+
-        '<polygon points="138,32 150,92 124,96 116,56" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.75"/>'+
-        '<polygon points="150,92 102,146 88,118 124,96" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.8"/>'+
-        '<polygon points="58,146 10,92 36,96 72,118" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.8"/>'+
-        '<polygon points="10,92 22,32 44,56 36,96" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.75"/>'+
-        '<polygon points="22,32 80,12 80,44 44,56" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.8"/>'+
-        // Pentágono Central Frontal
-        '<polygon points="80,44 116,56 124,96 80,120 36,96 44,56" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.5"/>'+
-        '<text x="80" y="93" font-family="var(--font-display)" font-size="'+(valStr.length > 1 ? "28" : "32")+'" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+valStr+'</text>'+
-      '</g>'+
-    '</svg>';
-  }
-
-  // D10: Trapezoedro pentagonal
-  if(sides === 10){
-    return '<svg class="bg3-die-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">'+
-      defs+
-      '<g filter="drop-shadow(0 8px 14px rgba(0,0,0,0.85))">'+
-        '<polygon points="80,10 144,50 120,135 80,152 40,135 16,50" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="2"/>'+
-        // Facetas superiores
-        '<polygon points="80,10 144,50 80,82" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<polygon points="80,10 16,50 80,82" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        // Facetas frontales donde se exhibe el número
-        '<polygon points="80,82 144,50 120,135 80,152" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.5" opacity="0.85"/>'+
-        '<polygon points="80,82 16,50 40,135 80,152" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.4"/>'+
-        '<polygon points="80,10 120,70 80,140 40,70" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.5"/>'+
-        '<text x="80" y="88" font-family="var(--font-display)" font-size="'+(valStr.length > 1 ? "28" : "32")+'" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+valStr+'</text>'+
-      '</g>'+
-    '</svg>';
-  }
-
-  // D8: Octaedro en perspectiva de diamante
-  if(sides === 8){
-    return '<svg class="bg3-die-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">'+
-      defs+
-      '<g filter="drop-shadow(0 8px 14px rgba(0,0,0,0.85))">'+
-        '<polygon points="80,12 142,80 80,148 18,80" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="2"/>'+
-        '<polygon points="80,12 142,80 80,80" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<polygon points="80,12 18,80 80,80" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="1.6"/>'+
-        '<polygon points="80,148 142,80 80,80" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<polygon points="80,148 18,80 80,80" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<polygon points="80,32 120,80 80,128 40,80" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.4"/>'+
-        '<text x="80" y="90" font-family="var(--font-display)" font-size="30" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+valStr+'</text>'+
-      '</g>'+
-    '</svg>';
-  }
-
-  // D6: Cubo en perspectiva isométrica elegante
-  if(sides === 6){
-    return '<svg class="bg3-die-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">'+
-      defs+
-      '<g filter="drop-shadow(0 8px 14px rgba(0,0,0,0.85))">'+
-        // Silueta exterior
-        '<polygon points="80,16 142,48 142,116 80,148 18,116 18,48" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="2"/>'+
-        // Cara Superior
-        '<polygon points="80,16 142,48 80,80 18,48" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.6"/>'+
-        // Cara Derecha
-        '<polygon points="80,80 142,48 142,116 80,148" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.6"/>'+
-        // Cara Izquierda Frontal
-        '<polygon points="80,80 18,48 18,116 80,148" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.4"/>'+
-        '<text x="80" y="94" font-family="var(--font-display)" font-size="34" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+valStr+'</text>'+
-      '</g>'+
-    '</svg>';
-  }
-
-  // D4: Pirámide / Tetraedro
-  if(sides === 4){
-    return '<svg class="bg3-die-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">'+
-      defs+
-      '<g filter="drop-shadow(0 8px 14px rgba(0,0,0,0.85))">'+
-        '<polygon points="80,15 146,135 14,135" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="2"/>'+
-        '<polygon points="80,15 146,135 80,95" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<polygon points="80,15 14,135 80,95" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.2"/>'+
-        '<polygon points="14,135 146,135 80,95" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<text x="80" y="105" font-family="var(--font-display)" font-size="30" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+valStr+'</text>'+
-      '</g>'+
-    '</svg>';
-  }
-
-  // D100: Percentil (Par de dados)
-  if(sides === 100){
-    var tensVal = Math.floor(val / 10) * 10;
-    if(tensVal === 100) tensVal = 0;
-    var tensStr = (tensVal < 10 ? "0" : "") + tensVal;
-    var unitsVal = val % 10;
-    var unitsStr = String(unitsVal);
-    return '<div style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;">'+
-      '<svg class="bg3-die-svg" style="width:72px;height:72px;" viewBox="0 0 160 160">'+
-        defs+
-        '<polygon points="80,10 144,50 120,135 80,152 40,135 16,50" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.4"/>'+
-        '<text x="80" y="92" font-family="var(--font-display)" font-size="28" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+tensStr+'</text>'+
-      '</svg>'+
-      '<svg class="bg3-die-svg" style="width:72px;height:72px;" viewBox="0 0 160 160">'+
-        defs+
-        '<polygon points="80,10 144,50 120,135 80,152 40,135 16,50" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.4"/>'+
-        '<text x="80" y="92" font-family="var(--font-display)" font-size="32" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+unitsStr+'</text>'+
-      '</svg>'+
-    '</div>';
-  }
-
-  // Fallback estándar
-  return '<svg class="bg3-die-svg" viewBox="0 0 160 160">'+defs+'<circle cx="80" cy="80" r="60" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.5"/><text x="80" y="92" font-family="var(--font-display)" font-size="32" font-weight="800" fill="#FFF5DC" text-anchor="middle">'+valStr+'</text></svg>';
+  return '<svg class="bg3-die-svg" viewBox="0 0 160 160"><circle cx="80" cy="80" r="65" fill="#20142b" stroke="#dec392" stroke-width="3"/><text x="80" y="94" font-size="36" fill="#fff5dc" text-anchor="middle" font-weight="bold">'+val+'</text></svg>';
 }
 
-/* Iconos SVG temáticos para las tarjetas de bonificador de BG3 */
-function getBg3ModIconSvg(type, iconHint){
-  var h = (iconHint || type || "").toLowerCase();
-  if(h.includes("int") || h.includes("saber") || h.includes("magia") || h.includes("book")) {
-    return '<span title="Inteligencia / Conocimiento">📖</span>';
-  }
-  if(h.includes("fis") || h.includes("fuerza") || h.includes("melee") || h.includes("espada") || h.includes("sword")) {
-    return '<span title="Físico / Melé">⚔️</span>';
-  }
-  if(h.includes("des") || h.includes("agil") || h.includes("distancia") || h.includes("arco") || h.includes("bow")) {
-    return '<span title="Destreza / Agilidad">🏹</span>';
-  }
-  if(h.includes("per") || h.includes("ojo") || h.includes("advertir") || h.includes("buscar") || h.includes("eye")) {
-    return '<span title="Percepción">👁️</span>';
-  }
-  if(h.includes("car") || h.includes("voz") || h.includes("lira") || h.includes("mask")) {
-    return '<span title="Carisma">🎭</span>';
-  }
-  if(h.includes("skill") || h.includes("entren") || h.includes("rango")) {
-    return '<span title="Entrenamiento">🏅</span>';
-  }
-  if(h.includes("veneno") || h.includes("poison") || h.includes("mono") || h.includes("maldicion")) {
-    return '<span title="Debuff">💀</span>';
-  }
-  return '<span title="Bonificador">✨</span>';
+function getDieSvg(sides){
+  return getBg3DieSvg(sides, sides);
 }
 
-/* --- CONTROLADOR PRINCIPAL DE LA CÁMARA BALDUR'S GATE 3 --- */
+function getOrnateCupSvg(){
+  return getBg3DieSvg(20, 20);
+}
+
+/* --- CONTROLADOR DE LA CÁMARA BALDUR'S GATE 3 --- */
 
 var bg3RollState = {
   active: false,
@@ -428,7 +623,7 @@ var bg3RollState = {
   dc: 10,
   dcActive: true,
   mode: "normal", // 'normal' | 'adv' | 'disadv'
-  modifiers: [], // [{ id, label, val, icon, type, custom }]
+  modifiers: [],
   charName: "Aventurero",
   rolling: false,
   resolved: false,
@@ -443,9 +638,16 @@ var bg3RollState = {
   rerollFn: null
 };
 
-function renderBg3DieInSlot(slotEl, sides, value){
-  if(!slotEl) return;
-  slotEl.innerHTML = '<div class="bg3-die-3d">' + getBg3DieSvg(sides, value) + '</div><div class="bg3-die-shadow"></div>';
+function getBg3ModIconSvg(type, iconHint){
+  var h = (iconHint || type || "").toLowerCase();
+  if(h.includes("int") || h.includes("saber") || h.includes("magia") || h.includes("book")) return '<span>📖</span>';
+  if(h.includes("fis") || h.includes("fuerza") || h.includes("melee") || h.includes("espada")) return '<span>⚔️</span>';
+  if(h.includes("des") || h.includes("agil") || h.includes("distancia") || h.includes("arco")) return '<span>🏹</span>';
+  if(h.includes("per") || h.includes("ojo") || h.includes("advertir") || h.includes("buscar")) return '<span>👁️</span>';
+  if(h.includes("car") || h.includes("voz") || h.includes("lira") || h.includes("mask")) return '<span>🎭</span>';
+  if(h.includes("skill") || h.includes("entren") || h.includes("rango")) return '<span>🏅</span>';
+  if(h.includes("veneno") || h.includes("mono") || h.includes("maldicion")) return '<span>💀</span>';
+  return '<span>✨</span>';
 }
 
 function openBg3RollModal(cfg){
@@ -469,41 +671,20 @@ function openBg3RollModal(cfg){
   bg3RollState.chosen = null;
   bg3RollState.total = 0;
 
-  // Llenar datos de interfaz
   var titleEl = document.getElementById("bg3RollTitle");
   if(titleEl) titleEl.textContent = bg3RollState.title;
   var subEl = document.getElementById("bg3RollSubtitle");
   if(subEl) subEl.textContent = bg3RollState.subtitle;
 
-  // Placa de CD
   var dcValEl = document.getElementById("bg3DcValue");
   if(dcValEl) dcValEl.textContent = bg3RollState.dc;
   var dcStatusEl = document.getElementById("bg3DcStatus");
   if(dcStatusEl) dcStatusEl.textContent = bg3RollState.dcActive ? "Objetivo activo" : "Sin CD (Libre)";
   var dcPlate = document.getElementById("bg3DcPlate");
-  if(dcPlate){
-    if(bg3RollState.dcActive) dcPlate.style.opacity = "1";
-    else dcPlate.style.opacity = "0.45";
-  }
+  if(dcPlate) dcPlate.style.opacity = bg3RollState.dcActive ? "1" : "0.45";
 
-  // Modos: Normal / Ventaja / Desventaja
   updateBg3ModePills();
 
-  // Escenario de dados
-  var slot1 = document.getElementById("bg3DieSlotPrimary");
-  var slot2 = document.getElementById("bg3DieSlotSecondary");
-  if(slot1){
-    slot1.className = "bg3-die-slot";
-    renderBg3DieInSlot(slot1, bg3RollState.sides, bg3RollState.sides);
-  }
-  if(slot2){
-    slot2.className = "bg3-die-slot" + (bg3RollState.mode === "normal" ? " hidden" : "");
-    if(bg3RollState.mode !== "normal"){
-      renderBg3DieInSlot(slot2, bg3RollState.sides, bg3RollState.sides);
-    }
-  }
-
-  // Veredicto y acciones
   var verdictBanner = document.getElementById("bg3VerdictBanner");
   if(verdictBanner) verdictBanner.className = "bg3-verdict-plate hidden";
   var promptBanner = document.getElementById("bg3PromptBanner");
@@ -515,14 +696,16 @@ function openBg3RollModal(cfg){
   var popover = document.getElementById("bg3AddModPopover");
   if(popover) popover.classList.add("hidden");
 
-  // Renderizar tarjetas de bonificador
   renderBg3ModCards();
 
-  // Mostrar modal
   var overlay = document.getElementById("rollOverlay");
   if(overlay) overlay.classList.remove("hidden");
 
-  // Sonido suave de apertura mística
+  // Iniciar escena 3D en el Canvas
+  setTimeout(function(){
+    initBg3ThreeScene(bg3RollState.sides, bg3RollState.mode);
+  }, 30);
+
   playBg3RuneActivate();
 }
 
@@ -533,13 +716,8 @@ function updateBg3ModePills(){
     if(m === bg3RollState.mode) p.classList.add("active");
     else p.classList.remove("active");
   });
-  var slot2 = document.getElementById("bg3DieSlotSecondary");
-  if(slot2){
-    if(bg3RollState.mode === "normal") slot2.classList.add("hidden");
-    else {
-      slot2.classList.remove("hidden");
-      renderBg3DieInSlot(slot2, bg3RollState.sides, bg3RollState.sides);
-    }
+  if(bg3ThreeScene && bg3RollState.active){
+    initBg3ThreeScene(bg3RollState.sides, bg3RollState.mode);
   }
 }
 
@@ -583,19 +761,8 @@ function triggerBg3Roll(){
   var addModBtn = document.getElementById("bg3BtnAddMod");
   if(addModBtn) addModBtn.style.display = "none";
 
-  // Efecto de sonido de lanzamiento
   playBg3DiceRoll();
 
-  // Iniciar animación de rodar en 3D
-  var slot1 = document.getElementById("bg3DieSlotPrimary");
-  var slot2 = document.getElementById("bg3DieSlotSecondary");
-  var die1 = slot1 ? slot1.querySelector(".bg3-die-3d") : null;
-  var die2 = slot2 ? slot2.querySelector(".bg3-die-3d") : null;
-
-  if(die1){ die1.classList.remove("settling"); die1.classList.add("rolling"); }
-  if(die2){ die2.classList.remove("settling"); die2.classList.add("rolling"); }
-
-  // Calcular resultados numéricos
   var r1 = rollDie(bg3RollState.sides);
   var r2 = (bg3RollState.mode !== "normal") ? rollDie(bg3RollState.sides) : null;
   var chosen = r1;
@@ -606,38 +773,10 @@ function triggerBg3Roll(){
   bg3RollState.r2 = r2;
   bg3RollState.chosen = chosen;
 
-  // Tiempo de tumbling 3D
-  setTimeout(function(){
+  startBg3ThreePhysicsTumble(r1, r2, function(){
     playBg3DiceLand();
 
-    // Detener rodar y asentar
-    if(slot1){
-      slot1.innerHTML = '<div class="bg3-die-3d settling">' + getBg3DieSvg(bg3RollState.sides, r1) + '</div><div class="bg3-die-shadow"></div>';
-    }
-    if(slot2 && bg3RollState.mode !== "normal"){
-      slot2.innerHTML = '<div class="bg3-die-3d settling">' + getBg3DieSvg(bg3RollState.sides, r2) + '</div><div class="bg3-die-shadow"></div>';
-    }
-
-    // Gestionar halos y etiquetas de Ventaja / Desventaja
-    if(bg3RollState.mode === "adv"){
-      if(r1 >= r2){
-        if(slot1) { slot1.classList.add("winner"); slot1.innerHTML += '<div class="bg3-die-tag win">✓ ELEGIDO ('+r1+')</div>'; }
-        if(slot2) { slot2.classList.add("discarded"); slot2.innerHTML += '<div class="bg3-die-tag disc">DESCARTADO ('+r2+')</div>'; }
-      } else {
-        if(slot2) { slot2.classList.add("winner"); slot2.innerHTML += '<div class="bg3-die-tag win">✓ ELEGIDO ('+r2+')</div>'; }
-        if(slot1) { slot1.classList.add("discarded"); slot1.innerHTML += '<div class="bg3-die-tag disc">DESCARTADO ('+r1+')</div>'; }
-      }
-    } else if(bg3RollState.mode === "disadv"){
-      if(r1 <= r2){
-        if(slot1) { slot1.classList.add("winner-disadv"); slot1.innerHTML += '<div class="bg3-die-tag win">ELEGIDO ('+r1+')</div>'; }
-        if(slot2) { slot2.classList.add("discarded"); slot2.innerHTML += '<div class="bg3-die-tag disc">DESCARTADO ('+r2+')</div>'; }
-      } else {
-        if(slot2) { slot2.classList.add("winner-disadv"); slot2.innerHTML += '<div class="bg3-die-tag win">ELEGIDO ('+r2+')</div>'; }
-        if(slot1) { slot1.classList.add("discarded"); slot1.innerHTML += '<div class="bg3-die-tag disc">DESCARTADO ('+r1+')</div>'; }
-      }
-    }
-
-    // Animación de bonificadores sumándose
+    // Efecto visual de bonificadores sumándose
     var modSum = 0;
     var cards = document.querySelectorAll(".bg3-card");
     cards.forEach(function(c, idx){
@@ -654,7 +793,6 @@ function triggerBg3Roll(){
     var grandTotal = chosen + modSum;
     bg3RollState.total = grandTotal;
 
-    // Evaluación de Críticos, Pifias y Dificultad
     var isCrit = false;
     var isFumble = false;
     if(bg3RollState.sides === 20){
@@ -680,7 +818,27 @@ function triggerBg3Roll(){
     }
     bg3RollState.isSuccess = isSuccess;
 
-    // Mostrar veredicto tras la suma de bonificadores
+    // Destacar dado ganador en 3D
+    if(bg3RollState.mode === "adv" && bg3Die1Obj && bg3Die2Obj){
+      if(r1 >= r2){
+        bg3Die1Obj.baseMesh.material.color.setHex(0x352010);
+        bg3Die1Obj.edges.material.color.setHex(0xfff5dc);
+        bg3Die2Obj.baseMesh.material.opacity = 0.35;
+      } else {
+        bg3Die2Obj.baseMesh.material.color.setHex(0x352010);
+        bg3Die2Obj.edges.material.color.setHex(0xfff5dc);
+        bg3Die1Obj.baseMesh.material.opacity = 0.35;
+      }
+    } else if(bg3RollState.mode === "disadv" && bg3Die1Obj && bg3Die2Obj){
+      if(r1 <= r2){
+        bg3Die1Obj.baseMesh.material.color.setHex(0x331015);
+        bg3Die2Obj.baseMesh.material.opacity = 0.35;
+      } else {
+        bg3Die2Obj.baseMesh.material.color.setHex(0x331015);
+        bg3Die1Obj.baseMesh.material.opacity = 0.35;
+      }
+    }
+
     var delayVerdict = Math.max(300, cards.length * 140 + 100);
     setTimeout(function(){
       var vPlate = document.getElementById("bg3VerdictBanner");
@@ -723,7 +881,6 @@ function triggerBg3Roll(){
         vMath.textContent = mathText;
       }
 
-      // Registro en el historial y sincronización
       var rollItem = {
         id: uid(),
         charName: bg3RollState.charName,
@@ -739,18 +896,17 @@ function triggerBg3Roll(){
       saveState();
       broadcastDiceRoll(rollItem);
 
-      // Mostrar botones de confirmación / reroll
       var postActs = document.getElementById("bg3PostActions");
       if(postActs) postActs.classList.remove("hidden");
 
       bg3RollState.rolling = false;
       bg3RollState.resolved = true;
     }, delayVerdict);
-
-  }, 850);
+  });
 }
 
 function closeBg3Roll(){
+  disposeBg3ThreeScene();
   var overlay = document.getElementById("rollOverlay");
   if(overlay) overlay.classList.add("hidden");
   playBg3Click();
@@ -760,7 +916,7 @@ function closeBg3Roll(){
   }
 }
 
-/* --- LANZADORES ESPECÍFICOS INTEGRADOS CON FICHA Y COMBATE --- */
+/* --- LANZADORES ESPECÍFICOS --- */
 
 function openBg3SkillRoll(c, sdef){
   if(!c || !sdef) return;
@@ -777,7 +933,6 @@ function openBg3SkillRoll(c, sdef){
     modifiers.push({ label: "Entrenamiento", val: trainBonus, icon: "medal", type: "skill" });
   }
 
-  // Buffs activos que impactan esta habilidad o atributo
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
       if(ab.active === false) return;
@@ -789,8 +944,8 @@ function openBg3SkillRoll(c, sdef){
     });
   }
 
-  if(c.buffs){
-    if(c.buffs.mono) modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
+  if(c.buffs && c.buffs.mono){
+    modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
   }
 
   openBg3RollModal({
@@ -915,7 +1070,7 @@ function openBg3WeaponRoll(c, wpn, formulaRaw){
     subtitle: "Tirada de Daño (1d" + sides + (baseMod ? (baseMod > 0 ? "+" + baseMod : baseMod) : "") + ")",
     sides: sides,
     dc: 10,
-    dcActive: false, // Por defecto el daño no tiene CD
+    dcActive: false,
     mode: "normal",
     charName: c ? c.name : "Aventurero",
     modifiers: modifiers
@@ -1008,8 +1163,6 @@ function performSummonRoll(charName, summonName, actionName, formulaRaw){
   openBg3FreeRoll(parsed.sides, parsed.qty, parsed.mod, "normal");
 }
 
-/* --- SINCRONIZACIÓN Y BROADCAST EN TIEMPO REAL --- */
-
 function broadcastDiceRoll(rollObj){
   if(realtimeChannel && typeof realtimeChannel.send === 'function'){
     try {
@@ -1059,28 +1212,20 @@ var diceConfig = {
   mode: "normal"
 };
 
-function getDieSvg(sides){
-  return getBg3DieSvg(sides, sides);
-}
-
-function getOrnateCupSvg(){
-  return getBg3DieSvg(20, 20);
-}
-
 function openDiceModal(){
   var sidesList = [4, 6, 8, 10, 12, 20, 100];
   var diceCards = sidesList.map(function(s){
     return '<div class="dtype-card '+(diceConfig.sides===s?'active':'')+'" data-action="pick-die" data-sides="'+s+'" role="button" tabindex="0">'+
-      getBg3DieSvg(s, s)+
+      getDieSvg(s)+
       '<span>'+(s===100?'d%':'d'+s)+'</span>'+
     '</div>';
   }).join('');
 
   document.getElementById("diceModal").innerHTML =
     '<div class="cup-modal-header">'+
-      '<div class="cup-modal-icon" style="width:40px;height:40px;">'+getBg3DieSvg(diceConfig.sides, diceConfig.sides)+'</div>'+
+      '<div class="cup-modal-icon" style="width:40px;height:40px;">'+getDieSvg(diceConfig.sides)+'</div>'+
       '<div class="cup-modal-title">'+
-        '<h3>Lanzador de Dados</h3>'+
+        '<h3>Lanzador de Dados 3D</h3>'+
         '<div class="cup-modal-sub">Elige tu dado, modalidad y lanza en la Cámara 3D</div>'+
       '</div>'+
       '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>'+

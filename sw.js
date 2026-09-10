@@ -32,6 +32,7 @@ const PRECACHE_ASSETS = [
   './js/maps.js',
   './js/markers.js',
   './js/quests.js',
+  './js/three.min.js',
   './js/dice.js',
   './js/ui-modals.js',
   './js/ui-render.js',

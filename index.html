@@ -227,8 +227,9 @@
 
         <!-- Escenario de Dados 3D (soporta 1 o 2 dados con ventaja/desventaja) -->
         <div class="bg3-dice-stage" id="bg3DiceStage" data-action="bg3-trigger-roll" role="button" tabindex="0" aria-label="Tirar dados">
-          <div class="bg3-die-slot" id="bg3DieSlotPrimary"></div>
-          <div class="bg3-die-slot hidden" id="bg3DieSlotSecondary"></div>
+          <canvas id="bg3DiceCanvas" width="380" height="220" style="display:block;max-width:100%;height:auto;cursor:pointer;"></canvas>
+          <div class="bg3-die-slot" id="bg3DieSlotPrimary" style="display:none;"></div>
+          <div class="bg3-die-slot hidden" id="bg3DieSlotSecondary" style="display:none;"></div>
         </div>
 
         <!-- Banner interactivo de lanzamiento -->
@@ -328,6 +329,7 @@
   <script src="js/maps.js?v=1.1.8"></script>
   <script src="js/markers.js?v=1.1.8"></script>
   <script src="js/quests.js?v=1.1.8"></script>
+  <script src="js/three.min.js"></script>
   <script src="js/dice.js?v=1.1.8"></script>
   <script src="js/ui-modals.js?v=1.1.8"></script>
   <script src="js/ui-render.js?v=1.1.8"></script>
