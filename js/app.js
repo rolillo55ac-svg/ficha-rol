@@ -81,11 +81,11 @@ function init(){
     safeListen("conflictModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     
     safeListen("rollOverlay", "click", function(e){
-      if(e.target===this || e.target.closest("[data-action='close-roll-modal']")){
-        this.classList.add("hidden");
-      } else if(e.target.closest("[data-action='reroll-last-dice']")){
-        if(typeof lastRollFn === "function") lastRollFn();
+      if(e.target === this){
+        closeBg3Roll();
+        return;
       }
+      handleClick(e);
     });
 
     safeListen("fabDice", "click", openDiceModal);

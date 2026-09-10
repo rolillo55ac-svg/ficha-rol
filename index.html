@@ -25,7 +25,7 @@
   <meta name="apple-mobile-web-app-title" content="Krysalis">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="style.css?v=1.1.3">
+  <link rel="stylesheet" href="style.css?v=1.1.4">
 </head>
 
 <body>
@@ -179,23 +179,132 @@
   <div class="modal-overlay hidden" id="conflictModalOverlay">
     <div class="modal" id="conflictModal"></div>
   </div>
-  <div class="roll-overlay hidden" id="rollOverlay">
-    <div class="roll-box">
-      <div class="cup-stage" id="cupStage"></div>
-      <div class="roll-result-stage" id="rollResultStage">
-        <div id="rollLabel" style="font-family:var(--font-display);font-size:.95rem;color:var(--gold-light);"></div>
-        <div id="rollDieGraphic" style="display:flex;justify-content:center;margin:8px 0;"></div>
-        <div id="rollAdvVisual"></div>
-        <div class="roll-score" id="rollScore"></div>
-        <div id="rollVerdict"
-          style="font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:700;">
+  <div class="roll-overlay hidden" id="rollOverlay" role="dialog" aria-modal="true" aria-labelledby="bg3RollTitle">
+    <div class="bg3-chamber" id="bg3Chamber">
+      <!-- Decoración gótica de esquina -->
+      <div class="bg3-corner tl"></div>
+      <div class="bg3-corner tr"></div>
+      <div class="bg3-corner bl"></div>
+      <div class="bg3-corner br"></div>
+
+      <!-- Cabecera estilo BG3 -->
+      <div class="bg3-header">
+        <button class="bg3-close-btn" data-action="close-bg3-roll" aria-label="Cerrar cámara de dados">✕</button>
+        <div class="bg3-title" id="bg3RollTitle">Investigación</div>
+        <div class="bg3-subtitle" id="bg3RollSubtitle">Prueba de Inteligencia (1d20)</div>
+      </div>
+
+      <!-- Placa de Clase de Dificultad (CD) -->
+      <div class="bg3-dc-plate" id="bg3DcPlate">
+        <div class="bg3-dc-filigree left"></div>
+        <div class="bg3-dc-arch">
+          <div class="bg3-dc-label" id="bg3DcLabel">CLASE DE DIFICULTAD</div>
+          <div class="bg3-dc-row">
+            <button class="bg3-dc-btn" data-action="bg3-dc-dec" title="Disminuir CD" aria-label="Disminuir CD">-</button>
+            <div class="bg3-dc-number" id="bg3DcValue" title="Objetivo de dificultad">10</div>
+            <button class="bg3-dc-btn" data-action="bg3-dc-inc" title="Aumentar CD" aria-label="Aumentar CD">+</button>
+          </div>
+          <div class="bg3-dc-mode-tag" id="bg3DcStatus">Objetivo activo</div>
         </div>
-        <div id="rollDetail" style="font-size:.8rem;color:var(--ink-dim);line-height:1.4;"></div>
-        <div style="display:flex;gap:8px;margin-top:14px;">
-          <button class="btn-compact" data-action="reroll-last-dice" style="flex:1;">🎲 Volver a Tirar</button>
-          <button class="btn-solid-gold" data-action="close-roll-modal" style="flex:1;">Cerrar</button>
+        <div class="bg3-dc-filigree right"></div>
+      </div>
+
+      <!-- Selector de modalidad: Normal / Ventaja / Desventaja -->
+      <div class="bg3-mode-bar" id="bg3ModeSelector">
+        <button class="bg3-mode-pill active" data-action="bg3-set-mode" data-mode="normal">⚔️ Normal</button>
+        <button class="bg3-mode-pill" data-action="bg3-set-mode" data-mode="adv">🍀 Ventaja</button>
+        <button class="bg3-mode-pill" data-action="bg3-set-mode" data-mode="disadv">💀 Desventaja</button>
+      </div>
+
+      <!-- Santuario Central: Astrolabio rúnico y Dado 3D -->
+      <div class="bg3-sanctuary">
+        <div class="bg3-astrolabe" aria-hidden="true">
+          <div class="astrolabe-ring ring-outer"></div>
+          <div class="astrolabe-ring ring-mid"></div>
+          <div class="astrolabe-ring ring-inner"></div>
+          <div class="astrolabe-glow"></div>
+        </div>
+
+        <!-- Escenario de Dados 3D (soporta 1 o 2 dados con ventaja/desventaja) -->
+        <div class="bg3-dice-stage" id="bg3DiceStage" data-action="bg3-trigger-roll" role="button" tabindex="0" aria-label="Tirar dados">
+          <div class="bg3-die-slot" id="bg3DieSlotPrimary"></div>
+          <div class="bg3-die-slot hidden" id="bg3DieSlotSecondary"></div>
+        </div>
+
+        <!-- Banner interactivo de lanzamiento -->
+        <div class="bg3-prompt-wrap">
+          <button class="bg3-prompt-banner" id="bg3PromptBanner" data-action="bg3-trigger-roll">
+            <span class="bg3-prompt-icon">✧</span>
+            <span class="bg3-prompt-text" id="bg3PromptText">Haz clic en el dado para tirarlo</span>
+            <span class="bg3-prompt-icon">✧</span>
+          </button>
         </div>
       </div>
+
+      <!-- Veredicto de Tirada (Éxito, Fallo, Crítico, Pifia) -->
+      <div class="bg3-verdict-plate hidden" id="bg3VerdictBanner">
+        <div class="bg3-verdict-title" id="bg3VerdictText">¡ÉXITO!</div>
+        <div class="bg3-verdict-math" id="bg3VerdictBreakdown">[14] + [4] = 18</div>
+      </div>
+
+      <!-- Bandeja de Bonificadores estilo BG3 (Atributo, Entrenamiento, Buffs) -->
+      <div class="bg3-shelf">
+        <div class="bg3-mod-cards" id="bg3ModCards">
+          <!-- Tarjetas de bonificador dinámicas -->
+        </div>
+
+        <!-- Divisor con Bonificador Total -->
+        <div class="bg3-total-divider">
+          <div class="bg3-divider-line"></div>
+          <div class="bg3-total-badge">
+            <span class="bg3-total-label">Bonificador total</span>
+            <span class="bg3-total-num" id="bg3TotalModVal">+0</span>
+          </div>
+          <div class="bg3-divider-line"></div>
+        </div>
+
+        <!-- Barra inferior: Añadir bonificador / Acciones post-tirada -->
+        <div class="bg3-actions-bar">
+          <button class="bg3-btn-add-mod" id="bg3BtnAddMod" data-action="bg3-open-add-mod">
+            <span class="bg3-cross-icon">✚</span> Añadir bonificador
+          </button>
+          <div class="bg3-post-actions hidden" id="bg3PostActions">
+            <button class="bg3-btn-secondary" data-action="bg3-reroll">🎲 Volver a tirar</button>
+            <button class="bg3-btn-primary" data-action="close-bg3-roll">✓ Aceptar</button>
+          </div>
+        </div>
+
+        <!-- Popover para añadir bonificador rápido o personalizado -->
+        <div class="bg3-popover hidden" id="bg3AddModPopover">
+          <div class="bg3-popover-title">
+            <span>Añadir Bonificador Circunstancial</span>
+            <button class="bg3-popover-x" data-action="bg3-close-add-mod">✕</button>
+          </div>
+          <div class="bg3-quick-pills">
+            <button class="bg3-qpill" data-action="bg3-quick-mod" data-val="1">+1</button>
+            <button class="bg3-qpill" data-action="bg3-quick-mod" data-val="2">+2</button>
+            <button class="bg3-qpill" data-action="bg3-quick-mod" data-val="3">+3</button>
+            <button class="bg3-qpill" data-action="bg3-quick-mod" data-val="5">+5</button>
+            <button class="bg3-qpill neg" data-action="bg3-quick-mod" data-val="-1">-1</button>
+            <button class="bg3-qpill neg" data-action="bg3-quick-mod" data-val="-2">-2</button>
+          </div>
+          <div class="bg3-custom-mod-form">
+            <input type="text" id="bg3CustomLabel" placeholder="Motivo (ej: Guía, Apoyo)" maxlength="25">
+            <input type="number" id="bg3CustomVal" value="1" style="width:50px;text-align:center;">
+            <button class="bg3-btn-submit-mod" data-action="bg3-submit-custom-mod">Añadir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compatibilidad con llamadas heredadas si las hubiera -->
+      <div id="rollLabel" style="display:none;"></div>
+      <div id="rollScore" style="display:none;"></div>
+      <div id="rollVerdict" style="display:none;"></div>
+      <div id="rollDetail" style="display:none;"></div>
+      <div id="rollDieGraphic" style="display:none;"></div>
+      <div id="rollAdvVisual" style="display:none;"></div>
+      <div id="cupStage" style="display:none;"></div>
+      <div id="rollResultStage" style="display:none;"></div>
     </div>
   </div>
 
@@ -207,23 +316,23 @@
   <input type="file" id="clueFileInput" accept="image/*" hidden>
   <input type="file" id="summonFileInput" accept="image/*" hidden>
   <input type="file" id="importFileInput" accept="application/json" hidden>
-  <script src="js/utils.js?v=1.1.7"></script>
-  <script src="js/state.js?v=1.1.7"></script>
-  <script src="js/supabase-client.js?v=1.1.7"></script>
-  <script src="js/auth.js?v=1.1.7"></script>
-  <script src="js/sync.js?v=1.1.7"></script>
-  <script src="js/characters.js?v=1.1.7"></script>
-  <script src="js/combat.js?v=1.1.7"></script>
-  <script src="js/catalog.js?v=1.1.7"></script>
-  <script src="js/bestiary.js?v=1.1.7"></script>
-  <script src="js/maps.js?v=1.1.7"></script>
-  <script src="js/markers.js?v=1.1.7"></script>
-  <script src="js/quests.js?v=1.1.7"></script>
-  <script src="js/dice.js?v=1.1.7"></script>
-  <script src="js/ui-modals.js?v=1.1.7"></script>
-  <script src="js/ui-render.js?v=1.1.7"></script>
-  <script src="js/ui-events.js?v=1.1.7"></script>
-  <script src="js/app.js?v=1.1.7"></script>
+  <script src="js/utils.js?v=1.1.8"></script>
+  <script src="js/state.js?v=1.1.8"></script>
+  <script src="js/supabase-client.js?v=1.1.8"></script>
+  <script src="js/auth.js?v=1.1.8"></script>
+  <script src="js/sync.js?v=1.1.8"></script>
+  <script src="js/characters.js?v=1.1.8"></script>
+  <script src="js/combat.js?v=1.1.8"></script>
+  <script src="js/catalog.js?v=1.1.8"></script>
+  <script src="js/bestiary.js?v=1.1.8"></script>
+  <script src="js/maps.js?v=1.1.8"></script>
+  <script src="js/markers.js?v=1.1.8"></script>
+  <script src="js/quests.js?v=1.1.8"></script>
+  <script src="js/dice.js?v=1.1.8"></script>
+  <script src="js/ui-modals.js?v=1.1.8"></script>
+  <script src="js/ui-render.js?v=1.1.8"></script>
+  <script src="js/ui-events.js?v=1.1.8"></script>
+  <script src="js/app.js?v=1.1.8"></script>
 </body>
 
 </html>

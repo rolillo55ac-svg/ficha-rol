@@ -4,11 +4,12 @@
 // con respaldo en caché para apertura instantánea y modo sin conexión).
 // ==============================================================================
 
-const CACHE_NAME = 'krysalis-app-v1.0.0';
+const CACHE_NAME = 'krysalis-app-v1.0.1';
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
+  './style.css',
   './manifest.json',
   './favicon.ico',
   './favicon.svg',

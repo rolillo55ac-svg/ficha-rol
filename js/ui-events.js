@@ -306,6 +306,7 @@ function handleClick(e){
     flushPendingSync();
     state.activeTab = btn.getAttribute("data-tab");
     saveState(true);
+    if(typeof playBg3Parchment === "function") playBg3Parchment();
     renderTabbar();
     renderTab();
     return;
@@ -697,18 +698,24 @@ function handleClick(e){
     var bName = btn.getAttribute("data-buff");
     if(!c.buffs) c.buffs={};
     c.buffs[bName] = !c.buffs[bName];
+    if(typeof playBg3RuneActivate === "function") playBg3RuneActivate();
     saveState(); renderTab(); return;
   }
   if(action==="roll-skill"){
     var sid = btn.getAttribute("data-id");
     var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
-    performD10Roll(c.name, sdef.name, skillTotal(sdef,c));
+    if(sdef && c) openBg3SkillRoll(c, sdef);
     return;
   }
   if(action==="roll-custom-skill"){
     var csid = btn.getAttribute("data-id");
     var cs = (c.customSkills||[]).find(function(x){return x.id===csid;});
-    if(cs) performD10Roll(c.name, cs.name, customSkillTotal(cs,c));
+    if(cs && c) openBg3CustomSkillRoll(c, cs);
+    return;
+  }
+  if(action==="roll-attr"){
+    var attrKey = btn.getAttribute("data-attr");
+    if(attrKey && c) openBg3AttrRoll(c, attrKey);
     return;
   }
   if(action==="add-custom-skill"){
@@ -741,18 +748,21 @@ function handleClick(e){
     manageListItemRPC(c, 'customBuffs', 'remove', null, cbId);
     return;
   }
-  if(action==="roll-init"){ performD10Roll(c.name, "Iniciativa", c.combat.iniciativa); return; }
+  if(action==="roll-init"){
+    if(c) openBg3InitRoll(c);
+    return;
+  }
   if(action==="roll-weapon"){
     var wid = btn.getAttribute("data-id");
     var wpn = (c.weapons||[]).find(function(w){return w.id===wid;});
-    if(wpn){
+    if(wpn && c){
       var catItem = (state.weaponsCatalog||[]).find(function(ci){ return ci.name === wpn.name || ci.id === wpn.catalogId; });
       if(catItem && catItem.visible === false && !isGM()){
         showToast("Esta arma ha sido bloqueada por el Máster y no se puede usar.", "warning");
         return;
       }
       var formula = catItem ? catItem.dano : "1d6";
-      performWeaponRoll(c.name, wpn.name||"Arma", formula);
+      openBg3WeaponRoll(c, wpn, formula);
     }
     return;
   }
@@ -2296,8 +2306,112 @@ function handleClick(e){
     if(!c || !canEditChar(c)) return;
     c.portrait=null; saveState(); renderTopbar(); renderTab(); return;
   }
-  if(action==="close-roll-modal"){ document.getElementById("rollOverlay").classList.add("hidden"); return; }
-  if(action==="reroll-last-dice"){ if(typeof lastRollFn==="function") lastRollFn(); return; }
+  if(action==="close-roll-modal" || action==="close-bg3-roll"){ closeBg3Roll(); return; }
+  if(action==="bg3-trigger-roll"){ triggerBg3Roll(); return; }
+  if(action==="bg3-dc-dec"){
+    bg3RollState.dc = Math.max(1, bg3RollState.dc - 1);
+    var dcEl1 = document.getElementById("bg3DcValue");
+    if(dcEl1) dcEl1.textContent = bg3RollState.dc;
+    playBg3Click();
+    return;
+  }
+  if(action==="bg3-dc-inc"){
+    bg3RollState.dc = Math.min(40, bg3RollState.dc + 1);
+    var dcEl2 = document.getElementById("bg3DcValue");
+    if(dcEl2) dcEl2.textContent = bg3RollState.dc;
+    playBg3Click();
+    return;
+  }
+  if(action==="bg3-toggle-dc"){
+    bg3RollState.dcActive = !bg3RollState.dcActive;
+    var dcStatusEl = document.getElementById("bg3DcStatus");
+    if(dcStatusEl) dcStatusEl.textContent = bg3RollState.dcActive ? "Objetivo activo" : "Sin CD (Libre)";
+    var dcPlate = document.getElementById("bg3DcPlate");
+    if(dcPlate) dcPlate.style.opacity = bg3RollState.dcActive ? "1" : "0.45";
+    playBg3Click();
+    return;
+  }
+  if(action==="bg3-set-mode"){
+    var mode = btn.getAttribute("data-mode");
+    if(mode){
+      bg3RollState.mode = mode;
+      updateBg3ModePills();
+      playBg3Click();
+    }
+    return;
+  }
+  if(action==="bg3-open-add-mod"){
+    var pop1 = document.getElementById("bg3AddModPopover");
+    if(pop1) pop1.classList.toggle("hidden");
+    playBg3Click();
+    return;
+  }
+  if(action==="bg3-close-add-mod"){
+    var pop2 = document.getElementById("bg3AddModPopover");
+    if(pop2) pop2.classList.add("hidden");
+    playBg3Click();
+    return;
+  }
+  if(action==="bg3-quick-mod"){
+    var val = parseFloat(btn.getAttribute("data-val")) || 0;
+    bg3RollState.modifiers.push({
+      label: (val >= 0 ? "+" : "") + val + " Mod",
+      val: val,
+      icon: val >= 0 ? "flame" : "poison",
+      type: "custom",
+      custom: true
+    });
+    renderBg3ModCards();
+    var pop3 = document.getElementById("bg3AddModPopover");
+    if(pop3) pop3.classList.add("hidden");
+    playBg3ModifierAdd();
+    return;
+  }
+  if(action==="bg3-submit-custom-mod"){
+    var lblInp = document.getElementById("bg3CustomLabel");
+    var valInp = document.getElementById("bg3CustomVal");
+    var lbl = (lblInp && lblInp.value.trim()) ? lblInp.value.trim() : "Bono circunstancial";
+    var valCust = valInp ? (parseFloat(valInp.value) || 0) : 1;
+    bg3RollState.modifiers.push({
+      label: lbl,
+      val: valCust,
+      icon: valCust >= 0 ? "flame" : "poison",
+      type: "custom",
+      custom: true
+    });
+    renderBg3ModCards();
+    if(lblInp) lblInp.value = "";
+    var pop4 = document.getElementById("bg3AddModPopover");
+    if(pop4) pop4.classList.add("hidden");
+    playBg3ModifierAdd();
+    return;
+  }
+  if(action==="bg3-del-mod"){
+    var idxMod = parseInt(btn.getAttribute("data-idx"), 10);
+    if(!isNaN(idxMod) && bg3RollState.modifiers[idxMod]){
+      bg3RollState.modifiers.splice(idxMod, 1);
+      renderBg3ModCards();
+      playBg3Click();
+    }
+    return;
+  }
+  if(action==="reroll-last-dice" || action==="bg3-reroll"){
+    if(bg3RollState.active){
+      openBg3RollModal({
+        title: bg3RollState.title,
+        subtitle: bg3RollState.subtitle,
+        sides: bg3RollState.sides,
+        dc: bg3RollState.dc,
+        dcActive: bg3RollState.dcActive,
+        mode: bg3RollState.mode,
+        charName: bg3RollState.charName,
+        modifiers: bg3RollState.modifiers
+      });
+    } else if(typeof lastRollFn==="function") {
+      lastRollFn();
+    }
+    return;
+  }
 }
 
 function handleKeyDown(e){

@@ -137,10 +137,11 @@ function tplFicha(c){
           '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="-1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">-</button>'+
           '<span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--gold-light);min-width:30px;text-align:center;">'+num(c.attrs[a],0)+'</span>'+
           '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">+</button>'+
+          '<button class="dice-btn" data-action="roll-attr" data-attr="'+a+'" style="width:22px;height:22px;font-size:0.75rem;margin-left:2px;" title="Tirar prueba de '+ATTR_LABELS[a]+'">🎲</button>'+
         '</div>'+
       '</div>';
     }
-    return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div></div>';
+    return '<div class="attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d20)"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div><span class="attr-roll-hint">🎲 Tirar</span></div>';
   }).join('');
 
   var levelControl = '';

@@ -1347,84 +1347,776 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .fab-dice:hover{border-color:var(--gold-light);transform:scale(1.08) rotate(4deg);box-shadow:0 12px 30px rgba(0,0,0,0.85), inset 0 0 16px rgba(222,195,146,0.5), 0 0 0 4px rgba(176,141,87,0.3);}
 .fab-dice:active{transform:scale(.94) rotate(-10deg);}
 
-/* MODALES */
-@keyframes rollPop{0%{opacity:0;transform:scale(.85) translateY(10px);}100%{opacity:1;transform:scale(1) translateY(0);}}
-@keyframes rollGlowPulse{0%,100%{opacity:.5;}50%{opacity:1;}}
-.roll-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(8,5,4,0.92);padding:16px;backdrop-filter:blur(6px);}
-.roll-overlay.hidden{display:none;}
-.roll-box{
-  position:relative;background:linear-gradient(165deg, #1f150f, #120d0a);border:2px solid var(--gold);border-radius:24px;
-  padding:24px 20px 22px;text-align:center;width:100%;max-width:340px;
-  box-shadow:0 25px 70px rgba(0,0,0,0.95), inset 0 0 25px rgba(176,141,87,0.25), 0 0 0 4px rgba(10,7,5,0.9);
-  animation:rollPop .28s cubic-bezier(.2,.9,.3,1.2);overflow:hidden;
+/* ==========================================================================
+   CÁMARA DE DADOS BALDUR'S GATE 3 (ROLL OVERLAY 3D)
+   ========================================================================== */
+@keyframes bg3ChamberEnter {
+  0% { opacity: 0; transform: scale(0.92) translateY(14px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
-.roll-box::before{content:'';position:absolute;inset:6px;border:1px solid rgba(176,141,87,0.3);border-radius:18px;pointer-events:none;}
-.roll-box::after{content:'◆';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#120D0A;color:var(--gold);padding:0 10px;font-size:.8rem;letter-spacing:.1em;}
-
-/* ESCENARIO DEL CUBILETE */
-.cup-stage{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:165px;margin-bottom:6px;position:relative;
+@keyframes bg3AstrolabeSpin {
+  from { transform: perspective(600px) rotateX(62deg) rotateZ(0deg); }
+  to { transform: perspective(600px) rotateX(62deg) rotateZ(360deg); }
 }
-.ornate-cup-wrapper{
-  position:relative;display:flex;align-items:center;justify-content:center;
-  transform-origin:center 75%;transition:transform .3s ease;
+@keyframes bg3AstrolabeSpinRev {
+  from { transform: perspective(600px) rotateX(62deg) rotateZ(360deg); }
+  to { transform: perspective(600px) rotateX(62deg) rotateZ(0deg); }
 }
-.ornate-cup-wrapper.shaking{
-  animation:ornateCupShake .45s cubic-bezier(.36,.07,.19,.97) infinite;
+@keyframes bg3DieFloat {
+  0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+  50% { transform: translateY(-8px) rotateX(4deg) rotateY(-5deg); }
 }
-.ornate-cup-wrapper.pouring{
-  animation:ornateCupPour .45s cubic-bezier(.25,.9,.3,1) forwards;
+@keyframes bg3DieRoll3D {
+  0% { transform: scale(0.9) translateY(-10px) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  25% { transform: scale(1.15) translateY(-30px) rotateX(360deg) rotateY(180deg) rotateZ(90deg); }
+  50% { transform: scale(1.05) translateY(-15px) rotateX(720deg) rotateY(360deg) rotateZ(270deg); }
+  75% { transform: scale(1.12) translateY(-5px) rotateX(1080deg) rotateY(540deg) rotateZ(360deg); }
+  100% { transform: scale(1) translateY(0) rotateX(1440deg) rotateY(720deg) rotateZ(360deg); }
 }
-.ornate-cup-svg{
-  filter:drop-shadow(0 15px 25px rgba(0,0,0,0.85)) drop-shadow(0 0 12px rgba(176,141,87,0.35));
+@keyframes bg3DieSettle {
+  0% { transform: scale(1.18) translateY(6px); }
+  45% { transform: scale(0.92) translateY(-4px); }
+  75% { transform: scale(1.04) translateY(2px); }
+  100% { transform: scale(1) translateY(0); }
 }
-.cup-sparks{
-  position:absolute;inset:-12px;pointer-events:none;
-  background:radial-gradient(circle, rgba(253,224,71,0.25) 0%, transparent 70%);
-  animation:cupGlowPulse .5s ease-in-out infinite alternate;
+@keyframes bg3CardPulse {
+  0% { transform: scale(1); box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+  50% { transform: scale(1.06) translateY(-4px); box-shadow: 0 0 24px rgba(222,195,146,0.6), inset 0 0 12px rgba(253,224,71,0.4); border-color: var(--gold-light); }
+  100% { transform: scale(1); box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
 }
-@keyframes cupGlowPulse{
-  from{opacity:.3;transform:scale(.9);}
-  to{opacity:.85;transform:scale(1.15);}
+@keyframes bg3VerdictDrop {
+  0% { opacity: 0; transform: translateY(-16px) scale(0.85); }
+  70% { opacity: 1; transform: translateY(4px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes ornateCupShake{
-  0%{transform:translate(0,0) rotate(0deg) scale(1);}
-  15%{transform:translate(-6px,-8px) rotate(-12deg) scale(1.04);}
-  30%{transform:translate(6px,4px) rotate(10deg) scale(.98);}
-  45%{transform:translate(-8px,-10px) rotate(-14deg) scale(1.05);}
-  60%{transform:translate(8px,6px) rotate(12deg) scale(.97);}
-  75%{transform:translate(-5px,-4px) rotate(-8deg) scale(1.02);}
-  90%{transform:translate(4px,2px) rotate(6deg) scale(1);}
-  100%{transform:translate(0,0) rotate(0deg) scale(1);}
+@keyframes bg3CritGlow {
+  0%, 100% { box-shadow: 0 0 35px rgba(253,224,71,0.8), inset 0 0 20px rgba(253,224,71,0.5); }
+  50% { box-shadow: 0 0 60px rgba(255,245,220,1), inset 0 0 35px rgba(253,224,71,0.8); }
 }
-@keyframes ornateCupPour{
-  0%{transform:translate(0,0) rotate(0deg);opacity:1;}
-  40%{transform:translate(-15px,-20px) rotate(-70deg) scale(1.05);opacity:1;}
-  75%{transform:translate(15px,15px) rotate(-115deg) scale(.95);opacity:.9;}
-  100%{transform:translate(30px,40px) rotate(-130deg) scale(.7);opacity:0;}
+@keyframes bg3FumbleGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(200,75,87,0.7), inset 0 0 16px rgba(200,75,87,0.4); }
+  50% { box-shadow: 0 0 50px rgba(235,50,60,0.9), inset 0 0 28px rgba(200,75,87,0.7); }
 }
 
-.roll-result-stage{
-  transition:all .35s cubic-bezier(.2,.9,.3,1.2);
+.roll-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 4, 6, 0.88);
+  padding: 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
-.roll-result-stage.revealed{
-  animation:diceTumbleOut .4s cubic-bezier(.2,.9,.3,1.2) forwards;
+.roll-overlay.hidden { display: none !important; }
+
+/* Cámara Gótica */
+.bg3-chamber {
+  position: relative;
+  background: radial-gradient(circle at 50% 20%, #201420 0%, #150d17 50%, #0a060a 100%);
+  border: 1.8px solid var(--gold);
+  border-radius: 22px;
+  padding: 22px 18px 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 430px;
+  max-height: 94vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dark) transparent;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.96), inset 0 0 35px rgba(176, 141, 87, 0.18), 0 0 0 3px rgba(12, 8, 12, 0.95);
+  animation: bg3ChamberEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@keyframes diceTumbleOut{
-  0%{opacity:0;transform:scale(.5) translateY(-20px) rotate(-120deg);}
-  60%{opacity:1;transform:scale(1.12) translateY(6px) rotate(15deg);}
-  80%{opacity:1;transform:scale(.95) translateY(-3px) rotate(-5deg);}
-  100%{opacity:1;transform:scale(1) translateY(0) rotate(0deg);}
+.bg3-chamber::-webkit-scrollbar { width: 4px; }
+.bg3-chamber::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 4px; }
+
+/* Esquinas Ornamentales */
+.bg3-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--gold);
+  pointer-events: none;
+  opacity: 0.7;
+}
+.bg3-corner.tl { top: 7px; left: 7px; border-right: none; border-bottom: none; }
+.bg3-corner.tr { top: 7px; right: 7px; border-left: none; border-bottom: none; }
+.bg3-corner.bl { bottom: 7px; left: 7px; border-right: none; border-top: none; }
+.bg3-corner.br { bottom: 7px; right: 7px; border-left: none; border-top: none; }
+
+/* Cabecera */
+.bg3-header {
+  position: relative;
+  margin-bottom: 12px;
+}
+.bg3-close-btn {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  background: transparent;
+  border: 1px solid rgba(222,195,146,0.3);
+  color: var(--ink-dim);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.bg3-close-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(200, 75, 87, 0.15);
+}
+.bg3-title {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8), 0 0 15px rgba(222, 195, 146, 0.25);
+}
+.bg3-subtitle {
+  font-size: 0.78rem;
+  font-family: var(--font-display);
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+  opacity: 0.9;
 }
 
-.roll-score{font-family:var(--font-display);font-size:3.4rem;font-weight:700;color:var(--gold-light);line-height:1;margin:10px 0;text-shadow:0 0 20px rgba(176,141,87,0.6), 0 2px 4px rgba(0,0,0,0.9);}
-.roll-score.crit{color:#FDE047;text-shadow:0 0 25px rgba(253,224,71,0.95), 0 2px 4px rgba(0,0,0,0.9);animation:rollGlowPulse 1s ease-in-out infinite;}
-.roll-score.fumble{color:var(--danger);text-shadow:0 0 25px rgba(192,57,43,0.95), 0 2px 4px rgba(0,0,0,0.9);}
-.adv-dice-wrap{display:flex;justify-content:center;gap:8px;margin:8px 0;}
-.adv-die-card{background:var(--bg-card);border:1.5px solid var(--line);border-radius:7px;padding:7px 11px;font-family:var(--font-mono);font-size:1.2rem;color:var(--ink-dim);}
-.adv-die-card.chosen{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.2);box-shadow:0 0 10px -2px rgba(176,141,87,0.5);}
-.adv-die-card.discarded{opacity:0.35;text-decoration:line-through;border-color:var(--danger);}
+/* Placa Gótica de Dificultad (CD) */
+.bg3-dc-plate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px auto 14px;
+  width: 100%;
+}
+.bg3-dc-filigree {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(176, 141, 87, 0.5));
+}
+.bg3-dc-filigree.right {
+  background: linear-gradient(90deg, rgba(176, 141, 87, 0.5), transparent);
+}
+.bg3-dc-arch {
+  background: linear-gradient(180deg, rgba(34, 22, 32, 0.95), rgba(18, 11, 18, 0.95));
+  border: 1.5px solid var(--gold);
+  border-radius: 14px 14px 8px 8px;
+  padding: 8px 20px 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.7), inset 0 0 10px rgba(176,141,87,0.15);
+  min-width: 170px;
+}
+.bg3-dc-label {
+  font-size: 0.65rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.bg3-dc-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.bg3-dc-number {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1;
+  text-shadow: 0 0 16px rgba(222, 195, 146, 0.45);
+  min-width: 44px;
+}
+.bg3-dc-btn {
+  background: rgba(18, 12, 18, 0.8);
+  border: 1px solid rgba(176, 141, 87, 0.4);
+  color: var(--gold-light);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: all var(--transition-fast);
+}
+.bg3-dc-btn:hover {
+  border-color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.2);
+  transform: scale(1.1);
+}
+.bg3-dc-mode-tag {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 2px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.bg3-dc-mode-tag:hover { color: var(--gold-light); }
+
+/* Selector de Modo (Normal / Ventaja / Desventaja) */
+.bg3-mode-bar {
+  display: flex;
+  gap: 6px;
+  margin: 0 auto 14px;
+  background: rgba(16, 10, 16, 0.7);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(176, 141, 87, 0.25);
+  max-width: 320px;
+}
+.bg3-mode-pill {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  padding: 6px 4px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.bg3-mode-pill:hover {
+  color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.12);
+}
+.bg3-mode-pill.active {
+  background: linear-gradient(135deg, rgba(176, 141, 87, 0.35), rgba(90, 65, 30, 0.5));
+  color: var(--gold-light);
+  font-weight: 700;
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 12px -2px rgba(176, 141, 87, 0.45);
+}
+
+/* Santuario del Dado y Astrolabio */
+.bg3-sanctuary {
+  position: relative;
+  min-height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0 10px;
+}
+.bg3-astrolabe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  margin-top: -110px;
+  margin-left: -110px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.astrolabe-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.2px solid rgba(176, 141, 87, 0.3);
+}
+.astrolabe-ring.ring-outer {
+  border-style: dashed;
+  border-width: 1.4px;
+  border-color: rgba(222, 195, 146, 0.35);
+  animation: bg3AstrolabeSpin 42s linear infinite;
+}
+.astrolabe-ring.ring-mid {
+  inset: 22px;
+  border-color: rgba(176, 141, 87, 0.45);
+  border-width: 1.5px;
+  animation: bg3AstrolabeSpinRev 32s linear infinite;
+}
+.astrolabe-ring.ring-inner {
+  inset: 48px;
+  border: 1px solid rgba(253, 224, 71, 0.25);
+}
+.astrolabe-glow {
+  position: absolute;
+  inset: 20px;
+  background: radial-gradient(circle, rgba(222, 195, 146, 0.14) 0%, transparent 68%);
+  border-radius: 50%;
+}
+
+/* Escenario de Dados 3D */
+.bg3-dice-stage {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 140px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bg3-die-slot {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.bg3-die-slot.hidden { display: none !important; }
+
+/* Contenedor del Dado 3D */
+.bg3-die-3d {
+  position: relative;
+  width: 115px;
+  height: 115px;
+  transform-style: preserve-3d;
+  animation: bg3DieFloat 3.8s ease-in-out infinite;
+  transition: filter 0.3s ease;
+}
+.bg3-die-3d.rolling {
+  animation: bg3DieRoll3D 0.85s cubic-bezier(0.2, 0.8, 0.25, 1) forwards !important;
+}
+.bg3-die-3d.settling {
+  animation: bg3DieSettle 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards !important;
+}
+.bg3-die-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 10px rgba(176, 141, 87, 0.35));
+}
+.bg3-die-shadow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 18px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.85) 0%, transparent 72%);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.bg3-die-3d.rolling + .bg3-die-shadow {
+  transform: translateX(-50%) scale(0.6);
+  opacity: 0.4;
+}
+
+/* Efectos de Ventaja / Desventaja sobre los dados */
+.bg3-die-slot.winner .bg3-die-3d {
+  filter: drop-shadow(0 0 16px rgba(253, 224, 71, 0.95)) drop-shadow(0 0 28px rgba(222, 195, 146, 0.7));
+}
+.bg3-die-slot.winner-disadv .bg3-die-3d {
+  filter: drop-shadow(0 0 16px rgba(200, 75, 87, 0.95)) drop-shadow(0 0 24px rgba(200, 75, 87, 0.5));
+}
+.bg3-die-slot.discarded {
+  opacity: 0.35;
+  transform: scale(0.88);
+}
+.bg3-die-tag {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.bg3-die-tag.win {
+  background: rgba(22, 16, 10, 0.95);
+  border: 1px solid var(--gold);
+  color: var(--gold-light);
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+}
+.bg3-die-tag.disc {
+  background: rgba(12, 6, 8, 0.9);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  text-decoration: line-through;
+}
+
+/* Banner Interactivo de Lanzamiento */
+.bg3-prompt-wrap {
+  margin-top: 8px;
+  position: relative;
+  z-index: 3;
+}
+.bg3-prompt-banner {
+  background: linear-gradient(180deg, rgba(28, 18, 26, 0.9), rgba(15, 9, 15, 0.95));
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 8px 18px;
+  color: var(--gold-light);
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65), inset 0 0 10px rgba(176, 141, 87, 0.2);
+  transition: all var(--transition-fast);
+}
+.bg3-prompt-banner:hover {
+  transform: translateY(-2px);
+  border-color: #FFF5DC;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(253, 224, 71, 0.35);
+  color: #FFF5DC;
+}
+.bg3-prompt-banner:active { transform: scale(0.97); }
+.bg3-prompt-icon { color: var(--gold); font-size: 0.75rem; }
+
+/* Placa de Veredicto */
+.bg3-verdict-plate {
+  margin: 8px auto 12px;
+  background: linear-gradient(180deg, rgba(32, 20, 30, 0.95), rgba(16, 10, 16, 0.98));
+  border: 1.5px solid var(--gold);
+  border-radius: 12px;
+  padding: 10px 16px;
+  max-width: 320px;
+  animation: bg3VerdictDrop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+.bg3-verdict-plate.hidden { display: none !important; }
+.bg3-verdict-plate.success {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 20px rgba(222, 195, 146, 0.4), inset 0 0 12px rgba(253, 224, 71, 0.2);
+}
+.bg3-verdict-plate.failure {
+  border-color: var(--danger);
+  box-shadow: 0 0 16px rgba(200, 75, 87, 0.35), inset 0 0 10px rgba(200, 75, 87, 0.15);
+}
+.bg3-verdict-plate.crit {
+  border-color: #FDE047;
+  animation: bg3CritGlow 1.2s ease-in-out infinite alternate;
+}
+.bg3-verdict-plate.fumble {
+  border-color: var(--danger);
+  animation: bg3FumbleGlow 1.2s ease-in-out infinite alternate;
+}
+.bg3-verdict-title {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  color: var(--gold-light);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+.bg3-verdict-plate.success .bg3-verdict-title { color: #FFF5DC; }
+.bg3-verdict-plate.failure .bg3-verdict-title { color: var(--danger); }
+.bg3-verdict-plate.crit .bg3-verdict-title { color: #FDE047; }
+.bg3-verdict-plate.fumble .bg3-verdict-title { color: #FF6B7A; }
+.bg3-verdict-math {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  color: var(--ink-dim);
+  margin-top: 4px;
+}
+
+/* Bandeja de Bonificadores (Shelf) */
+.bg3-shelf {
+  margin-top: 10px;
+  position: relative;
+}
+.bg3-mod-cards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 96px;
+  margin-bottom: 12px;
+}
+.bg3-card {
+  position: relative;
+  width: 82px;
+  height: 98px;
+  background: linear-gradient(180deg, #281926 0%, #160e18 60%, #0e080f 100%);
+  border: 1.5px solid var(--gold);
+  border-radius: 14px 14px 8px 8px;
+  padding: 8px 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+.bg3-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold-light);
+}
+.bg3-card.pulse {
+  animation: bg3CardPulse 0.45s ease-out forwards;
+}
+.bg3-card-val {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.bg3-card-val.neg { color: var(--danger); }
+.bg3-card-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+}
+.bg3-card-lbl {
+  font-size: 0.62rem;
+  font-family: var(--font-display);
+  color: var(--ink-dim);
+  text-transform: capitalize;
+  text-align: center;
+  max-width: 74px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
+}
+.bg3-card-del {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1a0f14;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.bg3-card-del:hover { background: var(--danger); color: #FFF; }
+
+/* Divisor de Total */
+.bg3-total-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 6px auto 14px;
+}
+.bg3-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(176, 141, 87, 0.4), transparent);
+}
+.bg3-total-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+.bg3-total-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--gold-light);
+}
+
+/* Barra de Acciones */
+.bg3-actions-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.bg3-btn-add-mod {
+  background: linear-gradient(180deg, rgba(28, 18, 26, 0.8), rgba(15, 9, 15, 0.95));
+  border: 1px solid rgba(176, 141, 87, 0.5);
+  border-radius: 20px;
+  padding: 6px 18px;
+  color: var(--gold-light);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+.bg3-btn-add-mod:hover {
+  border-color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.2);
+  transform: translateY(-1px);
+}
+.bg3-cross-icon { font-size: 0.82rem; color: var(--gold); }
+
+.bg3-post-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+.bg3-post-actions.hidden { display: none !important; }
+.bg3-btn-secondary {
+  flex: 1;
+  background: rgba(22, 14, 20, 0.9);
+  border: 1.5px solid rgba(176, 141, 87, 0.4);
+  color: var(--ink-light);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.bg3-btn-secondary:hover {
+  border-color: var(--gold);
+  color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.15);
+}
+.bg3-btn-primary {
+  flex: 1;
+  background: linear-gradient(135deg, #dec392, #b08d57);
+  border: 1.5px solid #fff5dc;
+  color: #120d0a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  transition: all var(--transition-fast);
+}
+.bg3-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), 0 0 12px rgba(253, 224, 71, 0.4);
+}
+
+/* Popover para Añadir Bonificador */
+.bg3-popover {
+  margin-top: 10px;
+  background: linear-gradient(180deg, #1f141e, #110912);
+  border: 1.2px solid var(--gold);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: left;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+  animation: bg3ChamberEnter 0.2s ease;
+}
+.bg3-popover.hidden { display: none !important; }
+.bg3-popover-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  color: var(--gold-light);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.bg3-popover-x {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.bg3-popover-x:hover { color: var(--danger); }
+.bg3-quick-pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.bg3-qpill {
+  background: rgba(26, 16, 24, 0.8);
+  border: 1px solid rgba(176, 141, 87, 0.35);
+  color: var(--gold-light);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.bg3-qpill:hover { border-color: var(--gold); background: rgba(176, 141, 87, 0.25); }
+.bg3-qpill.neg { color: var(--danger); border-color: rgba(200, 75, 87, 0.4); }
+.bg3-qpill.neg:hover { border-color: var(--danger); background: rgba(200, 75, 87, 0.2); }
+.bg3-custom-mod-form {
+  display: flex;
+  gap: 6px;
+}
+.bg3-custom-mod-form input {
+  background: rgba(10, 6, 10, 0.7);
+  border: 1px solid var(--line);
+  color: var(--ink-light);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.76rem;
+}
+.bg3-custom-mod-form input:focus { border-color: var(--gold); outline: none; }
+.bg3-btn-submit-mod {
+  background: var(--gold);
+  border: none;
+  color: #120d0a;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bg3-btn-submit-mod:hover { background: var(--gold-light); }
+
+/* Tarjetas de Atributo Rollables */
+.attr-card.rollable {
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.attr-card.rollable:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 10px rgba(176, 141, 87, 0.3);
+}
+.attr-card.rollable .attr-roll-hint {
+  display: block;
+  font-size: 0.56rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+  opacity: 0.85;
+}
+
 
 /* LANZADOR DE DADOS CON CUBILETE */
 .cup-modal-header{
