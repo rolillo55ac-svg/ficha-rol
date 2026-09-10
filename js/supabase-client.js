@@ -156,14 +156,15 @@ function handleRemoteCampaignMapChange(payload){
   } else if(row.id === 'world_compendium'){
     var comp = row.data;
     if(comp){
-      if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
-      if(comp.bestiary) state.bestiary = comp.bestiary;
-      if(comp.lore) state.lore = comp.lore;
-      if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
-      if(comp.quests) state.quests = comp.quests;
-      if(comp.questClues) state.questClues = comp.questClues;
-      if(comp.questMap) state.questMap = comp.questMap;
-      if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
+      if(Array.isArray(comp.weaponsCatalog) && comp.weaponsCatalog.length) state.weaponsCatalog = comp.weaponsCatalog;
+      if(Array.isArray(comp.bestiary) && comp.bestiary.length) state.bestiary = comp.bestiary;
+      if(comp.lore && comp.lore.objetos && comp.lore.objetos.length) state.lore = comp.lore;
+      if(Array.isArray(comp.buffCatalog) && comp.buffCatalog.length) state.buffCatalog = comp.buffCatalog;
+      if(Array.isArray(comp.quests) && comp.quests.length) state.quests = comp.quests;
+      if(Array.isArray(comp.questClues) && comp.questClues.length) state.questClues = comp.questClues;
+      if(comp.questMap && comp.questMap.name) state.questMap = comp.questMap;
+      if(typeof comp.sessionSummary === "string" && comp.sessionSummary.trim()) state.sessionSummary = comp.sessionSummary;
+      state = migrateState(state);
       saveState(true);
       if(["mundo","bestiario","mision"].indexOf(state.activeTab) !== -1){
         if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();

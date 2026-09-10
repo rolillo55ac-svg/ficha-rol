@@ -281,6 +281,42 @@ function getSeedLore(){
 }
 
 
+function getSeedQuests(){
+  return [
+    {
+      id: "quest_trysar_infil",
+      title: "La Infiltración en Trysar",
+      type: "principal",
+      category: "principal",
+      status: "activa",
+      location: "Puertos de Trysar",
+      reward: "Oro, contactos en los muelles",
+      desc: "Investigar las actividades sospechosas de los contrabandistas en los puertos de Trysar.",
+      image: null,
+      markers: [],
+      tasks: [
+        { id: "task_trysar_1", text: "Contactar con el informante en la taberna del puerto", done: false },
+        { id: "task_trysar_2", text: "Inspeccionar el almacén de venenos y suministros", done: false }
+      ],
+      completed: false
+    }
+  ];
+}
+
+function getSeedQuestClues(){
+  return [
+    { id: "clue_sello_purpura", title: "Sello de cera púrpura", desc: "Encontrado en una carta interceptada con la marca de Krysalis.", image: null }
+  ];
+}
+
+function getSeedQuestMap(){
+  return { name: "Mapa de la Misión", image: null, notes: "Puntos de reunión y rutas de escape marcadas.", markers: [] };
+}
+
+function getSeedSessionSummary(){
+  return "Los aventureros se preparan para su incursión. Recuerden comprobar provisiones y preparar antídotos.";
+}
+
 function defaultState(){
   var officialChars = getOfficialCharacters();
   return {
@@ -288,31 +324,17 @@ function defaultState(){
     activeTab: "ficha",
     rollLog: [],
     characters: officialChars,
-    officialDataVersion: 4,
+    officialDataVersion: 5,
     weaponsCatalog: getSeedWeaponsCatalog(),
     buffCatalog: getSeedBuffCatalog(),
     lore: getSeedLore(),
     bestiary: getSeedBestiary(),
     maps: [{ id: "world_main", name: "Mapa de Campaña", image: null, markers: [] }],
     activeMapId: "world_main",
-    quests: [
-      {
-        id: uid(),
-        title: "La Infiltración en Trysar",
-        category: "principal",
-        desc: "Investigar las actividades sospechosas de los contrabandistas en los puertos de Trysar.",
-        tasks: [
-          { id: uid(), text: "Contactar con el informante en la taberna del puerto", done: false },
-          { id: uid(), text: "Inspeccionar el almacén de venenos y suministros", done: false }
-        ],
-        completed: false
-      }
-    ],
-    questClues: [
-      { id: uid(), title: "Sello de cera púrpura", desc: "Encontrado en una carta interceptada con la marca de Krysalis." }
-    ],
-    questMap: { name: "Mapa de la Misión", image: null, notes: "Puntos de reunión y rutas de escape marcadas." },
-    sessionSummary: "Los aventureros se preparan para su incursión. Recuerden comprobar provisiones y preparar antídotos."
+    quests: getSeedQuests(),
+    questClues: getSeedQuestClues(),
+    questMap: getSeedQuestMap(),
+    sessionSummary: getSeedSessionSummary()
   };
 }
 
@@ -320,27 +342,118 @@ function migrateState(s){
   if(!s) return defaultState();
   if(!s.activeTab) s.activeTab="ficha";
   if(!s.rollLog) s.rollLog=[];
-  if(!s.weaponsCatalog || !s.weaponsCatalog.length) s.weaponsCatalog=getSeedWeaponsCatalog();
-  if(!s.buffCatalog || !s.buffCatalog.length) s.buffCatalog=getSeedBuffCatalog();
-  else {
+
+  // 1. Integridad de Armas y Armaduras
+  if(!s.weaponsCatalog || !Array.isArray(s.weaponsCatalog) || !s.weaponsCatalog.length){
+    s.weaponsCatalog = getSeedWeaponsCatalog();
+  } else {
+    var seedW = getSeedWeaponsCatalog();
+    seedW.forEach(function(sw){
+      var exists = s.weaponsCatalog.some(function(w){
+        return (w.id && w.id === sw.id) || (w.name && w.name.trim().toLowerCase() === sw.name.trim().toLowerCase());
+      });
+      if(!exists) s.weaponsCatalog.push(JSON.parse(JSON.stringify(sw)));
+    });
+    s.weaponsCatalog.forEach(function(w){ if(w.visible === undefined) w.visible = true; });
+  }
+
+  // 2. Integridad de Catálogo de Buffs
+  if(!s.buffCatalog || !Array.isArray(s.buffCatalog) || !s.buffCatalog.length){
+    s.buffCatalog = getSeedBuffCatalog();
+  } else {
     s.buffCatalog.forEach(function(b){
-      if(b.duration===undefined) b.duration="permanent";
-      if(b.durationTurns===undefined) b.durationTurns=0;
+      if(b.duration === undefined) b.duration = "permanent";
+      if(b.durationTurns === undefined) b.durationTurns = 0;
+      if(b.visible === undefined) b.visible = true;
     });
   }
-  if(!s.lore || !s.lore.objetos) s.lore=getSeedLore();
-  if(!s.bestiary || !s.bestiary.length) s.bestiary=getSeedBestiary();
-  else {
+
+  // 3. Integridad de Lore Oficial (Venenos, Pociones, Ungüentos, Pistas, NPCs)
+  if(!s.lore || typeof s.lore !== "object") s.lore = getSeedLore();
+  var seedLore = getSeedLore();
+  if(!Array.isArray(s.lore.pistas) || !s.lore.pistas.length) s.lore.pistas = seedLore.pistas;
+  if(!Array.isArray(s.lore.npcs) || !s.lore.npcs.length) s.lore.npcs = seedLore.npcs;
+  if(!Array.isArray(s.lore.objetos) || !s.lore.objetos.length){
+    s.lore.objetos = seedLore.objetos;
+  } else {
+    seedLore.objetos.forEach(function(so){
+      var exists = s.lore.objetos.some(function(o){
+        return o.title && o.title.trim().toLowerCase() === so.title.trim().toLowerCase();
+      });
+      if(!exists) s.lore.objetos.push(JSON.parse(JSON.stringify(so)));
+    });
+  }
+  ["pistas","npcs","objetos"].forEach(function(cat){
+    if(s.lore && s.lore[cat]){
+      s.lore[cat].forEach(function(item){ if(item.visible === undefined) item.visible = true; });
+    }
+  });
+
+  // 4. Integridad de Bestiario Oficial
+  if(!s.bestiary || !Array.isArray(s.bestiary) || !s.bestiary.length){
+    s.bestiary = getSeedBestiary();
+  } else {
+    var seedB = getSeedBestiary();
+    seedB.forEach(function(sb){
+      var exists = s.bestiary.some(function(b){
+        return b.nombre && b.nombre.trim().toLowerCase() === sb.nombre.trim().toLowerCase();
+      });
+      if(!exists) s.bestiary.push(JSON.parse(JSON.stringify(sb)));
+    });
     migrateBestiaryData(s.bestiary);
   }
-  if(!s.maps || !s.maps.length){
+
+  // 5. Integridad de Mapas de Campaña
+  if(!s.maps || !Array.isArray(s.maps) || !s.maps.length){
     s.maps = [{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }];
     s.activeMapId = "world_main";
+  } else {
+    s.maps.forEach(function(m){
+      if(!Array.isArray(m.markers)) m.markers = [];
+    });
+    if(!s.activeMapId || !s.maps.some(function(m){ return m.id === s.activeMapId; })){
+      s.activeMapId = s.maps[0].id;
+    }
   }
-  if(!s.quests) s.quests = [];
-  if(!s.questClues) s.questClues = [];
-  if(!s.questMap) s.questMap = { name:"Mapa de la Misión", image:null, notes:"" };
-  if(s.sessionSummary === undefined) s.sessionSummary = "";
+
+  // 6. Integridad de Misiones de Campaña (Restauración garantizada de "La Infiltración en Trysar")
+  if(!s.quests || !Array.isArray(s.quests) || !s.quests.length){
+    s.quests = getSeedQuests();
+  } else {
+    s.quests.forEach(function(q){
+      if(!q.type) q.type = q.category || "principal";
+      if(!q.category) q.category = q.type;
+      if(!q.status) q.status = q.completed ? "completada" : "activa";
+      if(!Array.isArray(q.tasks)) q.tasks = [];
+      if(q.location === undefined) q.location = "";
+      if(q.reward === undefined) q.reward = "";
+      if(!Array.isArray(q.markers)) q.markers = [];
+    });
+    var hasTrysar = s.quests.some(function(q){
+      var t = (q.title || "").toLowerCase();
+      return t.includes("trysar") || t.includes("infiltraci");
+    });
+    var wasDeleted = Array.isArray(s._deletedSeedQuests) && s._deletedSeedQuests.indexOf("quest_trysar_infil") !== -1;
+    if(!hasTrysar && !wasDeleted){
+      s.quests.unshift(getSeedQuests()[0]);
+    }
+  }
+
+  // 7. Integridad de Pistas de Misión
+  if(!s.questClues || !Array.isArray(s.questClues) || !s.questClues.length){
+    s.questClues = getSeedQuestClues();
+  }
+
+  // 8. Integridad de Mapa de Misión
+  if(!s.questMap || typeof s.questMap !== "object" || !s.questMap.name){
+    s.questMap = getSeedQuestMap();
+  }
+  if(!Array.isArray(s.questMap.markers)) s.questMap.markers = [];
+
+  // 9. Integridad de Resumen de Sesión
+  if(s.sessionSummary === undefined || s.sessionSummary === null || s.sessionSummary === ""){
+    s.sessionSummary = getSeedSessionSummary();
+  }
 
   if(!s.officialDataVersion || s.officialDataVersion < 5){
     var officials = getOfficialCharacters();

@@ -164,12 +164,21 @@ async function pullMapFromSupabase(){
 function pushMapsData(forceAllow){
   if(!supabaseClient) return;
   if(currentUser && !isGM() && !forceAllow) return;
+  var mapData = (state.maps && state.maps.length) ? state.maps : [{ id:"world_main", name:"Mapa de Campaña", image:null, markers:[] }];
   supabaseClient.rpc('update_campaign_map', {
     map_id: 'main_map',
-    patch: state.maps || []
+    patch: mapData
   }).then(function(res){
     if(res.error) {
-      console.error('Error en update_campaign_map (main_map):', res.error);
+      console.warn('RPC update_campaign_map (main_map) aviso, ejecutando upsert de seguridad:', res.error);
+      supabaseClient.from('campaign_map').upsert({
+        id: 'main_map',
+        data: mapData,
+        updated_at: new Date().toISOString()
+      }).then(function(upRes){
+        if(upRes.error) console.error('Error en upsert campaign_map (main_map):', upRes.error);
+        else updateSyncBadge("synced");
+      }).catch(function(e){ console.error('Error en upsert main_map:', e); });
       return;
     }
     updateSyncBadge("synced");

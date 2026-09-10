@@ -266,6 +266,7 @@ function openDataModal(){
       '<button class="btn-compact" style="flex:1;padding:8px;" data-action="import-data" title="Cargar un archivo de copia anterior">Cargar copia</button>'+
     '</div>'+
     (isGM() ? '<button class="btn-compact btn-solid-gold" style="width:100%;margin-top:8px;padding:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
+    '<button class="btn-compact highlight" style="width:100%;margin-top:8px;padding:8px;background:rgba(176,141,87,0.18);border:1px solid var(--gold);color:var(--gold-light);font-weight:700;" data-action="repair-compendium-data" title="Verifica y recupera todas las misiones oficiales, criaturas del bestiario, armas y lore sin borrar tus datos">🛡️ Reparar y asegurar compendio oficial (Misiones y Bestiario)</button>'+
     '<div style="font-size:0.72rem;color:var(--ink-faint);margin-top:10px;line-height:1.4;">'+
       '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo a Lolo (rolillo55ac@gmail.com).</i>'+
     '</div>'+
@@ -591,6 +592,19 @@ function modalClick(e){
     var delta = parseInt(btn.getAttribute("data-delta"), 10);
     var isSummon = btn.getAttribute("data-summon") === "true";
     stepBeastMobility(bid, delta, isSummon);
+    return;
+  }
+  if(action==="repair-compendium-data"){
+    state = migrateState(state);
+    saveState(true);
+    if(isGM()){
+      pushSharedData();
+      pushMapsData();
+    }
+    renderTopbar();
+    renderTab();
+    closeModals();
+    showToast("¡Compendio verificado! Misiones, Bestiario, Lore y Armas protegidos con éxito.", "success");
     return;
   }
   if(action==="reset-all-characters"){

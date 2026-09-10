@@ -116,14 +116,14 @@ async function pullSharedDataFromSupabase(){
     var res = await supabaseClient.from('campaign_map').select('*').eq('id', 'world_compendium').maybeSingle();
     if(res.data && res.data.data){
       var comp = res.data.data;
-      if(comp.weaponsCatalog) state.weaponsCatalog = comp.weaponsCatalog;
-      if(comp.bestiary) state.bestiary = comp.bestiary;
-      if(comp.buffCatalog) state.buffCatalog = comp.buffCatalog;
-      if(comp.lore) state.lore = comp.lore;
-      if(comp.quests) state.quests = comp.quests;
-      if(comp.questClues) state.questClues = comp.questClues;
-      if(comp.questMap) state.questMap = comp.questMap;
-      if(comp.sessionSummary !== undefined) state.sessionSummary = comp.sessionSummary;
+      if(Array.isArray(comp.weaponsCatalog) && comp.weaponsCatalog.length) state.weaponsCatalog = comp.weaponsCatalog;
+      if(Array.isArray(comp.bestiary) && comp.bestiary.length) state.bestiary = comp.bestiary;
+      if(Array.isArray(comp.buffCatalog) && comp.buffCatalog.length) state.buffCatalog = comp.buffCatalog;
+      if(comp.lore && comp.lore.objetos && comp.lore.objetos.length) state.lore = comp.lore;
+      if(Array.isArray(comp.quests) && comp.quests.length) state.quests = comp.quests;
+      if(Array.isArray(comp.questClues) && comp.questClues.length) state.questClues = comp.questClues;
+      if(comp.questMap && comp.questMap.name) state.questMap = comp.questMap;
+      if(typeof comp.sessionSummary === "string" && comp.sessionSummary.trim()) state.sessionSummary = comp.sessionSummary;
     } else {
       // Fallback secundario si aún no existe el documento world_compendium
       try{
@@ -153,6 +153,8 @@ async function pullSharedDataFromSupabase(){
         if(bufRes.data && bufRes.data.length) state.buffCatalog = bufRes.data;
       }catch(errNorm){}
     }
+    // Asegurar que tras la sincronización se aplique la verificación e integridad de datos
+    state = migrateState(state);
     saveState(true);
     if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
       if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
@@ -164,20 +166,31 @@ function pushSharedData(patch){
   if(!supabaseClient) return;
   if(currentUser && !isGM()) return;
   var dataPatch = patch || {
-    weaponsCatalog: state.weaponsCatalog || [],
-    bestiary: state.bestiary || [],
-    lore: state.lore || getSeedLore(),
-    buffCatalog: state.buffCatalog || getSeedBuffCatalog(),
-    quests: state.quests || [],
-    questClues: state.questClues || [],
-    questMap: state.questMap || { name: "Mapa de la Misión", image: null, notes: "" },
-    sessionSummary: state.sessionSummary || ""
+    weaponsCatalog: (state.weaponsCatalog && state.weaponsCatalog.length) ? state.weaponsCatalog : getSeedWeaponsCatalog(),
+    bestiary: (state.bestiary && state.bestiary.length) ? state.bestiary : getSeedBestiary(),
+    lore: (state.lore && state.lore.objetos && state.lore.objetos.length) ? state.lore : getSeedLore(),
+    buffCatalog: (state.buffCatalog && state.buffCatalog.length) ? state.buffCatalog : getSeedBuffCatalog(),
+    quests: (state.quests && state.quests.length) ? state.quests : getSeedQuests(),
+    questClues: (state.questClues && state.questClues.length) ? state.questClues : getSeedQuestClues(),
+    questMap: (state.questMap && state.questMap.name) ? state.questMap : getSeedQuestMap(),
+    sessionSummary: state.sessionSummary || getSeedSessionSummary()
   };
   supabaseClient.rpc('update_campaign_map', {
     map_id: 'world_compendium',
     patch: dataPatch
   }).then(function(res){
-    if(res.error) { console.error('Error en update_campaign_map (world_compendium):', res.error); return; }
+    if(res.error) {
+      console.warn('RPC update_campaign_map aviso, ejecutando upsert de seguridad:', res.error);
+      supabaseClient.from('campaign_map').upsert({
+        id: 'world_compendium',
+        data: dataPatch,
+        updated_at: new Date().toISOString()
+      }).then(function(upRes){
+        if(upRes.error) console.error('Error en upsert campaign_map:', upRes.error);
+        else updateSyncBadge("synced");
+      }).catch(function(e){ console.error('Error en upsert directo:', e); });
+      return;
+    }
     updateSyncBadge("synced");
   }).catch(function(e){ console.error('Supabase error:', e); });
 }

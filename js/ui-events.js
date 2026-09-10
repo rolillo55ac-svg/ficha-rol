@@ -2059,6 +2059,12 @@ function handleClick(e){
     var qid = btn.getAttribute("data-id");
     if(confirm("¿Eliminar esta misión y todas sus tareas asociadas?")){
       state.quests = (state.quests||[]).filter(function(q){ return q.id !== qid; });
+      if(qid === "quest_trysar_infil" || (qid && qid.includes("trysar"))){
+        state._deletedSeedQuests = state._deletedSeedQuests || [];
+        if(state._deletedSeedQuests.indexOf("quest_trysar_infil") === -1){
+          state._deletedSeedQuests.push("quest_trysar_infil");
+        }
+      }
       saveState(true);
       pushSharedData({ quests: state.quests });
       renderTab();
