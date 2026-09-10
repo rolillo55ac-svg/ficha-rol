@@ -206,7 +206,7 @@ function openDataModal(){
   // === MONITOR DE ALMACENAMIENTO Y VERSIÓN UNIFICADO ===
   var local = typeof getLocalStorageUsage === "function" ? getLocalStorageUsage() : { pct: 0, usedStr: "0 B", totalStr: "5.0 MB", freeStr: "5.0 MB" };
   var localPillClass = local.pct > 90 ? "critical" : (local.pct > 70 ? "warning" : "optimal");
-  var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.1");
+  var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.2");
 
   html += '<div class="storage-monitor-box">'+
     '<div class="storage-monitor-header">'+
@@ -1266,7 +1266,7 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
     adminReply: "",
     resolvedAt: null,
     system: {
-      appVersion: "v" + (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.1") + " (" + (typeof APP_BUILD !== "undefined" ? APP_BUILD : "Build") + ")",
+      appVersion: "v" + (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.2") + " (" + (typeof APP_BUILD !== "undefined" ? APP_BUILD : "Build") + ")",
       screen: window.innerWidth + "x" + window.innerHeight,
       browser: browser,
       os: os,

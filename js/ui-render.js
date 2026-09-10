@@ -740,10 +740,11 @@ function tplCombate(c){
 
   var quickBtns = ["melee","distancia","esquivar","atletismo"].map(function(sid){
     var sdef = SKILL_DEFS.find(function(s){return s.id===sid;});
-    return '<button class="combat-quick-btn" data-action="roll-skill" data-id="' + sid + '"><span class="cq-label">' + sdef.name + '</span><span class="cq-total">' + skillTotal(sdef, c) + '</span></button>';
+    var total = skillTotal(sdef, c);
+    return '<button class="combat-quick-btn" data-action="roll-skill" data-id="' + sid + '" title="Tirar ' + esc(sdef.name) + ' (1d10 + ' + total + ')"><span class="cq-label">' + esc(sdef.name) + '</span><span class="cq-total">' + total + '</span></button>';
   }).join('');
 
-  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Tiradas de Combate</span></div><div class="combat-quick-grid">'+quickBtns+'</div></div>';
+  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Tiradas de Combate (1d10)</span></div><div class="combat-quick-grid">'+quickBtns+'</div></div>';
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Estadísticas de Combate</span></div>'+
     '<div class="combat-grid">'+
       combatStat("Iniciativa","iniciativa",cb.iniciativa,true)+
@@ -814,7 +815,7 @@ function combatStat(label,bind,val,rollable){
   var diffBadge = diff !== 0 ? '<span class="stat-eff-tag '+(diff>0?'pos':'neg')+'" title="Valor efectivo">'+(diff>0?'+'+diff:diff)+' (Total: '+eff+')</span>' : '';
   return '<div class="combat-stat"><label>'+esc(label)+diffBadge+'</label>'+
     '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'" '+(canEdit?'':'readonly')+'>'+
-    (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa">&#127922;</button>':'')+
+    (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa" title="Tirar Iniciativa (1d10 + '+eff+')">&#127922;</button>':'')+
   '</div>';
 }
 

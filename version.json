@@ -1,7 +1,7 @@
 {
-  "version": "1.2.1",
-  "build": "2026.09.10.2",
-  "updatedAt": "2026-09-10T22:30:00Z",
+  "version": "1.2.2",
+  "build": "2026.09.10.3",
+  "updatedAt": "2026-09-10T22:50:00Z",
   "forceReload": true,
-  "changelog": "Corrección de tirada 1d10 en armas (#TK-X3GW), optimización de buzón de sugerencias y sincronizador unificado de versiones y caché."
+  "changelog": "Tiradas de combate (Melé, Distancia, Esquivar, Atletismo e Iniciativa) corregidas a 1d10, desglose exacto de bonos y penalizadores sin duplicidad, y cálculo pulido de armas."
 }

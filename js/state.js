@@ -1,5 +1,5 @@
-var APP_VERSION = "1.2.1";
-var APP_BUILD = "2026.09.10.2";
+var APP_VERSION = "1.2.2";
+var APP_BUILD = "2026.09.10.3";
 
 var state = null;
 var supabaseClient = null;
@@ -633,28 +633,41 @@ function skillBase(skill, c){
 }
 
 function skillTotal(skill, c){ 
-  var total = skillBase(skill, c) + num(c.skillBonus[skill.id],0);
+  if(!skill || !c) return 0;
+  var total = skillBase(skill, c) + num(c.skillBonus ? c.skillBonus[skill.id] : 0, 0);
+
+  // Buffs específicos de combate en c.buffs
+  if(c.buffs){
+    if(skill.id === "melee" && c.buffs.sangre_ataque_melee) total += 1;
+    if(skill.id === "distancia" && c.buffs.sangre_ataque_dist) total += 1;
+  }
+
+  // Buffs activos para la habilidad concreta o tags de combate (sin duplicar atributo ya sumado en getEffectiveAttr)
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
       if(ab.active === false) return;
-      if(ab.attr === skill.id && ab.bonus){
-        var bonusNum = parseFloat(ab.bonus);
-        if(!isNaN(bonusNum)) total += bonusNum;
-      }
-      var skillAttr = skill.attr !== "hybrid" ? skill.attr : (c.skillHybrid[skill.id] || skill.hybridOptions[0]);
-      if(ab.attr === skillAttr && ab.bonus){
-        var attrBonus = parseFloat(ab.bonus);
-        if(!isNaN(attrBonus)) total += attrBonus;
+      var bonusNum = parseFloat(ab.bonus);
+      if(isNaN(bonusNum) || bonusNum === 0) return;
+      if(ab.attr === skill.id ||
+         (skill.id === "melee" && (ab.attr === "melé" || ab.attr === "melee" || ab.attr === "ataque")) ||
+         (skill.id === "distancia" && (ab.attr === "distancia" || ab.attr === "ataque"))){
+        total += bonusNum;
       }
     });
   }
+
+  // Hechizos activos para la habilidad concreta o tags de combate
   if(c.spells){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
         var stacks = Math.max(1, num(sp.activeStacks, 1));
-        if(sp.statAttr === skill.id){
-          var spNum = parseFloat(sp.statMod);
-          if(!isNaN(spNum)) total += spNum * stacks;
+        var spNum = parseFloat(sp.statMod);
+        if(!isNaN(spNum) && spNum !== 0){
+          if(sp.statAttr === skill.id ||
+             (skill.id === "melee" && (sp.statAttr === "melé" || sp.statAttr === "melee" || sp.statAttr === "ataque")) ||
+             (skill.id === "distancia" && (sp.statAttr === "distancia" || sp.statAttr === "ataque"))){
+            total += spNum * stacks;
+          }
         }
       }
     });
@@ -697,6 +710,9 @@ function parseShieldBonus(modStr){
 function getEffectiveCombatStat(statKey, c){
   var isShield = isShieldAttr(statKey);
   var base = isShield ? num(c.combat ? c.combat.escudoActual : 0, 0) : num(c.combat ? c.combat[statKey] : 0, 0);
+  if(c.buffs && c.buffs.mono && !isShield){
+    base -= 1;
+  }
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
       if(ab.active === false) return;
@@ -728,7 +744,27 @@ function getEffectiveCombatStat(statKey, c){
   return base;
 }
 
-function customSkillTotal(cs, c){ return getEffectiveAttr(cs.attr, c) + num(cs.bonus,0); }
+function customSkillTotal(cs, c){
+  if(!cs || !c) return 0;
+  var total = getEffectiveAttr(cs.attr || "destreza", c) + num(cs.bonus, 0);
+  if(c.activeBuffs){
+    c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
+      var b = parseFloat(ab.bonus);
+      if(!isNaN(b) && ab.attr === cs.id) total += b;
+    });
+  }
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr === cs.id && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
+        var sm = parseFloat(sp.statMod);
+        if(!isNaN(sm)) total += sm * stacks;
+      }
+    });
+  }
+  return total;
+}
 
 function getEffectiveMaxHp(c){
   if(!c || !c.combat) return 10;

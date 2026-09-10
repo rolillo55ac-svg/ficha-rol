@@ -597,7 +597,7 @@ async function broadcastForceAppUpdate(){
         type: "broadcast",
         event: "app_version_update",
         payload: {
-          version: (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.1"),
+          version: (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.2"),
           build: (typeof APP_BUILD !== "undefined" ? APP_BUILD : ""),
           timestamp: new Date().toISOString()
         }

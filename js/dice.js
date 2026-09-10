@@ -1731,34 +1731,57 @@ function closeBg3Roll(){
 function openBg3SkillRoll(c, sdef){
   if(!c || !sdef) return;
   var attrKey = sdef.attr !== "hybrid" ? sdef.attr : ((c.skillHybrid && c.skillHybrid[sdef.id]) || sdef.hybridOptions[0]);
-  var attrVal = getEffectiveAttr(attrKey, c);
+  var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
   var attrName = ATTR_LABELS[attrKey] || "Atributo";
   var trainBonus = num(c.skillBonus ? c.skillBonus[sdef.id] : 0, 0);
 
   var modifiers = [
-    { label: attrName, val: attrVal, icon: attrKey, type: "attr" }
+    { label: attrName + " (Base)", val: baseAttrVal, icon: attrKey, type: "attr" }
   ];
 
   if(trainBonus > 0){
-    modifiers.push({ label: "Entrenamiento", val: trainBonus, icon: "medal", type: "skill" });
+    modifiers.push({ label: "Entrenamiento (" + sdef.name + ")", val: trainBonus, icon: "medal", type: "skill" });
   }
 
+  // Buffs/debuffs integrados en ficha
+  if(attrKey === "percepcion" && c.buffs && c.buffs.sangre_perc){
+    modifiers.push({ label: "Sangre (Percepción)", val: 2, icon: "flame", type: "buff" });
+  }
+  if(attrKey === "destreza" && c.buffs && c.buffs.drogado_dex){
+    modifiers.push({ label: "Drogado (Destreza)", val: 1, icon: "poison", type: "buff" });
+  }
+  if(sdef.id === "melee" && c.buffs && c.buffs.sangre_ataque_melee){
+    modifiers.push({ label: "Sangre Melé", val: 1, icon: "flame", type: "buff" });
+  }
+  if(sdef.id === "distancia" && c.buffs && c.buffs.sangre_ataque_dist){
+    modifiers.push({ label: "Sangre Distancia", val: 1, icon: "flame", type: "buff" });
+  }
+  if(c.buffs && c.buffs.mono){
+    modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
+  }
+
+  // Buffs activos asignados del catálogo
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
       if(ab.active === false) return;
       var bVal = parseFloat(ab.bonus);
       if(isNaN(bVal) || bVal === 0) return;
-      if(ab.attr === sdef.id || ab.attr === attrKey || ab.attr === "todo"){
+      if(ab.attr === sdef.id || ab.attr === attrKey || ab.attr === "todo" ||
+         (sdef.id === "melee" && (ab.attr === "melé" || ab.attr === "melee" || ab.attr === "ataque")) ||
+         (sdef.id === "distancia" && (ab.attr === "distancia" || ab.attr === "ataque"))){
         modifiers.push({ label: ab.name || "Buff", val: bVal, icon: bVal > 0 ? "flame" : "poison", type: "buff" });
       }
     });
   }
 
+  // Hechizos y magias activas
   if(c.spells){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
         var stacks = Math.max(1, num(sp.activeStacks, 1));
-        if(sp.statAttr === sdef.id || sp.statAttr === attrKey || sp.statAttr === "todo"){
+        if(sp.statAttr === sdef.id || sp.statAttr === attrKey || sp.statAttr === "todo" ||
+           (sdef.id === "melee" && (sp.statAttr === "melé" || sp.statAttr === "melee" || sp.statAttr === "ataque")) ||
+           (sdef.id === "distancia" && (sp.statAttr === "distancia" || sp.statAttr === "ataque"))){
           var spNum = parseFloat(sp.statMod);
           if(!isNaN(spNum) && spNum !== 0){
             modifiers.push({
@@ -1773,14 +1796,10 @@ function openBg3SkillRoll(c, sdef){
     });
   }
 
-  if(c.buffs && c.buffs.mono){
-    modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
-  }
-
   openBg3RollModal({
     title: sdef.name,
-    subtitle: "Prueba de " + attrName + " (1d20)",
-    sides: 20,
+    subtitle: "Tirada de " + sdef.name + " (1d10)",
+    sides: 10,
     dc: 10,
     dcActive: true,
     isDamage: false,
@@ -1793,15 +1812,25 @@ function openBg3SkillRoll(c, sdef){
 function openBg3CustomSkillRoll(c, cs){
   if(!c || !cs) return;
   var attrKey = cs.attr || "destreza";
-  var attrVal = getEffectiveAttr(attrKey, c);
+  var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
   var attrName = ATTR_LABELS[attrKey] || "Atributo";
   var bonusVal = num(cs.bonus, 0);
 
   var modifiers = [
-    { label: attrName, val: attrVal, icon: attrKey, type: "attr" }
+    { label: attrName + " (Base)", val: baseAttrVal, icon: attrKey, type: "attr" }
   ];
   if(bonusVal > 0){
     modifiers.push({ label: "Rango", val: bonusVal, icon: "medal", type: "skill" });
+  }
+
+  if(attrKey === "percepcion" && c.buffs && c.buffs.sangre_perc){
+    modifiers.push({ label: "Sangre (Percepción)", val: 2, icon: "flame", type: "buff" });
+  }
+  if(attrKey === "destreza" && c.buffs && c.buffs.drogado_dex){
+    modifiers.push({ label: "Drogado (Destreza)", val: 1, icon: "poison", type: "buff" });
+  }
+  if(c.buffs && c.buffs.mono){
+    modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
   }
 
   if(c.activeBuffs){
@@ -1836,8 +1865,8 @@ function openBg3CustomSkillRoll(c, cs){
 
   openBg3RollModal({
     title: cs.name,
-    subtitle: "Prueba de " + attrName + " (1d20)",
-    sides: 20,
+    subtitle: "Tirada de " + cs.name + " (1d10)",
+    sides: 10,
     dc: 10,
     dcActive: true,
     isDamage: false,
@@ -1849,12 +1878,22 @@ function openBg3CustomSkillRoll(c, cs){
 
 function openBg3AttrRoll(c, attrKey){
   if(!c || !attrKey) return;
-  var attrVal = getEffectiveAttr(attrKey, c);
+  var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
   var attrName = ATTR_LABELS[attrKey] || "Atributo";
 
   var modifiers = [
-    { label: attrName, val: attrVal, icon: attrKey, type: "attr" }
+    { label: attrName + " (Base)", val: baseAttrVal, icon: attrKey, type: "attr" }
   ];
+
+  if(attrKey === "percepcion" && c.buffs && c.buffs.sangre_perc){
+    modifiers.push({ label: "Sangre (Percepción)", val: 2, icon: "flame", type: "buff" });
+  }
+  if(attrKey === "destreza" && c.buffs && c.buffs.drogado_dex){
+    modifiers.push({ label: "Drogado (Destreza)", val: 1, icon: "poison", type: "buff" });
+  }
+  if(c.buffs && c.buffs.mono){
+    modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
+  }
 
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
@@ -1903,19 +1942,26 @@ function openBg3WeaponAttackRoll(c, wpn){
   if(!c || !wpn) return;
   var catalog = (state && state.weaponsCatalog) ? state.weaponsCatalog : [];
   var catItem = catalog.find(function(ci){ return ci.name === wpn.name || ci.id === wpn.catalogId; });
-  var alcance = (catItem && catItem.alcance) ? catItem.alcance.toLowerCase() : "";
-  var wpnName = wpn.name || "Arma";
-  var isMelee = !alcance.includes("distancia") && !wpnName.toLowerCase().includes("arco") && !wpnName.toLowerCase().includes("ballesta") && !wpnName.toLowerCase().includes("distancia");
+  var wpnName = (wpn && wpn.name) ? wpn.name : "Arma";
+  var wpnLower = wpnName.toLowerCase();
+  var alcance = (catItem && catItem.alcance) ? catItem.alcance.toLowerCase() : ((wpn && wpn.alcance) ? String(wpn.alcance).toLowerCase() : "");
+
+  var isRanged = alcance.includes("distancia") || alcance.includes("disparo") ||
+                 wpnLower.includes("arco") || wpnLower.includes("ballesta") || wpnLower.includes("cerbatana") ||
+                 wpnLower.includes("pistola") || wpnLower.includes("fusil") || wpnLower.includes("honda") ||
+                 wpnLower.includes("arpon") || wpnLower.includes("arpón") ||
+                 (alcance.includes("m") && !alcance.includes("+") && !alcance.includes("melé") && !alcance.includes("melee") && parseInt(alcance, 10) >= 5);
+  var isMelee = !isRanged;
 
   var skillId = isMelee ? "melee" : "distancia";
   var sdef = (typeof SKILL_DEFS !== 'undefined') ? SKILL_DEFS.find(function(s){ return s.id === skillId; }) : null;
-  var attrKey = sdef ? sdef.attr : (isMelee ? "fuerza" : "destreza");
-  var attrVal = (typeof getEffectiveAttr === 'function') ? getEffectiveAttr(attrKey, c) : num(c.attr ? c.attr[attrKey] : 0, 0);
-  var attrName = (typeof ATTR_LABELS !== 'undefined' && ATTR_LABELS[attrKey]) ? ATTR_LABELS[attrKey] : (isMelee ? "Fuerza" : "Destreza");
+  var attrKey = sdef ? sdef.attr : (isMelee ? "fisico" : "destreza");
+  var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
+  var attrName = (typeof ATTR_LABELS !== 'undefined' && ATTR_LABELS[attrKey]) ? ATTR_LABELS[attrKey] : (isMelee ? "Físico" : "Destreza");
   var trainBonus = num(c.skillBonus ? c.skillBonus[skillId] : 0, 0);
 
   var modifiers = [
-    { label: attrName, val: attrVal, icon: attrKey, type: "attr" }
+    { label: attrName + " (Base)", val: baseAttrVal, icon: attrKey, type: "attr" }
   ];
 
   if(trainBonus > 0){
@@ -1923,6 +1969,7 @@ function openBg3WeaponAttackRoll(c, wpn){
   }
 
   if(c.buffs){
+    if(attrKey === "destreza" && c.buffs.drogado_dex) modifiers.push({ label: "Drogado (Destreza)", val: 1, icon: "poison", type: "buff" });
     if(isMelee && c.buffs.sangre_ataque_melee) modifiers.push({ label: "Sangre Melé", val: 1, icon: "flame", type: "buff" });
     if(!isMelee && c.buffs.sangre_ataque_dist) modifiers.push({ label: "Sangre Distancia", val: 1, icon: "flame", type: "buff" });
     if(c.buffs.mono) modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
@@ -1933,7 +1980,9 @@ function openBg3WeaponAttackRoll(c, wpn){
       if(ab.active === false) return;
       var bVal = parseFloat(ab.bonus);
       if(isNaN(bVal) || bVal === 0) return;
-      if(ab.attr === skillId || ab.attr === attrKey || ab.attr === "todo" || (isMelee && (ab.attr === "melé" || ab.attr === "melee")) || (!isMelee && ab.attr === "distancia")){
+      if(ab.attr === skillId || ab.attr === attrKey || ab.attr === "todo" || ab.attr === "ataque" ||
+         (isMelee && (ab.attr === "melé" || ab.attr === "melee")) ||
+         (!isMelee && ab.attr === "distancia")){
         modifiers.push({ label: ab.name || "Buff Ataque", val: bVal, icon: bVal > 0 ? "flame" : "poison", type: "buff" });
       }
     });
@@ -1943,7 +1992,9 @@ function openBg3WeaponAttackRoll(c, wpn){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
         var stacks = Math.max(1, num(sp.activeStacks, 1));
-        if(sp.statAttr === skillId || sp.statAttr === attrKey || sp.statAttr === "todo" || (isMelee && (sp.statAttr === "melé" || sp.statAttr === "melee")) || (!isMelee && sp.statAttr === "distancia")){
+        if(sp.statAttr === skillId || sp.statAttr === attrKey || sp.statAttr === "todo" || sp.statAttr === "ataque" ||
+           (isMelee && (sp.statAttr === "melé" || sp.statAttr === "melee")) ||
+           (!isMelee && sp.statAttr === "distancia")){
           var spNum = parseFloat(sp.statMod);
           if(!isNaN(spNum) && spNum !== 0){
             modifiers.push({
@@ -1987,9 +2038,16 @@ function openBg3WeaponRoll(c, wpn, formulaRaw){
 
   var catalog = (state && state.weaponsCatalog) ? state.weaponsCatalog : [];
   var catItem = catalog.find(function(ci){ return ci.name === (wpn && wpn.name) || ci.id === (wpn && wpn.catalogId); });
-  var alcance = (catItem && catItem.alcance) ? catItem.alcance.toLowerCase() : "";
   var wpnName = (wpn && wpn.name) ? wpn.name : "Arma";
-  var isMelee = !alcance.includes("distancia") && !wpnName.toLowerCase().includes("distancia") && !wpnName.toLowerCase().includes("arco") && !wpnName.toLowerCase().includes("ballesta");
+  var wpnLower = wpnName.toLowerCase();
+  var alcance = (catItem && catItem.alcance) ? catItem.alcance.toLowerCase() : ((wpn && wpn.alcance) ? String(wpn.alcance).toLowerCase() : "");
+
+  var isRanged = alcance.includes("distancia") || alcance.includes("disparo") ||
+                 wpnLower.includes("arco") || wpnLower.includes("ballesta") || wpnLower.includes("cerbatana") ||
+                 wpnLower.includes("pistola") || wpnLower.includes("fusil") || wpnLower.includes("honda") ||
+                 wpnLower.includes("arpon") || wpnLower.includes("arpón") ||
+                 (alcance.includes("m") && !alcance.includes("+") && !alcance.includes("melé") && !alcance.includes("melee") && parseInt(alcance, 10) >= 5);
+  var isMelee = !isRanged;
 
   if(c && c.buffs){
     if(isMelee && c.buffs.sangre_ataque_melee) modifiers.push({ label: "Sangre Melé (Daño)", val: 1, icon: "flame", type: "buff" });
@@ -2045,8 +2103,12 @@ function openBg3InitRoll(c){
   if(!c) return;
   var baseInit = (c.combat && c.combat.iniciativa !== undefined) ? num(c.combat.iniciativa, 0) : 0;
   var modifiers = [
-    { label: "Iniciativa Base", val: baseInit, icon: "destreza", type: "attr" }
+    { label: "Iniciativa (Base)", val: baseInit, icon: "destreza", type: "attr" }
   ];
+
+  if(c.buffs && c.buffs.mono){
+    modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
+  }
 
   if(c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
@@ -2079,8 +2141,8 @@ function openBg3InitRoll(c){
 
   openBg3RollModal({
     title: "Iniciativa",
-    subtitle: "Tirada de Combate (1d20)",
-    sides: 20,
+    subtitle: "Tirada de Iniciativa (1d10)",
+    sides: 10,
     dc: 10,
     dcActive: false,
     isDamage: false,
