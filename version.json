@@ -1,7 +1,7 @@
 {
-  "version": "1.2.5",
-  "build": "2026.09.10.6",
-  "updatedAt": "2026-09-10T23:25:00Z",
+  "version": "1.2.6",
+  "build": "2026.09.10.7",
+  "updatedAt": "2026-09-10T23:30:00Z",
   "forceReload": true,
-  "changelog": "Perfeccionada la simulación 3D del dado d10 y d%: trapezoedro pentagonal geométricamente exacto con caras deltoides 100% planas, numeración equilibrada opuesta (suman 11) y eliminación de distorsiones visuales."
+  "changelog": "Desactivado el cambio de pestaña por deslizamiento táctil en móviles para permitir scroll vertical y lectura fluida sin cambios involuntarios de menú."
 }

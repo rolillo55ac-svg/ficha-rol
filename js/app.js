@@ -53,15 +53,6 @@ function init(){
     safeListen("main", "input", handleChange);
     safeListen("main", "keydown", handleKeyDown);
     
-    if(typeof document.addEventListener === "function"){
-      document.addEventListener("touchstart", handleTouchStart, {passive: true});
-      document.addEventListener("touchend", handleTouchEnd, {passive: true});
-    }
-    
-    if(typeof window !== "undefined" && window.innerWidth < 768){
-      setTimeout(showSwipeIndicator, 1000);
-    }
-    
     safeListen("topbar", "click", handleClick);
     safeListen("tabbar", "click", handleClick);
     safeListen("charModal", "click", modalClick);
