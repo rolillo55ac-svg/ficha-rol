@@ -47,11 +47,11 @@ function renderTopbar(){
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
         '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
-          '<div class="'+nameClass+'">'+esc(c.name)+'<span class="version-tag">v0.9.6</span></div>'+
+          '<div class="'+nameClass+'">'+esc(c.name)+'</div>'+
           '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
-      '<div style="display:flex;align-items:center;gap:4px;">'+
+      '<div class="topbar-actions">'+
         '<span id="syncBadge" class="sync-status">'+(currentUser?'● Nube':'○ Local')+'</span>'+
         roleBadgeHtml+
         '<button class="icon-btn" data-action="open-data-modal" title="Ajustes y Sesión" aria-label="Ajustes">&#9881;</button>'+
@@ -754,7 +754,8 @@ function tplCombate(c){
       infoText += ' | <span style="color:#F87171;font-weight:700;">[🔒 Bloqueada por el Máster - No usable]</span>';
     }
 
-    html += '<div class="list-row weapons-row'+(isBlocked?' weapon-row-blocked':'')+'" style="grid-template-columns:1fr 36px 36px;">'+
+    var gridCols = canEdit ? '1fr 34px 34px 34px' : '1fr 34px 34px';
+    html += '<div class="list-row weapons-row'+(isBlocked?' weapon-row-blocked':'')+'" style="grid-template-columns:'+gridCols+';">'+
       '<select data-action="select-weapon-catalog" data-id="'+w.id+'" aria-label="Seleccionar arma" '+(canEdit?'':'disabled')+'>'+
         '<option value="">-- Seleccionar Arma del Compendio --</option>'+
         catalog.map(function(catItem){
@@ -763,8 +764,10 @@ function tplCombate(c){
         }).join('')+
       '</select>'+
       (isBlocked && !isGM()
-        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
-        : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño" aria-label="Tirar daño">&#127922;</button>'
+        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'+
+          '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
+        : '<button class="dice-btn attack-roll-btn" data-action="roll-weapon-attack" data-id="'+w.id+'" title="Tirar Ataque (1d20 + Melé/Distancia)" aria-label="Tirar ataque">⚔️</button>'+
+          '<button class="dice-btn damage-roll-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño ('+esc(selectedCatItem ? selectedCatItem.dano : "1d6")+')" aria-label="Tirar daño">💥</button>'
       )+
       (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
     '</div>'+

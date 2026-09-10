@@ -752,6 +752,19 @@ function handleClick(e){
     if(c) openBg3InitRoll(c);
     return;
   }
+  if(action==="roll-weapon-attack"){
+    var widAtk = btn.getAttribute("data-id");
+    var wpnAtk = (c.weapons||[]).find(function(w){return w.id===widAtk;});
+    if(wpnAtk && c){
+      var catItemAtk = (state.weaponsCatalog||[]).find(function(ci){ return ci.name === wpnAtk.name || ci.id === wpnAtk.catalogId; });
+      if(catItemAtk && catItemAtk.visible === false && !isGM()){
+        showToast("Esta arma ha sido bloqueada por el Máster y no se puede usar.", "warning");
+        return;
+      }
+      openBg3WeaponAttackRoll(c, wpnAtk);
+    }
+    return;
+  }
   if(action==="roll-weapon"){
     var wid = btn.getAttribute("data-id");
     var wpn = (c.weapons||[]).find(function(w){return w.id===wid;});

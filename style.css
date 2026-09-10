@@ -206,6 +206,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   padding:10px 10px 12px;backdrop-filter:blur(10px) saturate(1.1);
 }
 .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.topbar-actions{display:flex;align-items:center;gap:4px;flex:none;}
 .char-switch{display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--ink);padding:0;text-align:left;flex:1;min-width:0;cursor:pointer;border-radius:8px;}
 .char-switch:hover .char-crest{box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 0 0 3px rgba(176,141,87,0.25), 0 4px 12px rgba(0,0,0,0.55);}
 .char-switch:active{transform:scale(.99);}
@@ -266,7 +267,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 /* GAUGES */
 .gauges{display:grid;grid-template-columns:1fr 110px 1fr;gap:8px;margin-top:8px;}
-@media(max-width:600px){.gauges{grid-template-columns:1fr 1fr;}}
 .gauge-wrap{min-width:0;}
 .gauge-label{display:flex;justify-content:space-between;font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;letter-spacing:.03em;}
 .gauge-nums{font-family:var(--font-mono);color:var(--ink-dim);font-size:.72rem;}
@@ -283,6 +283,38 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.1);}
 .gauge-adjust button:active{transform:scale(.93);}
+
+/* REGLAS RESPONSIVAS ESPECÍFICAS PARA TOPBAR EN MÓVIL */
+@media(max-width:600px){
+  .topbar{padding:6px 8px 8px;}
+  .topbar-row{gap:4px;}
+  .char-switch{gap:6px;min-width:0;flex:1 1 auto;}
+  .char-crest{width:34px;height:34px;font-size:0.9rem;}
+  .char-info-box{min-width:0;flex:1 1 auto;}
+  .char-name{font-size:0.92rem;line-height:1.2;max-width:170px;}
+  .char-sub{font-size:0.6rem;letter-spacing:0.02em;}
+  .topbar-actions{display:flex;align-items:center;gap:3px;flex:none;}
+  .char-owner-topbar-tag{display:none;}
+  .role-badge{font-size:0.52rem;padding:1px 5px;letter-spacing:0.02em;}
+  .sync-status{font-size:0.52rem;padding:1px 4px;}
+  .icon-btn{width:32px;height:32px;font-size:0.95rem;}
+
+  /* Medidores en una sola fila compacta de 3 columnas para no duplicar altura */
+  .gauges{grid-template-columns:1.1fr 0.8fr 1fr;gap:4px;margin-top:5px;}
+  .gauge-label{font-size:0.56rem;margin-bottom:2px;letter-spacing:0.01em;}
+  .gauge-label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;}
+  .gauge-nums{font-size:0.62rem;white-space:nowrap;}
+  .gauge{height:8px;border-radius:4px;}
+  .gauge-adjust{gap:2px;margin-top:3px;}
+  .gauge-adjust button{min-height:24px;height:24px;padding:0;font-size:0.62rem;border-radius:4px;}
+}
+
+@media(max-width:380px){
+  .char-name{font-size:0.86rem;max-width:130px;}
+  .sync-status{display:none;}
+  .gauges{grid-template-columns:1fr 0.75fr 1fr;gap:3px;}
+  .gauge-adjust button{min-height:22px;height:22px;font-size:0.58rem;}
+}
 
 /* MAIN */
 main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
@@ -398,6 +430,15 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .dice-btn:hover{border-color:var(--blood-light);color:var(--blood-light);box-shadow:0 0 10px -2px rgba(var(--accent-rgb),0.6);}
 .dice-btn:active{transform:scale(.9) rotate(-8deg);}
+.dice-btn.attack-roll-btn{border-color:rgba(176,141,87,0.35);font-size:0.95rem;}
+.dice-btn.attack-roll-btn:hover{border-color:var(--gold);color:var(--gold-light);box-shadow:0 0 10px -2px rgba(176,141,87,0.6);}
+.dice-btn.damage-roll-btn{border-color:rgba(200,75,87,0.35);font-size:0.95rem;}
+.dice-btn.damage-roll-btn:hover{border-color:var(--blood-light);color:var(--blood-light);box-shadow:0 0 10px -2px rgba(var(--accent-rgb),0.6);}
+@media(max-width:600px){
+  .weapons-row{gap:3px;}
+  .weapons-row .dice-btn{width:32px;height:32px;min-width:32px;min-height:32px;font-size:0.85rem;}
+  .weapons-row .row-del{width:30px;height:30px;min-width:30px;min-height:30px;font-size:0.75rem;}
+}
 
 /* COMBATE */
 .buffs-container{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}

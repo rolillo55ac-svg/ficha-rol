@@ -87,6 +87,24 @@ function playBg3DiceLand(){
   click.start(now); click.stop(now + 0.042);
 }
 
+function playBg3DiceRattle(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  try {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = (Math.random() > 0.5) ? "triangle" : "sine";
+    var freq = 290 + Math.random() * 140;
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.65, now + 0.038);
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.09, now + 0.003);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.045);
+  } catch(e){}
+}
+
 function playBg3ModifierAdd(){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
@@ -449,8 +467,126 @@ function initBg3ThreeScene(sides, mode){
     bg3ThreeScene.add(bg3Die1Obj.group);
   }
 
+  setupDiceCanvasInteractions(canvas);
   startBg3ThreeLoop();
   return true;
+}
+
+var bg3InteractionState = {
+  isShaking: false,
+  shakeEnergy: 0,
+  shakeSamples: 0,
+  lastShakeTime: 0,
+  lastAccel: { x: null, y: null, z: null },
+  lastRattleTime: 0,
+  isDragging: false,
+  hasDragged: false,
+  lastPointerX: 0,
+  lastPointerY: 0,
+  dragVelocityX: 0,
+  dragVelocityY: 0
+};
+
+function requestMotionPermissionIfNeeded(){
+  if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+    try {
+      DeviceMotionEvent.requestPermission().catch(function(){});
+    } catch(err){}
+  }
+}
+
+function handleDeviceMotion(event){
+  if(!bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
+  var acc = event.acceleration || event.accelerationIncludingGravity;
+  if(!acc) return;
+  var x = acc.x || 0, y = acc.y || 0, z = acc.z || 0;
+  if(bg3InteractionState.lastAccel.x !== null){
+    var dx = x - bg3InteractionState.lastAccel.x;
+    var dy = y - bg3InteractionState.lastAccel.y;
+    var dz = z - bg3InteractionState.lastAccel.z;
+    var delta = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    
+    // Umbral de detección de sacudida
+    if(delta > 10.5){
+      var now = performance.now();
+      bg3InteractionState.isShaking = true;
+      bg3InteractionState.shakeEnergy = Math.min(24, bg3InteractionState.shakeEnergy + delta * 0.45);
+      bg3InteractionState.shakeSamples++;
+      bg3InteractionState.lastShakeTime = now;
+
+      // Sonido de dado agitándose dentro de cubilete
+      if(now - bg3InteractionState.lastRattleTime > 115){
+        playBg3DiceRattle();
+        bg3InteractionState.lastRattleTime = now;
+      }
+    }
+  }
+  bg3InteractionState.lastAccel = { x: x, y: y, z: z };
+}
+
+if(typeof window !== 'undefined'){
+  window.addEventListener('devicemotion', handleDeviceMotion, { passive: true });
+}
+
+function setupDiceCanvasInteractions(canvas){
+  if(!canvas || canvas._hasInteractionListeners) return;
+  canvas._hasInteractionListeners = true;
+
+  canvas.addEventListener('pointerdown', function(e){
+    requestMotionPermissionIfNeeded();
+    if(!bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
+    bg3InteractionState.isDragging = true;
+    bg3InteractionState.hasDragged = false;
+    bg3InteractionState.lastPointerX = e.clientX;
+    bg3InteractionState.lastPointerY = e.clientY;
+    bg3InteractionState.dragVelocityX = 0;
+    bg3InteractionState.dragVelocityY = 0;
+    try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+  });
+
+  canvas.addEventListener('pointermove', function(e){
+    if(!bg3InteractionState.isDragging || !bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
+    var dx = e.clientX - bg3InteractionState.lastPointerX;
+    var dy = e.clientY - bg3InteractionState.lastPointerY;
+    bg3InteractionState.lastPointerX = e.clientX;
+    bg3InteractionState.lastPointerY = e.clientY;
+
+    if(Math.abs(dx) > 1.5 || Math.abs(dy) > 1.5){
+      bg3InteractionState.hasDragged = true;
+      bg3InteractionState.dragVelocityX = dx;
+      bg3InteractionState.dragVelocityY = dy;
+      
+      // Girar el dado según el arrastre
+      if(bg3Die1Obj && bg3Die1Obj.group){
+        bg3Die1Obj.group.rotation.y += dx * 0.045;
+        bg3Die1Obj.group.rotation.x += dy * 0.045;
+      }
+      if(bg3Die2Obj && bg3Die2Obj.group){
+        bg3Die2Obj.group.rotation.y += dx * 0.045;
+        bg3Die2Obj.group.rotation.x += dy * 0.045;
+      }
+
+      var now = performance.now();
+      if((Math.abs(dx) > 5 || Math.abs(dy) > 5) && now - bg3InteractionState.lastRattleTime > 120){
+        playBg3DiceRattle();
+        bg3InteractionState.lastRattleTime = now;
+      }
+    }
+  });
+
+  var onPointerEnd = function(e){
+    if(!bg3InteractionState.isDragging) return;
+    bg3InteractionState.isDragging = false;
+    try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+
+    if(!bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
+
+    // Disparar lanzamiento del dado al soltar
+    triggerBg3Roll();
+  };
+
+  canvas.addEventListener('pointerup', onPointerEnd);
+  canvas.addEventListener('pointercancel', onPointerEnd);
 }
 
 function startBg3ThreeLoop(){
@@ -460,17 +596,48 @@ function startBg3ThreeLoop(){
     bg3ThreeAnimId = requestAnimationFrame(animate);
 
     if(!bg3PhysicsState.rolling){
-      // Rotación suave e hipnótica en estado inactivo
-      var t = time * 0.0012;
-      if(bg3Die1Obj && bg3Die1Obj.group){
-        bg3Die1Obj.group.rotation.x = Math.sin(t) * 0.25;
-        bg3Die1Obj.group.rotation.y = t * 0.5;
-        bg3Die1Obj.group.position.y = Math.sin(t * 1.5) * 0.08;
-      }
-      if(bg3Die2Obj && bg3Die2Obj.group){
-        bg3Die2Obj.group.rotation.x = Math.cos(t * 0.9) * 0.25;
-        bg3Die2Obj.group.rotation.y = -t * 0.45;
-        bg3Die2Obj.group.position.y = Math.cos(t * 1.5) * 0.08;
+      if(bg3InteractionState.shakeEnergy > 0.15){
+        var dt = 0.016;
+        var se = bg3InteractionState.shakeEnergy;
+        if(bg3Die1Obj && bg3Die1Obj.group){
+          bg3Die1Obj.group.rotation.x += (se * 0.5 + 0.1) * dt * 10;
+          bg3Die1Obj.group.rotation.y += (se * 0.7 + 0.1) * dt * 10;
+          bg3Die1Obj.group.rotation.z += (se * 0.35) * dt * 10;
+          bg3Die1Obj.group.position.x = ((bg3RollState.mode === "adv" || bg3RollState.mode === "disadv" || bg3RollState.sides === 100) ? -1.65 : 0) + (Math.random() - 0.5) * Math.min(0.2, se * 0.025);
+          bg3Die1Obj.group.position.y = (Math.random() - 0.5) * Math.min(0.2, se * 0.025);
+        }
+        if(bg3Die2Obj && bg3Die2Obj.group){
+          bg3Die2Obj.group.rotation.x -= (se * 0.55 + 0.1) * dt * 10;
+          bg3Die2Obj.group.rotation.y += (se * 0.75 + 0.1) * dt * 10;
+          bg3Die2Obj.group.position.x = 1.65 + (Math.random() - 0.5) * Math.min(0.2, se * 0.025);
+          bg3Die2Obj.group.position.y = (Math.random() - 0.5) * Math.min(0.2, se * 0.025);
+        }
+        bg3InteractionState.shakeEnergy *= 0.92;
+
+        // Si el usuario estaba agitando y se detiene (al menos 3 muestras de sacudida)
+        var now = performance.now();
+        if(bg3InteractionState.isShaking && (now - bg3InteractionState.lastShakeTime > 260) && bg3InteractionState.shakeSamples >= 3){
+          bg3InteractionState.isShaking = false;
+          bg3InteractionState.shakeSamples = 0;
+          bg3InteractionState.shakeEnergy = 0;
+          triggerBg3Roll();
+        }
+      } else {
+        // Rotación suave e hipnótica en estado inactivo
+        var t = time * 0.0012;
+        var basePosX = (bg3RollState.mode === "adv" || bg3RollState.mode === "disadv" || bg3RollState.sides === 100) ? -1.65 : 0;
+        if(bg3Die1Obj && bg3Die1Obj.group){
+          bg3Die1Obj.group.rotation.x = Math.sin(t) * 0.25;
+          bg3Die1Obj.group.rotation.y = t * 0.5;
+          bg3Die1Obj.group.position.x = basePosX;
+          bg3Die1Obj.group.position.y = Math.sin(t * 1.5) * 0.08;
+        }
+        if(bg3Die2Obj && bg3Die2Obj.group){
+          bg3Die2Obj.group.rotation.x = Math.cos(t * 0.9) * 0.25;
+          bg3Die2Obj.group.rotation.y = -t * 0.45;
+          bg3Die2Obj.group.position.x = 1.65;
+          bg3Die2Obj.group.position.y = Math.cos(t * 1.5) * 0.08;
+        }
       }
     } else {
       // Lanzamiento físico y rodadura 3D
@@ -659,6 +826,7 @@ function openBg3RollModal(cfg){
   bg3RollState.qty = cfg.qty || 1;
   bg3RollState.dc = (cfg.dc !== undefined && cfg.dc !== null) ? parseInt(cfg.dc, 10) : 10;
   bg3RollState.dcActive = cfg.dcActive !== undefined ? Boolean(cfg.dcActive) : true;
+  bg3RollState.isDamage = cfg.isDamage !== undefined ? Boolean(cfg.isDamage) : false;
   bg3RollState.mode = cfg.mode || "normal";
   bg3RollState.charName = cfg.charName || ((typeof activeChar === "function" && activeChar() && activeChar().name) ? activeChar().name : "Aventurero");
   bg3RollState.modifiers = Array.isArray(cfg.modifiers) ? cfg.modifiers.slice() : [];
@@ -671,6 +839,14 @@ function openBg3RollModal(cfg){
   bg3RollState.chosen = null;
   bg3RollState.total = 0;
 
+  // Resetear estado de agitación y arrastre
+  bg3InteractionState.isShaking = false;
+  bg3InteractionState.shakeEnergy = 0;
+  bg3InteractionState.shakeSamples = 0;
+  bg3InteractionState.isDragging = false;
+  bg3InteractionState.hasDragged = false;
+  bg3InteractionState.lastRattleTime = 0;
+
   var titleEl = document.getElementById("bg3RollTitle");
   if(titleEl) titleEl.textContent = bg3RollState.title;
   var subEl = document.getElementById("bg3RollSubtitle");
@@ -679,9 +855,17 @@ function openBg3RollModal(cfg){
   var dcValEl = document.getElementById("bg3DcValue");
   if(dcValEl) dcValEl.textContent = bg3RollState.dc;
   var dcStatusEl = document.getElementById("bg3DcStatus");
-  if(dcStatusEl) dcStatusEl.textContent = bg3RollState.dcActive ? "Objetivo activo" : "Sin CD (Libre)";
+  if(dcStatusEl) dcStatusEl.textContent = bg3RollState.dcActive ? "Objetivo activo" : (bg3RollState.isDamage ? "Tirada de daño" : "Sin CD (Libre)");
   var dcPlate = document.getElementById("bg3DcPlate");
   if(dcPlate) dcPlate.style.opacity = bg3RollState.dcActive ? "1" : "0.45";
+
+  var promptTextEl = document.getElementById("bg3PromptText");
+  if(promptTextEl){
+    var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 720);
+    promptTextEl.textContent = isTouch
+      ? "📱 Agita el teléfono o toca el dado para lanzar"
+      : "🎲 Arrastra para girar o haz clic para lanzar";
+  }
 
   updateBg3ModePills();
 
@@ -755,6 +939,10 @@ function triggerBg3Roll(){
   if(bg3RollState.rolling) return;
   bg3RollState.rolling = true;
   bg3RollState.resolved = false;
+  bg3InteractionState.isShaking = false;
+  bg3InteractionState.shakeEnergy = 0;
+  bg3InteractionState.shakeSamples = 0;
+  bg3InteractionState.isDragging = false;
 
   var promptBanner = document.getElementById("bg3PromptBanner");
   if(promptBanner) promptBanner.style.display = "none";
@@ -795,7 +983,10 @@ function triggerBg3Roll(){
 
     var isCrit = false;
     var isFumble = false;
-    if(bg3RollState.sides === 20){
+    if(bg3RollState.isDamage){
+      isCrit = false;
+      isFumble = false;
+    } else if(bg3RollState.sides === 20){
       isCrit = (chosen === 20);
       isFumble = (chosen === 1);
     } else if(bg3RollState.sides === 10){
@@ -848,7 +1039,17 @@ function triggerBg3Roll(){
       if(vPlate && vTitle && vMath){
         vPlate.classList.remove("hidden", "success", "failure", "crit", "fumble");
 
-        if(isCrit){
+        if(bg3RollState.isDamage){
+          vPlate.classList.add("success");
+          var isMax = (chosen === bg3RollState.sides);
+          if(isMax){
+            vTitle.textContent = grandTotal + " DAÑO (¡MÁXIMO EN DADO!)";
+            playBg3Crit();
+          } else {
+            vTitle.textContent = grandTotal + " PUNTOS DE DAÑO";
+            playBg3DiceLand();
+          }
+        } else if(isCrit){
           vPlate.classList.add("crit");
           vTitle.textContent = "¡ÉXITO CRÍTICO!";
           playBg3Crit();
@@ -871,9 +1072,9 @@ function triggerBg3Roll(){
           vTitle.textContent = "RESULTADO: " + grandTotal;
         }
 
-        var mathText = "[" + chosen + "] Dado";
+        var mathText = "[" + chosen + "] " + (bg3RollState.isDamage ? "Arma" : "Dado");
         if(modSum !== 0){
-          mathText += " + [" + (modSum > 0 ? "+" + modSum : modSum) + "] Bonos = " + grandTotal;
+          mathText += " + [" + (modSum > 0 ? "+" + modSum : modSum) + "] Bonos = " + grandTotal + (bg3RollState.isDamage ? " Daño" : "");
         }
         if(bg3RollState.dcActive){
           mathText += " (vs CD " + bg3RollState.dc + ")";
@@ -886,7 +1087,7 @@ function triggerBg3Roll(){
         charName: bg3RollState.charName,
         label: bg3RollState.title,
         total: grandTotal,
-        formulaText: "1d" + bg3RollState.sides + " [" + chosen + "]" + (modSum !== 0 ? (modSum > 0 ? " +" + modSum : " " + modSum) : "") + " = " + grandTotal,
+        formulaText: (bg3RollState.isDamage ? "Daño: " : "") + "1d" + bg3RollState.sides + " [" + chosen + "]" + (modSum !== 0 ? (modSum > 0 ? " +" + modSum : " " + modSum) : "") + " = " + grandTotal,
         isCrit: isCrit,
         isFumble: isFumble,
         ts: Date.now()
@@ -944,6 +1145,25 @@ function openBg3SkillRoll(c, sdef){
     });
   }
 
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
+        if(sp.statAttr === sdef.id || sp.statAttr === attrKey || sp.statAttr === "todo"){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum) && spNum !== 0){
+            modifiers.push({
+              label: (sp.name || "Hechizo") + (stacks > 1 ? " (x" + stacks + ")" : ""),
+              val: spNum * stacks,
+              icon: spNum > 0 ? "flame" : "poison",
+              type: "buff"
+            });
+          }
+        }
+      }
+    });
+  }
+
   if(c.buffs && c.buffs.mono){
     modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
   }
@@ -954,6 +1174,7 @@ function openBg3SkillRoll(c, sdef){
     sides: 20,
     dc: 10,
     dcActive: true,
+    isDamage: false,
     mode: "normal",
     charName: c.name,
     modifiers: modifiers
@@ -985,12 +1206,32 @@ function openBg3CustomSkillRoll(c, cs){
     });
   }
 
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
+        if(sp.statAttr === cs.id || sp.statAttr === attrKey || sp.statAttr === "todo"){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum) && spNum !== 0){
+            modifiers.push({
+              label: (sp.name || "Hechizo") + (stacks > 1 ? " (x" + stacks + ")" : ""),
+              val: spNum * stacks,
+              icon: spNum > 0 ? "flame" : "poison",
+              type: "buff"
+            });
+          }
+        }
+      }
+    });
+  }
+
   openBg3RollModal({
     title: cs.name,
     subtitle: "Prueba de " + attrName + " (1d20)",
     sides: 20,
     dc: 10,
     dcActive: true,
+    isDamage: false,
     mode: "normal",
     charName: c.name,
     modifiers: modifiers
@@ -1017,14 +1258,106 @@ function openBg3AttrRoll(c, attrKey){
     });
   }
 
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
+        if(sp.statAttr === attrKey || sp.statAttr === "todo"){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum) && spNum !== 0){
+            modifiers.push({
+              label: (sp.name || "Hechizo") + (stacks > 1 ? " (x" + stacks + ")" : ""),
+              val: spNum * stacks,
+              icon: spNum > 0 ? "flame" : "poison",
+              type: "buff"
+            });
+          }
+        }
+      }
+    });
+  }
+
   openBg3RollModal({
     title: "Prueba de " + attrName,
     subtitle: "Tirada de Atributo (1d20)",
     sides: 20,
     dc: 10,
     dcActive: true,
+    isDamage: false,
     mode: "normal",
     charName: c.name,
+    modifiers: modifiers
+  });
+}
+
+function openBg3WeaponAttackRoll(c, wpn){
+  if(!c || !wpn) return;
+  var catalog = (state && state.weaponsCatalog) ? state.weaponsCatalog : [];
+  var catItem = catalog.find(function(ci){ return ci.name === wpn.name || ci.id === wpn.catalogId; });
+  var alcance = (catItem && catItem.alcance) ? catItem.alcance.toLowerCase() : "";
+  var wpnName = wpn.name || "Arma";
+  var isMelee = !alcance.includes("distancia") && !wpnName.toLowerCase().includes("arco") && !wpnName.toLowerCase().includes("ballesta") && !wpnName.toLowerCase().includes("distancia");
+
+  var skillId = isMelee ? "melee" : "distancia";
+  var sdef = (typeof SKILL_DEFS !== 'undefined') ? SKILL_DEFS.find(function(s){ return s.id === skillId; }) : null;
+  var attrKey = sdef ? sdef.attr : (isMelee ? "fuerza" : "destreza");
+  var attrVal = (typeof getEffectiveAttr === 'function') ? getEffectiveAttr(attrKey, c) : num(c.attr ? c.attr[attrKey] : 0, 0);
+  var attrName = (typeof ATTR_LABELS !== 'undefined' && ATTR_LABELS[attrKey]) ? ATTR_LABELS[attrKey] : (isMelee ? "Fuerza" : "Destreza");
+  var trainBonus = num(c.skillBonus ? c.skillBonus[skillId] : 0, 0);
+
+  var modifiers = [
+    { label: attrName, val: attrVal, icon: attrKey, type: "attr" }
+  ];
+
+  if(trainBonus > 0){
+    modifiers.push({ label: "Entrenamiento (" + (sdef ? sdef.name : (isMelee ? "Melé" : "Distancia")) + ")", val: trainBonus, icon: "medal", type: "skill" });
+  }
+
+  if(c.buffs){
+    if(isMelee && c.buffs.sangre_ataque_melee) modifiers.push({ label: "Sangre Melé", val: 1, icon: "flame", type: "buff" });
+    if(!isMelee && c.buffs.sangre_ataque_dist) modifiers.push({ label: "Sangre Distancia", val: 1, icon: "flame", type: "buff" });
+    if(c.buffs.mono) modifiers.push({ label: "Mono / Abstinencia", val: -1, icon: "poison", type: "buff" });
+  }
+
+  if(c.activeBuffs){
+    c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
+      var bVal = parseFloat(ab.bonus);
+      if(isNaN(bVal) || bVal === 0) return;
+      if(ab.attr === skillId || ab.attr === attrKey || ab.attr === "todo" || (isMelee && (ab.attr === "melé" || ab.attr === "melee")) || (!isMelee && ab.attr === "distancia")){
+        modifiers.push({ label: ab.name || "Buff Ataque", val: bVal, icon: bVal > 0 ? "flame" : "poison", type: "buff" });
+      }
+    });
+  }
+
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
+        if(sp.statAttr === skillId || sp.statAttr === attrKey || sp.statAttr === "todo" || (isMelee && (sp.statAttr === "melé" || sp.statAttr === "melee")) || (!isMelee && sp.statAttr === "distancia")){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum) && spNum !== 0){
+            modifiers.push({
+              label: (sp.name || "Hechizo") + (stacks > 1 ? " (x" + stacks + ")" : ""),
+              val: spNum * stacks,
+              icon: spNum > 0 ? "flame" : "poison",
+              type: "buff"
+            });
+          }
+        }
+      }
+    });
+  }
+
+  openBg3RollModal({
+    title: wpnName + " (Ataque)",
+    subtitle: "Tirada de Ataque a " + (isMelee ? "Melé" : "Distancia") + " (1d20)",
+    sides: 20,
+    dc: 10,
+    dcActive: true,
+    isDamage: false,
+    mode: "normal",
+    charName: c ? c.name : "Aventurero",
     modifiers: modifiers
   });
 }
@@ -1042,12 +1375,15 @@ function openBg3WeaponRoll(c, wpn, formulaRaw){
     modifiers.push({ label: "Modificador Arma", val: baseMod, icon: "sword", type: "weapon" });
   }
 
+  var catalog = (state && state.weaponsCatalog) ? state.weaponsCatalog : [];
+  var catItem = catalog.find(function(ci){ return ci.name === (wpn && wpn.name) || ci.id === (wpn && wpn.catalogId); });
+  var alcance = (catItem && catItem.alcance) ? catItem.alcance.toLowerCase() : "";
   var wpnName = (wpn && wpn.name) ? wpn.name : "Arma";
-  var isMelee = !wpnName.toLowerCase().includes("distancia") && !wpnName.toLowerCase().includes("arco");
+  var isMelee = !alcance.includes("distancia") && !wpnName.toLowerCase().includes("distancia") && !wpnName.toLowerCase().includes("arco") && !wpnName.toLowerCase().includes("ballesta");
 
   if(c && c.buffs){
-    if(isMelee && c.buffs.sangre_ataque_melee) modifiers.push({ label: "Sangre Melé", val: 1, icon: "flame", type: "buff" });
-    if(!isMelee && c.buffs.sangre_ataque_dist) modifiers.push({ label: "Sangre Distancia", val: 1, icon: "flame", type: "buff" });
+    if(isMelee && c.buffs.sangre_ataque_melee) modifiers.push({ label: "Sangre Melé (Daño)", val: 1, icon: "flame", type: "buff" });
+    if(!isMelee && c.buffs.sangre_ataque_dist) modifiers.push({ label: "Sangre Distancia (Daño)", val: 1, icon: "flame", type: "buff" });
     if(c.buffs.mono) modifiers.push({ label: "Mono", val: -1, icon: "poison", type: "buff" });
   }
 
@@ -1056,21 +1392,38 @@ function openBg3WeaponRoll(c, wpn, formulaRaw){
       if(ab.active === false) return;
       var bVal = parseFloat(ab.bonus);
       if(isNaN(bVal) || bVal === 0) return;
-      if(isMelee && (ab.attr === "melee" || ab.attr === "melé")){
-        modifiers.push({ label: ab.name || "Furia Melé", val: bVal, icon: "flame", type: "buff" });
+      if(ab.attr === "dano" || ab.attr === "daño" || ab.attr === "todo" || (isMelee && (ab.attr === "melee" || ab.attr === "melé")) || (!isMelee && ab.attr === "distancia")){
+        modifiers.push({ label: ab.name || "Bono Daño", val: bVal, icon: "flame", type: "buff" });
       }
-      if(!isMelee && ab.attr === "distancia"){
-        modifiers.push({ label: ab.name || "Ojo Halcón", val: bVal, icon: "bow", type: "buff" });
+    });
+  }
+
+  if(c && c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
+        if(sp.statAttr === "dano" || sp.statAttr === "daño" || sp.statAttr === "todo" || (isMelee && (sp.statAttr === "melee" || sp.statAttr === "melé")) || (!isMelee && sp.statAttr === "distancia")){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum) && spNum !== 0){
+            modifiers.push({
+              label: (sp.name || "Hechizo") + (stacks > 1 ? " (x" + stacks + ")" : ""),
+              val: spNum * stacks,
+              icon: "flame",
+              type: "buff"
+            });
+          }
+        }
       }
     });
   }
 
   openBg3RollModal({
     title: "Daño — " + wpnName,
-    subtitle: "Tirada de Daño (1d" + sides + (baseMod ? (baseMod > 0 ? "+" + baseMod : baseMod) : "") + ")",
+    subtitle: "Tirada de Daño (" + (formulaRaw || ("1d" + sides)) + ")",
     sides: sides,
     dc: 10,
     dcActive: false,
+    isDamage: true,
     mode: "normal",
     charName: c ? c.name : "Aventurero",
     modifiers: modifiers
@@ -1079,18 +1432,50 @@ function openBg3WeaponRoll(c, wpn, formulaRaw){
 
 function openBg3InitRoll(c){
   if(!c) return;
-  var initVal = (c.combat && c.combat.iniciativa !== undefined) ? num(c.combat.iniciativa, 0) : 0;
+  var baseInit = (c.combat && c.combat.iniciativa !== undefined) ? num(c.combat.iniciativa, 0) : 0;
+  var modifiers = [
+    { label: "Iniciativa Base", val: baseInit, icon: "destreza", type: "attr" }
+  ];
+
+  if(c.activeBuffs){
+    c.activeBuffs.forEach(function(ab){
+      if(ab.active === false) return;
+      var bVal = parseFloat(ab.bonus);
+      if(!isNaN(bVal) && bVal !== 0 && (ab.attr === "iniciativa" || ab.attr === "todo")){
+        modifiers.push({ label: ab.name || "Buff Iniciativa", val: bVal, icon: bVal > 0 ? "flame" : "poison", type: "buff" });
+      }
+    });
+  }
+
+  if(c.spells){
+    c.spells.forEach(function(sp){
+      if(sp.active && sp.statAttr && sp.statMod){
+        var stacks = Math.max(1, num(sp.activeStacks, 1));
+        if(sp.statAttr === "iniciativa" || sp.statAttr === "todo"){
+          var spNum = parseFloat(sp.statMod);
+          if(!isNaN(spNum) && spNum !== 0){
+            modifiers.push({
+              label: (sp.name || "Hechizo") + (stacks > 1 ? " (x" + stacks + ")" : ""),
+              val: spNum * stacks,
+              icon: spNum > 0 ? "flame" : "poison",
+              type: "buff"
+            });
+          }
+        }
+      }
+    });
+  }
+
   openBg3RollModal({
     title: "Iniciativa",
     subtitle: "Tirada de Combate (1d20)",
     sides: 20,
     dc: 10,
     dcActive: false,
+    isDamage: false,
     mode: "normal",
     charName: c.name,
-    modifiers: [
-      { label: "Iniciativa", val: initVal, icon: "destreza", type: "attr" }
-    ]
+    modifiers: modifiers
   });
 }
 
