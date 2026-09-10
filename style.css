@@ -1735,10 +1735,39 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 @media (max-width: 420px) {
   .bg3-dice-stage { gap: 10px; min-height: 125px; }
   .bg3-die-slot { width: 108px; height: 108px; }
-  .bg3-die-3d { width: 96px; height: 96px; }
+  .bg3-die-3d, .bg3-die-wrap, .bg3-die-canvas { width: 98px; height: 98px; }
 }
 
-/* Contenedor del Dado 3D */
+/* Contenedor y Canvas del Dado 3D Polyhedral */
+.bg3-die-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.bg3-die-canvas {
+  width: 120px;
+  height: 120px;
+  display: block;
+  pointer-events: auto;
+  cursor: grab;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 12px rgba(176, 141, 87, 0.45));
+  transition: filter 0.25s ease;
+  will-change: transform, filter;
+}
+.bg3-die-canvas.aiming {
+  cursor: grabbing !important;
+}
+.bg3-die-wrap.rolling .bg3-die-shadow {
+  transform: translateX(-50%) scale(0.65);
+  opacity: 0.35;
+}
+
+/* Contenedor del Dado 3D (Fallback) */
 .bg3-die-3d {
   position: relative;
   width: 115px;
@@ -1792,11 +1821,13 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 
 /* Efectos de Ventaja / Desventaja sobre los dados */
-.bg3-die-slot.winner .bg3-die-3d {
-  filter: drop-shadow(0 0 16px rgba(253, 224, 71, 0.95)) drop-shadow(0 0 28px rgba(222, 195, 146, 0.7));
+.bg3-die-slot.winner .bg3-die-3d,
+.bg3-die-slot.winner .bg3-die-canvas {
+  filter: drop-shadow(0 0 18px rgba(253, 224, 71, 0.95)) drop-shadow(0 0 30px rgba(222, 195, 146, 0.75));
 }
-.bg3-die-slot.winner-disadv .bg3-die-3d {
-  filter: drop-shadow(0 0 16px rgba(200, 75, 87, 0.95)) drop-shadow(0 0 24px rgba(200, 75, 87, 0.5));
+.bg3-die-slot.winner-disadv .bg3-die-3d,
+.bg3-die-slot.winner-disadv .bg3-die-canvas {
+  filter: drop-shadow(0 0 18px rgba(200, 75, 87, 0.95)) drop-shadow(0 0 26px rgba(200, 75, 87, 0.55));
 }
 .bg3-die-slot.discarded {
   opacity: 0.35;

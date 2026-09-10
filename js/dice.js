@@ -284,25 +284,25 @@ function getBg3DieSvg(sides, value){
 
   var defs = '<defs>'+
     '<radialGradient id="dieGlowGrad" cx="50%" cy="40%" r="60%">'+
-      '<stop offset="0%" stop-color="#4e3365" stop-opacity="0.9"/>'+
-      '<stop offset="60%" stop-color="#241732" stop-opacity="0.95"/>'+
-      '<stop offset="100%" stop-color="#110919" stop-opacity="1"/>'+
+      '<stop offset="0%" stop-color="#9358c2" stop-opacity="0.95"/>'+
+      '<stop offset="60%" stop-color="#542978" stop-opacity="0.98"/>'+
+      '<stop offset="100%" stop-color="#2a0f40" stop-opacity="1"/>'+
     '</radialGradient>'+
     '<linearGradient id="dieFacetLight" x1="0%" y1="0%" x2="100%" y2="100%">'+
-      '<stop offset="0%" stop-color="#654483"/>'+
-      '<stop offset="50%" stop-color="#342247"/>'+
-      '<stop offset="100%" stop-color="#190e24"/>'+
+      '<stop offset="0%" stop-color="#a46cd4"/>'+
+      '<stop offset="50%" stop-color="#693796"/>'+
+      '<stop offset="100%" stop-color="#3b1757"/>'+
     '</linearGradient>'+
     '<linearGradient id="dieFacetDark" x1="0%" y1="100%" x2="100%" y2="0%">'+
-      '<stop offset="0%" stop-color="#0e0614"/>'+
-      '<stop offset="50%" stop-color="#1d1226"/>'+
-      '<stop offset="100%" stop-color="#301d40"/>'+
+      '<stop offset="0%" stop-color="#260f38"/>'+
+      '<stop offset="50%" stop-color="#4a226b"/>'+
+      '<stop offset="100%" stop-color="#6e379c"/>'+
     '</linearGradient>'+
     '<linearGradient id="goldEdge" x1="0%" y1="0%" x2="100%" y2="100%">'+
-      '<stop offset="0%" stop-color="#FFF5DC"/>'+
-      '<stop offset="35%" stop-color="#DEC392"/>'+
-      '<stop offset="75%" stop-color="#B08D57"/>'+
-      '<stop offset="100%" stop-color="#6E4F23"/>'+
+      '<stop offset="0%" stop-color="#FFF8E7"/>'+
+      '<stop offset="35%" stop-color="#F2D8A7"/>'+
+      '<stop offset="75%" stop-color="#CFA363"/>'+
+      '<stop offset="100%" stop-color="#8C5E28"/>'+
     '</linearGradient>'+
     '<filter id="runeGlow" x="-20%" y="-20%" width="140%" height="140%">'+
       '<feGaussianBlur stdDeviation="1.5" result="blur"/>'+
@@ -460,6 +460,508 @@ function getBg3ModIconSvg(type, iconHint){
   return '<span>✨</span>';
 }
 
+/* ==========================================================================
+   MOTOR FÍSICO 3D REAL POR PROYECCIÓN CANVAS (ZERO-DEPENDENCY 60 FPS)
+   ========================================================================== */
+
+var phi = (1 + Math.sqrt(5)) / 2;
+var invPhi = 1 / phi;
+
+function mat3Identity(){ return [1,0,0, 0,1,0, 0,0,1]; }
+function mat3Mul(a, b){
+  var r = new Array(9);
+  r[0] = a[0]*b[0] + a[1]*b[3] + a[2]*b[6];
+  r[1] = a[0]*b[1] + a[1]*b[4] + a[2]*b[7];
+  r[2] = a[0]*b[2] + a[1]*b[5] + a[2]*b[8];
+
+  r[3] = a[3]*b[0] + a[4]*b[3] + a[5]*b[6];
+  r[4] = a[3]*b[1] + a[4]*b[4] + a[5]*b[7];
+  r[5] = a[3]*b[2] + a[4]*b[5] + a[5]*b[8];
+
+  r[6] = a[6]*b[0] + a[7]*b[3] + a[8]*b[6];
+  r[7] = a[6]*b[1] + a[7]*b[4] + a[8]*b[7];
+  r[8] = a[6]*b[2] + a[7]*b[5] + a[8]*b[8];
+  return r;
+}
+function mat3FromAxisAngle(x, y, z, angle){
+  var len = Math.hypot(x, y, z);
+  if(len < 1e-6) return mat3Identity();
+  x /= len; y /= len; z /= len;
+  var c = Math.cos(angle), s = Math.sin(angle), t = 1 - c;
+  return [
+    t*x*x + c,    t*x*y - s*z,  t*x*z + s*y,
+    t*x*y + s*z,  t*y*y + c,    t*y*z - s*x,
+    t*x*z - s*y,  t*y*z + s*x,  t*z*z + c
+  ];
+}
+function mat3VecMul(m, v){
+  return [
+    m[0]*v[0] + m[1]*v[1] + m[2]*v[2],
+    m[3]*v[0] + m[4]*v[1] + m[5]*v[2],
+    m[6]*v[0] + m[7]*v[1] + m[8]*v[2]
+  ];
+}
+function orthonormalize(m){
+  var c0 = [m[0], m[3], m[6]];
+  var c1 = [m[1], m[4], m[7]];
+  var l0 = Math.hypot(c0[0], c0[1], c0[2]) || 1;
+  c0 = [c0[0]/l0, c0[1]/l0, c0[2]/l0];
+  var dot = c1[0]*c0[0] + c1[1]*c0[1] + c1[2]*c0[2];
+  c1 = [c1[0] - dot*c0[0], c1[1] - dot*c0[1], c1[2] - dot*c0[2]];
+  var l1 = Math.hypot(c1[0], c1[1], c1[2]) || 1;
+  c1 = [c1[0]/l1, c1[1]/l1, c1[2]/l1];
+  var c2 = [
+    c0[1]*c1[2] - c0[2]*c1[1],
+    c0[2]*c1[0] - c0[0]*c1[2],
+    c0[0]*c1[1] - c0[1]*c1[0]
+  ];
+  return [
+    c0[0], c1[0], c2[0],
+    c0[1], c1[1], c2[1],
+    c0[2], c1[2], c2[2]
+  ];
+}
+function getRotationForFaceNormal(normal){
+  var nx = normal[0], ny = normal[1], nz = normal[2];
+  var ay = -Math.atan2(nx, nz);
+  var cy = Math.cos(ay), sy = Math.sin(ay);
+  var p1z = -nx * sy + nz * cy;
+  var p1y = ny;
+  var ax = Math.atan2(p1y, p1z);
+  var mx = mat3FromAxisAngle(1, 0, 0, ax);
+  var my = mat3FromAxisAngle(0, 1, 0, ay);
+  return mat3Mul(mx, my);
+}
+
+function computeMeshInfo(vertices, rawFaces, sides, isPercentileTens){
+  var faces = rawFaces.map(function(f, idx){
+    var v0 = vertices[f[0]], v1 = vertices[f[1]], v2 = vertices[f[2]];
+    var ax = v1[0] - v0[0], ay = v1[1] - v0[1], az = v1[2] - v0[2];
+    var bx = v2[0] - v0[0], by = v2[1] - v0[1], bz = v2[2] - v0[2];
+    var nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    var len = Math.hypot(nx, ny, nz) || 1;
+    nx /= len; ny /= len; nz /= len;
+    var cx = 0, cy = 0, cz = 0;
+    f.forEach(function(vi){ cx += vertices[vi][0]; cy += vertices[vi][1]; cz += vertices[vi][2]; });
+    cx /= f.length; cy /= f.length; cz /= f.length;
+    var dot = cx * nx + cy * ny + cz * nz;
+    if (dot < 0){ nx = -nx; ny = -ny; nz = -nz; }
+    var faceVal = idx + 1;
+    if(isPercentileTens){
+      faceVal = (idx === 9) ? 0 : (idx * 10);
+    }
+    return {
+      indices: f,
+      normal: [nx, ny, nz],
+      center: [cx, cy, cz],
+      value: faceVal
+    };
+  });
+  return { vertices: vertices, faces: faces, sides: sides };
+}
+
+function buildD20Mesh(){
+  var rawV = [
+    [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+  ];
+  var vertices = rawV.map(function(v){
+    var len = Math.hypot(v[0], v[1], v[2]);
+    return [v[0]/len, v[1]/len, v[2]/len];
+  });
+  var rawFaces = [
+    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+  ];
+  return computeMeshInfo(vertices, rawFaces, 20);
+}
+
+function buildD12Mesh(){
+  var rawV = [
+    [-1,-1,-1], [1,-1,-1], [1,1,-1], [-1,1,-1],
+    [-1,-1,1], [1,-1,1], [1,1,1], [-1,1,1],
+    [0, -invPhi, -phi], [0, invPhi, -phi], [0, -invPhi, phi], [0, invPhi, phi],
+    [-invPhi, -phi, 0], [invPhi, -phi, 0], [-invPhi, phi, 0], [invPhi, phi, 0],
+    [-phi, 0, -invPhi], [phi, 0, -invPhi], [-phi, 0, invPhi], [phi, 0, invPhi]
+  ];
+  var vertices = rawV.map(function(v){
+    var len = Math.hypot(v[0], v[1], v[2]);
+    return [v[0]/len, v[1]/len, v[2]/len];
+  });
+  var rawFaces = [
+    [4, 10, 11, 7, 18], [11, 10, 5, 19, 6], [10, 4, 12, 13, 5],
+    [11, 6, 15, 14, 7], [6, 19, 17, 2, 15], [5, 13, 1, 17, 19],
+    [7, 14, 3, 16, 18], [4, 18, 16, 0, 12], [14, 15, 2, 9, 3],
+    [12, 0, 8, 1, 13], [16, 3, 9, 8, 0], [17, 1, 8, 9, 2]
+  ];
+  return computeMeshInfo(vertices, rawFaces, 12);
+}
+
+function buildD10Mesh(isPercentileTens){
+  var rawV = [[0, 0, 1.4], [0, 0, -1.4]];
+  for(var i = 0; i < 5; i++){
+    var a = (i * 2 * Math.PI) / 5;
+    rawV.push([Math.cos(a), Math.sin(a), 0.35]);
+  }
+  for(var i = 0; i < 5; i++){
+    var a = ((i + 0.5) * 2 * Math.PI) / 5;
+    rawV.push([Math.cos(a), Math.sin(a), -0.35]);
+  }
+  var vertices = rawV.map(function(v){
+    var len = Math.hypot(v[0], v[1], v[2]);
+    return [v[0]/len, v[1]/len, v[2]/len];
+  });
+  var rawFaces = [];
+  for(var i = 0; i < 5; i++){
+    rawFaces.push([0, 2 + i, 7 + i, 2 + ((i + 1) % 5)]);
+  }
+  for(var i = 0; i < 5; i++){
+    rawFaces.push([1, 7 + ((i + 1) % 5), 2 + ((i + 1) % 5), 7 + i]);
+  }
+  return computeMeshInfo(vertices, rawFaces, 10, isPercentileTens);
+}
+
+function buildD8Mesh(){
+  var rawV = [
+    [1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]
+  ];
+  var rawFaces = [
+    [0,2,4], [2,1,4], [1,3,4], [3,0,4],
+    [2,0,5], [1,2,5], [3,1,5], [0,3,5]
+  ];
+  return computeMeshInfo(rawV, rawFaces, 8);
+}
+
+function buildD6Mesh(){
+  var rawV = [
+    [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+    [-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]
+  ].map(function(v){
+    var len = Math.hypot(v[0], v[1], v[2]);
+    return [v[0]/len, v[1]/len, v[2]/len];
+  });
+  var rawFaces = [
+    [4,5,6,7], [1,0,3,2], [7,6,2,3], [0,1,5,4], [5,1,2,6], [0,4,7,3]
+  ];
+  return computeMeshInfo(rawV, rawFaces, 6);
+}
+
+function buildD4Mesh(){
+  var rawV = [
+    [1,1,1], [-1,-1,1], [-1,1,-1], [1,-1,-1]
+  ].map(function(v){
+    var len = Math.hypot(v[0], v[1], v[2]);
+    return [v[0]/len, v[1]/len, v[2]/len];
+  });
+  var rawFaces = [
+    [0,1,2], [0,3,1], [0,2,3], [1,3,2]
+  ];
+  return computeMeshInfo(rawV, rawFaces, 4);
+}
+
+function getPolyhedralMesh(sides, isPercentileTens){
+  if(sides === 4) return buildD4Mesh();
+  if(sides === 6) return buildD6Mesh();
+  if(sides === 8) return buildD8Mesh();
+  if(sides === 10) return buildD10Mesh(isPercentileTens);
+  if(sides === 12) return buildD12Mesh();
+  return buildD20Mesh();
+}
+
+function getMeshScale(sides){
+  if(sides === 4) return 86;
+  if(sides === 6) return 74;
+  if(sides === 8) return 84;
+  if(sides === 10) return 84;
+  if(sides === 12) return 80;
+  return 84;
+}
+
+var bg3LightDir = [-0.36, -0.58, 0.73];
+var lLen = Math.hypot(bg3LightDir[0], bg3LightDir[1], bg3LightDir[2]);
+bg3LightDir = [bg3LightDir[0]/lLen, bg3LightDir[1]/lLen, bg3LightDir[2]/lLen];
+
+var bg3SimPrimary = {
+  canvas: null,
+  ctx: null,
+  mesh: null,
+  sides: 20,
+  matrix: mat3Identity(),
+  targetMatrix: mat3Identity(),
+  angularVel: [0, 0, 0],
+  isRolling: false,
+  rollStartTime: 0,
+  rollDuration: 1500,
+  targetValue: 20,
+  scale: 84,
+  idleOffset: 0,
+  dragOffsetX: 0,
+  dragOffsetY: 0,
+  shakeOffset: { x: 0, y: 0, r: 0 },
+  landTime: 0,
+  active: true,
+  isPercentileTens: false
+};
+
+var bg3SimSecondary = {
+  canvas: null,
+  ctx: null,
+  mesh: null,
+  sides: 20,
+  matrix: mat3Identity(),
+  targetMatrix: mat3Identity(),
+  angularVel: [0, 0, 0],
+  isRolling: false,
+  rollStartTime: 0,
+  rollDuration: 1500,
+  targetValue: 20,
+  scale: 84,
+  idleOffset: 1.8,
+  dragOffsetX: 0,
+  dragOffsetY: 0,
+  shakeOffset: { x: 0, y: 0, r: 0 },
+  landTime: 0,
+  active: false,
+  isPercentileTens: false
+};
+
+var bg3CanvasLoopId = null;
+
+function initBg3Simulation(sim, canvasId, sides, initialVal, isPercentileTens){
+  sim.canvas = document.getElementById(canvasId);
+  if(!sim.canvas) return;
+  sim.ctx = sim.canvas.getContext("2d");
+  sim.sides = sides;
+  sim.isPercentileTens = Boolean(isPercentileTens);
+  sim.mesh = getPolyhedralMesh(sides, sim.isPercentileTens);
+  sim.scale = getMeshScale(sides);
+  sim.isRolling = false;
+  sim.landTime = 0;
+  sim.targetValue = initialVal || sides;
+
+  var targetFace = sim.mesh.faces.find(function(f){ return f.value === sim.targetValue; }) || sim.mesh.faces[0];
+  sim.targetMatrix = getRotationForFaceNormal(targetFace.normal);
+  sim.matrix = sim.targetMatrix.slice();
+}
+
+function startBg3SimRoll(sim, sides, targetVal, isIntense, duration){
+  if(!sim || !sim.canvas) return;
+  sim.sides = sides;
+  sim.targetValue = targetVal;
+  sim.isRolling = true;
+  sim.rollStartTime = performance.now();
+  sim.rollDuration = duration || (isIntense ? 1680 : 1450);
+
+  var speedMult = isIntense ? 1.35 : 1.0;
+  sim.angularVel = [
+    ((Math.random() - 0.5) * 44 + (Math.random() > 0.5 ? 28 : -28)) * speedMult,
+    ((Math.random() - 0.5) * 44 + (Math.random() > 0.5 ? 28 : -28)) * speedMult,
+    ((Math.random() - 0.5) * 28) * speedMult
+  ];
+
+  var targetFace = sim.mesh.faces.find(function(f){ return f.value === targetVal; }) || sim.mesh.faces[0];
+  sim.targetMatrix = getRotationForFaceNormal(targetFace.normal);
+}
+
+function drawBg3DieSimulation(sim, time){
+  if(!sim.ctx || !sim.canvas || !sim.mesh) return;
+  var ctx = sim.ctx;
+  var w = sim.canvas.width;
+  var h = sim.canvas.height;
+  var cx = w / 2;
+  var cy = h / 2;
+
+  ctx.clearRect(0, 0, w, h);
+
+  var bounceScale = 1.0;
+  var bounceY = 0;
+
+  if(sim.isRolling){
+    var elapsed = time - sim.rollStartTime;
+    var progress = Math.min(1, elapsed / sim.rollDuration);
+
+    if(progress < 0.60){
+      var decay = 1.0 - (progress / 0.60) * 0.35;
+      var dt = 0.016;
+      var rotM = mat3FromAxisAngle(sim.angularVel[0], sim.angularVel[1], sim.angularVel[2], dt * decay * 22);
+      sim.matrix = mat3Mul(rotM, sim.matrix);
+    } else if(progress < 0.86){
+      var subP = (progress - 0.60) / 0.26;
+      var decay = 0.65 * (1 - subP) + 0.16 * subP;
+      var dt = 0.016;
+      var rotM = mat3FromAxisAngle(sim.angularVel[0], sim.angularVel[1], sim.angularVel[2], dt * decay * 22);
+      sim.matrix = mat3Mul(rotM, sim.matrix);
+    } else if(progress < 1.0){
+      var tAlign = (progress - 0.86) / 0.14;
+      var ease = tAlign * tAlign * (3 - 2 * tAlign);
+      for(var i = 0; i < 9; i++){
+        sim.matrix[i] = sim.matrix[i] * (1 - ease * 0.18) + sim.targetMatrix[i] * (ease * 0.18);
+      }
+      sim.matrix = orthonormalize(sim.matrix);
+    } else {
+      sim.matrix = sim.targetMatrix.slice();
+      sim.isRolling = false;
+      sim.landTime = time;
+    }
+  } else {
+    if(sim.landTime && (time - sim.landTime < 420)){
+      var dt = (time - sim.landTime) * 0.001;
+      bounceScale = 1.0 + Math.sin(dt * 22) * 0.08 * Math.exp(-dt * 9);
+      bounceY = -Math.sin(dt * 20) * 6 * Math.exp(-dt * 8);
+    } else {
+      var t = time * 0.0015 + sim.idleOffset;
+      var idlePitch = Math.sin(t) * 0.045;
+      var idleYaw = Math.cos(t * 0.85) * 0.055;
+      var idleM = mat3Mul(mat3FromAxisAngle(1, 0, 0, idlePitch), mat3FromAxisAngle(0, 1, 0, idleYaw));
+      sim.matrix = mat3Mul(idleM, sim.targetMatrix);
+    }
+  }
+
+  var renderMatrix = sim.matrix.slice();
+  var jx = 0, jy = 0;
+  if(sim.dragOffsetX || sim.dragOffsetY){
+    var dragM = mat3Mul(mat3FromAxisAngle(1, 0, 0, -sim.dragOffsetY * 0.016), mat3FromAxisAngle(0, 1, 0, sim.dragOffsetX * 0.016));
+    renderMatrix = mat3Mul(dragM, renderMatrix);
+    jx += sim.dragOffsetX * 0.35;
+    jy += sim.dragOffsetY * 0.35;
+  }
+  if(sim.shakeOffset && (sim.shakeOffset.x || sim.shakeOffset.y)){
+    var shakeM = mat3Mul(mat3FromAxisAngle(0, 0, 1, sim.shakeOffset.r), mat3FromAxisAngle(1, 0, 0, sim.shakeOffset.y * 0.02));
+    renderMatrix = mat3Mul(shakeM, renderMatrix);
+    jx += sim.shakeOffset.x;
+    jy += sim.shakeOffset.y;
+  }
+
+  var mesh = sim.mesh;
+  var transformedV = mesh.vertices.map(function(v){
+    return mat3VecMul(renderMatrix, v);
+  });
+
+  var visibleFaces = [];
+  mesh.faces.forEach(function(face){
+    var norm = mat3VecMul(renderMatrix, face.normal);
+    if(norm[2] > -0.06){
+      var avgZ = 0;
+      face.indices.forEach(function(vi){ avgZ += transformedV[vi][2]; });
+      avgZ /= face.indices.length;
+      visibleFaces.push({
+        face: face,
+        normal: norm,
+        avgZ: avgZ
+      });
+    }
+  });
+
+  visibleFaces.sort(function(a, b){ return a.avgZ - b.avgZ; });
+
+  var camDist = 3.6;
+  var dieScale = sim.scale * bounceScale;
+
+  visibleFaces.forEach(function(vf){
+    var f = vf.face;
+    var n = vf.normal;
+
+    var pts = f.indices.map(function(vi){
+      var v = transformedV[vi];
+      var persp = camDist / (camDist - v[2] * 0.6);
+      return [
+        cx + v[0] * dieScale * persp + jx,
+        cy - v[1] * dieScale * persp + jy + bounceY
+      ];
+    });
+
+    var dot = n[0]*bg3LightDir[0] + n[1]*bg3LightDir[1] + n[2]*bg3LightDir[2];
+    var diffuse = Math.max(0, dot);
+    var spec = Math.pow(Math.max(0, n[2]), 3.2) * 0.45;
+
+    var r = Math.min(255, Math.floor(46 + diffuse * 90 + spec * 95));
+    var g = Math.min(255, Math.floor(22 + diffuse * 52 + spec * 65));
+    var b = Math.min(255, Math.floor(82 + diffuse * 135 + spec * 115));
+
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for(var i = 1; i < pts.length; i++){
+      ctx.lineTo(pts[i][0], pts[i][1]);
+    }
+    ctx.closePath();
+
+    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+    ctx.fill();
+
+    var goldAlpha = Math.max(0.45, Math.min(1.0, 0.65 + diffuse * 0.35));
+    ctx.strokeStyle = 'rgba(235, 205, 145, ' + goldAlpha + ')';
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+
+    if(n[2] > 0.14){
+      var faceCenter = mat3VecMul(renderMatrix, f.center);
+      var cPersp = camDist / (camDist - faceCenter[2] * 0.6);
+      var fx = cx + faceCenter[0] * dieScale * cPersp + jx;
+      var fy = cy - faceCenter[1] * dieScale * cPersp + jy + bounceY;
+
+      var baseSz = (sim.mesh.sides > 12 ? 22 : (sim.mesh.sides > 6 ? 26 : (sim.mesh.sides === 6 ? 32 : 28)));
+      var fontSz = Math.floor(baseSz * cPersp * bounceScale);
+      ctx.font = "800 " + fontSz + "px 'Cinzel Decorative', Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      var label = String(f.value);
+      if(sim.isPercentileTens){
+        label = (f.value === 0) ? "00" : String(f.value);
+      }
+
+      ctx.fillStyle = "rgba(10, 4, 14, 0.88)";
+      ctx.fillText(label, fx + 1.2, fy + 1.2);
+
+      var alpha = Math.min(1.0, n[2] * 1.35);
+      ctx.fillStyle = "rgba(255, 245, 220, " + alpha + ")";
+      ctx.fillText(label, fx, fy);
+
+      if(!sim.isRolling && n[2] > 0.82 && f.value === sim.targetValue && sim.sides === 20){
+        if(f.value === 20){
+          ctx.strokeStyle = "rgba(253, 224, 71, 0.85)";
+          ctx.lineWidth = 2.8;
+          ctx.stroke();
+        } else if(f.value === 1){
+          ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
+          ctx.lineWidth = 2.8;
+          ctx.stroke();
+        }
+      }
+    }
+  });
+}
+
+function bg3CanvasRenderLoop(time){
+  if(!bg3RollState.active){
+    bg3CanvasLoopId = null;
+    return;
+  }
+  bg3CanvasLoopId = requestAnimationFrame(bg3CanvasRenderLoop);
+  if(bg3SimPrimary && bg3SimPrimary.active){
+    drawBg3DieSimulation(bg3SimPrimary, time);
+  }
+  if(bg3SimSecondary && bg3SimSecondary.active){
+    drawBg3DieSimulation(bg3SimSecondary, time);
+  }
+}
+
+function startBg3CanvasLoop(){
+  if(!bg3CanvasLoopId){
+    bg3CanvasLoopId = requestAnimationFrame(bg3CanvasRenderLoop);
+  }
+}
+
+function stopBg3CanvasLoop(){
+  if(bg3CanvasLoopId){
+    cancelAnimationFrame(bg3CanvasLoopId);
+    bg3CanvasLoopId = null;
+  }
+}
+
 /* --- CONTROLADOR PRINCIPAL DE LA CÁMARA BALDUR'S GATE 3 --- */
 
 var bg3RollState = {
@@ -532,14 +1034,21 @@ function handleDeviceMotion(event){
       // Vibración háptica sutil de agitación
       triggerBg3Haptic('shake');
 
-      // Efecto visual de vibración física 3D en el dado
-      var diceEls = document.querySelectorAll(".bg3-die-3d");
-      var jx = (Math.random() - 0.5) * 16;
-      var jy = (Math.random() - 0.5) * 16;
-      var jr = (Math.random() - 0.5) * 20;
-      diceEls.forEach(function(el){
-        el.style.transform = 'perspective(600px) translate3d(' + jx + 'px, ' + jy + 'px, 0) rotateZ(' + jr + 'deg) scale(1.08)';
-      });
+      // Vibración física 3D en la simulación del dado
+      if(bg3SimPrimary){
+        bg3SimPrimary.shakeOffset = {
+          x: (Math.random() - 0.5) * 16,
+          y: (Math.random() - 0.5) * 16,
+          r: (Math.random() - 0.5) * 0.25
+        };
+      }
+      if(bg3SimSecondary && bg3SimSecondary.active){
+        bg3SimSecondary.shakeOffset = {
+          x: (Math.random() - 0.5) * 16,
+          y: (Math.random() - 0.5) * 16,
+          r: (Math.random() - 0.5) * 0.25
+        };
+      }
 
       // Sonido de dado agitándose dentro de cubilete
       if(now - bg3InteractionState.lastRattleTime > 110){
@@ -557,8 +1066,8 @@ function handleDeviceMotion(event){
     bg3InteractionState.isShaking = false;
     bg3InteractionState.shakeSamples = 0;
     bg3InteractionState.shakeEnergy = 0;
-    var dEls = document.querySelectorAll(".bg3-die-3d");
-    dEls.forEach(function(el){ el.style.transform = ''; });
+    if(bg3SimPrimary) bg3SimPrimary.shakeOffset = { x: 0, y: 0, r: 0 };
+    if(bg3SimSecondary) bg3SimSecondary.shakeOffset = { x: 0, y: 0, r: 0 };
 
     var launchIntensity = (energy > 16) ? "intense" : "normal";
     triggerBg3Roll(launchIntensity);
@@ -586,8 +1095,8 @@ function setupDiceInteractions(stage){
 
     var sct = document.getElementById("bg3Sanctuary");
     if(sct) sct.classList.add("aiming");
-    var diceEls = document.querySelectorAll(".bg3-die-3d");
-    diceEls.forEach(function(el){ el.classList.add("aiming"); });
+    var canvasEls = document.querySelectorAll(".bg3-die-canvas");
+    canvasEls.forEach(function(el){ el.classList.add("aiming"); });
 
     try { stage.setPointerCapture(e.pointerId); } catch(err){}
   });
@@ -608,14 +1117,14 @@ function setupDiceInteractions(stage){
       var pullX = Math.cos(angle) * pullDist;
       var pullY = Math.sin(angle) * pullDist;
 
-      var rotX = Math.max(-45, Math.min(45, -pullY * 0.55));
-      var rotY = Math.max(-45, Math.min(45, pullX * 0.55));
-      var rotZ = Math.max(-30, Math.min(30, pullX * 0.25));
-
-      var diceEls = document.querySelectorAll(".bg3-die-3d");
-      diceEls.forEach(function(el){
-        el.style.transform = 'perspective(600px) translate3d(' + pullX.toFixed(1) + 'px, ' + pullY.toFixed(1) + 'px, 0) rotateX(' + rotX.toFixed(1) + 'deg) rotateY(' + rotY.toFixed(1) + 'deg) rotateZ(' + rotZ.toFixed(1) + 'deg) scale(1.12)';
-      });
+      if(bg3SimPrimary){
+        bg3SimPrimary.dragOffsetX = pullX;
+        bg3SimPrimary.dragOffsetY = pullY;
+      }
+      if(bg3SimSecondary && bg3SimSecondary.active){
+        bg3SimSecondary.dragOffsetX = pullX * 0.85;
+        bg3SimSecondary.dragOffsetY = pullY * 0.85;
+      }
 
       var now = performance.now();
       if(dist > 12 && Math.abs(dist - lastDragDist) > 16 && (now - bg3InteractionState.lastRattleTime > 95)){
@@ -635,12 +1144,17 @@ function setupDiceInteractions(stage){
     var sct = document.getElementById("bg3Sanctuary");
     if(sct) sct.classList.remove("aiming");
 
-    var diceEls = document.querySelectorAll(".bg3-die-3d");
-    diceEls.forEach(function(el){
-      el.classList.remove("aiming");
-      // Siempre vuelve a su origen físico de reposo
-      el.style.transform = '';
-    });
+    var canvasEls = document.querySelectorAll(".bg3-die-canvas");
+    canvasEls.forEach(function(el){ el.classList.remove("aiming"); });
+
+    if(bg3SimPrimary){
+      bg3SimPrimary.dragOffsetX = 0;
+      bg3SimPrimary.dragOffsetY = 0;
+    }
+    if(bg3SimSecondary){
+      bg3SimSecondary.dragOffsetX = 0;
+      bg3SimSecondary.dragOffsetY = 0;
+    }
 
     if(!bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
 
@@ -666,13 +1180,22 @@ function renderBg3DiceSlots(){
   var slot2 = document.getElementById("bg3DieSlotSecondary");
   if(!slot1) return;
 
+  var isD100 = (bg3RollState.sides === 100);
+  var showSecond = isD100 || (bg3RollState.mode === "adv" || bg3RollState.mode === "disadv" || (bg3RollState.qty && bg3RollState.qty > 1));
+
   slot1.className = "bg3-die-slot";
   slot1.style.display = "flex";
   slot1.style.opacity = "1";
   slot1.style.filter = "none";
-  slot1.innerHTML = '<div class="bg3-die-3d" id="bg3Die3DPrimary">' + getBg3DieSvg(bg3RollState.sides, bg3RollState.sides) + '</div><div class="bg3-die-shadow"></div>';
+  slot1.innerHTML = '<div class="bg3-die-wrap" id="bg3DieWrapPrimary">' +
+    '<canvas id="bg3DieCanvasPrimary" class="bg3-die-canvas" width="240" height="240"></canvas>' +
+    '<div class="bg3-die-shadow"></div>' +
+  '</div>';
 
-  var showSecond = (bg3RollState.mode === "adv" || bg3RollState.mode === "disadv" || (bg3RollState.qty && bg3RollState.qty > 1));
+  var effSides1 = isD100 ? 10 : bg3RollState.sides;
+  initBg3Simulation(bg3SimPrimary, "bg3DieCanvasPrimary", effSides1, effSides1, isD100);
+  bg3SimPrimary.active = true;
+
   if(slot2){
     if(showSecond){
       slot2.className = "bg3-die-slot";
@@ -680,16 +1203,25 @@ function renderBg3DiceSlots(){
       slot2.style.display = "flex";
       slot2.style.opacity = "1";
       slot2.style.filter = "none";
-      slot2.innerHTML = '<div class="bg3-die-3d" id="bg3Die3DSecondary">' + getBg3DieSvg(bg3RollState.sides, bg3RollState.sides) + '</div><div class="bg3-die-shadow"></div>';
+      slot2.innerHTML = '<div class="bg3-die-wrap" id="bg3DieWrapSecondary">' +
+        '<canvas id="bg3DieCanvasSecondary" class="bg3-die-canvas" width="240" height="240"></canvas>' +
+        '<div class="bg3-die-shadow"></div>' +
+      '</div>';
+      var effSides2 = isD100 ? 10 : bg3RollState.sides;
+      initBg3Simulation(bg3SimSecondary, "bg3DieCanvasSecondary", effSides2, effSides2, false);
+      bg3SimSecondary.active = true;
     } else {
       slot2.classList.add("hidden");
       slot2.style.display = "none";
       slot2.innerHTML = "";
+      bg3SimSecondary.active = false;
     }
   }
 
   var stage = document.getElementById("bg3DiceStage");
   if(stage) setupDiceInteractions(stage);
+
+  startBg3CanvasLoop();
 }
 
 function openBg3RollModal(cfg){
@@ -822,93 +1354,85 @@ function triggerBg3Roll(launchIntensity){
 
   var isIntense = (launchIntensity === "intense");
   var totalDuration = isIntense ? 1680 : 1450;
-  var rollClass = isIntense ? "rolling-intense" : "rolling";
 
   triggerBg3Haptic('roll-start');
   playBg3DiceRoll(launchIntensity);
 
+  var isD100 = (bg3RollState.sides === 100);
   var isMultiDice = (bg3RollState.qty && bg3RollState.qty > 1 && bg3RollState.mode === "normal");
-  var r1 = rollDie(bg3RollState.sides);
-  var r2 = (bg3RollState.mode !== "normal" || isMultiDice) ? rollDie(bg3RollState.sides) : null;
-  var extraSum = 0;
-  if(isMultiDice && bg3RollState.qty > 2){
-    for(var q = 2; q < bg3RollState.qty; q++){
-      extraSum += rollDie(bg3RollState.sides);
-    }
-  }
+  var showSecond = isD100 || (bg3RollState.mode !== "normal" || isMultiDice);
 
-  var chosen = r1;
-  if(bg3RollState.mode === "adv") chosen = Math.max(r1, r2);
-  else if(bg3RollState.mode === "disadv") chosen = Math.min(r1, r2);
-  else if(isMultiDice) chosen = r1 + (r2 || 0) + extraSum;
+  var r1, r2, chosen;
+  var extraSum = 0;
+
+  if(isD100){
+    var tens = Math.floor(Math.random() * 10) * 10;
+    var units = Math.floor(Math.random() * 10);
+    r1 = tens;
+    r2 = units;
+    chosen = (tens + units === 0) ? 100 : (tens + units);
+  } else {
+    r1 = rollDie(bg3RollState.sides);
+    r2 = showSecond ? rollDie(bg3RollState.sides) : null;
+    if(isMultiDice && bg3RollState.qty > 2){
+      for(var q = 2; q < bg3RollState.qty; q++){
+        extraSum += rollDie(bg3RollState.sides);
+      }
+    }
+    chosen = r1;
+    if(bg3RollState.mode === "adv") chosen = Math.max(r1, r2);
+    else if(bg3RollState.mode === "disadv") chosen = Math.min(r1, r2);
+    else if(isMultiDice) chosen = r1 + (r2 || 0) + extraSum;
+  }
 
   bg3RollState.r1 = r1;
   bg3RollState.r2 = r2;
   bg3RollState.chosen = chosen;
 
-  var die1El = document.getElementById("bg3Die3DPrimary");
-  var die2El = document.getElementById("bg3Die3DSecondary");
-  if(die1El) die1El.classList.add(rollClass);
-  if(die2El) die2El.classList.add(rollClass);
+  var wrap1 = document.getElementById("bg3DieWrapPrimary");
+  var wrap2 = document.getElementById("bg3DieWrapSecondary");
+  if(wrap1) wrap1.classList.add("rolling");
+  if(wrap2) wrap2.classList.add("rolling");
 
-  // Giro con desaceleración progresiva y suspense al acercarse al final
+  // Iniciar lanzamiento físico 3D en el Canvas Engine
+  startBg3SimRoll(bg3SimPrimary, (isD100 ? 10 : bg3RollState.sides), r1, isIntense, totalDuration);
+
+  if(showSecond && bg3SimSecondary.active){
+    startBg3SimRoll(bg3SimSecondary, (isD100 ? 10 : bg3RollState.sides), r2, isIntense, totalDuration);
+  }
+
+  // Suspense con desaceleración y vibración háptica
   var startTime = performance.now();
   var lastPulseTime = 0;
 
-  function cycleStep(){
-    if(!bg3RollState.rolling) return;
+  var tumbleTimer = setInterval(function(){
+    if(!bg3RollState.rolling){
+      clearInterval(tumbleTimer);
+      return;
+    }
     var now = performance.now();
     var elapsed = now - startTime;
     var progress = Math.min(1, elapsed / totalDuration);
 
-    // Barajado de caras en tiempo real
-    var rand1 = Math.floor(Math.random() * bg3RollState.sides) + 1;
-    if(die1El) die1El.innerHTML = getBg3DieSvg(bg3RollState.sides, rand1);
-    if(die2El && (bg3RollState.mode !== "normal" || isMultiDice)){
-      var rand2 = Math.floor(Math.random() * bg3RollState.sides) + 1;
-      die2El.innerHTML = getBg3DieSvg(bg3RollState.sides, rand2);
-    }
-
-    // Vibración táctil periódica mientras rueda el dado
-    if(now - lastPulseTime > 140 && progress < 0.88){
+    if(now - lastPulseTime > 135 && progress < 0.86){
       triggerBg3Haptic('tumble-pulse');
       lastPulseTime = now;
     }
 
     if(progress >= 1){
+      clearInterval(tumbleTimer);
       finalizeLanding();
-      return;
     }
-
-    // Curva de desaceleración física:
-    // 0 - 45%: giro rápido (36ms a 55ms)
-    // 45% - 75%: desaceleración perceptible (55ms a 115ms)
-    // 75% - 100%: avance lento con suspense dramático (115ms a 265ms) para casi ver el número final
-    var delay;
-    if(progress < 0.45){
-      delay = 36 + (progress / 0.45) * 20;
-    } else if(progress < 0.75){
-      delay = 56 + ((progress - 0.45) / 0.3) * 60;
-    } else {
-      delay = 116 + ((progress - 0.75) / 0.25) * 150;
-    }
-
-    setTimeout(cycleStep, delay);
-  }
-
-  setTimeout(cycleStep, 36);
+  }, 32);
 
   function finalizeLanding(){
-    // Asentar en el resultado final en el centro de reposo
-    if(die1El){
-      die1El.classList.remove("rolling", "rolling-intense");
-      die1El.classList.add("settling");
-      die1El.innerHTML = getBg3DieSvg(bg3RollState.sides, r1);
+    if(wrap1){
+      wrap1.classList.remove("rolling");
+      wrap1.classList.add("settling");
     }
-    if(die2El && (bg3RollState.mode !== "normal" || isMultiDice)){
-      die2El.classList.remove("rolling", "rolling-intense");
-      die2El.classList.add("settling");
-      die2El.innerHTML = getBg3DieSvg(bg3RollState.sides, r2);
+    if(wrap2){
+      wrap2.classList.remove("rolling");
+      wrap2.classList.add("settling");
     }
 
     playBg3DiceLand();
@@ -933,7 +1457,7 @@ function triggerBg3Roll(launchIntensity){
           slot2.classList.add("winner-disadv");
           slot1.classList.add("discarded");
         }
-      } else if(isMultiDice){
+      } else if(isMultiDice || isD100){
         slot1.classList.add("winner");
         slot2.classList.add("winner");
       }
@@ -1066,6 +1590,7 @@ function closeBg3Roll(){
   if(overlay) overlay.classList.add("hidden");
   playBg3Click();
   bg3RollState.active = false;
+  stopBg3CanvasLoop();
   if(typeof bg3RollState.onResolve === "function" && bg3RollState.resolved){
     try { bg3RollState.onResolve(bg3RollState); } catch(e){}
   }
