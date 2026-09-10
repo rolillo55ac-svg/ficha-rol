@@ -173,8 +173,8 @@ function updateSyncBadge(st){
 function exportFullBackup(){
   var dateStr = new Date().toISOString().slice(0, 10);
   var backupData = {
-    krysalis_system: "Krysalis RPG",
-    version: "v1.0.0",
+    krysalis_system: "Rol Krysalis",
+    version: "1.0v (Modo Pruebas)",
     backup_type: "full_disaster_recovery",
     timestamp: new Date().toISOString(),
     support_contact: "rolillo55ac@gmail.com",

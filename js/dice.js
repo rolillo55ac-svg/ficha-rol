@@ -1,6 +1,4 @@
-/* ==========================================================================
-   KRYSALIS - MOTOR DE DADOS 3D REAL (THREE.JS) ESTILO BALDUR'S GATE 3
-   ========================================================================== */
+// Dados y tiradas 3D
 
 var audioCtx = null;
 function getAudioCtx(){
@@ -460,9 +458,7 @@ function getBg3ModIconSvg(type, iconHint){
   return '<span>✨</span>';
 }
 
-/* ==========================================================================
-   MOTOR FÍSICO 3D REAL POR PROYECCIÓN CANVAS (ZERO-DEPENDENCY 60 FPS)
-   ========================================================================== */
+// Motor de dados 3D canvas
 
 var phi = (1 + Math.sqrt(5)) / 2;
 var invPhi = 1 / phi;
@@ -913,7 +909,7 @@ function drawBg3DieSimulation(sim, time){
   var camDist = 5.2;
   var dieScale = sim.scale * bounceScale;
 
-  // Sombra de contacto suave en la base (ambient occlusion BG3)
+  // Sombra base
   var groundY = cy + dieScale * 0.94 + jy + bounceY * 0.2;
   var shadowR = dieScale * 0.82;
   var shadowGrad = ctx.createRadialGradient(cx + jx, groundY, 4, cx + jx, groundY, shadowR);
@@ -973,17 +969,17 @@ function drawBg3DieSimulation(sim, time){
 
     var goldAlpha = Math.max(0.55, Math.min(1.0, 0.72 + diffuse * 0.28));
 
-    // 1. Aristas exteriores en Bronce Dorado Envejecido
+    // 1. Bordes
     ctx.strokeStyle = 'rgba(76, 46, 16, ' + Math.min(1.0, goldAlpha + 0.2) + ')';
     ctx.lineWidth = 2.8;
     ctx.stroke();
 
-    // 2. Trazo de filo pulido en Oro Brillante
+    // 2. Filo
     ctx.strokeStyle = 'rgba(255, 238, 175, ' + goldAlpha + ')';
     ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    // 3. Bisel concéntrico interior en facetas orientadas a la vista
+    // 3. Bisel interior
     if(n[2] > 0.45){
       var insetFactor = 0.80;
       var insetPts = pts.map(function(p){
@@ -1004,7 +1000,7 @@ function drawBg3DieSimulation(sim, time){
       ctx.stroke();
     }
 
-    // 4. Anillo rúnico sagrado astrolábico EXCLUSIVO en la cara frontal principal
+    // 4. Anillo decorativo frontal
     if(n[2] > 0.82){
       var ringR = (sim.mesh.sides > 12 ? 15 : (sim.mesh.sides > 6 ? 18 : 22)) * cPersp;
       ctx.beginPath();
@@ -1020,7 +1016,7 @@ function drawBg3DieSimulation(sim, time){
       }
     }
 
-    // 5. Número grabado en la cara (sólo en caras visibles para evitar amontonamiento)
+    // 5. Numeracion
     if(n[2] > 0.52){
       var isHero = (n[2] > 0.82);
       var baseSz = (sim.mesh.sides > 12 ? 24 : (sim.mesh.sides > 6 ? 28 : (sim.mesh.sides === 6 ? 32 : 30)));

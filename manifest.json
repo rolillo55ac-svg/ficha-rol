@@ -1,7 +1,7 @@
 {
-  "name": "Krysalis · Crónicas y Fichas de Rol",
-  "short_name": "Krysalis",
-  "description": "Gestor de partidas, fichas de personajes y bestiario para Krysalis",
+  "name": "Rol Krysalis",
+  "short_name": "Rol Krysalis",
+  "description": "Gestor de partidas, fichas de personajes y bestiario para Rol Krysalis",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

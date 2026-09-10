@@ -728,9 +728,7 @@ function closeModals(){
   });
 }
 
-// ==============================================================================
-// SISTEMA AUTOMATIZADO DE REPORTES CON TRIAGE IA Y ALERTAS EN DISCORD
-// ==============================================================================
+// Sistema de reportes y tickets
 var DEFAULT_DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1547672027035472003/8soKhpr6HxuSSvJDOhwsDxrhn5Sqgn8rRRPEpyxfQQDSYMnklfLOam6vO7sop4qMHcIM";
 var currentFeedbackCategory = "bug";
 var currentFeedbackTab = "new"; // "new" | "my_tickets"
@@ -1044,7 +1042,7 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle){
       '</button>';
     }).join('');
 
-    contentHtml = '<p class="feedback-subtitle">Envía cualquier incidencia o sugerencia. El sistema analizará el contexto de tu partida con IA y notificará al Administrador.</p>' +
+    contentHtml = '<p class="feedback-subtitle">Envía cualquier incidencia o sugerencia para que el Administrador pueda revisarla.</p>' +
       '<div class="field" style="margin-top:8px;">' +
         '<label style="display:block;margin-bottom:6px;">Tipo de Incidencia</label>' +
         '<div class="filter-pills feedback-cat-grid" id="feedbackCategoryPills">' + catPills + '</div>' +
@@ -1213,7 +1211,7 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
     adminReply: "",
     resolvedAt: null,
     system: {
-      appVersion: "v1.0.6",
+      appVersion: "1.0v (Modo Pruebas)",
       screen: window.innerWidth + "x" + window.innerHeight,
       browser: browser,
       os: os,
@@ -1255,10 +1253,10 @@ function generateAiTriageAnalysis(report){
       suggestedReply = "¡Hola " + report.contact + "! Hemos verificado el estado de tus recursos (" + hpContext + "). Recuerda que los efectos de debuff o descanso modifican los valores máximos según las reglas de Krysalis.";
       technicalAction = "Revisar sincronización RPC de vida/maná en js/sync.js.";
     } else {
-      classification = "Posible Bug Técnico de Interfaz";
+      classification = "Posible Incidencia de Interfaz";
       diagnostic = "Reporte sobre comportamiento inesperado en la interfaz. Dispositivo: " + report.system.os + " (" + report.system.browser + ", " + report.system.screen + ").";
-      suggestedReply = "¡Hola " + report.contact + "! Gracias por avisarnos del error '" + report.title + "'. El equipo de Administración ya tiene el aviso y lo revisaremos en la próxima actualización de la aplicación.";
-      technicalAction = "Inspeccionar componente reportado según la versión v1.0.6.";
+      suggestedReply = "¡Hola " + report.contact + "! Gracias por avisarnos de '" + report.title + "'. Ya tenemos el aviso y lo revisaremos en la próxima actualización.";
+      technicalAction = "Revisar componente reportado en 1.0v.";
     }
   } else if(cat === "sugerencia" || /mejorar|añadir|podria|seria bueno|propuesta/i.test(lowerDesc)){
     classification = "Sugerencia de Jugador / Mejora de Experiencia";
@@ -1310,7 +1308,7 @@ async function sendDiscordWebhookReport(report){
   var ticketTag = report.ticketCode ? ("#" + report.ticketCode) : "TICKET";
 
   var payload = {
-    username: "Krysalis • Triage IA",
+    username: "Rol Krysalis • Soporte",
     avatar_url: "https://rolillo55ac-svg.github.io/ficha-rol/images/icon-192.png",
     embeds: [
       {
@@ -1334,12 +1332,12 @@ async function sendDiscordWebhookReport(report){
             inline: false
           },
           {
-            name: "🧠 Diagnóstico de la IA",
+            name: "🔬 Análisis del Sistema",
             value: "**Clasificación:** *" + triage.classification + "*\n" + triage.diagnostic,
             inline: false
           },
           {
-            name: "🛡️ Ciberseguridad",
+            name: "🛡️ Seguridad",
             value: triage.isSecuritySafe ? "✅ Verificada (Sin riesgos)" : "⚠️ Alerta de sanitización",
             inline: true
           },
@@ -1349,12 +1347,12 @@ async function sendDiscordWebhookReport(report){
             inline: true
           },
           {
-            name: "🤖 Para aplicar la solución técnica con la IA en tu IDE",
-            value: "Copia y dile a Antigravity en el chat:\n> `Aplica la solución del ticket " + ticketTag + ": " + report.title + "`",
+            name: "📋 Referencia",
+            value: "`" + ticketTag + ": " + report.title + "`",
             inline: false
           },
           {
-            name: "💬 Respuesta sugerida para el jugador",
+            name: "💬 Plantilla de respuesta",
             value: "```\n" + (triage.suggestedReply || "Sin respuesta sugerida.") + "\n```",
             inline: false
           }
@@ -1436,7 +1434,7 @@ async function submitFeedbackReport(){
 
   if(btn){
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> Procesando con IA y enviando a Discord...';
+    btn.innerHTML = '<span>⏳</span> Enviando reporte...';
   }
 
   var report = buildFeedbackDiagnostic(currentFeedbackCategory, title, desc, contact);
@@ -1493,7 +1491,7 @@ function showPlayerSuccessScreen(report){
     '<div class="feedback-success-card">' +
       '<div class="success-icon-badge">✅</div>' +
       '<div class="success-title">Ticket Registrado con Éxito</div>' +
-      '<p class="success-text">Tu reporte ha sido remitido al Administrador con el diagnóstico de la IA y el contexto de tu partida.</p>' +
+      '<p class="success-text">Tu reporte ha sido remitido al Administrador con los detalles de tu partida.</p>' +
     '</div>' +
 
     '<div style="background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.45;">' +
@@ -1503,7 +1501,7 @@ function showPlayerSuccessScreen(report){
       '</div>' +
       '<div>📌 <b>Asunto:</b> ' + esc(report.title) + '</div>' +
       '<div style="margin-top:4px;">🏷️ <b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
-      '<div style="margin-top:4px;color:var(--gold-light);">🤖 <b>Estado:</b> <span class="ticket-badge pending">🟡 En revisión</span></div>' +
+      '<div style="margin-top:4px;color:var(--gold-light);">📌 <b>Estado:</b> <span class="ticket-badge pending">🟡 En revisión</span></div>' +
       '<div style="margin-top:8px;font-size:0.73rem;color:var(--ink-faint);border-top:1px dashed var(--line);padding-top:6px;">' +
         'El Administrador revisará tu reporte y te responderá directamente en la pestaña <b>"Mis Reportes y Respuestas"</b>.' +
       '</div>' +
@@ -1592,20 +1590,20 @@ function openFeedbackAdminModal(filter){
           '<div class="quote-text">' + esc(r.description) + '</div>' +
         '</div>' +
 
-        // Fila 4: Diagnóstico y Asistente IA (Plegable y discreto)
+        // Fila 4: Detalles tecnicos
         '<details class="admin-ticket-accordion">' +
           '<summary class="admin-ticket-accordion-summary">' +
-            '<span>🧠 Diagnóstico IA & Asistente IDE</span>' +
+            '<span>🔬 Información Técnica</span>' +
             '<span class="accordion-hint">Detalles ▾</span>' +
           '</summary>' +
           '<div class="admin-ticket-accordion-body">' +
             '<div style="font-size:0.75rem;color:var(--ink-dim);line-height:1.4;margin-bottom:8px;">' +
-              '<b>Diagnóstico:</b> ' + esc(triage.diagnostic || "Sin análisis técnico.") +
+              '<b>Detalle:</b> ' + esc(triage.diagnostic || "Sin análisis técnico.") +
             '</div>' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(88,101,242,0.1);padding:6px 10px;border-radius:6px;border:1px solid rgba(88,101,242,0.3);">' +
               '<span style="font-size:0.73rem;color:#8EA1E1;flex:1;">🛠️ ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
-              '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.68rem;border-color:rgba(88,101,242,0.5);color:#A5B4FC;white-space:nowrap;" data-action="copy-ai-prompt" data-id="' + esc(r.id) + '">' +
-                '📋 Copiar orden IDE' +
+              '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.68rem;border-color:rgba(88,101,242,0.5);color:#A5B4FC;white-space:nowrap;" data-action="copy-ticket-info" data-id="' + esc(r.id) + '">' +
+                '📋 Copiar Resumen' +
               '</button>' +
             '</div>' +
           '</div>' +
@@ -1615,7 +1613,7 @@ function openFeedbackAdminModal(filter){
         '<div class="admin-ticket-reply-section">' +
           '<div class="reply-section-header">' +
             '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">💬 Responder a ' + esc(contactName) + ':</span>' +
-            (triage.suggestedReply ? '<button type="button" class="btn-text-gold" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">🪄 Sugerencia IA</button>' : '') +
+            (triage.suggestedReply ? '<button type="button" class="btn-text-gold" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">🪄 Cargar plantilla</button>' : '') +
           '</div>' +
           '<textarea id="admin_reply_text_' + esc(r.id) + '" rows="2" class="admin-reply-textarea" placeholder="Escribe la respuesta que verá el jugador en su app...">' + esc(r.adminReply || "") + '</textarea>' +
           '<div class="reply-section-actions">' +
@@ -1772,22 +1770,22 @@ function feedbackModalClick(e){
     return;
   }
 
-  if(action === "copy-ai-prompt"){
+  if(action === "copy-ticket-info" || action === "copy-ai-prompt"){
     var idPrompt = btn.getAttribute("data-id");
     var targetP = (state.feedbackReports || []).find(function(x){ return x.id === idPrompt; });
     if(targetP){
       var triageP = targetP.aiTriage || {};
       var tagP = targetP.ticketCode ? ("#" + targetP.ticketCode) : ("#" + targetP.id);
-      var promptText = "Antigravity, resuelve el ticket " + tagP + ":\n" +
+      var promptText = "Incidencia " + tagP + ":\n" +
         "• Título: " + targetP.title + "\n" +
         "• Categoría: " + (targetP.categoryLabel || targetP.category) + "\n" +
         "• Remitente: " + (targetP.contact || "Jugador") + "\n" +
-        "• Problema reportado: " + targetP.description + "\n" +
-        "• Diagnóstico IA: " + (triageP.diagnostic || "Sin diagnóstico") + "\n" +
-        "• Acción técnica sugerida: " + (triageP.technicalAction || "Inspeccionar código") + "\n" +
-        "• Entorno del usuario: " + ((targetP.system && targetP.system.os) ? (targetP.system.os + " - " + targetP.system.browser) : "Navegador Web");
+        "• Descripción: " + targetP.description + "\n" +
+        "• Detalle técnico: " + (triageP.diagnostic || "Sin diagnóstico") + "\n" +
+        "• Acción sugerida: " + (triageP.technicalAction || "Inspeccionar componente") + "\n" +
+        "• Entorno: " + ((targetP.system && targetP.system.os) ? (targetP.system.os + " - " + targetP.system.browser) : "Navegador Web");
       fallbackCopyText(promptText);
-      showToast("¡Orden para Antigravity copiada! Pégala en el chat 🤖", "success");
+      showToast("Información del ticket copiada 📋", "success");
     }
     return;
   }
@@ -1799,7 +1797,7 @@ function feedbackModalClick(e){
     if(targetR && targetR.aiTriage && targetR.aiTriage.suggestedReply && textarea){
       textarea.value = targetR.aiTriage.suggestedReply;
       textarea.focus();
-      showToast("🪄 Respuesta sugerida cargada", "info");
+      showToast("Plantilla de respuesta cargada", "info");
     }
     return;
   }
@@ -1946,8 +1944,8 @@ function feedbackModalClick(e){
     var c = (typeof activeChar === "function") ? activeChar() : null;
     var testReport = buildFeedbackDiagnostic(
       "sugerencia",
-      "Prueba de Alertas de Triage IA",
-      "¡Hola! Este es un mensaje de prueba para verificar que recibes los reportes de tus jugadores directamente en tu servidor de Discord con el formato embebido y el análisis de la IA.",
+      "Prueba de Notificaciones",
+      "¡Hola! Este es un mensaje de prueba para verificar que recibes los reportes de tus jugadores directamente en tu servidor de Discord.",
       c ? c.name : "Sistema Krysalis"
     );
     testReport.aiTriage = generateAiTriageAnalysis(testReport);

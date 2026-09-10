@@ -1,6 +1,4 @@
--- ==============================================================================
--- Migración 011: Tabla de Reportes y Sugerencias (app_feedback) con Triage IA
--- ==============================================================================
+-- Tabla de reportes y sugerencias (app_feedback)
 
 CREATE TABLE IF NOT EXISTS public.app_feedback (
     id TEXT PRIMARY KEY,

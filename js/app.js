@@ -34,8 +34,6 @@ window.addEventListener("error", function(err){
   setTimeout(hideLoadingScreen, 300);
 });
 
-// === CIBERSEGURIDAD: PROTECCIÓN ANTI FUERZA BRUTA ===
-
 function init(){
   try {
     updateLoadingProgress(25, "Cargando fichas...");

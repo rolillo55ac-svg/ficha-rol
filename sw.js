@@ -1,10 +1,7 @@
-// ==============================================================================
-// Service Worker - Krysalis v1.0.0
-// Estrategia: Network-First (prioridad red para datos frescos de rol en vivo,
-// con respaldo en caché para apertura instantánea y modo sin conexión).
-// ==============================================================================
+// Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
+// Modo offline y carga rapida
 
-const CACHE_NAME = 'krysalis-app-v1.1.1';
+const CACHE_NAME = 'rol-krysalis-v1.0-test';
 
 const PRECACHE_ASSETS = [
   './',
