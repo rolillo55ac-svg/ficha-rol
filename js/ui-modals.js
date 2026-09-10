@@ -267,6 +267,7 @@ function openDataModal(){
     '</div>'+
     (isGM() ? '<button class="btn-compact btn-solid-gold" style="width:100%;margin-top:8px;padding:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
     '<button class="btn-compact highlight" style="width:100%;margin-top:8px;padding:8px;background:rgba(176,141,87,0.18);border:1px solid var(--gold);color:var(--gold-light);font-weight:700;" data-action="repair-compendium-data" title="Verifica y recupera todas las misiones oficiales, criaturas del bestiario, armas y lore sin borrar tus datos">🛡️ Reparar y asegurar compendio oficial (Misiones y Bestiario)</button>'+
+    '<button class="btn-compact" style="width:100%;margin-top:10px;padding:9px;border-color:rgba(212,175,55,0.4);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="open-feedback-modal"><span>📬</span> <span>Buzón de Reportes y Sugerencias (WhatsApp)</span></button>'+
     '<div style="font-size:0.72rem;color:var(--ink-faint);margin-top:10px;line-height:1.4;">'+
       '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo a Lolo (rolillo55ac@gmail.com).</i>'+
     '</div>'+
@@ -371,6 +372,7 @@ function modalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
+  if(action==="open-feedback-modal"){ openFeedbackModal(); return; }
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="migrate-local-images"){ migrateLocalImagesToSupabase(); return; }
   if(action==="clean-orphan-storage"){ cleanOrphanStorage(); return; }
@@ -720,8 +722,316 @@ function showConflictModal(localChar, remoteData, remoteTs){
 }
 
 function closeModals(){
-  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay"].forEach(function(id){
+  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay","feedbackModalOverlay"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.classList.add("hidden");
   });
 }
+
+// ==============================================================================
+// SISTEMA INTELIGENTE DE REPORTES, SUGERENCIAS Y WHATSAPP (+34 663632738)
+// ==============================================================================
+var FEEDBACK_WHATSAPP_PHONE = "34663632738";
+var currentFeedbackCategory = "bug";
+var lastGeneratedReport = null;
+
+function openFeedbackModal(prefilledCategory, prefilledTitle){
+  currentFeedbackCategory = prefilledCategory || "bug";
+  var c = (typeof activeChar === "function") ? activeChar() : null;
+  var userEmail = (typeof currentUser !== "undefined" && currentUser && currentUser.email) ? currentUser.email : "";
+  var defaultContact = c ? (c.name + (userEmail ? " (" + userEmail + ")" : "")) : userEmail;
+  var appVer = "v1.0.6";
+
+  var catOptions = [
+    { id: "bug", label: "🐛 Error / Bug", desc: "Algo falló o no responde" },
+    { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o mejora" },
+    { id: "balance", label: "⚖️ Reglas / Balance", desc: "Cálculo o habilidad" },
+    { id: "otro", label: "💬 Consulta / Otro", desc: "Pregunta general" }
+  ];
+
+  var catPills = catOptions.map(function(cat){
+    var active = (cat.id === currentFeedbackCategory) ? "active" : "";
+    return '<button type="button" class="f-pill feedback-cat-pill ' + active + '" data-val="' + cat.id + '" title="' + cat.desc + '">' +
+      '<span>' + cat.label + '</span>' +
+    '</button>';
+  }).join('');
+
+  var netStatus = (navigator.onLine ? "En línea (Online)" : "Desconectado (Offline)");
+  var charInfo = c ? (c.name + " (Nv. " + (c.level || 1) + ")") : "Sin personaje activo";
+  var screenInfo = (window.innerWidth + "x" + window.innerHeight);
+
+  var html = '<h2>📬 Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+    '<p class="feedback-subtitle">Tu opinión ayuda a mejorar la app. Los reportes se procesan automáticamente con diagnóstico técnico para el desarrollador.</p>' +
+
+    '<div class="field" style="margin-top:10px;">' +
+      '<label style="display:block;margin-bottom:6px;">Tipo de Incidencia</label>' +
+      '<div class="filter-pills feedback-cat-grid" id="feedbackCategoryPills">' + catPills + '</div>' +
+    '</div>' +
+
+    '<div class="field" style="margin-top:10px;">' +
+      '<label for="fbTitle">Título o Asunto breve *</label>' +
+      '<input type="text" id="fbTitle" placeholder="Ej: Error al tirar daño de arma, sugerencia de mapa..." value="' + (prefilledTitle ? esc(prefilledTitle) : "") + '" required>' +
+    '</div>' +
+
+    '<div class="field" style="margin-top:10px;">' +
+      '<label for="fbDesc">Descripción detallada *</label>' +
+      '<textarea id="fbDesc" rows="4" placeholder="Explica qué ocurrió, qué esperabas ver o cuál es tu sugerencia con el mayor detalle posible..." required></textarea>' +
+    '</div>' +
+
+    '<div class="field" style="margin-top:10px;">' +
+      '<label for="fbContact">Tu Nombre / Personaje / Contacto (Opcional)</label>' +
+      '<input type="text" id="fbContact" placeholder="Tu nombre, personaje o correo..." value="' + esc(defaultContact) + '">' +
+    '</div>' +
+
+    '<div class="feedback-diag-box">' +
+      '<div class="feedback-diag-head">⚙️ Diagnóstico técnico adjunto (automático):</div>' +
+      '<div class="feedback-diag-tags">' +
+        '<span class="diag-tag">📦 App: ' + appVer + '</span>' +
+        '<span class="diag-tag">📱 Pantalla: ' + screenInfo + '</span>' +
+        '<span class="diag-tag">👤 PJ: ' + esc(charInfo) + '</span>' +
+        '<span class="diag-tag">🌐 Red: ' + netStatus + '</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
+      '<button type="button" class="btn-solid-gold" style="width:100%;padding:11px 14px;font-size:0.92rem;font-weight:700;" data-action="submit-feedback-report">' +
+        '🚀 Generar y Enviar Reporte' +
+      '</button>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button type="button" class="btn-compact" style="flex:1;padding:8px;font-size:0.78rem;" data-action="test-feedback-whatsapp">' +
+          '🧪 Probar WhatsApp (+34 663632738)' +
+        '</button>' +
+        '<button type="button" class="btn-compact" style="flex:1;padding:8px;font-size:0.78rem;" data-action="close-feedback-modal">' +
+          'Cancelar' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+
+  var modal = document.getElementById("feedbackModal");
+  if(modal) modal.innerHTML = html;
+  var overlay = document.getElementById("feedbackModalOverlay");
+  if(overlay) overlay.classList.remove("hidden");
+}
+
+function buildFeedbackDiagnostic(cat, title, desc, contact){
+  var c = (typeof activeChar === "function") ? activeChar() : null;
+  var ua = navigator.userAgent;
+  var browser = "Navegador";
+  if(/chrome|crios/i.test(ua)) browser = "Chrome";
+  else if(/firefox|fxios/i.test(ua)) browser = "Firefox";
+  else if(/safari/i.test(ua) && !/chrome/i.test(ua)) browser = "Safari";
+  else if(/edg/i.test(ua)) browser = "Edge";
+
+  var os = "Desconocido";
+  if(/android/i.test(ua)) os = "Android";
+  else if(/iphone|ipad|ipod/i.test(ua)) os = "iOS";
+  else if(/windows/i.test(ua)) os = "Windows";
+  else if(/mac/i.test(ua)) os = "macOS";
+  else if(/linux/i.test(ua)) os = "Linux";
+
+  var catIcons = {
+    bug: "🐛 Error / Bug",
+    sugerencia: "💡 Sugerencia",
+    balance: "⚖️ Balance / Reglas",
+    otro: "💬 Consulta"
+  };
+
+  var now = new Date();
+  var report = {
+    id: (typeof uid === "function") ? uid() : ("fb_" + Date.now()),
+    timestamp: now.toISOString(),
+    displayDate: now.toLocaleString(),
+    category: cat,
+    categoryLabel: catIcons[cat] || cat,
+    title: title.trim(),
+    description: desc.trim(),
+    contact: contact.trim() || "Anónimo",
+    character: c ? { id: c.id, name: c.name, level: c.level || 1 } : null,
+    system: {
+      appVersion: "v1.0.6",
+      screen: window.innerWidth + "x" + window.innerHeight,
+      browser: browser,
+      os: os,
+      isPWA: window.matchMedia("(display-mode: standalone)").matches || !!navigator.standalone,
+      network: navigator.onLine ? "Online" : "Offline",
+      syncStatus: (typeof currentUser !== "undefined" && currentUser) ? "Nube (Supabase)" : "Local"
+    }
+  };
+
+  var waMessage = 
+    "📬 *REPORTE DE FICHA ROL*\n" +
+    "─────────────────────\n" +
+    "🏷️ *Tipo:* " + report.categoryLabel + "\n" +
+    "📌 *Asunto:* " + report.title + "\n" +
+    "👤 *Remitente:* " + report.contact + "\n\n" +
+    "📝 *Descripción:*\n" + report.description + "\n\n" +
+    "⚙️ *Diagnóstico Técnico:*\n" +
+    "• App: " + report.system.appVersion + (report.system.isPWA ? " (PWA)" : " (Web)") + "\n" +
+    "• Dispositivo: " + report.system.os + " | " + report.system.browser + " (" + report.system.screen + ")\n" +
+    "• Personaje: " + (report.character ? report.character.name + " (Nv. " + (report.character.level || 1) + ")" : "Ninguno") + "\n" +
+    "• Conexión: " + report.system.network + " (" + report.system.syncStatus + ")\n" +
+    "• Fecha: " + report.displayDate + "\n" +
+    "─────────────────────\n" +
+    "🤖 *[TRIAGE ANTIGRAVITY]*\n" +
+    "Analiza este reporte: evalúa veracidad, ciberseguridad, respuesta al usuario y código a implementar.";
+
+  report.formattedMessage = waMessage;
+  report.whatsappUrl = "https://wa.me/" + FEEDBACK_WHATSAPP_PHONE + "?text=" + encodeURIComponent(waMessage);
+
+  return report;
+}
+
+function submitFeedbackReport(){
+  var titleEl = document.getElementById("fbTitle");
+  var descEl = document.getElementById("fbDesc");
+  var contactEl = document.getElementById("fbContact");
+
+  var title = titleEl ? titleEl.value.trim() : "";
+  var desc = descEl ? descEl.value.trim() : "";
+  var contact = contactEl ? contactEl.value.trim() : "";
+
+  if(!title){
+    showToast("Por favor, introduce un título o asunto.", "warning");
+    if(titleEl) titleEl.focus();
+    return;
+  }
+  if(!desc){
+    showToast("Por favor, describe el problema o sugerencia.", "warning");
+    if(descEl) descEl.focus();
+    return;
+  }
+
+  var report = buildFeedbackDiagnostic(currentFeedbackCategory, title, desc, contact);
+  lastGeneratedReport = report;
+
+  // 1. Guardar en estado local
+  state.feedbackReports = state.feedbackReports || [];
+  state.feedbackReports.unshift(report);
+  if(state.feedbackReports.length > 50) state.feedbackReports.pop();
+  saveState(false);
+
+  // 2. Intentar guardar en Supabase si hay cliente
+  if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
+    try {
+      supabaseClient.from("app_feedback").insert([{
+        id: report.id,
+        category: report.category,
+        title: report.title,
+        description: report.description,
+        contact: report.contact,
+        metadata: report.system,
+        character_name: report.character ? report.character.name : null,
+        created_at: report.timestamp
+      }]).then(function(res){
+        if(res && res.error){
+          console.warn("Tabla app_feedback no activa en Supabase:", res.error.message);
+        } else {
+          console.log("Reporte persistido en Supabase con éxito.");
+        }
+      }).catch(function(err){
+        console.warn("Error enviando reporte a Supabase:", err);
+      });
+    } catch(e){}
+  }
+
+  // 3. Mostrar pantalla de éxito con botón WhatsApp
+  showFeedbackSuccessScreen(report);
+}
+
+function showFeedbackSuccessScreen(report){
+  var html = '<h2>🎉 ¡Reporte Preparado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+    '<div class="feedback-success-card">' +
+      '<div class="success-icon-badge">✅</div>' +
+      '<div class="success-title">Listo para enviar por WhatsApp</div>' +
+      '<p class="success-text">Hemos recopilado la información y el diagnóstico del dispositivo. Pulsa el botón verde para abrir WhatsApp y enviárselo directamente a Lolo (+34 663632738).</p>' +
+    '</div>' +
+
+    '<div class="feedback-preview-box">' +
+      '<div class="preview-header">Vista previa del mensaje:</div>' +
+      '<pre class="preview-text">' + esc(report.formattedMessage) + '</pre>' +
+    '</div>' +
+
+    '<div class="feedback-success-actions" style="display:flex;flex-direction:column;gap:8px;">' +
+      '<a href="' + esc(report.whatsappUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-primary" id="btnOpenWhatsApp" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+        '<span style="font-size:1.2rem;">📱</span> <span>Abrir y Enviar por WhatsApp</span>' +
+      '</a>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button type="button" class="btn-compact" style="flex:1;padding:9px;" data-action="copy-feedback-msg">' +
+          '📋 Copiar texto' +
+        '</button>' +
+        '<button type="button" class="btn-compact" style="flex:1;padding:9px;" data-action="new-feedback-form">' +
+          '✍️ Nuevo reporte' +
+        '</button>' +
+      '</div>' +
+      '<button type="button" class="btn-solid-gold" style="width:100%;margin-top:4px;padding:9px;" data-action="close-feedback-modal">' +
+        'Listo / Cerrar' +
+      '</button>' +
+    '</div>';
+
+  var modal = document.getElementById("feedbackModal");
+  if(modal) modal.innerHTML = html;
+  showToast("Reporte generado. Pulsa 'Abrir WhatsApp' para enviarlo.", "success");
+}
+
+function testFeedbackWhatsApp(){
+  var c = (typeof activeChar === "function") ? activeChar() : null;
+  var testReport = buildFeedbackDiagnostic(
+    "sugerencia",
+    "Prueba de automatización de reportes",
+    "¡Hola! Este es un mensaje de prueba para verificar que el sistema de reportes por WhatsApp al número (+34 663632738) funciona correctamente.",
+    c ? c.name : "Desarrollador / Tester"
+  );
+  lastGeneratedReport = testReport;
+  showFeedbackSuccessScreen(testReport);
+}
+
+function feedbackModalClick(e){
+  var pill = e.target.closest(".feedback-cat-pill");
+  if(pill){
+    var parent = pill.parentElement;
+    parent.querySelectorAll(".feedback-cat-pill").forEach(function(b){ b.classList.remove("active"); });
+    pill.classList.add("active");
+    currentFeedbackCategory = pill.getAttribute("data-val") || "bug";
+    return;
+  }
+
+  var btn = e.target.closest("[data-action]");
+  if(!btn) return;
+  var action = btn.getAttribute("data-action");
+
+  if(action === "close-feedback-modal"){ closeModals(); return; }
+  if(action === "submit-feedback-report"){ submitFeedbackReport(); return; }
+  if(action === "test-feedback-whatsapp"){ testFeedbackWhatsApp(); return; }
+  if(action === "new-feedback-form"){ openFeedbackModal(); return; }
+  if(action === "copy-feedback-msg"){
+    if(lastGeneratedReport && lastGeneratedReport.formattedMessage){
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(lastGeneratedReport.formattedMessage).then(function(){
+          showToast("Mensaje copiado al portapapeles 📋", "success");
+        }).catch(function(){
+          fallbackCopyText(lastGeneratedReport.formattedMessage);
+        });
+      } else {
+        fallbackCopyText(lastGeneratedReport.formattedMessage);
+      }
+    }
+    return;
+  }
+}
+
+function fallbackCopyText(text){
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast("Mensaje copiado al portapapeles 📋", "success");
+  } catch(err){
+    showToast("No se pudo copiar automáticamente. Puedes seleccionarlo manualmente.", "warning");
+  }
+}
+

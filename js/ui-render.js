@@ -54,6 +54,7 @@ function renderTopbar(){
       '<div class="topbar-actions">'+
         '<span id="syncBadge" class="sync-status">'+(currentUser?'● Nube':'○ Local')+'</span>'+
         roleBadgeHtml+
+        '<button class="icon-btn" data-action="open-feedback-modal" title="Reportes y Sugerencias" aria-label="Reportes">📬</button>'+
         '<button class="icon-btn" data-action="open-data-modal" title="Ajustes y Sesión" aria-label="Ajustes">&#9881;</button>'+
       '</div>'+
     '</div>'+

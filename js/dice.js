@@ -864,6 +864,11 @@ function drawBg3DieSimulation(sim, time){
     var f = vf.face;
     var n = vf.normal;
 
+    var faceCenter = mat3VecMul(renderMatrix, f.center);
+    var cPersp = camDist / (camDist - faceCenter[2] * 0.6);
+    var fx = cx + faceCenter[0] * dieScale * cPersp + jx;
+    var fy = cy - faceCenter[1] * dieScale * cPersp + jy + bounceY;
+
     var pts = f.indices.map(function(vi){
       var v = transformedV[vi];
       var persp = camDist / (camDist - v[2] * 0.6);
@@ -881,6 +886,7 @@ function drawBg3DieSimulation(sim, time){
     var g = Math.min(255, Math.floor(22 + diffuse * 52 + spec * 65));
     var b = Math.min(255, Math.floor(82 + diffuse * 135 + spec * 115));
 
+    // Polígono exterior de la faceta
     ctx.beginPath();
     ctx.moveTo(pts[0][0], pts[0][1]);
     for(var i = 1; i < pts.length; i++){
@@ -888,20 +894,76 @@ function drawBg3DieSimulation(sim, time){
     }
     ctx.closePath();
 
-    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+    // Relleno con profundidad de gema tallada (degradado radial)
+    try {
+      var radGrad = ctx.createRadialGradient(fx, fy, 2, fx, fy, dieScale * 0.65);
+      radGrad.addColorStop(0, 'rgb(' + Math.min(255, r + 24) + ',' + Math.min(255, g + 16) + ',' + Math.min(255, b + 32) + ')');
+      radGrad.addColorStop(0.7, 'rgb(' + r + ',' + g + ',' + b + ')');
+      radGrad.addColorStop(1, 'rgb(' + Math.max(12, r - 18) + ',' + Math.max(8, g - 10) + ',' + Math.max(18, b - 14) + ')');
+      ctx.fillStyle = radGrad;
+    } catch(err){
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
     ctx.fill();
 
     var goldAlpha = Math.max(0.45, Math.min(1.0, 0.65 + diffuse * 0.35));
-    ctx.strokeStyle = 'rgba(235, 205, 145, ' + goldAlpha + ')';
-    ctx.lineWidth = 2.4;
+
+    // 1. Aristas exteriores en Oro Antiguo de doble trazo
+    ctx.strokeStyle = 'rgba(105, 68, 28, ' + Math.min(1.0, goldAlpha + 0.25) + ')';
+    ctx.lineWidth = 3.0;
     ctx.stroke();
 
-    if(n[2] > 0.14){
-      var faceCenter = mat3VecMul(renderMatrix, f.center);
-      var cPersp = camDist / (camDist - faceCenter[2] * 0.6);
-      var fx = cx + faceCenter[0] * dieScale * cPersp + jx;
-      var fy = cy - faceCenter[1] * dieScale * cPersp + jy + bounceY;
+    ctx.strokeStyle = 'rgba(255, 238, 185, ' + goldAlpha + ')';
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
 
+    // 2. Doble bisel de filigrana concéntrica interior (Double Inset Bezel)
+    var insetFactor = 0.76;
+    var insetPts = pts.map(function(p){
+      return [
+        p[0] * insetFactor + fx * (1 - insetFactor),
+        p[1] * insetFactor + fy * (1 - insetFactor)
+      ];
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(insetPts[0][0], insetPts[0][1]);
+    for(var k = 1; k < insetPts.length; k++){
+      ctx.lineTo(insetPts[k][0], insetPts[k][1]);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(248, 222, 155, ' + (goldAlpha * 0.68) + ')';
+    ctx.lineWidth = 1.0;
+    ctx.stroke();
+
+    // Anclajes góticos de esquina que unen el bisel exterior con el interior
+    ctx.beginPath();
+    for(var k = 0; k < pts.length; k++){
+      ctx.moveTo(pts[k][0], pts[k][1]);
+      ctx.lineTo(insetPts[k][0], insetPts[k][1]);
+    }
+    ctx.strokeStyle = 'rgba(215, 180, 115, ' + (goldAlpha * 0.42) + ')';
+    ctx.lineWidth = 0.85;
+    ctx.stroke();
+
+    // 3. Anillo rúnico sagrado astrolábico detrás del número en facetas frontales
+    if(n[2] > 0.38){
+      var ringR = (sim.mesh.sides > 12 ? 14 : (sim.mesh.sides > 6 ? 17 : 20)) * cPersp;
+      ctx.beginPath();
+      ctx.arc(fx, fy, ringR, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(253, 224, 71, ' + Math.min(0.48, n[2] * 0.45) + ')';
+      ctx.lineWidth = 0.85;
+      if(ctx.setLineDash){
+        ctx.setLineDash([3, 2]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        ctx.stroke();
+      }
+    }
+
+    // 4. Número grabado en la cara
+    if(n[2] > 0.14){
       var baseSz = (sim.mesh.sides > 12 ? 22 : (sim.mesh.sides > 6 ? 26 : (sim.mesh.sides === 6 ? 32 : 28)));
       var fontSz = Math.floor(baseSz * cPersp * bounceScale);
       ctx.font = "800 " + fontSz + "px 'Cinzel Decorative', Georgia, serif";

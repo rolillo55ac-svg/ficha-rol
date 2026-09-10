@@ -2298,6 +2298,8 @@ function handleClick(e){
 
   if(action==="open-char-modal"){ openCharModal(); return; }
   if(action==="open-data-modal"){ openDataModal(); return; }
+  if(action==="open-feedback-modal"){ openFeedbackModal(); return; }
+  if(action==="close-feedback-modal"){ closeModals(); return; }
   if(action==="open-free-dice"){ openDiceModal(); return; }
   if(action==="upload-portrait"){
     if(!c || !canEditChar(c)) return;
