@@ -140,6 +140,17 @@ function saveState(skipRemote){
     if(state.activeTab) localStorage.setItem("krysalis_active_tab", state.activeTab);
   }catch(e){
     console.error("Error al guardar en localStorage:", e);
+    // Recuperación ante exceso de cuota (5MB): podar historial de dados local para asegurar guardado
+    if(e && (e.name === "QuotaExceededError" || e.code === 22 || e.number === -2147024882)){
+      try {
+        var trimmed = JSON.parse(JSON.stringify(state));
+        if(trimmed.rollLog && trimmed.rollLog.length > 10) trimmed.rollLog = trimmed.rollLog.slice(0, 10);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+        console.warn("Estado guardado tras podar historial local para respetar cuota.");
+      } catch(e2){
+        console.warn("No se pudo podar para localStorage:", e2);
+      }
+    }
   }
   if(!skipRemote && supabaseClient && (dirtyCharIds.size > 0 || dirtyCharPatches.size > 0 || isGlobalDirty || state._isSharedDirty)){
     updateSyncBadge("saving");
@@ -163,7 +174,7 @@ function exportFullBackup(){
   var dateStr = new Date().toISOString().slice(0, 10);
   var backupData = {
     krysalis_system: "Krysalis RPG",
-    version: "v0.9.1",
+    version: "v1.0.0",
     backup_type: "full_disaster_recovery",
     timestamp: new Date().toISOString(),
     support_contact: "rolillo55ac@gmail.com",

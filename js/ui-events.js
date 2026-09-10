@@ -835,6 +835,11 @@ function handleClick(e){
     showToast("Buff eliminado", "info");
     return;
   }
+  if(action==="set-buff-tab"){
+    currentBuffTab = btn.getAttribute("data-val") || "all";
+    renderTab();
+    return;
+  }
   if(action==="add-weapon"){
     if(!c || !canEditChar(c)) return;
     c.weapons = c.weapons || [];

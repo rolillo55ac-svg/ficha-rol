@@ -126,7 +126,7 @@ function init(){
       if(e.target.files && e.target.files[0] && pendingBestiaryId){
         var bid = pendingBestiaryId;
         var b = (state.bestiary||[]).find(function(x){return x.id===bid;});
-        var bName = b ? b.name : "criatura";
+        var bName = b ? (b.nombre || b.name || "criatura") : "criatura";
         uploadImageToSupabase(e.target.files[0], "bestiario", bName, function(url){
           if(b && url){
             b.image = url;
@@ -241,6 +241,10 @@ function init(){
     updateLoadingProgress(85, "Conectando con la partida...");
     initSupabase();
     checkWeeklyBackup();
+
+    if(typeof navigator !== "undefined" && "serviceWorker" in navigator && window.location.protocol.startsWith("http")){
+      navigator.serviceWorker.register("./sw.js").catch(function(e){ console.warn("ServiceWorker aviso:", e); });
+    }
   } catch(err) {
     console.error("Critical error in init():", err);
   } finally {

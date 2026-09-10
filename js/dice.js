@@ -223,14 +223,14 @@ function handleRemoteDiceRoll(rollObj){
 }
 
 function performD10Roll(charName, label, mod){
-  var c = activeChar();
+  var c = (typeof activeChar === "function") ? activeChar() : null;
   var extra = 0;
-  if(c.buffs){
+  if(c && c.buffs){
     if(c.buffs.sangre_ataque_melee && label.includes("melé")) extra += 1;
     if(c.buffs.sangre_ataque_dist && label.includes("distancia")) extra += 1;
     if(c.buffs.mono) extra -= 1;
   }
-  if(c.activeBuffs){
+  if(c && c.activeBuffs){
     c.activeBuffs.forEach(function(ab){
       if(ab.active === false) return;
       if(label.toLowerCase().includes("melé") && (ab.attr === "melee" || ab.attr === "melé")){
@@ -247,7 +247,7 @@ function performD10Roll(charName, label, mod){
       }
     });
   }
-  if(c.spells){
+  if(c && c.spells){
     c.spells.forEach(function(sp){
       if(sp.active && sp.statAttr && sp.statMod){
         if(label.toLowerCase().includes("melé") && (sp.statAttr === "melee" || sp.statAttr === "melé")){
@@ -422,7 +422,8 @@ function diceModalClick(e){
     var qtyInput = document.getElementById("diceQty");
     if(qtyInput) diceConfig.qty = Math.max(1, parseInt(qtyInput.value,10)||1);
     document.getElementById("diceModalOverlay").classList.add("hidden");
-    var cName = activeChar().name || "Aventurero";
+    var curC = (typeof activeChar === "function") ? activeChar() : null;
+    var cName = (curC && curC.name) ? curC.name : "Aventurero";
 
     var doRoll = function(){
       if(diceConfig.sides===100){
