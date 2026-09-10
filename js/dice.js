@@ -352,18 +352,20 @@ function getBg3DieSvg(sides, value){
     '</svg>';
   }
 
-  // D10: Trapezoedro pentagonal
+  // D10: Trapezoedro pentagonal elegante
   if(sides === 10){
     return '<svg class="bg3-die-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">'+
       defs+
       '<g filter="drop-shadow(0 8px 14px rgba(0,0,0,0.85))">'+
-        '<polygon points="80,10 144,50 120,135 80,152 40,135 16,50" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="2"/>'+
-        '<polygon points="80,10 144,50 80,82" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<polygon points="80,10 16,50 80,82" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
-        '<polygon points="80,82 144,50 120,135 80,152" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.5" opacity="0.85"/>'+
-        '<polygon points="80,82 16,50 40,135 80,152" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.4"/>'+
-        '<polygon points="80,10 120,70 80,140 40,70" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.5"/>'+
-        '<text x="80" y="88" font-family="var(--font-display)" font-size="'+(valStr.length > 1 ? "28" : "32")+'" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+valStr+'</text>'+
+        '<polygon points="80,18 140,50 118,68" fill="url(#dieFacetLight)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
+        '<polygon points="80,18 20,50 42,68" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4"/>'+
+        '<polygon points="118,68 140,50 126,122 80,138" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4" opacity="0.9"/>'+
+        '<polygon points="42,68 80,138 34,122 20,50" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.4" opacity="0.9"/>'+
+        '<polygon points="80,138 126,122 80,150" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.75"/>'+
+        '<polygon points="80,138 80,150 34,122" fill="url(#dieFacetDark)" stroke="url(#goldEdge)" stroke-width="1.2" opacity="0.75"/>'+
+        '<polygon points="80,18 118,68 80,138 42,68" fill="url(#dieGlowGrad)" stroke="url(#goldEdge)" stroke-width="2.6"/>'+
+        '<polygon points="80,30 110,68 80,126 50,68" fill="none" stroke="url(#goldEdge)" stroke-width="0.9" opacity="0.55"/>'+
+        '<text x="80" y="86" font-family="var(--font-display)" font-size="'+(valStr.length > 1 ? "26" : "32")+'" font-weight="800" fill="#FFF5DC" text-anchor="middle" filter="url(#runeGlow)">'+valStr+'</text>'+
       '</g>'+
     '</svg>';
   }
@@ -594,7 +596,17 @@ function computeMeshInfo(vertices, rawFaces, sides, isPercentileTens){
     rx /= rLen; ry /= rLen; rz /= rLen;
 
     var faceVal = idx + 1;
-    if(isPercentileTens){
+    if(sides === 10){
+      if(isPercentileTens){
+        // Pares opuestos d% decenas: (10,0), (30,80), (50,60), (70,40), (90,20)
+        var tensMap = [10, 30, 50, 70, 90, 40, 20, 0, 80, 60];
+        faceVal = tensMap[idx];
+      } else {
+        // Pares opuestos estandar d10 (suman 11): (1,10), (3,8), (5,6), (7,4), (9,2)
+        var d10Map = [1, 3, 5, 7, 9, 4, 2, 10, 8, 6];
+        faceVal = d10Map[idx];
+      }
+    } else if(isPercentileTens){
       faceVal = (idx === 9) ? 0 : (idx * 10);
     }
     return {
@@ -650,26 +662,44 @@ function buildD12Mesh(){
 }
 
 function buildD10Mesh(isPercentileTens){
-  var rawV = [[0, 0, 1.4], [0, 0, -1.4]];
+  // Trapezoedro pentagonal matematicamente exacto:
+  // Para que cada una de las 10 facetas sea un deltoide (cometa) estrictamente PLANO,
+  // la relacion entre la altura polar H y la semi-altura ecuatorial h debe satisfacer:
+  // H = h * (1 + cos(36°)) / (1 - cos(36°)) ≈ 9.472136 * h.
+  var cos36 = Math.cos(Math.PI / 5);
+  var ratio = (1 + cos36) / (1 - cos36);
+  var h = 0.11;
+  var H = h * ratio; // ≈ 1.041935
+  var R = 1.0;
+
+  var vertices = [
+    [0, 0, H],   // V0: apice polar superior
+    [0, 0, -H]   // V1: apice polar inferior
+  ];
+
+  // Corona ecuatorial superior (z = +h)
   for(var i = 0; i < 5; i++){
     var a = (i * 2 * Math.PI) / 5;
-    rawV.push([Math.cos(a), Math.sin(a), 0.35]);
+    vertices.push([R * Math.cos(a), R * Math.sin(a), h]);
   }
-  for(var i = 0; i < 5; i++){
-    var a = ((i + 0.5) * 2 * Math.PI) / 5;
-    rawV.push([Math.cos(a), Math.sin(a), -0.35]);
+
+  // Corona ecuatorial inferior desfasada 36° (z = -h)
+  for(var j = 0; j < 5; j++){
+    var a2 = ((j + 0.5) * 2 * Math.PI) / 5;
+    vertices.push([R * Math.cos(a2), R * Math.sin(a2), -h]);
   }
-  var vertices = rawV.map(function(v){
-    var len = Math.hypot(v[0], v[1], v[2]);
-    return [v[0]/len, v[1]/len, v[2]/len];
-  });
+
+  // Las 10 facetas en cometa (deltoides) 100% coplanares sin deformacion:
   var rawFaces = [];
-  for(var i = 0; i < 5; i++){
-    rawFaces.push([0, 2 + i, 7 + i, 2 + ((i + 1) % 5)]);
+  // 5 facetas superiores (conectando apice superior 0)
+  for(var k = 0; k < 5; k++){
+    rawFaces.push([0, 2 + k, 7 + k, 2 + ((k + 1) % 5)]);
   }
-  for(var i = 0; i < 5; i++){
-    rawFaces.push([1, 7 + ((i + 1) % 5), 2 + ((i + 1) % 5), 7 + i]);
+  // 5 facetas inferiores (conectando apice inferior 1)
+  for(var m = 0; m < 5; m++){
+    rawFaces.push([1, 7 + ((m + 1) % 5), 2 + ((m + 1) % 5), 7 + m]);
   }
+
   return computeMeshInfo(vertices, rawFaces, 10, isPercentileTens);
 }
 
@@ -724,7 +754,7 @@ function getMeshScale(sides){
   if(sides === 4) return 86;
   if(sides === 6) return 74;
   if(sides === 8) return 84;
-  if(sides === 10) return 84;
+  if(sides === 10) return 82;
   if(sides === 12) return 80;
   return 84;
 }
@@ -892,7 +922,7 @@ function drawBg3DieSimulation(sim, time){
   var visibleFaces = [];
   mesh.faces.forEach(function(face){
     var norm = mat3VecMul(renderMatrix, face.normal);
-    if(norm[2] > -0.06){
+    if(norm[2] > -0.005){
       var avgZ = 0;
       face.indices.forEach(function(vi){ avgZ += transformedV[vi][2]; });
       avgZ /= face.indices.length;
@@ -981,7 +1011,7 @@ function drawBg3DieSimulation(sim, time){
 
     // 3. Bisel interior
     if(n[2] > 0.45){
-      var insetFactor = 0.80;
+      var insetFactor = (sim.mesh.sides === 10 ? 0.84 : 0.80);
       var insetPts = pts.map(function(p){
         return [
           p[0] * insetFactor + fx * (1 - insetFactor),
@@ -1000,8 +1030,8 @@ function drawBg3DieSimulation(sim, time){
       ctx.stroke();
     }
 
-    // 4. Anillo decorativo frontal
-    if(n[2] > 0.82){
+    // 4. Anillo decorativo frontal (omitido en d10 para no romper la estetica de rombo/deltoide)
+    if(n[2] > 0.82 && sim.mesh.sides !== 10){
       var ringR = (sim.mesh.sides > 12 ? 15 : (sim.mesh.sides > 6 ? 18 : 22)) * cPersp;
       ctx.beginPath();
       ctx.arc(fx, fy, ringR, 0, Math.PI * 2);
@@ -1017,21 +1047,24 @@ function drawBg3DieSimulation(sim, time){
     }
 
     // 5. Numeracion
-    if(n[2] > 0.52){
+    var numThreshold = (sim.mesh.sides === 10 ? 0.68 : 0.52);
+    if(n[2] > numThreshold){
       var isHero = (n[2] > 0.82);
       var baseSz = (sim.mesh.sides > 12 ? 24 : (sim.mesh.sides > 6 ? 28 : (sim.mesh.sides === 6 ? 32 : 30)));
+      var label = String(f.value);
+      if(sim.isPercentileTens){
+        label = (f.value === 0) ? "00" : String(f.value);
+      }
+      if(sim.mesh.sides === 10 && label.length > 1){
+        baseSz = 24;
+      }
       var fontSz = Math.floor(baseSz * cPersp * bounceScale * (isHero ? 1.0 : 0.82));
       ctx.save();
       ctx.font = "800 " + fontSz + "px 'Cinzel Decorative', Georgia, serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      var label = String(f.value);
-      if(sim.isPercentileTens){
-        label = (f.value === 0) ? "00" : String(f.value);
-      }
-
-      var alpha = isHero ? 1.0 : Math.min(0.5, Math.pow((n[2] - 0.52) / 0.30, 1.2) * 0.5);
+      var alpha = isHero ? 1.0 : Math.min(0.5, Math.pow((n[2] - numThreshold) / (1 - numThreshold), 1.2) * 0.5);
 
       // Sombra profunda tallada
       ctx.fillStyle = "rgba(10, 4, 14, " + (alpha * 0.9) + ")";
@@ -1050,8 +1083,8 @@ function drawBg3DieSimulation(sim, time){
       ctx.fillText(label, fx, fy);
       ctx.restore();
 
-      if(!sim.isRolling && isHero && f.value === sim.targetValue && sim.sides === 20){
-        if(f.value === 20){
+      if(!sim.isRolling && isHero && f.value === sim.targetValue && (sim.sides === 20 || sim.sides === 10)){
+        if(f.value === sim.sides){
           ctx.strokeStyle = "rgba(253, 224, 71, 0.85)";
           ctx.lineWidth = 2.8;
           ctx.stroke();
