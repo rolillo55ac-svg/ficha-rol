@@ -2184,9 +2184,17 @@ function openDiceModal(){
     '</div>';
   }).join('');
 
+  var formulaText = (diceConfig.sides === 100) ? '1d%' : (diceConfig.qty + 'd' + diceConfig.sides);
+  var modText = diceConfig.mod ? (diceConfig.mod > 0 ? (' +' + diceConfig.mod) : (' ' + diceConfig.mod)) : '';
+  var modeSuffix = '';
+  if(diceConfig.mode === 'adv') modeSuffix = ' (Ventaja)';
+  else if(diceConfig.mode === 'disadv') modeSuffix = ' (Desventaja)';
+
+  var fullFormula = formulaText + modText + modeSuffix;
+
   document.getElementById("diceModal").innerHTML =
     '<div class="cup-modal-header">'+
-      '<div class="cup-modal-icon" style="width:42px;height:42px;">'+getDieSvg(diceConfig.sides)+'</div>'+
+      '<div class="cup-modal-icon">'+getDieSvg(diceConfig.sides)+'</div>'+
       '<div class="cup-modal-title">'+
         '<h3>Lanzador de Dados 3D</h3>'+
         '<div class="cup-modal-sub">Elige tu dado, modalidad y lanza en la Cámara 3D</div>'+
@@ -2194,43 +2202,61 @@ function openDiceModal(){
       '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>'+
     '</div>'+
     '<div class="dice-mode-pills">'+
-      '<button class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">⚔️ Normal</button>'+
-      '<button class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">🍀 Ventaja</button>'+
-      '<button class="dmode-pill '+(diceConfig.mode==='disadv'?'active':'')+'" data-action="set-dice-mode" data-mode="disadv">💀 Desventaja</button>'+
+      '<button type="button" class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">⚔️ Normal</button>'+
+      '<button type="button" class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">🍀 Ventaja</button>'+
+      '<button type="button" class="dmode-pill '+(diceConfig.mode==='disadv'?'active':'')+'" data-action="set-dice-mode" data-mode="disadv">💀 Desventaja</button>'+
     '</div>'+
     '<div class="cup-tray-label">Dados Poliédricos</div>'+
     '<div class="dtype-grid">'+diceCards+'</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">'+
-      (diceConfig.sides===100?'<div></div>':'<div class="field"><label>Cantidad</label>'+
-        '<div class="qty-control-row">'+
-          '<button class="qty-btn" data-action="dec-dice-qty">-</button>'+
-          '<input type="number" min="1" max="20" id="diceQty" value="'+diceConfig.qty+'" style="width:48px;text-align:center;">'+
-          '<button class="qty-btn" data-action="inc-dice-qty">+</button>'+
-        '</div>'+
-        '<div class="quick-qty-chips" style="margin-top:4px;">'+
-          [1,2,3,4].map(function(q){
-            return '<button class="qty-chip '+(diceConfig.qty===q?'active':'')+'" data-action="set-dice-qty" data-qty="'+q+'">x'+q+'</button>';
-          }).join('')+
-        '</div>'+
-      '</div>')+
-      '<div class="field"><label>Modificador</label>'+
+    '<div class="dice-controls-grid">'+
+      (diceConfig.sides===100 ? '' :
+        '<div class="dice-ctrl-col">'+
+          '<div class="dice-ctrl-label"><span>Cantidad de Dados</span><span class="dice-ctrl-val" id="qtyDisplay">'+diceConfig.qty+'d'+diceConfig.sides+'</span></div>'+
+          '<div class="qty-control-row">'+
+            '<button type="button" class="qty-btn" data-action="dec-dice-qty" aria-label="Menos">-</button>'+
+            '<input type="number" min="1" max="20" id="diceQty" value="'+diceConfig.qty+'" class="dice-num-input">'+
+            '<button type="button" class="qty-btn" data-action="inc-dice-qty" aria-label="Más">+</button>'+
+            '<div class="quick-qty-chips">'+
+              [1,2,3,4,6].map(function(q){
+                return '<button type="button" class="qty-chip '+(diceConfig.qty===q?'active':'')+'" data-action="set-dice-qty" data-qty="'+q+'">x'+q+'</button>';
+              }).join('')+
+            '</div>'+
+          '</div>'+
+        '</div>'
+      )+
+      '<div class="dice-ctrl-col '+(diceConfig.sides===100?'full-width':'')+'">'+
+        '<div class="dice-ctrl-label"><span>Modificador</span><span class="dice-ctrl-val" id="modDisplay">'+(diceConfig.mod>=0?('+'+diceConfig.mod):diceConfig.mod)+'</span></div>'+
         '<div class="mod-control-row">'+
-          '<input type="number" id="diceMod" value="'+diceConfig.mod+'" style="width:60px;text-align:center;">'+
+          '<input type="number" id="diceMod" value="'+diceConfig.mod+'" class="dice-num-input mod-input">'+
           '<div class="quick-mod-chips">'+
-            [-2,0,1,2,5].map(function(m){
-              return '<button class="mod-chip '+(diceConfig.mod===m?'active':'')+'" data-action="set-dice-mod" data-mod="'+m+'">'+(m>0?'+'+m:m)+'</button>';
+            [-2,0,1,2,3,5].map(function(m){
+              return '<button type="button" class="mod-chip '+(diceConfig.mod===m?'active':'')+'" data-action="set-dice-mod" data-mod="'+m+'">'+(m>0?'+'+m:m)+'</button>';
             }).join('')+
           '</div>'+
         '</div>'+
       '</div>'+
     '</div>'+
-    '<button class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 ¡Lanzar en la Cámara 3D!</button>';
+    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 ¡Lanzar ' + esc(fullFormula) + ' en la Cámara 3D!</button>';
+
   document.getElementById("diceModalOverlay").classList.remove("hidden");
 }
 
 function diceModalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
+
+  // Preservar valores si se escribieron a mano en los inputs antes del click
+  var currentQtyInput = document.getElementById("diceQty");
+  if(currentQtyInput) {
+    var val = parseInt(currentQtyInput.value, 10);
+    if(!isNaN(val) && val >= 1) diceConfig.qty = Math.min(20, val);
+  }
+  var currentModInput = document.getElementById("diceMod");
+  if(currentModInput) {
+    var mval = parseInt(currentModInput.value, 10);
+    if(!isNaN(mval)) diceConfig.mod = mval;
+  }
+
   if(action==="close-modal"){ closeModals(); return; }
   if(action==="set-dice-mode"){ diceConfig.mode = btn.getAttribute("data-mode"); openDiceModal(); return; }
   if(action==="inc-dice-qty"){ diceConfig.qty = Math.min(20, (diceConfig.qty||1)+1); openDiceModal(); return; }
