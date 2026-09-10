@@ -2036,55 +2036,9 @@ function openBg3WeaponRoll(c, wpn, formulaRaw){
     modifiers.push({ label: "Modificador Arma", val: baseMod, icon: "sword", type: "weapon" });
   }
 
-  var catalog = (state && state.weaponsCatalog) ? state.weaponsCatalog : [];
-  var catItem = catalog.find(function(ci){ return ci.name === (wpn && wpn.name) || ci.id === (wpn && wpn.catalogId); });
   var wpnName = (wpn && wpn.name) ? wpn.name : "Arma";
-  var wpnLower = wpnName.toLowerCase();
-  var alcance = (catItem && catItem.alcance) ? catItem.alcance.toLowerCase() : ((wpn && wpn.alcance) ? String(wpn.alcance).toLowerCase() : "");
 
-  var isRanged = alcance.includes("distancia") || alcance.includes("disparo") ||
-                 wpnLower.includes("arco") || wpnLower.includes("ballesta") || wpnLower.includes("cerbatana") ||
-                 wpnLower.includes("pistola") || wpnLower.includes("fusil") || wpnLower.includes("honda") ||
-                 wpnLower.includes("arpon") || wpnLower.includes("arpón") ||
-                 (alcance.includes("m") && !alcance.includes("+") && !alcance.includes("melé") && !alcance.includes("melee") && parseInt(alcance, 10) >= 5);
-  var isMelee = !isRanged;
-
-  if(c && c.buffs){
-    if(isMelee && c.buffs.sangre_ataque_melee) modifiers.push({ label: "Sangre Melé (Daño)", val: 1, icon: "flame", type: "buff" });
-    if(!isMelee && c.buffs.sangre_ataque_dist) modifiers.push({ label: "Sangre Distancia (Daño)", val: 1, icon: "flame", type: "buff" });
-    if(c.buffs.mono) modifiers.push({ label: "Mono", val: -1, icon: "poison", type: "buff" });
-  }
-
-  if(c && c.activeBuffs){
-    c.activeBuffs.forEach(function(ab){
-      if(ab.active === false) return;
-      var bVal = parseFloat(ab.bonus);
-      if(isNaN(bVal) || bVal === 0) return;
-      if(ab.attr === "dano" || ab.attr === "daño" || ab.attr === "todo" || (isMelee && (ab.attr === "melee" || ab.attr === "melé")) || (!isMelee && ab.attr === "distancia")){
-        modifiers.push({ label: ab.name || "Bono Daño", val: bVal, icon: "flame", type: "buff" });
-      }
-    });
-  }
-
-  if(c && c.spells){
-    c.spells.forEach(function(sp){
-      if(sp.active && sp.statAttr && sp.statMod){
-        var stacks = Math.max(1, num(sp.activeStacks, 1));
-        if(sp.statAttr === "dano" || sp.statAttr === "daño" || sp.statAttr === "todo" || (isMelee && (sp.statAttr === "melee" || sp.statAttr === "melé")) || (!isMelee && sp.statAttr === "distancia")){
-          var spNum = parseFloat(sp.statMod);
-          if(!isNaN(spNum) && spNum !== 0){
-            modifiers.push({
-              label: (sp.name || "Hechizo") + (stacks > 1 ? " (x" + stacks + ")" : ""),
-              val: spNum * stacks,
-              icon: "flame",
-              type: "buff"
-            });
-          }
-        }
-      }
-    });
-  }
-
+  // Al daño de las armas NO se le suman buffs ni debuffs de combate/habilidades
   openBg3RollModal({
     title: "Daño — " + wpnName,
     subtitle: "Tirada de Daño (" + (formulaRaw || (qty + "d" + sides)) + ")",
@@ -2282,7 +2236,7 @@ function handleRemoteDiceRoll(rollObj){
   else if(rollObj.isFumble) playBg3Fumble();
   else { playBg3DiceRoll(); setTimeout(playBg3DiceLand, 300); }
 
-  if(state.activeTab === "habilidades" || state.activeTab === "combate") {
+  if(state.activeTab === "habilidades" || state.activeTab === "combate" || state.activeTab === "estados") {
     renderTab();
   }
 }

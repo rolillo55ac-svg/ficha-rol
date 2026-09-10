@@ -302,7 +302,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   /* Medidores en una sola fila compacta de 3 columnas para no duplicar altura */
   .gauges{grid-template-columns:1.1fr 0.8fr 1fr;gap:4px;margin-top:5px;}
   .gauge-label{font-size:0.56rem;margin-bottom:2px;letter-spacing:0.01em;}
-  .gauge-label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;}
+  .gauge-label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .gauge-nums{font-size:0.62rem;white-space:nowrap;}
   .gauge{height:8px;border-radius:4px;}
   .gauge-adjust{gap:2px;margin-top:3px;}
@@ -453,7 +453,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .buff-pill.debuff.active{border-color:var(--danger);color:#E88178;background:rgba(192,57,43,0.28);box-shadow:0 0 10px -2px rgba(192,57,43,0.55);}
 
 .combat-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
-@media(max-width:420px){.combat-quick-grid{grid-template-columns:1fr;}}
+@media(max-width:320px){.combat-quick-grid{grid-template-columns:1fr;}}
 .combat-quick-btn{
   background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:14px 8px;display:flex;flex-direction:column;gap:3px;align-items:center;cursor:pointer;
@@ -471,6 +471,95 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .combat-stat input{width:100%;background:none;border:none;text-align:center;font-family:var(--font-mono);font-size:1.1rem;color:var(--ink);}
 .combat-stat .mini-roll{position:absolute;top:4px;right:4px;background:none;border:none;color:var(--ink-faint);font-size:.85rem;cursor:pointer;min-width:28px;min-height:28px;border-radius:4px;}
 .combat-stat .mini-roll:hover{color:var(--blood-light);background:rgba(140,37,47,0.15);}
+
+/* SUBNAVEGACIÓN TÁCTIL COMBATE Y ESTADOS */
+.combat-subnav-pills{
+  display:flex;gap:6px;margin-bottom:12px;background:var(--bg-card);border:1px solid var(--line);
+  border-radius:var(--radius);padding:4px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);
+}
+.subnav-pill{
+  flex:1;background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);
+  color:var(--ink-dim);font-size:0.78rem;font-weight:600;padding:8px 10px;cursor:pointer;
+  transition:all var(--transition-fast);display:flex;align-items:center;justify-content:center;
+  gap:5px;text-align:center;min-height:36px;
+}
+.subnav-pill:hover{color:var(--ink);background:rgba(255,255,255,0.04);}
+.subnav-pill.active{
+  background:var(--bg-elev);color:var(--gold-light);border-color:rgba(176,141,87,0.45);
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);font-weight:700;
+}
+
+/* TIRA INFORMATIVA DE ESTADOS ACTIVOS EN COMBATE */
+.combat-status-strip{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:linear-gradient(135deg, rgba(61,110,96,0.14), rgba(176,141,87,0.1));
+  border:1px solid rgba(176,141,87,0.3);border-radius:var(--radius-sm);
+  padding:8px 12px;margin-bottom:14px;cursor:pointer;transition:all var(--transition-fast);
+}
+.combat-status-strip:hover{border-color:var(--gold);transform:translateY(-1px);}
+.combat-status-strip .css-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.combat-status-strip .css-badge-buff{
+  font-size:0.72rem;font-weight:700;color:var(--teal-light);background:rgba(61,110,96,0.25);
+  padding:2px 8px;border-radius:4px;border:1px solid rgba(61,110,96,0.45);
+}
+.combat-status-strip .css-badge-debuff{
+  font-size:0.72rem;font-weight:700;color:#E88178;background:rgba(192,57,43,0.25);
+  padding:2px 8px;border-radius:4px;border:1px solid rgba(192,57,43,0.45);
+}
+.combat-status-strip .css-badge-spell{
+  font-size:0.72rem;font-weight:700;color:#A78BFA;background:rgba(167,139,250,0.2);
+  padding:2px 8px;border-radius:4px;border:1px solid rgba(167,139,250,0.4);
+}
+.combat-status-strip .css-right{
+  font-size:0.74rem;color:var(--gold-light);font-weight:700;white-space:nowrap;
+}
+
+/* TARJETAS RESPONSIVAS DE BUFFS Y DEBUFFS (PESTAÑA ESTADOS) */
+.assigned-buff-card{
+  background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:10px 12px;display:flex;flex-direction:column;gap:5px;transition:all var(--transition-fast);
+  box-shadow:0 4px 12px -6px rgba(0,0,0,0.6);position:relative;
+}
+.assigned-buff-card.is-buff{
+  border-color:rgba(61,110,96,0.55);
+  background:linear-gradient(150deg, rgba(61,110,96,0.1), var(--bg-card) 60%);
+}
+.assigned-buff-card.is-debuff{
+  border-color:rgba(232,129,120,0.55);
+  background:linear-gradient(150deg, rgba(192,57,43,0.1), var(--bg-card) 60%);
+}
+.assigned-buff-card.is-inactive{
+  opacity:0.68;border-color:var(--line);background:var(--bg-elev);
+}
+.abc-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.abc-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.abc-type-tag{
+  font-size:0.64rem;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:0.04em;text-transform:uppercase;
+}
+.abc-type-tag.buff{
+  background:rgba(61,110,96,0.3);color:var(--teal-light);border:1px solid var(--teal-light);
+}
+.abc-type-tag.debuff{
+  background:rgba(192,57,43,0.3);color:#E88178;border:1px solid #E88178;
+}
+.abc-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.abc-title{
+  margin:0;font-size:0.92rem;font-weight:700;line-height:1.35;word-break:break-word;white-space:normal;
+}
+.abc-title.inactive{text-decoration:line-through;}
+.abc-effect-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.abc-bonus-badge{
+  display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;padding:2px 8px;border-radius:4px;font-weight:600;
+}
+.abc-bonus-badge.buff{
+  background:rgba(61,110,96,0.22);color:var(--teal-light);border:1px dashed rgba(61,110,96,0.5);
+}
+.abc-bonus-badge.debuff{
+  background:rgba(192,57,43,0.22);color:#E88178;border:1px dashed rgba(232,129,120,0.5);
+}
+.abc-desc{
+  font-size:0.72rem;color:var(--ink-dim);line-height:1.35;font-style:italic;margin-top:2px;
+}
 
 /* FILAS DINÁMICAS */
 .list-row{display:grid;gap:6px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);}
@@ -1362,6 +1451,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="habilidades"]::before{content:'🎯';}
 .tab-btn[data-tab="entrenamiento"]::before{content:'🥋';}
 .tab-btn[data-tab="combate"]::before{content:'⚔️';}
+.tab-btn[data-tab="estados"]::before{content:'💫';}
 .tab-btn[data-tab="inventario"]::before{content:'🎒';}
 .tab-btn[data-tab="magia"]::before{content:'✨';}
 .tab-btn[data-tab="alquimia"]::before{content:'🧪';}

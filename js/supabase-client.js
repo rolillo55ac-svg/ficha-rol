@@ -147,7 +147,7 @@ function handleRemoteCharStatUpdate(data){
     saveState(true);
     if(state.activeId === data.charId || state.activeId === target.id){
       renderTopbar();
-      if((state.activeTab==="combate" || state.activeTab==="magia") && (!document.activeElement || !document.activeElement.matches("input, textarea"))){
+      if((state.activeTab==="combate" || state.activeTab==="magia" || state.activeTab==="estados") && (!document.activeElement || !document.activeElement.matches("input, textarea"))){
         renderTab();
       }
     }
