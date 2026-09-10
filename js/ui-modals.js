@@ -729,23 +729,22 @@ function closeModals(){
 }
 
 // ==============================================================================
-// SISTEMA AUTOMATIZADO DE REPORTES CON TRIAGE IA Y WHATSAPP (+34 663632738)
+// SISTEMA AUTOMATIZADO DE REPORTES CON TRIAGE IA Y ALERTAS EN DISCORD
 // ==============================================================================
-var MASTER_WHATSAPP_PHONE = "34663632738";
 var currentFeedbackCategory = "bug";
 var lastGeneratedReport = null;
 
-function getCallMeBotApiKey(){
+function getMasterDiscordWebhook(){
   try {
-    return localStorage.getItem("krysalis_callmebot_apikey") || "";
+    return localStorage.getItem("krysalis_discord_webhook") || "";
   } catch(e){
     return "";
   }
 }
 
-function setCallMeBotApiKey(key){
+function setMasterDiscordWebhook(url){
   try {
-    localStorage.setItem("krysalis_callmebot_apikey", (key || "").trim());
+    localStorage.setItem("krysalis_discord_webhook", (url || "").trim());
   } catch(e){}
 }
 
@@ -770,13 +769,13 @@ function openFeedbackModal(prefilledCategory, prefilledTitle){
   }).join('');
 
   var gmPanelBtn = isGM() ? 
-    '<button type="button" class="btn-compact" style="width:100%;margin-bottom:12px;padding:7px;border-color:rgba(212,175,55,0.4);font-size:0.8rem;" data-action="open-feedback-admin">' +
-      '🛡️ Panel Máster: Ver reportes recibidos y configurar WhatsApp' +
+    '<button type="button" class="btn-compact" style="width:100%;margin-bottom:12px;padding:8px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.8rem;background:rgba(88,101,242,0.12);" data-action="open-feedback-admin">' +
+      '🎮 Panel Máster: Ver reportes recibidos y configurar Discord' +
     '</button>' : '';
 
   var html = '<h2>📬 Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     gmPanelBtn +
-    '<p class="feedback-subtitle">Envía cualquier problema, duda o sugerencia. Nuestro sistema lo procesará junto al contexto de tu partida y notificará automáticamente al desarrollador.</p>' +
+    '<p class="feedback-subtitle">Envía cualquier problema, duda o sugerencia. Nuestro sistema lo procesará junto al contexto de tu partida y notificará directamente al desarrollador.</p>' +
 
     '<div class="field" style="margin-top:8px;">' +
       '<label style="display:block;margin-bottom:6px;">Tipo de Incidencia</label>' +
@@ -799,7 +798,7 @@ function openFeedbackModal(prefilledCategory, prefilledTitle){
     '</div>' +
 
     '<div class="feedback-privacy-note">' +
-      '🔒 <b>100% Privado y Directo:</b> Tu reporte se procesará de forma segura y se notificará directamente al Máster sin intermediarios ni necesidad de usar apps externas.' +
+      '🔒 <b>100% Privado y Directo:</b> Tu reporte se procesará de forma segura y se enviará directamente al Máster sin intermediarios.' +
     '</div>' +
 
     '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
@@ -937,63 +936,111 @@ function generateAiTriageAnalysis(report){
     technicalAction = "Aclarar regla directamente con el jugador.";
   }
 
-  var pjSummary = c ? (c.name + " (Nv." + c.level + " " + c.job + ") | PV: " + c.pvActual + "/" + c.pvMax + " | MP: " + c.manaActual + "/" + c.manaMax) : "Sin personaje asignado";
-  var lastRollStr = report.recentRolls.length ? report.recentRolls[report.recentRolls.length - 1] : "Ninguna";
-
-  var waMessage = 
-    "🔔 *REPORTE TRATADO POR IA (KRYSALIS)*\n" +
-    "─────────────────────\n" +
-    "👤 *Remitente:* " + report.contact + "\n" +
-    "🏷️ *Categoría:* " + report.categoryLabel + "\n" +
-    "📌 *Asunto:* " + report.title + "\n\n" +
-    "📝 *Mensaje del Jugador:*\n" +
-    "\"" + report.description + "\"\n\n" +
-    "──────── CONTEXTO ────────\n" +
-    "• PJ: " + pjSummary + "\n" +
-    "• Última tirada: " + lastRollStr + "\n" +
-    "• Dispositivo: " + report.system.os + " | " + report.system.browser + " (v1.0.6)\n\n" +
-    "────── 🧠 ANÁLISIS DE LA IA ──────\n" +
-    "🔍 *Diagnóstico:* *" + classification + "*\n" +
-    diagnostic + "\n\n" +
-    "🛡️ *Ciberseguridad:* " + (isSecuritySafe ? "Aprobada (Sin riesgos de inyección)" : "⚠️ Alerta de sanitización") + "\n" +
-    "🛠️ *Acción Técnica:* " + technicalAction + "\n\n" +
-    "💬 *Respuesta redactada para el jugador:*\n" +
-    "\"" + suggestedReply + "\"\n" +
-    "─────────────────────\n" +
-    "👉 *¿Qué decides, Lolo?* Responde SÍ para proceder o modifica lo que necesites.";
-
   return {
     classification: classification,
     diagnostic: diagnostic,
     suggestedReply: suggestedReply,
     technicalAction: technicalAction,
-    isSecuritySafe: isSecuritySafe,
-    whatsappMessage: waMessage
+    isSecuritySafe: isSecuritySafe
   };
 }
 
-async function sendWhatsAppAlertToMaster(treatedReport){
-  var apiKey = getCallMeBotApiKey();
-  if(!apiKey){
-    console.log("CallMeBot API Key no configurada. El reporte se guarda en el panel del Máster.");
-    return { success: false, reason: "no_apikey" };
+async function sendDiscordWebhookReport(report){
+  var webhookUrl = getMasterDiscordWebhook();
+  if(!webhookUrl){
+    console.log("Discord Webhook no configurado. El reporte se conserva en el panel del Máster.");
+    return { success: false, reason: "no_webhook" };
   }
 
-  var phone = MASTER_WHATSAPP_PHONE;
-  var msg = (treatedReport.aiTriage && treatedReport.aiTriage.whatsappMessage) ? treatedReport.aiTriage.whatsappMessage : (treatedReport.formattedMessage || "");
-  var url = "https://api.callmebot.com/whatsapp.php?phone=" + phone + "&text=" + encodeURIComponent(msg) + "&apikey=" + encodeURIComponent(apiKey);
+  var triage = report.aiTriage || {};
+  var c = report.character;
+
+  // Colores Discord Embed
+  var colorMap = {
+    bug: 0xEF4444,        // Rojo
+    sugerencia: 0xFBBF24, // Dorado
+    balance: 0x3B82F6,    // Azul
+    otro: 0xA855F7        // Púrpura
+  };
+  var embedColor = colorMap[report.category] || 0xB08D57;
+
+  var charLine = c ? 
+    ("• **" + esc(c.name) + "** (Nv." + c.level + " " + esc(c.job) + ")\n• **PV:** " + c.pvActual + "/" + c.pvMax + " | **MP:** " + c.manaActual + "/" + c.manaMax + (c.escudo > 0 ? " | **Escudo:** " + c.escudo : "")) :
+    "Sin personaje activo";
+
+  var rollsLine = (report.recentRolls && report.recentRolls.length) ? 
+    report.recentRolls.join("\n") : 
+    "Sin tiradas registradas";
+
+  var payload = {
+    username: "Krysalis • Triage IA",
+    avatar_url: "https://rolillo55ac-svg.github.io/ficha-rol/images/icon-192.png",
+    embeds: [
+      {
+        title: report.categoryLabel + ": " + report.title,
+        description: "**Mensaje del Jugador:**\n> " + report.description.split("\n").join("\n> "),
+        color: embedColor,
+        fields: [
+          {
+            name: "👤 Remitente / Personaje",
+            value: "**" + report.contact + "**\n" + charLine,
+            inline: true
+          },
+          {
+            name: "📱 Entorno & Dispositivo",
+            value: "• **SO:** " + report.system.os + "\n• **Nav:** " + report.system.browser + "\n• **App:** " + report.system.appVersion + (report.system.isPWA ? " (PWA)" : ""),
+            inline: true
+          },
+          {
+            name: "🎲 Tiradas Recientes",
+            value: rollsLine,
+            inline: false
+          },
+          {
+            name: "🧠 Diagnóstico de la IA",
+            value: "**Clasificación:** *" + triage.classification + "*\n" + triage.diagnostic,
+            inline: false
+          },
+          {
+            name: "🛡️ Ciberseguridad",
+            value: triage.isSecuritySafe ? "✅ Verificada (Sin riesgos de inyección)" : "⚠️ Alerta de sanitización",
+            inline: true
+          },
+          {
+            name: "🛠️ Acción Recomendada",
+            value: triage.technicalAction || "Ninguna acción de código requerida.",
+            inline: true
+          },
+          {
+            name: "💬 Respuesta sugerida para el jugador (Copiar y Enviar)",
+            value: "```\n" + (triage.suggestedReply || "Sin respuesta generada.") + "\n```",
+            inline: false
+          }
+        ],
+        footer: {
+          text: "Krysalis Rol • " + report.displayDate
+        }
+      }
+    ]
+  };
 
   try {
-    await fetch(url, { mode: "no-cors" });
-    return { success: true };
-  } catch(err){
-    try {
-      var img = new Image();
-      img.src = url;
+    var res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if(res.ok || res.status === 204){
       return { success: true };
-    } catch(e){
-      return { success: false, error: err };
+    } else {
+      var errText = await res.text();
+      console.warn("Error en Discord Webhook:", res.status, errText);
+      return { success: false, error: errText };
     }
+  } catch(err){
+    console.error("Fallo al conectar con Discord Webhook:", err);
+    return { success: false, error: err.message };
   }
 }
 
@@ -1020,13 +1067,12 @@ async function submitFeedbackReport(){
 
   if(btn){
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> Procesando con IA y enviando...';
+    btn.innerHTML = '<span>⏳</span> Procesando con IA y enviando a Discord...';
   }
 
   var report = buildFeedbackDiagnostic(currentFeedbackCategory, title, desc, contact);
   var aiTriage = generateAiTriageAnalysis(report);
   report.aiTriage = aiTriage;
-  report.whatsappMessage = aiTriage.whatsappMessage;
   lastGeneratedReport = report;
 
   state.feedbackReports = state.feedbackReports || [];
@@ -1052,7 +1098,7 @@ async function submitFeedbackReport(){
     } catch(e){}
   }
 
-  sendWhatsAppAlertToMaster(report);
+  sendDiscordWebhookReport(report);
   showPlayerSuccessScreen(report);
 }
 
@@ -1082,12 +1128,12 @@ function showPlayerSuccessScreen(report){
 }
 
 function openFeedbackAdminModal(){
-  var apiKey = getCallMeBotApiKey();
+  var webhookUrl = getMasterDiscordWebhook();
   var reports = state.feedbackReports || [];
 
-  var statusBadge = apiKey ? 
-    '<span class="storage-pill optimal">🟢 WhatsApp Conectado</span>' : 
-    '<span class="storage-pill warning">⚠️ WhatsApp Sin Configurar</span>';
+  var statusBadge = webhookUrl ? 
+    '<span class="storage-pill optimal">🟢 Discord Conectado</span>' : 
+    '<span class="storage-pill warning">⚠️ Discord Sin Configurar</span>';
 
   var reportsListHtml = '';
   if(!reports.length){
@@ -1121,8 +1167,8 @@ function openFeedbackAdminModal(){
             '<button type="button" class="btn-compact" style="flex:1;padding:6px 8px;font-size:0.72rem;" data-action="copy-admin-reply" data-idx="' + idx + '">' +
               '📋 Copiar respuesta para el jugador' +
             '</button>' +
-            '<button type="button" class="btn-compact" style="padding:6px 8px;font-size:0.72rem;" data-action="resend-admin-wa" data-idx="' + idx + '" title="Reenviar a mi WhatsApp">' +
-              '📱 Reenviar WhatsApp' +
+            '<button type="button" class="btn-compact" style="padding:6px 8px;font-size:0.72rem;border-color:rgba(88,101,242,0.5);color:#8EA1E1;" data-action="resend-admin-discord" data-idx="' + idx + '" title="Reenviar a Discord">' +
+              '📡 Enviar a Discord' +
             '</button>' +
           '</div>' : ''
         ) +
@@ -1130,27 +1176,27 @@ function openFeedbackAdminModal(){
     }).join('');
   }
 
-  var html = '<h2>🛡️ Buzón del Máster y WhatsApp<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>🛡️ Buzón del Máster y Discord Webhook<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="storage-monitor-box" style="margin-top:0;">' +
       '<div class="storage-monitor-header">' +
-        '<div class="storage-monitor-title">📱 Notificaciones a tu WhatsApp (+34 663632738)</div>' +
+        '<div class="storage-monitor-title">🎮 Notificaciones a tu Discord</div>' +
         statusBadge +
       '</div>' +
-      '<p style="font-size:0.78rem;color:var(--ink-dim);margin:0 0 10px;line-height:1.4;">' +
-        'Para recibir los reportes analizados automáticamente en tu móvil mediante CallMeBot (gratis):' +
+      '<p style="font-size:0.78rem;color:var(--ink-dim);margin:0 0 8px;line-height:1.4;">' +
+        'Recibe las alertas tratadas por la IA directamente en un canal de tu servidor de Discord:' +
       '</p>' +
-      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">' +
-        '<a href="https://wa.me/34911080422?text=I+allow+callmebot+to+send+me+messages" target="_blank" rel="noopener" class="btn-compact" style="text-decoration:none;font-size:0.74rem;padding:7px 10px;background:rgba(37,211,102,0.15);border-color:rgba(37,211,102,0.4);color:#2ECC71;">' +
-          '👉 1. Pedir clave por WhatsApp (+34 911 08 04 22)' +
-        '</a>' +
+      '<div style="font-size:0.72rem;color:var(--ink-faint);margin-bottom:10px;line-height:1.4;background:rgba(0,0,0,0.3);padding:8px;border-radius:6px;border:1px solid var(--line);">' +
+        '1. En Discord, ve a <b>Ajustes del canal</b> (ej: #reportes-rol) ➔ <b>Integraciones</b> ➔ <b>Webhooks</b>.<br>' +
+        '2. Crea un <b>Nuevo Webhook</b> y pulsa <b>Copiar URL de Webhook</b>.<br>' +
+        '3. Pega el enlace aquí abajo y pulsa <b>Guardar</b>.' +
       '</div>' +
       '<div style="display:flex;gap:6px;">' +
-        '<input type="text" id="inputCallMeBotKey" placeholder="Pega aquí tu clave CallMeBot (ej: 1234567)" value="' + esc(apiKey) + '" style="font-size:0.8rem;padding:6px 8px;flex:1;">' +
-        '<button type="button" class="btn-solid-gold" style="padding:6px 12px;font-size:0.78rem;" data-action="save-callmebot-key">Guardar</button>' +
+        '<input type="url" id="inputDiscordWebhook" placeholder="https://discord.com/api/webhooks/..." value="' + esc(webhookUrl) + '" style="font-size:0.78rem;padding:6px 8px;flex:1;">' +
+        '<button type="button" class="btn-solid-gold" style="padding:6px 12px;font-size:0.78rem;" data-action="save-discord-webhook">Guardar</button>' +
       '</div>' +
       '<div style="margin-top:8px;display:flex;gap:6px;">' +
-        '<button type="button" class="btn-compact" style="flex:1;font-size:0.72rem;padding:6px;" data-action="test-callmebot-ping">' +
-          '🧪 Enviar WhatsApp de prueba a mi móvil' +
+        '<button type="button" class="btn-compact" style="flex:1;font-size:0.74rem;padding:6px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;" data-action="test-discord-ping">' +
+          '🧪 Enviar mensaje de prueba a mi Discord' +
         '</button>' +
       '</div>' +
     '</div>' +
@@ -1198,37 +1244,36 @@ function feedbackModalClick(e){
   if(action === "open-feedback-admin"){ openFeedbackAdminModal(); return; }
   if(action === "submit-feedback-report"){ submitFeedbackReport(); return; }
 
-  if(action === "save-callmebot-key"){
-    var keyInput = document.getElementById("inputCallMeBotKey");
-    var keyVal = keyInput ? keyInput.value.trim() : "";
-    setCallMeBotApiKey(keyVal);
-    showToast(keyVal ? "Clave CallMeBot guardada. ¡WhatsApp listo!" : "Clave borrada.", "success");
+  if(action === "save-discord-webhook"){
+    var urlInput = document.getElementById("inputDiscordWebhook");
+    var urlVal = urlInput ? urlInput.value.trim() : "";
+    setMasterDiscordWebhook(urlVal);
+    showToast(urlVal ? "Webhook de Discord guardado con éxito 🎮" : "Webhook borrado.", "success");
     openFeedbackAdminModal();
     return;
   }
 
-  if(action === "test-callmebot-ping"){
+  if(action === "test-discord-ping"){
     var c = (typeof activeChar === "function") ? activeChar() : null;
     var testReport = buildFeedbackDiagnostic(
       "sugerencia",
-      "Prueba de conexión con WhatsApp",
-      "¡Hola Lolo! Este es un mensaje de prueba para verificar que recibes las alertas de reportes de jugadores directamente en tu móvil (+34 663632738).",
+      "Prueba de Alertas de Triage IA",
+      "¡Hola Lolo! Este es un mensaje de prueba para verificar que recibes los reportes de tus jugadores directamente en tu servidor de Discord con el formato embebido y el análisis de la IA.",
       c ? c.name : "Sistema Krysalis"
     );
     testReport.aiTriage = generateAiTriageAnalysis(testReport);
-    testReport.whatsappMessage = testReport.aiTriage.whatsappMessage;
 
-    var apiKey = getCallMeBotApiKey();
-    if(!apiKey){
-      showToast("Introduce primero tu clave de CallMeBot arriba.", "warning");
+    var webhook = getMasterDiscordWebhook();
+    if(!webhook){
+      showToast("Pega primero la URL de tu Webhook de Discord arriba.", "warning");
       return;
     }
 
-    sendWhatsAppAlertToMaster(testReport).then(function(res){
+    sendDiscordWebhookReport(testReport).then(function(res){
       if(res.success){
-        showToast("¡Mensaje de prueba enviado a tu WhatsApp! 📱", "success");
+        showToast("¡Mensaje de prueba enviado a tu Discord! 🎮", "success");
       } else {
-        showToast("Error al enviar. Comprueba la clave o el número.", "error");
+        showToast("Error al enviar a Discord. Comprueba la URL.", "error");
       }
     });
     return;
@@ -1243,15 +1288,15 @@ function feedbackModalClick(e){
     return;
   }
 
-  if(action === "resend-admin-wa"){
+  if(action === "resend-admin-discord"){
     var rIdx = parseInt(btn.getAttribute("data-idx"), 10);
     var targetR = (state.feedbackReports || [])[rIdx];
     if(targetR){
-      sendWhatsAppAlertToMaster(targetR).then(function(res){
+      sendDiscordWebhookReport(targetR).then(function(res){
         if(res.success){
-          showToast("Reenviado a tu WhatsApp 📱", "success");
+          showToast("Enviado a Discord 🎮", "success");
         } else {
-          showToast("Introduce tu clave CallMeBot en la configuración de arriba.", "warning");
+          showToast("Pega tu Webhook de Discord arriba para activarlo.", "warning");
         }
       });
     }
@@ -1300,5 +1345,6 @@ function execCommandCopy(text){
     showToast("No se pudo copiar automáticamente.", "warning");
   }
 }
+
 
 
