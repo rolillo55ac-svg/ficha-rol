@@ -90,6 +90,9 @@ function initSupabase(){
         .on('broadcast', { event: 'new_ticket_report' }, function(payload){
           if(payload && payload.payload && typeof handleRemoteNewTicket === 'function') handleRemoteNewTicket(payload.payload);
         })
+        .on('broadcast', { event: 'app_version_update' }, function(payload){
+          if(payload && payload.payload && typeof handleRemoteVersionUpdate === 'function') handleRemoteVersionUpdate(payload.payload);
+        })
         .on('postgres_changes', {event:'*', schema:'public', table:'map_markers'}, function(payload){
           handleRemoteMarkerChange(payload);
         })
@@ -303,3 +306,17 @@ function handleRemoteMarkerChange(payload){
     }
   }
 }
+
+function handleRemoteVersionUpdate(payload){
+  if(!payload) return;
+  var targetVer = payload.version ? ("v" + payload.version) : "la última versión";
+  showToast("📢 El Administrador ha emitido una actualización (" + targetVer + "). Actualizando...", "info");
+  setTimeout(function(){
+    if(typeof executeUnifiedAppUpdate === "function"){
+      executeUnifiedAppUpdate(false);
+    } else {
+      window.location.reload();
+    }
+  }, 1200);
+}
+window.handleRemoteVersionUpdate = handleRemoteVersionUpdate;

@@ -1960,8 +1960,8 @@ function openBg3WeaponAttackRoll(c, wpn){
 
   openBg3RollModal({
     title: wpnName + " (Ataque)",
-    subtitle: "Tirada de Ataque a " + (isMelee ? "Melé" : "Distancia") + " (1d20)",
-    sides: 20,
+    subtitle: "Tirada de Ataque a " + (isMelee ? "Melé" : "Distancia") + " (1d10)",
+    sides: 10,
     dc: 10,
     dcActive: true,
     isDamage: false,

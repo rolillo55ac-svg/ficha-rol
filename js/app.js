@@ -235,6 +235,13 @@ function init(){
         (state.characters || []).forEach(function(c){
           if(c && c._isDirty && canEditChar(c)) sendKeepalivePush(c);
         });
+      } else if(document.visibilityState === "visible"){
+        if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
+        if(typeof navigator !== "undefined" && "serviceWorker" in navigator){
+          navigator.serviceWorker.getRegistrations().then(function(regs){
+            regs.forEach(function(r){ r.update().catch(function(){}); });
+          }).catch(function(){});
+        }
       }
     });
 
@@ -244,10 +251,26 @@ function init(){
     setTimeout(function(){
       if(typeof syncPlayerTicketsWithSupabase === "function") syncPlayerTicketsWithSupabase();
       if(typeof syncAdminTicketsWithSupabase === "function" && typeof isGM === "function" && isGM()) syncAdminTicketsWithSupabase();
-    }, 1200);
+      if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
+    }, 1500);
+
+    // Comprobación periódica cada 10 minutos
+    setInterval(function(){
+      if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
+    }, 10 * 60 * 1000);
 
     if(typeof navigator !== "undefined" && "serviceWorker" in navigator && window.location.protocol.startsWith("http")){
-      navigator.serviceWorker.register("./sw.js").catch(function(e){ console.warn("ServiceWorker aviso:", e); });
+      navigator.serviceWorker.register("./sw.js").then(function(reg){
+        reg.update().catch(function(){});
+      }).catch(function(e){ console.warn("ServiceWorker aviso:", e); });
+
+      var isRefreshingApp = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function(){
+        if(!isRefreshingApp){
+          isRefreshingApp = true;
+          window.location.reload();
+        }
+      });
     }
   } catch(err) {
     console.error("Critical error in init():", err);

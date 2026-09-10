@@ -776,7 +776,7 @@ function tplCombate(c){
       (isBlocked && !isGM()
         ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'+
           '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
-        : '<button class="dice-btn attack-roll-btn" data-action="roll-weapon-attack" data-id="'+w.id+'" title="Tirar Ataque (1d20 + Melé/Distancia)" aria-label="Tirar ataque">⚔️</button>'+
+        : '<button class="dice-btn attack-roll-btn" data-action="roll-weapon-attack" data-id="'+w.id+'" title="Tirar Ataque (1d10 + Melé/Distancia)" aria-label="Tirar ataque">⚔️</button>'+
           '<button class="dice-btn damage-roll-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño ('+esc(selectedCatItem ? selectedCatItem.dano : "1d6")+')" aria-label="Tirar daño">💥</button>'
       )+
       (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+

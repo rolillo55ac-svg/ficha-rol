@@ -1,3 +1,6 @@
+var APP_VERSION = "1.2.1";
+var APP_BUILD = "2026.09.10.2";
+
 var state = null;
 var supabaseClient = null;
 var currentUser = null;

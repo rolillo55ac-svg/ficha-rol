@@ -203,16 +203,15 @@ function openDataModal(){
       '</div>';
   }
 
-  // === MONITOR DE ALMACENAMIENTO (LOCAL Y SUPABASE) ===
+  // === MONITOR DE ALMACENAMIENTO Y VERSIÓN UNIFICADO ===
   var local = typeof getLocalStorageUsage === "function" ? getLocalStorageUsage() : { pct: 0, usedStr: "0 B", totalStr: "5.0 MB", freeStr: "5.0 MB" };
   var localPillClass = local.pct > 90 ? "critical" : (local.pct > 70 ? "warning" : "optimal");
+  var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.1");
 
   html += '<div class="storage-monitor-box">'+
     '<div class="storage-monitor-header">'+
-      '<div class="storage-monitor-title">📊 Espacio de Almacenamiento</div>'+
-      '<button class="btn-compact storage-refresh-btn" data-action="refresh-storage-stats" title="Calcular espacio actual">'+
-        '<span class="storage-refresh-icon">🔄</span> Actualizar'+
-      '</button>'+
+      '<div class="storage-monitor-title">📊 Espacio y Versión de la Aplicación</div>'+
+      '<span class="storage-pill optimal" id="appVersionBadge">v' + curVerStr + '</span>'+
     '</div>'+
     '<div class="storage-cards-grid">'+
       // Tarjeta Local
@@ -234,10 +233,7 @@ function openDataModal(){
             '<div style="margin-top:4px;padding:6px 8px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:4px;display:flex;flex-direction:column;gap:5px;">'+
               '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">⚠️ Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
               '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
-            '</div>' :
-            '<div style="display:flex;justify-content:flex-end;margin-top:2px;">'+
-              '<button class="btn-compact" data-action="clean-orphan-storage" style="font-size:0.65rem;padding:2px 7px;color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">🧹 Limpiar caché residual</button>'+
-            '</div>'
+            '</div>' : ''
           )+
         '</div>'+
       '</div>'+
@@ -256,6 +252,19 @@ function openDataModal(){
         '</div>'+
         '<div class="storage-card-note" id="cloudDetailText">Imágenes de personajes, mapas, misiones y pistas</div>'+
       '</div>'+
+    '</div>'+
+    // Control Unificado de Actualización y Limpieza de Caché
+    '<div style="margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;">'+
+      '<button class="btn-solid-gold" style="width:100%;padding:9px 12px;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;" data-action="unified-app-update-cache" title="Comprueba si hay una nueva versión, purga cachés de navegadores/PWA y recarga limpiamente">'+
+        '<span>🚀</span> <span>Actualizar y Limpiar Caché</span>'+
+      '</button>'+
+      '<div id="versionCheckResult" style="font-size:0.7rem;color:var(--ink-faint);margin-top:5px;text-align:center;">'+
+        '✓ Versión v' + curVerStr + ' sincronizada · Pulsa para forzar recarga limpia'+
+      '</div>'+
+      (isGM() ? 
+        '<button class="btn-compact" style="width:100%;margin-top:8px;padding:7px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.75rem;background:rgba(88,101,242,0.12);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="broadcast-force-update" title="Envía una señal en tiempo real a todos los jugadores conectados para forzarles a actualizar su versión y limpiar caché">'+
+          '<span>📢</span> <span>Forzar actualización inmediata a todos los jugadores</span>'+
+        '</button>' : '')+
     '</div>'+
   '</div>';
 
@@ -279,6 +288,7 @@ function openDataModal(){
 
   setTimeout(function(){
     updateStorageStatsUI(false);
+    if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
   }, 50);
 }
 
@@ -374,6 +384,8 @@ function modalClick(e){
   if(action==="close-modal"){ closeModals(); return; }
   if(action==="open-feedback-modal"){ openFeedbackModal(); return; }
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
+  if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
+  if(action==="broadcast-force-update"){ broadcastForceAppUpdate(); return; }
   if(action==="migrate-local-images"){ migrateLocalImagesToSupabase(); return; }
   if(action==="clean-orphan-storage"){ cleanOrphanStorage(); return; }
   if(action==="pick-char"){
@@ -789,12 +801,17 @@ function handleRemoteTicketReply(data){
   myTickets.forEach(function(t){
     if(t.id === data.id || (data.ticketCode && t.ticketCode === data.ticketCode)){
       t.status = data.status || "resolved";
-      if(data.adminReply !== undefined){
+      var incomingReply = (data.adminReply !== undefined && data.adminReply !== null) ? String(data.adminReply).trim() : "";
+      if(incomingReply && incomingReply !== (t.adminReply || "").trim()){
         t.adminReply = data.adminReply;
         t.readReply = false;
+        changed = true;
       }
-      t.resolvedAt = data.resolvedAt || new Date().toISOString();
-      changed = true;
+      var newResolved = data.resolvedAt || new Date().toISOString();
+      if(newResolved !== t.resolvedAt){
+        t.resolvedAt = newResolved;
+        changed = true;
+      }
     }
   });
   if(changed){
@@ -804,7 +821,7 @@ function handleRemoteTicketReply(data){
     var modal = document.getElementById("feedbackModal");
     var overlay = document.getElementById("feedbackModalOverlay");
     if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
-      openFeedbackModal("my_tickets");
+      openFeedbackModal("my_tickets", null, null, true);
     }
   }
 }
@@ -829,73 +846,109 @@ function handleRemoteNewTicket(data){
 }
 window.handleRemoteNewTicket = handleRemoteNewTicket;
 
-async function syncPlayerTicketsWithSupabase(){
+var isSyncingPlayerTickets = false;
+
+async function syncPlayerTicketsWithSupabase(skipModalRefresh){
+  if(isSyncingPlayerTickets) return getPlayerTickets();
   var tickets = getPlayerTickets();
   if(!tickets.length) return tickets;
   if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine) return tickets;
 
+  isSyncingPlayerTickets = true;
   var changed = false;
   var hadNewReply = false;
 
-  // Canal 1: campaign_map ('app_feedback_sync') - Accesible con lectura 100% pública para todos los jugadores
   try {
-    var cmRes = await supabaseClient.from("campaign_map").select("data").eq("id", "app_feedback_sync").maybeSingle();
-    if(cmRes && cmRes.data && cmRes.data.data && cmRes.data.data.tickets){
-      var syncTickets = cmRes.data.data.tickets;
-      tickets.forEach(function(t){
-        var match = syncTickets[t.id] || Object.values(syncTickets).find(function(x){
-          return x.ticketCode && x.ticketCode === t.ticketCode;
-        });
-        if(match){
-          if(match.status && match.status !== t.status){ t.status = match.status; changed = true; }
-          if(match.adminReply && match.adminReply !== t.adminReply){ 
-            t.adminReply = match.adminReply; 
-            t.readReply = false;
-            changed = true; 
-            hadNewReply = true;
-          }
-          if(match.resolvedAt && match.resolvedAt !== t.resolvedAt){ t.resolvedAt = match.resolvedAt; changed = true; }
-        }
-      });
-    }
-  } catch(e1){}
-
-  // Canal 2: Tabla dedicada app_feedback (cuando se ejecuta la migración 011 en Supabase)
-  try {
-    var ids = tickets.map(function(t){ return t.id; }).filter(Boolean);
-    if(ids.length){
-      var res = await supabaseClient.from("app_feedback").select("id, status, admin_reply, resolved_at").in("id", ids);
-      if(res && res.data && res.data.length){
-        var map = {};
-        res.data.forEach(function(row){ map[row.id] = row; });
+    // Canal 1: campaign_map ('app_feedback_sync') - Accesible con lectura 100% pública para todos los jugadores
+    try {
+      var cmRes = await supabaseClient.from("campaign_map").select("data").eq("id", "app_feedback_sync").maybeSingle();
+      if(cmRes && cmRes.data && cmRes.data.data && cmRes.data.data.tickets){
+        var syncTickets = cmRes.data.data.tickets;
         tickets.forEach(function(t){
-          if(map[t.id]){
-            var row = map[t.id];
-            if(row.status && row.status !== t.status){ t.status = row.status; changed = true; }
-            if(row.admin_reply !== undefined && row.admin_reply !== t.adminReply){ 
-              t.adminReply = row.admin_reply || ""; 
-              t.readReply = false;
-              changed = true; 
-              hadNewReply = true;
+          var match = syncTickets[t.id] || Object.values(syncTickets).find(function(x){
+            return x.ticketCode && x.ticketCode === t.ticketCode;
+          });
+          if(match){
+            var curStatus = t.status || "pending";
+            var inStatus = match.status || curStatus;
+            if(inStatus !== curStatus){ t.status = inStatus; changed = true; }
+
+            var curReply = (t.adminReply || "").trim();
+            var inReply = (match.adminReply || "").trim();
+            if(inReply !== curReply){
+              t.adminReply = match.adminReply || "";
+              changed = true;
+              if(inReply.length > 0 && inReply !== curReply){
+                t.readReply = false;
+                hadNewReply = true;
+              }
             }
-            if(row.resolved_at !== undefined && row.resolved_at !== t.resolvedAt){ t.resolvedAt = row.resolved_at; changed = true; }
+
+            var curResolved = t.resolvedAt || null;
+            var inResolved = match.resolvedAt || null;
+            if(inResolved && inResolved !== curResolved){
+              t.resolvedAt = inResolved;
+              changed = true;
+            }
           }
         });
       }
-    }
-  } catch(e2){}
+    } catch(e1){}
 
-  if(changed){
-    savePlayerTickets(tickets);
-    if(typeof renderTopbar === "function") renderTopbar();
-    if(hadNewReply){
-      showToast("📬 Tienes una nueva respuesta del Administrador en tus reportes", "info");
+    // Canal 2: Tabla dedicada app_feedback (cuando se ejecuta la migración 011 en Supabase)
+    try {
+      var ids = tickets.map(function(t){ return t.id; }).filter(Boolean);
+      if(ids.length){
+        var res = await supabaseClient.from("app_feedback").select("id, status, admin_reply, resolved_at").in("id", ids);
+        if(res && res.data && res.data.length){
+          var map = {};
+          res.data.forEach(function(row){ map[row.id] = row; });
+          tickets.forEach(function(t){
+            if(map[t.id]){
+              var row = map[t.id];
+              var curStatus = t.status || "pending";
+              var inStatus = row.status || curStatus;
+              if(inStatus !== curStatus){ t.status = inStatus; changed = true; }
+
+              var curReply = (t.adminReply || "").trim();
+              var inReply = (row.admin_reply || "").trim();
+              if(inReply !== curReply){
+                t.adminReply = row.admin_reply || "";
+                changed = true;
+                if(inReply.length > 0 && inReply !== curReply){
+                  t.readReply = false;
+                  hadNewReply = true;
+                }
+              }
+
+              var curResolved = t.resolvedAt || null;
+              var inResolved = row.resolved_at || null;
+              if(inResolved && inResolved !== curResolved){
+                t.resolvedAt = inResolved;
+                changed = true;
+              }
+            }
+          });
+        }
+      }
+    } catch(e2){}
+
+    if(changed){
+      savePlayerTickets(tickets);
+      if(typeof renderTopbar === "function") renderTopbar();
+      if(hadNewReply){
+        showToast("📬 Tienes una nueva respuesta del Administrador en tus reportes", "info");
+      }
+      if(!skipModalRefresh){
+        var modal = document.getElementById("feedbackModal");
+        var overlay = document.getElementById("feedbackModalOverlay");
+        if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
+          openFeedbackModal("my_tickets", null, null, true);
+        }
+      }
     }
-    var modal = document.getElementById("feedbackModal");
-    var overlay = document.getElementById("feedbackModalOverlay");
-    if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
-      openFeedbackModal("my_tickets");
-    }
+  } finally {
+    isSyncingPlayerTickets = false;
   }
   return tickets;
 }
@@ -975,7 +1028,7 @@ async function syncAdminTicketsWithSupabase(){
   return state.feedbackReports || [];
 }
 
-function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle){
+function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSync){
   var myTickets = getPlayerTickets();
   var hasUnreadReply = myTickets.some(function(t){ return t.adminReply && !t.readReply; });
 
@@ -1148,7 +1201,9 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle){
   var overlay = document.getElementById("feedbackModalOverlay");
   if(overlay) overlay.classList.remove("hidden");
 
-  syncPlayerTicketsWithSupabase();
+  if(!skipSync){
+    syncPlayerTicketsWithSupabase(true);
+  }
 }
 
 function buildFeedbackDiagnostic(cat, title, desc, contact){
@@ -1211,7 +1266,7 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
     adminReply: "",
     resolvedAt: null,
     system: {
-      appVersion: "1.0v (Modo Pruebas)",
+      appVersion: "v" + (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.1") + " (" + (typeof APP_BUILD !== "undefined" ? APP_BUILD : "Build") + ")",
       screen: window.innerWidth + "x" + window.innerHeight,
       browser: browser,
       os: os,

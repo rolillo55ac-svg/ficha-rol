@@ -379,7 +379,7 @@ async function migrateLocalImagesToSupabase(){
   if(typeof updateStorageStatsUI === "function") updateStorageStatsUI(true);
 }
 
-function cleanOrphanStorage(){
+function cleanOrphanStorage(silent){
   var cleaned = 0;
   var knownPrefixes = [STORAGE_KEY, "krysalis_active_", "krysalis_auth_", "krysalis_last_", "sb-", "supabase.auth."];
   try {
@@ -394,13 +394,17 @@ function cleanOrphanStorage(){
     }
   } catch(e){}
 
-  if(cleaned > 0){
-    showToast("Se eliminaron " + cleaned + " registros de versiones anteriores.", "success");
+  if(!silent){
+    if(cleaned > 0){
+      showToast("Se eliminaron " + cleaned + " registros de versiones anteriores.", "success");
+      saveState(false);
+    } else {
+      showToast("No hay registros obsoletos en la memoria.", "info");
+    }
+    if(typeof updateStorageStatsUI === "function") updateStorageStatsUI(true);
+  } else if(cleaned > 0) {
     saveState(false);
-  } else {
-    showToast("No hay registros obsoletos en la memoria.", "info");
   }
-  if(typeof updateStorageStatsUI === "function") updateStorageStatsUI(true);
 }
 
 async function getSupabaseStorageUsage(){
@@ -483,3 +487,127 @@ async function getSupabaseStorageUsage(){
     };
   }
 }
+
+// === SISTEMA UNIFICADO DE ACTUALIZACIÓN Y PURGA DE CACHÉ ===
+var isCheckingAppVersion = false;
+
+async function executeUnifiedAppUpdate(isManual){
+  if(typeof flushPendingSync === "function") flushPendingSync();
+  if(typeof cleanOrphanStorage === "function") cleanOrphanStorage(true);
+
+  if(isManual){
+    showToast("🚀 Limpiando caché y forzando última versión...", "info");
+  }
+
+  try {
+    // 1. Purgar todas las caches del CacheStorage del navegador
+    if(typeof caches !== "undefined" && caches.keys){
+      var cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(function(cName){
+        return caches.delete(cName);
+      }));
+    }
+
+    // 2. Forzar actualización de todos los Service Workers registrados
+    if(typeof navigator !== "undefined" && "serviceWorker" in navigator){
+      var registrations = await navigator.serviceWorker.getRegistrations();
+      for(var reg of registrations){
+        await reg.update().catch(function(){});
+      }
+    }
+  } catch(errCache){
+    console.warn("Aviso limpiando cachés:", errCache);
+  }
+
+  // 3. Recarga limpia con parámetro de rotura de caché
+  setTimeout(function(){
+    var url = new URL(window.location.href);
+    url.searchParams.set("_v", Date.now());
+    window.location.href = url.toString();
+  }, 400);
+}
+window.executeUnifiedAppUpdate = executeUnifiedAppUpdate;
+
+async function checkForAppUpdates(isManual){
+  if(isCheckingAppVersion) return;
+  isCheckingAppVersion = true;
+  var badgeEl = document.getElementById("appVersionBadge");
+  var statusEl = document.getElementById("versionCheckResult");
+
+  try {
+    var res = await fetch("./version.json?t=" + Date.now(), {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache, no-store, must-revalidate" }
+    });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    var data = await res.json();
+    if(!data || !data.version) throw new Error("Datos de versión no válidos");
+
+    var currentVer = (typeof APP_VERSION !== "undefined") ? APP_VERSION : "1.0";
+    var currentBuild = (typeof APP_BUILD !== "undefined") ? APP_BUILD : "";
+    var isOutdated = (data.version !== currentVer) || (data.build && currentBuild && data.build !== currentBuild);
+
+    if(isOutdated){
+      if(badgeEl){
+        badgeEl.textContent = "v" + currentVer + " → v" + data.version;
+        badgeEl.className = "storage-pill warning";
+      }
+      if(statusEl){
+        statusEl.innerHTML = '<span style="color:#FDE047;font-weight:700;">⚠️ Nueva versión v' + esc(data.version) + ' detectada.</span>';
+      }
+
+      showToast("✨ ¡Nueva versión detectada (v" + data.version + ")! Actualizando app...", "info");
+      setTimeout(function(){
+        executeUnifiedAppUpdate(false);
+      }, 1400);
+    } else {
+      if(badgeEl){
+        badgeEl.textContent = "v" + currentVer;
+        badgeEl.className = "storage-pill optimal";
+      }
+      if(statusEl){
+        statusEl.innerHTML = '<span style="color:#10B981;">✓ Tienes la última versión oficial (v' + esc(currentVer) + ')</span>';
+      }
+      if(isManual){
+        showToast("✓ Ya tienes la versión más reciente (v" + currentVer + ").", "success");
+      }
+    }
+  } catch(e){
+    if(isManual){
+      // Si el usuario pulsó manualmente, forzar la purga y recarga limpia de todos modos
+      executeUnifiedAppUpdate(true);
+    }
+  } finally {
+    isCheckingAppVersion = false;
+  }
+}
+window.checkForAppUpdates = checkForAppUpdates;
+
+async function broadcastForceAppUpdate(){
+  if(typeof isGM === "function" && !isGM()){
+    showToast("Solo el Administrador puede forzar la actualización a los jugadores.", "warning");
+    return;
+  }
+  if(!confirm("¿Deseas enviar una orden inmediata a todos los jugadores conectados para que actualicen su versión y limpien caché?")){
+    return;
+  }
+  if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+    try {
+      await realtimeChannel.send({
+        type: "broadcast",
+        event: "app_version_update",
+        payload: {
+          version: (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.1"),
+          build: (typeof APP_BUILD !== "undefined" ? APP_BUILD : ""),
+          timestamp: new Date().toISOString()
+        }
+      });
+      showToast("📢 Orden de actualización enviada a todos los jugadores conectados.", "success");
+    } catch(err){
+      showToast("Error al emitir orden: " + err.message, "warning");
+    }
+  } else {
+    showToast("Canal en tiempo real no conectado.", "warning");
+  }
+}
+window.broadcastForceAppUpdate = broadcastForceAppUpdate;

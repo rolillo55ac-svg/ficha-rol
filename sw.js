@@ -1,7 +1,7 @@
 // Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
 // Modo offline y carga rapida
 
-const CACHE_NAME = 'rol-krysalis-v1.0-test';
+const CACHE_NAME = 'rol-krysalis-v1.2.1';
 
 const PRECACHE_ASSETS = [
   './',
@@ -68,8 +68,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Nunca cachear llamadas a APIs de Supabase, WebSockets o métodos no-GET
-  if (req.method !== 'GET' || url.hostname.includes('supabase.co')) {
+  // Nunca cachear llamadas a APIs de Supabase, version.json, parámetros anti-caché _v ni métodos no-GET
+  if (req.method !== 'GET' || url.hostname.includes('supabase.co') || url.pathname.includes('version.json') || url.searchParams.has('_v')) {
     return;
   }
 
