@@ -267,9 +267,9 @@ function openDataModal(){
     '</div>'+
     (isGM() ? '<button class="btn-compact btn-solid-gold" style="width:100%;margin-top:8px;padding:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
     '<button class="btn-compact highlight" style="width:100%;margin-top:8px;padding:8px;background:rgba(176,141,87,0.18);border:1px solid var(--gold);color:var(--gold-light);font-weight:700;" data-action="repair-compendium-data" title="Verifica y recupera todas las misiones oficiales, criaturas del bestiario, armas y lore sin borrar tus datos">🛡️ Reparar y asegurar compendio oficial (Misiones y Bestiario)</button>'+
-    '<button class="btn-compact" style="width:100%;margin-top:10px;padding:9px;border-color:rgba(212,175,55,0.4);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="open-feedback-modal"><span>📬</span> <span>Buzón de Reportes y Sugerencias (WhatsApp)</span></button>'+
+    '<button class="btn-compact" style="width:100%;margin-top:10px;padding:9px;border-color:rgba(212,175,55,0.4);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="open-feedback-modal"><span>📬</span> <span>Buzón de Reportes y Sugerencias</span></button>'+
     '<div style="font-size:0.72rem;color:var(--ink-faint);margin-top:10px;line-height:1.4;">'+
-      '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo a Lolo (rolillo55ac@gmail.com).</i>'+
+      '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo al Administrador (rolillo55ac@gmail.com).</i>'+
     '</div>'+
     '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:9px;" data-action="reset-all-characters">↻ Restablecer personajes oficiales (PDF)</button>'+
   '</div>';
@@ -731,14 +731,15 @@ function closeModals(){
 // ==============================================================================
 // SISTEMA AUTOMATIZADO DE REPORTES CON TRIAGE IA Y ALERTAS EN DISCORD
 // ==============================================================================
+var DEFAULT_DISCORD_WEBHOOK = "";
 var currentFeedbackCategory = "bug";
 var lastGeneratedReport = null;
 
 function getMasterDiscordWebhook(){
   try {
-    return localStorage.getItem("krysalis_discord_webhook") || "";
+    return localStorage.getItem("krysalis_discord_webhook") || DEFAULT_DISCORD_WEBHOOK || "";
   } catch(e){
-    return "";
+    return DEFAULT_DISCORD_WEBHOOK || "";
   }
 }
 
@@ -770,12 +771,12 @@ function openFeedbackModal(prefilledCategory, prefilledTitle){
 
   var gmPanelBtn = isGM() ? 
     '<button type="button" class="btn-compact" style="width:100%;margin-bottom:12px;padding:8px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.8rem;background:rgba(88,101,242,0.12);" data-action="open-feedback-admin">' +
-      '🎮 Panel Máster: Ver reportes recibidos y configurar Discord' +
+      '🎮 Panel de Administración: Ver reportes recibidos y configurar Discord' +
     '</button>' : '';
 
   var html = '<h2>📬 Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     gmPanelBtn +
-    '<p class="feedback-subtitle">Envía cualquier problema, duda o sugerencia. Nuestro sistema lo procesará junto al contexto de tu partida y notificará directamente al desarrollador.</p>' +
+    '<p class="feedback-subtitle">Envía cualquier problema, duda o sugerencia. Nuestro sistema lo procesará junto al contexto de tu partida y notificará directamente al Administrador.</p>' +
 
     '<div class="field" style="margin-top:8px;">' +
       '<label style="display:block;margin-bottom:6px;">Tipo de Incidencia</label>' +
@@ -798,12 +799,12 @@ function openFeedbackModal(prefilledCategory, prefilledTitle){
     '</div>' +
 
     '<div class="feedback-privacy-note">' +
-      '🔒 <b>100% Privado y Directo:</b> Tu reporte se procesará de forma segura y se enviará directamente al Máster sin intermediarios.' +
+      '🔒 <b>100% Privado y Directo:</b> Tu reporte se procesará de forma segura y se enviará directamente al Administrador sin intermediarios.' +
     '</div>' +
 
     '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
       '<button type="button" class="btn-solid-gold" id="btnSubmitFeedback" style="width:100%;padding:12px 14px;font-size:0.95rem;font-weight:700;" data-action="submit-feedback-report">' +
-        '🚀 Enviar Reporte al Máster' +
+        '🚀 Enviar Reporte al Administrador' +
       '</button>' +
       '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
         'Cancelar' +
@@ -921,18 +922,18 @@ function generateAiTriageAnalysis(report){
     } else {
       classification = "Posible Bug Técnico de Interfaz";
       diagnostic = "Reporte sobre comportamiento inesperado en la interfaz. Dispositivo: " + report.system.os + " (" + report.system.browser + ", " + report.system.screen + ").";
-      suggestedReply = "¡Hola " + report.contact + "! Gracias por avisarnos del error '" + report.title + "'. El Máster ya tiene el aviso y lo revisaremos en la próxima actualización de la aplicación.";
+      suggestedReply = "¡Hola " + report.contact + "! Gracias por avisarnos del error '" + report.title + "'. El equipo de Administración ya tiene el aviso y lo revisaremos en la próxima actualización de la aplicación.";
       technicalAction = "Inspeccionar componente reportado según la versión v1.0.6.";
     }
   } else if(cat === "sugerencia" || /mejorar|añadir|podria|seria bueno|propuesta/i.test(lowerDesc)){
     classification = "Sugerencia de Jugador / Mejora de Experiencia";
     diagnostic = "Propuesta de nueva funcionalidad o ajuste de interfaz. No altera la integridad del juego ni compromete datos.";
     suggestedReply = "¡Hola " + report.contact + "! Muchas gracias por tu sugerencia sobre '" + report.title + "'. Nos parece una idea genial y la hemos anotado para evaluar su incorporación en el juego.";
-    technicalAction = "Evaluar con Lolo si procede programarlo.";
+    technicalAction = "Evaluar con el Administrador si procede programarlo.";
   } else {
     classification = "Consulta de Reglas / Duda General";
     diagnostic = "Duda de reglas o funcionamiento del personaje (" + (c ? (c.name + " Nv." + c.level) : "Sin PJ") + ").";
-    suggestedReply = "¡Hola " + report.contact + "! El Máster ha recibido tu consulta sobre '" + report.title + "' y te responderá en la próxima sesión de juego.";
+    suggestedReply = "¡Hola " + report.contact + "! El Administrador ha recibido tu consulta sobre '" + report.title + "' y te responderá en la próxima sesión de juego.";
     technicalAction = "Aclarar regla directamente con el jugador.";
   }
 
@@ -1107,13 +1108,13 @@ function showPlayerSuccessScreen(report){
     '<div class="feedback-success-card">' +
       '<div class="success-icon-badge">✅</div>' +
       '<div class="success-title">Recibido y Procesado con Éxito</div>' +
-      '<p class="success-text">Tu reporte ha sido registrado en el sistema y remitido directamente a Lolo (Máster) con el análisis de tu partida para revisarlo cuanto antes.</p>' +
+      '<p class="success-text">Tu reporte ha sido registrado en el sistema y remitido directamente al Administrador con el análisis de tu partida para revisarlo cuanto antes.</p>' +
     '</div>' +
 
     '<div style="background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.45;">' +
       '<div>📌 <b>Asunto:</b> ' + esc(report.title) + '</div>' +
       '<div style="margin-top:4px;">🏷️ <b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
-      '<div style="margin-top:4px;color:var(--gold-light);">🤖 <b>Estado:</b> Procesado por Asistencia IA y notificado al Máster</div>' +
+      '<div style="margin-top:4px;color:var(--gold-light);">🤖 <b>Estado:</b> Procesado por Asistencia IA y notificado al Administrador</div>' +
     '</div>' +
 
     '<div style="display:flex;flex-direction:column;gap:8px;">' +
@@ -1124,7 +1125,7 @@ function showPlayerSuccessScreen(report){
 
   var modal = document.getElementById("feedbackModal");
   if(modal) modal.innerHTML = html;
-  showToast("¡Reporte enviado al Máster con éxito!", "success");
+  showToast("¡Reporte enviado al Administrador con éxito!", "success");
 }
 
 function openFeedbackAdminModal(){
@@ -1176,7 +1177,7 @@ function openFeedbackAdminModal(){
     }).join('');
   }
 
-  var html = '<h2>🛡️ Buzón del Máster y Discord Webhook<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>🛡️ Buzón de Administración y Discord Webhook<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="storage-monitor-box" style="margin-top:0;">' +
       '<div class="storage-monitor-header">' +
         '<div class="storage-monitor-title">🎮 Notificaciones a tu Discord</div>' +
@@ -1258,7 +1259,7 @@ function feedbackModalClick(e){
     var testReport = buildFeedbackDiagnostic(
       "sugerencia",
       "Prueba de Alertas de Triage IA",
-      "¡Hola Lolo! Este es un mensaje de prueba para verificar que recibes los reportes de tus jugadores directamente en tu servidor de Discord con el formato embebido y el análisis de la IA.",
+      "¡Hola! Este es un mensaje de prueba para verificar que recibes los reportes de tus jugadores directamente en tu servidor de Discord con el formato embebido y el análisis de la IA.",
       c ? c.name : "Sistema Krysalis"
     );
     testReport.aiTriage = generateAiTriageAnalysis(testReport);
