@@ -147,7 +147,32 @@ function renderQuestCard(q, canEdit){
 
 function tplMision(c, s){
   var canEdit = isGM() || !currentUser;
+
+  // Autoprotección en caliente: si la lista está vacía o falta Trysar, reponerla al instante en pantalla
+  if((!s.quests || !s.quests.length) && typeof getSeedQuests === "function"){
+    s.quests = getSeedQuests();
+    if(typeof saveState === "function") saveState(true);
+  }
   var quests = s.quests || [];
+  var hasTrysar = quests.some(function(q){
+    var t = (q.title || "").toLowerCase();
+    return t.includes("trysar") || t.includes("infiltraci");
+  });
+  var wasDeleted = Array.isArray(s._deletedSeedQuests) && s._deletedSeedQuests.indexOf("quest_trysar_infil") !== -1;
+  if(!hasTrysar && !wasDeleted && typeof getSeedQuests === "function"){
+    quests.unshift(getSeedQuests()[0]);
+    s.quests = quests;
+    if(typeof saveState === "function") saveState(true);
+  }
+  if((!s.questClues || !s.questClues.length) && typeof getSeedQuestClues === "function"){
+    s.questClues = getSeedQuestClues();
+    if(typeof saveState === "function") saveState(true);
+  }
+  if((!s.sessionSummary || !s.sessionSummary.trim()) && typeof getSeedSessionSummary === "function"){
+    s.sessionSummary = getSeedSessionSummary();
+    if(typeof saveState === "function") saveState(true);
+  }
+
   var clues = s.questClues || [];
   var qMap = s.questMap || { name: "Mapa de la Misión", image: null, notes: "" };
 
