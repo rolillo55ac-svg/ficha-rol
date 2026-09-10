@@ -659,7 +659,7 @@ function tplCombate(c){
       infoText += ' | <span style="color:#F87171;font-weight:700;">[🔒 Bloqueada por el Máster - No usable]</span>';
     }
 
-    var gridCols = canEdit ? '1fr 34px 34px 34px' : '1fr 34px 34px';
+    var gridCols = canEdit ? '1fr 36px 36px' : '1fr 36px';
     html += '<div class="list-row weapons-row'+(isBlocked?' weapon-row-blocked':'')+'" style="grid-template-columns:'+gridCols+';">'+
       '<select data-action="select-weapon-catalog" data-id="'+w.id+'" aria-label="Seleccionar arma" '+(canEdit?'':'disabled')+'>'+
         '<option value="">-- Seleccionar Arma del Compendio --</option>'+
@@ -669,10 +669,8 @@ function tplCombate(c){
         }).join('')+
       '</select>'+
       (isBlocked && !isGM()
-        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'+
-          '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
-        : '<button class="dice-btn attack-roll-btn" data-action="roll-weapon-attack" data-id="'+w.id+'" title="Tirar Ataque (1d10 + Melé/Distancia)" aria-label="Tirar ataque">⚔️</button>'+
-          '<button class="dice-btn damage-roll-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño ('+esc(selectedCatItem ? selectedCatItem.dano : "1d6")+')" aria-label="Tirar daño">&#127922;</button>'
+        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
+        : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño ('+esc(selectedCatItem ? selectedCatItem.dano : "1d6")+')" aria-label="Tirar daño">&#127922;</button>'
       )+
       (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
     '</div>'+

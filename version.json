@@ -1,7 +1,7 @@
 {
-  "version": "1.2.3",
-  "build": "2026.09.10.4",
-  "updatedAt": "2026-09-10T23:05:00Z",
+  "version": "1.2.4",
+  "build": "2026.09.10.5",
+  "updatedAt": "2026-09-10T23:10:00Z",
   "forceReload": true,
-  "changelog": "Nueva pestaña 'Estados', rediseño responsive para móvil sin truncado (...), corrección de daño de armas sin buffs indebidos y vista de combate despejada."
+  "changelog": "Fila de armas simplificada: eliminado el botón de espada redundante y mantenido exclusivamente el dado para la fórmula de daño pura."
 }
