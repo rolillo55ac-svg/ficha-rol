@@ -42,6 +42,15 @@ function renderTopbar(){
     roleBadgeHtml = '<span class="role-badge player">Local</span>';
   }
 
+  var unreadTickets = 0;
+  try {
+    var myT = (typeof getPlayerTickets === "function") ? getPlayerTickets() : [];
+    unreadTickets = myT.filter(function(t){ return t.adminReply && !t.readReply; }).length;
+  } catch(eBad){}
+  var feedbackBadgeHtml = unreadTickets > 0 ? ('<span class="nav-unread-badge">' + unreadTickets + '</span>') : '';
+  var feedbackBtnClass = unreadTickets > 0 ? 'icon-btn has-badge' : 'icon-btn';
+  var feedbackTitle = unreadTickets > 0 ? ('Reportes y Sugerencias (' + unreadTickets + ' respuesta nueva)') : 'Reportes y Sugerencias';
+
   document.getElementById("topbar").innerHTML =
     '<div class="topbar-row">'+
       '<button class="char-switch" data-action="open-char-modal" aria-label="Cambiar personaje">'+
@@ -54,7 +63,7 @@ function renderTopbar(){
       '<div class="topbar-actions">'+
         '<span id="syncBadge" class="sync-status">'+(currentUser?'● Nube':'○ Local')+'</span>'+
         roleBadgeHtml+
-        '<button class="icon-btn" data-action="open-feedback-modal" title="Reportes y Sugerencias" aria-label="Reportes">📬</button>'+
+        '<button class="' + feedbackBtnClass + '" data-action="open-feedback-modal" title="' + feedbackTitle + '" aria-label="Reportes">📬' + feedbackBadgeHtml + '</button>'+
         '<button class="icon-btn" data-action="open-data-modal" title="Ajustes y Sesión" aria-label="Ajustes">&#9881;</button>'+
       '</div>'+
     '</div>'+

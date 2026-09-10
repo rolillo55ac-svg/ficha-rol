@@ -784,41 +784,146 @@ function savePlayerTickets(tickets){
   } catch(e){}
 }
 
+function handleRemoteTicketReply(data){
+  if(!data || (!data.id && !data.ticketCode)) return;
+  var myTickets = getPlayerTickets();
+  var changed = false;
+  myTickets.forEach(function(t){
+    if(t.id === data.id || (data.ticketCode && t.ticketCode === data.ticketCode)){
+      t.status = data.status || "resolved";
+      if(data.adminReply !== undefined){
+        t.adminReply = data.adminReply;
+        t.readReply = false;
+      }
+      t.resolvedAt = data.resolvedAt || new Date().toISOString();
+      changed = true;
+    }
+  });
+  if(changed){
+    savePlayerTickets(myTickets);
+    if(typeof renderTopbar === "function") renderTopbar();
+    showToast("📬 ¡El Administrador ha respondido a tu reporte #" + (data.ticketCode || "") + "!", "success");
+    var modal = document.getElementById("feedbackModal");
+    var overlay = document.getElementById("feedbackModalOverlay");
+    if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
+      openFeedbackModal("my_tickets");
+    }
+  }
+}
+window.handleRemoteTicketReply = handleRemoteTicketReply;
+
+function handleRemoteNewTicket(data){
+  if(!data || !data.id) return;
+  state.feedbackReports = state.feedbackReports || [];
+  if(!state.feedbackReports.some(function(x){ return x.id === data.id; })){
+    state.feedbackReports.unshift(data);
+    if(state.feedbackReports.length > 50) state.feedbackReports.pop();
+    saveState(false);
+    if(isGM()){
+      showToast("🔔 Nuevo ticket recibido: #" + (data.ticketCode || data.title), "info");
+      var modal = document.getElementById("feedbackModal");
+      var overlay = document.getElementById("feedbackModalOverlay");
+      if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "admin"){
+        openFeedbackAdminModal(adminFeedbackFilter);
+      }
+    }
+  }
+}
+window.handleRemoteNewTicket = handleRemoteNewTicket;
+
 async function syncPlayerTicketsWithSupabase(){
   var tickets = getPlayerTickets();
   if(!tickets.length) return tickets;
   if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine) return tickets;
+
+  var changed = false;
+  var hadNewReply = false;
+
+  // Canal 1: campaign_map ('app_feedback_sync') - Accesible con lectura 100% pública para todos los jugadores
   try {
-    var ids = tickets.map(function(t){ return t.id; }).filter(Boolean);
-    if(!ids.length) return tickets;
-    var res = await supabaseClient.from("app_feedback").select("id, status, admin_reply, resolved_at").in("id", ids);
-    if(res && res.data && res.data.length){
-      var map = {};
-      res.data.forEach(function(row){ map[row.id] = row; });
-      var changed = false;
+    var cmRes = await supabaseClient.from("campaign_map").select("data").eq("id", "app_feedback_sync").maybeSingle();
+    if(cmRes && cmRes.data && cmRes.data.data && cmRes.data.data.tickets){
+      var syncTickets = cmRes.data.data.tickets;
       tickets.forEach(function(t){
-        if(map[t.id]){
-          var row = map[t.id];
-          if(row.status && row.status !== t.status){ t.status = row.status; changed = true; }
-          if(row.admin_reply !== undefined && row.admin_reply !== t.adminReply){ t.adminReply = row.admin_reply || ""; changed = true; }
-          if(row.resolved_at !== undefined && row.resolved_at !== t.resolvedAt){ t.resolvedAt = row.resolved_at; changed = true; }
+        var match = syncTickets[t.id] || Object.values(syncTickets).find(function(x){
+          return x.ticketCode && x.ticketCode === t.ticketCode;
+        });
+        if(match){
+          if(match.status && match.status !== t.status){ t.status = match.status; changed = true; }
+          if(match.adminReply && match.adminReply !== t.adminReply){ 
+            t.adminReply = match.adminReply; 
+            t.readReply = false;
+            changed = true; 
+            hadNewReply = true;
+          }
+          if(match.resolvedAt && match.resolvedAt !== t.resolvedAt){ t.resolvedAt = match.resolvedAt; changed = true; }
         }
       });
-      if(changed){
-        savePlayerTickets(tickets);
-        var modal = document.getElementById("feedbackModal");
-        if(modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
-          openFeedbackModal("my_tickets");
-        }
+    }
+  } catch(e1){}
+
+  // Canal 2: Tabla dedicada app_feedback (cuando se ejecuta la migración 011 en Supabase)
+  try {
+    var ids = tickets.map(function(t){ return t.id; }).filter(Boolean);
+    if(ids.length){
+      var res = await supabaseClient.from("app_feedback").select("id, status, admin_reply, resolved_at").in("id", ids);
+      if(res && res.data && res.data.length){
+        var map = {};
+        res.data.forEach(function(row){ map[row.id] = row; });
+        tickets.forEach(function(t){
+          if(map[t.id]){
+            var row = map[t.id];
+            if(row.status && row.status !== t.status){ t.status = row.status; changed = true; }
+            if(row.admin_reply !== undefined && row.admin_reply !== t.adminReply){ 
+              t.adminReply = row.admin_reply || ""; 
+              t.readReply = false;
+              changed = true; 
+              hadNewReply = true;
+            }
+            if(row.resolved_at !== undefined && row.resolved_at !== t.resolvedAt){ t.resolvedAt = row.resolved_at; changed = true; }
+          }
+        });
       }
     }
-  } catch(e){}
+  } catch(e2){}
+
+  if(changed){
+    savePlayerTickets(tickets);
+    if(typeof renderTopbar === "function") renderTopbar();
+    if(hadNewReply){
+      showToast("📬 Tienes una nueva respuesta del Administrador en tus reportes", "info");
+    }
+    var modal = document.getElementById("feedbackModal");
+    var overlay = document.getElementById("feedbackModalOverlay");
+    if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
+      openFeedbackModal("my_tickets");
+    }
+  }
   return tickets;
 }
 
 async function syncAdminTicketsWithSupabase(){
   if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine) return state.feedbackReports || [];
   try {
+    // 1. Cargar respuestas y estados desde campaign_map ('app_feedback_sync')
+    var cmRes = await supabaseClient.from("campaign_map").select("data").eq("id", "app_feedback_sync").maybeSingle();
+    if(cmRes && cmRes.data && cmRes.data.data && cmRes.data.data.tickets){
+      var syncTickets = cmRes.data.data.tickets;
+      state.feedbackReports = state.feedbackReports || [];
+      var changed = false;
+      Object.keys(syncTickets).forEach(function(k){
+        var st = syncTickets[k];
+        var local = state.feedbackReports.find(function(x){ return x.id === st.id || (st.ticketCode && x.ticketCode === st.ticketCode); });
+        if(local){
+          if(st.status && st.status !== local.status){ local.status = st.status; changed = true; }
+          if(st.adminReply && st.adminReply !== local.adminReply){ local.adminReply = st.adminReply; changed = true; }
+          if(st.resolvedAt && st.resolvedAt !== local.resolvedAt){ local.resolvedAt = st.resolvedAt; changed = true; }
+        }
+      });
+      if(changed) saveState(false);
+    }
+
+    // 2. Cargar reportes de la tabla app_feedback si existe
     var res = await supabaseClient.from("app_feedback").select("*").order("created_at", { ascending: false }).limit(50);
     if(res && res.data && res.data.length){
       var cloudReports = res.data.map(function(row){
@@ -850,7 +955,8 @@ async function syncAdminTicketsWithSupabase(){
       saveState(false);
 
       var modal = document.getElementById("feedbackModal");
-      if(modal && modal.getAttribute("data-mode") === "admin"){
+      var overlay = document.getElementById("feedbackModalOverlay");
+      if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "admin"){
         openFeedbackAdminModal(adminFeedbackFilter);
       }
     }
@@ -859,10 +965,35 @@ async function syncAdminTicketsWithSupabase(){
 }
 
 function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle){
-  currentFeedbackTab = activeTab || currentFeedbackTab || "new";
+  var myTickets = getPlayerTickets();
+  var hasUnreadReply = myTickets.some(function(t){ return t.adminReply && !t.readReply; });
+
+  if(!activeTab){
+    if(hasUnreadReply || (myTickets.length > 0 && currentFeedbackTab === "my_tickets")){
+      currentFeedbackTab = "my_tickets";
+    } else {
+      currentFeedbackTab = currentFeedbackTab || "new";
+    }
+  } else {
+    currentFeedbackTab = activeTab;
+  }
   if(prefilledCategory) currentFeedbackCategory = prefilledCategory;
 
-  var myTickets = getPlayerTickets();
+  // Si se abre la pestaña de Mis Reportes, marcar respuestas como leídas para limpiar el indicador
+  if(currentFeedbackTab === "my_tickets"){
+    var markedAny = false;
+    myTickets.forEach(function(t){
+      if(t.adminReply && !t.readReply){
+        t.readReply = true;
+        markedAny = true;
+      }
+    });
+    if(markedAny){
+      savePlayerTickets(myTickets);
+      if(typeof renderTopbar === "function") renderTopbar();
+    }
+  }
+
   var c = (typeof activeChar === "function") ? activeChar() : null;
   var userEmail = (typeof currentUser !== "undefined" && currentUser && currentUser.email) ? currentUser.email : "";
   var defaultContact = c ? (c.name + (userEmail ? " (" + userEmail + ")" : "")) : userEmail;
@@ -1242,6 +1373,33 @@ async function sendDiscordWebhookReport(report){
   }
 }
 
+async function sendDiscordWebhookReply(ticket, replyText){
+  var webhookUrl = getMasterDiscordWebhook();
+  if(!webhookUrl) return;
+  var ticketTag = ticket.ticketCode ? ("#" + ticket.ticketCode) : ("#" + (ticket.id ? ticket.id.slice(-4).toUpperCase() : "TK"));
+  var payload = {
+    username: "Krysalis • Panel de Administración",
+    avatar_url: "https://rolillo55ac-svg.github.io/ficha-rol/images/icon-192.png",
+    embeds: [{
+      title: "🛡️ Respuesta Enviada al Jugador [" + ticketTag + "]",
+      description: "**Asunto:** " + (ticket.title || "Incidencia") + "\n\n**💬 Respuesta Oficial del Administrador:**\n> " + String(replyText).split("\n").join("\n> "),
+      color: 0x10B981,
+      fields: [
+        { name: "👤 Destinatario", value: String(ticket.contact || (ticket.character && ticket.character.name) || "Jugador"), inline: true },
+        { name: "📊 Estado", value: "🟢 Resuelto / Respondido", inline: true }
+      ],
+      footer: { text: "Krysalis Rol • " + ticketTag + " • " + new Date().toLocaleString() }
+    }]
+  };
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch(e){}
+}
+
 async function submitFeedbackReport(){
   var btn = document.getElementById("btnSubmitFeedback");
   var titleEl = document.getElementById("fbTitle");
@@ -1281,6 +1439,17 @@ async function submitFeedbackReport(){
   state.feedbackReports.unshift(report);
   if(state.feedbackReports.length > 50) state.feedbackReports.pop();
   saveState(false);
+
+  // Broadcast WebSockets inmediato para que el Admin lo reciba si está en la app
+  if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+    try {
+      realtimeChannel.send({
+        type: "broadcast",
+        event: "new_ticket_report",
+        payload: report
+      });
+    } catch(eBc){}
+  }
 
   if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
     try {
@@ -1465,6 +1634,24 @@ function openFeedbackAdminModal(filter){
       '</div>' +
     '</div>' +
 
+    '<div class="storage-monitor-box" style="margin-top:8px;border-color:rgba(212,175,55,0.4);background:rgba(212,175,55,0.05);">' +
+      '<div class="storage-monitor-header">' +
+        '<div class="storage-monitor-title" style="color:var(--gold-light);">☁️ Sincronización en la Nube (Supabase)</div>' +
+        '<span class="storage-pill optimal">WebSockets Activo</span>' +
+      '</div>' +
+      '<p style="font-size:0.75rem;color:var(--ink-dim);margin:0 0 8px;line-height:1.4;">' +
+        'Tus mensajes se transmiten en directo por WebSockets. Para sincronizarlos permanentemente en la nube con jugadores que estén desconectados, pega este SQL en Supabase (solo 5 segundos):' +
+      '</p>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" class="btn-solid-gold" style="flex:1;min-width:140px;font-size:0.74rem;padding:6px 10px;" data-action="copy-sql-migration">' +
+          '📋 Copiar SQL Migración 011' +
+        '</button>' +
+        '<a href="https://supabase.com/dashboard/project/nwjbdevshaucnjrwebtb/sql/new" target="_blank" rel="noopener" class="btn-compact" style="flex:1;min-width:140px;font-size:0.74rem;padding:6px 10px;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;border-color:rgba(212,175,55,0.4);color:var(--gold-light);">' +
+          '🌐 Abrir SQL Editor de Supabase ↗' +
+        '</a>' +
+      '</div>' +
+    '</div>' +
+
     '<div style="margin:12px 0 6px;">' +
       filterPillsHtml +
     '</div>' +
@@ -1535,7 +1722,44 @@ function feedbackModalClick(e){
       }
       saveState(false);
 
+      // 1. Broadcast WebSockets inmediato en tiempo real
+      if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+        try {
+          realtimeChannel.send({
+            type: "broadcast",
+            event: "ticket_reply",
+            payload: {
+              id: id,
+              ticketCode: target.ticketCode,
+              adminReply: target.adminReply || "",
+              status: newStatus,
+              resolvedAt: target.resolvedAt
+            }
+          });
+        } catch(eBc){}
+      }
+
+      // 2. Guardar en campaign_map ('app_feedback_sync') accesible por cualquier jugador sin login
       if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
+        try {
+          supabaseClient.from("campaign_map").select("data").eq("id", "app_feedback_sync").maybeSingle().then(function(cmRes){
+            var existingTickets = (cmRes && cmRes.data && cmRes.data.data && cmRes.data.data.tickets) ? cmRes.data.data.tickets : {};
+            existingTickets[id] = Object.assign(existingTickets[id] || {}, {
+              id: id,
+              ticketCode: target.ticketCode,
+              status: newStatus,
+              resolvedAt: target.resolvedAt
+            });
+            supabaseClient.from("campaign_map").upsert({
+              id: "app_feedback_sync",
+              data: { tickets: existingTickets, updated_at: new Date().toISOString() },
+              markers: [],
+              updated_at: new Date().toISOString()
+            }).catch(function(){});
+          }).catch(function(){});
+        } catch(eCm){}
+
+        // 3. Actualizar tabla dedicada app_feedback si existe
         supabaseClient.from("app_feedback").update({
           status: newStatus,
           resolved_at: target.resolvedAt
@@ -1544,7 +1768,7 @@ function feedbackModalClick(e){
 
       var playerTickets = getPlayerTickets();
       playerTickets.forEach(function(pt){
-        if(pt.id === id){
+        if(pt.id === id || (target.ticketCode && pt.ticketCode === target.ticketCode)){
           pt.status = newStatus;
           pt.resolvedAt = target.resolvedAt;
         }
@@ -1607,27 +1831,98 @@ function feedbackModalClick(e){
       targetSave.resolvedAt = nowIso;
       saveState(false);
 
+      // 1. Broadcast WebSockets inmediato en tiempo real
+      if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+        try {
+          realtimeChannel.send({
+            type: "broadcast",
+            event: "ticket_reply",
+            payload: {
+              id: idSave,
+              ticketCode: targetSave.ticketCode,
+              adminReply: replyText,
+              status: "resolved",
+              resolvedAt: nowIso
+            }
+          });
+        } catch(eBc){}
+      }
+
+      // 2. Guardar en campaign_map ('app_feedback_sync') accesible por TODOS los jugadores sin login
       if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
-        supabaseClient.from("app_feedback").update({
-          admin_reply: replyText,
-          status: "resolved",
-          resolved_at: nowIso
-        }).eq("id", idSave).then(function(){}).catch(function(){});
+        try {
+          supabaseClient.from("campaign_map").select("data").eq("id", "app_feedback_sync").maybeSingle().then(function(cmRes){
+            var existingTickets = (cmRes && cmRes.data && cmRes.data.data && cmRes.data.data.tickets) ? cmRes.data.data.tickets : {};
+            existingTickets[idSave] = {
+              id: idSave,
+              ticketCode: targetSave.ticketCode,
+              adminReply: replyText,
+              status: "resolved",
+              resolvedAt: nowIso
+            };
+            supabaseClient.from("campaign_map").upsert({
+              id: "app_feedback_sync",
+              data: { tickets: existingTickets, updated_at: nowIso },
+              markers: [],
+              updated_at: nowIso
+            }).catch(function(eUpsert){ console.warn("Aviso sync campaign_map feedback:", eUpsert); });
+          }).catch(function(){});
+        } catch(eCm){}
+
+        // 3. Actualizar tabla dedicada app_feedback (si existe en Supabase)
+        try {
+          supabaseClient.from("app_feedback").update({
+            admin_reply: replyText,
+            status: "resolved",
+            resolved_at: nowIso
+          }).eq("id", idSave).then(function(res){
+            if(res && res.error) console.warn("Supabase update app_feedback:", res.error.message);
+          }).catch(function(){});
+        } catch(eTb){}
       }
 
       var myTickets = getPlayerTickets();
       myTickets.forEach(function(pt){
-        if(pt.id === idSave){
+        if(pt.id === idSave || (targetSave.ticketCode && pt.ticketCode === targetSave.ticketCode)){
           pt.adminReply = replyText;
           pt.status = "resolved";
           pt.resolvedAt = nowIso;
         }
       });
       savePlayerTickets(myTickets);
+      sendDiscordWebhookReply(targetSave, replyText);
 
       openFeedbackAdminModal();
-      showToast("¡Respuesta enviada y ticket resuelto 🟢!", "success");
+      showToast("¡Respuesta enviada al jugador y notificada 🟢!", "success");
     }
+    return;
+  }
+
+  if(action === "copy-sql-migration"){
+    var sqlMigrationText = "CREATE TABLE IF NOT EXISTS public.app_feedback (\n" +
+      "    id TEXT PRIMARY KEY,\n" +
+      "    ticket_code TEXT,\n" +
+      "    category TEXT NOT NULL,\n" +
+      "    title TEXT NOT NULL,\n" +
+      "    description TEXT NOT NULL,\n" +
+      "    contact TEXT,\n" +
+      "    character_name TEXT,\n" +
+      "    system_metadata JSONB,\n" +
+      "    ai_triage JSONB,\n" +
+      "    status TEXT DEFAULT 'pending',\n" +
+      "    admin_reply TEXT,\n" +
+      "    resolved_at TIMESTAMPTZ,\n" +
+      "    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL\n" +
+      ");\n\n" +
+      "ALTER TABLE public.app_feedback ENABLE ROW LEVEL SECURITY;\n\n" +
+      "DROP POLICY IF EXISTS \"Allow public insert to app_feedback\" ON public.app_feedback;\n" +
+      "CREATE POLICY \"Allow public insert to app_feedback\" ON public.app_feedback FOR INSERT WITH CHECK (true);\n\n" +
+      "DROP POLICY IF EXISTS \"Allow read app_feedback\" ON public.app_feedback;\n" +
+      "CREATE POLICY \"Allow read app_feedback\" ON public.app_feedback FOR SELECT USING (true);\n\n" +
+      "DROP POLICY IF EXISTS \"Allow update app_feedback\" ON public.app_feedback;\n" +
+      "CREATE POLICY \"Allow update app_feedback\" ON public.app_feedback FOR UPDATE USING (true);";
+    fallbackCopyText(sqlMigrationText);
+    showToast("¡SQL de migración copiado! Pégalo en el SQL Editor de Supabase 📋", "success");
     return;
   }
 

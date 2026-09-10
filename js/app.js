@@ -243,6 +243,10 @@ function init(){
     updateLoadingProgress(85, "Conectando con la partida...");
     initSupabase();
     checkWeeklyBackup();
+    setTimeout(function(){
+      if(typeof syncPlayerTicketsWithSupabase === "function") syncPlayerTicketsWithSupabase();
+      if(typeof syncAdminTicketsWithSupabase === "function" && typeof isGM === "function" && isGM()) syncAdminTicketsWithSupabase();
+    }, 1200);
 
     if(typeof navigator !== "undefined" && "serviceWorker" in navigator && window.location.protocol.startsWith("http")){
       navigator.serviceWorker.register("./sw.js").catch(function(e){ console.warn("ServiceWorker aviso:", e); });

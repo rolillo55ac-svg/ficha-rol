@@ -84,6 +84,12 @@ function initSupabase(){
         .on('broadcast', { event: 'campaign_compendium_update' }, function(payload){
           if(payload && payload.payload) handleRemoteCompendiumBroadcast(payload.payload);
         })
+        .on('broadcast', { event: 'ticket_reply' }, function(payload){
+          if(payload && payload.payload && typeof handleRemoteTicketReply === 'function') handleRemoteTicketReply(payload.payload);
+        })
+        .on('broadcast', { event: 'new_ticket_report' }, function(payload){
+          if(payload && payload.payload && typeof handleRemoteNewTicket === 'function') handleRemoteNewTicket(payload.payload);
+        })
         .on('postgres_changes', {event:'*', schema:'public', table:'map_markers'}, function(payload){
           handleRemoteMarkerChange(payload);
         })
