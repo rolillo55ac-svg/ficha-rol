@@ -15,48 +15,101 @@ function getAudioCtx(){
   return audioCtx;
 }
 
-/* --- MOTOR DE AUDIO PROCEDURAL D&D --- */
+/* --- MOTOR HÁPTICO SUTIL Y RETROALIMENTACIÓN FÍSICA --- */
 
-function playBg3DiceRoll(){
+function triggerBg3Haptic(type){
+  if(typeof navigator === 'undefined' || !navigator.vibrate) return;
+  try {
+    switch(type){
+      case 'shake':
+        navigator.vibrate(14);
+        break;
+      case 'aim-tick':
+        navigator.vibrate(10);
+        break;
+      case 'roll-start':
+        navigator.vibrate([15, 45, 12]);
+        break;
+      case 'tumble-pulse':
+        navigator.vibrate(12);
+        break;
+      case 'land':
+        navigator.vibrate(28);
+        break;
+      case 'crit':
+        navigator.vibrate([30, 40, 25, 30, 45]);
+        break;
+      case 'fumble':
+        navigator.vibrate([40, 55, 40]);
+        break;
+      default:
+        navigator.vibrate(14);
+    }
+  } catch(e){}
+}
+
+/* --- MOTOR DE AUDIO PROCEDURAL D&D (MÁS LARGO Y MULTI-DADO) --- */
+
+function playBg3DiceRoll(intensity){
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
+  var mult = (intensity === "intense") ? 1.25 : 1.0;
+  var dur = (intensity === "intense") ? 1.55 : 1.35;
 
+  // Ruido de fricción continua del cubilete y dados girando en cuero/fieltro
   try {
-    var bufferSize = Math.floor(ctx.sampleRate * 0.45);
+    var bufferSize = Math.floor(ctx.sampleRate * dur);
     var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     var data = buffer.getChannelData(0);
     for(var i = 0; i < bufferSize; i++){
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.28));
+      var t = i / ctx.sampleRate;
+      var env = Math.exp(-t * 2.2) * (0.8 + 0.2 * Math.sin(t * 16));
+      data[i] = (Math.random() * 2 - 1) * env;
     }
     var noise = ctx.createBufferSource();
     noise.buffer = buffer;
     var filter = ctx.createBiquadFilter();
     filter.type = "bandpass";
-    filter.frequency.setValueAtTime(340, now);
-    filter.frequency.exponentialRampToValueAtTime(190, now + 0.42);
-    filter.Q.setValueAtTime(2.8, now);
+    filter.frequency.setValueAtTime(360, now);
+    filter.frequency.exponentialRampToValueAtTime(160, now + dur);
+    filter.Q.setValueAtTime(2.2, now);
     var nGain = ctx.createGain();
     nGain.gain.setValueAtTime(0.001, now);
-    nGain.gain.linearRampToValueAtTime(0.13, now + 0.04);
-    nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+    nGain.gain.linearRampToValueAtTime(0.14 * mult, now + 0.05);
+    nGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     noise.connect(filter); filter.connect(nGain); nGain.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.45);
+    noise.start(now); noise.stop(now + dur);
   } catch(e){}
 
-  var taps = [0.02, 0.08, 0.15, 0.23, 0.31, 0.39];
-  taps.forEach(function(dt, idx){
-    var t = now + dt;
+  // Clater de múltiples dados chocando entre sí con desaceleración progresiva
+  // Se alternan dos secuencias de tonos simulando varios dados que pierden velocidad
+  var taps = [
+    { dt: 0.03, freq: 330, vol: 0.13 },
+    { dt: 0.07, freq: 490, vol: 0.11 },
+    { dt: 0.13, freq: 280, vol: 0.12 },
+    { dt: 0.21, freq: 520, vol: 0.10 },
+    { dt: 0.30, freq: 350, vol: 0.11 },
+    { dt: 0.41, freq: 460, vol: 0.09 },
+    { dt: 0.54, freq: 310, vol: 0.09 },
+    { dt: 0.69, freq: 430, vol: 0.08 },
+    { dt: 0.86, freq: 290, vol: 0.07 },
+    { dt: 1.05, freq: 380, vol: 0.06 },
+    { dt: 1.24, freq: 330, vol: 0.05 }
+  ];
+
+  taps.forEach(function(tap, idx){
+    var t = now + tap.dt;
     var osc = ctx.createOscillator();
     var gain = ctx.createGain();
     osc.type = (idx % 2 === 0) ? "triangle" : "sine";
-    var baseFreq = 270 + (idx * 22) + Math.random() * 70;
+    var baseFreq = tap.freq + (Math.random() * 40 - 20);
     osc.frequency.setValueAtTime(baseFreq, t);
-    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.65, t + 0.035);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.68, t + 0.04);
     gain.gain.setValueAtTime(0.001, t);
-    gain.gain.linearRampToValueAtTime(0.12 / (1 + idx * 0.14), t + 0.004);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.038);
+    gain.gain.linearRampToValueAtTime(tap.vol * mult, t + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(t); osc.stop(t + 0.042);
+    osc.start(t); osc.stop(t + 0.05);
   });
 }
 
@@ -85,6 +138,8 @@ function playBg3DiceLand(){
   cGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
   click.connect(cGain); cGain.connect(ctx.destination);
   click.start(now); click.stop(now + 0.042);
+
+  triggerBg3Haptic('land');
 }
 
 function playBg3DiceRattle(){
@@ -122,6 +177,7 @@ function playBg3ModifierAdd(){
 }
 
 function playBg3Crit(){
+  triggerBg3Haptic('crit');
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
   var notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
@@ -140,6 +196,7 @@ function playBg3Crit(){
 }
 
 function playBg3Fumble(){
+  triggerBg3Haptic('fumble');
   var ctx = getAudioCtx(); if(!ctx) return;
   var now = ctx.currentTime;
   var osc = ctx.createOscillator();
@@ -468,21 +525,24 @@ function handleDeviceMotion(event){
     if(delta > 10.5){
       var now = performance.now();
       bg3InteractionState.isShaking = true;
-      bg3InteractionState.shakeEnergy = Math.min(24, bg3InteractionState.shakeEnergy + delta * 0.45);
+      bg3InteractionState.shakeEnergy = Math.min(30, bg3InteractionState.shakeEnergy + delta * 0.5);
       bg3InteractionState.shakeSamples++;
       bg3InteractionState.lastShakeTime = now;
 
+      // Vibración háptica sutil de agitación
+      triggerBg3Haptic('shake');
+
       // Efecto visual de vibración física 3D en el dado
       var diceEls = document.querySelectorAll(".bg3-die-3d");
-      var jx = (Math.random() - 0.5) * 14;
-      var jy = (Math.random() - 0.5) * 14;
-      var jr = (Math.random() - 0.5) * 18;
+      var jx = (Math.random() - 0.5) * 16;
+      var jy = (Math.random() - 0.5) * 16;
+      var jr = (Math.random() - 0.5) * 20;
       diceEls.forEach(function(el){
         el.style.transform = 'perspective(600px) translate3d(' + jx + 'px, ' + jy + 'px, 0) rotateZ(' + jr + 'deg) scale(1.08)';
       });
 
       // Sonido de dado agitándose dentro de cubilete
-      if(now - bg3InteractionState.lastRattleTime > 115){
+      if(now - bg3InteractionState.lastRattleTime > 110){
         playBg3DiceRattle();
         bg3InteractionState.lastRattleTime = now;
       }
@@ -493,12 +553,15 @@ function handleDeviceMotion(event){
   // Si el usuario estaba agitando y se detiene (al menos 3 muestras registradas)
   var curTime = performance.now();
   if(bg3InteractionState.isShaking && (curTime - bg3InteractionState.lastShakeTime > 280) && bg3InteractionState.shakeSamples >= 3){
+    var energy = bg3InteractionState.shakeEnergy;
     bg3InteractionState.isShaking = false;
     bg3InteractionState.shakeSamples = 0;
     bg3InteractionState.shakeEnergy = 0;
     var dEls = document.querySelectorAll(".bg3-die-3d");
     dEls.forEach(function(el){ el.style.transform = ''; });
-    triggerBg3Roll();
+
+    var launchIntensity = (energy > 16) ? "intense" : "normal";
+    triggerBg3Roll(launchIntensity);
   }
 }
 
@@ -510,6 +573,8 @@ function setupDiceInteractions(stage){
   if(!stage || stage._hasBg3Interactions) return;
   stage._hasBg3Interactions = true;
 
+  var lastDragDist = 0;
+
   stage.addEventListener('pointerdown', function(e){
     requestMotionPermissionIfNeeded();
     if(!bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
@@ -517,6 +582,13 @@ function setupDiceInteractions(stage){
     bg3InteractionState.hasDragged = false;
     bg3InteractionState.dragStartX = e.clientX;
     bg3InteractionState.dragStartY = e.clientY;
+    lastDragDist = 0;
+
+    var sct = document.getElementById("bg3Sanctuary");
+    if(sct) sct.classList.add("aiming");
+    var diceEls = document.querySelectorAll(".bg3-die-3d");
+    diceEls.forEach(function(el){ el.classList.add("aiming"); });
+
     try { stage.setPointerCapture(e.pointerId); } catch(err){}
   });
 
@@ -524,21 +596,33 @@ function setupDiceInteractions(stage){
     if(!bg3InteractionState.isDragging || !bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
     var dx = e.clientX - bg3InteractionState.dragStartX;
     var dy = e.clientY - bg3InteractionState.dragStartY;
+    var dist = Math.hypot(dx, dy);
 
-    if(Math.abs(dx) > 3 || Math.abs(dy) > 3){
+    if(dist > 3){
       bg3InteractionState.hasDragged = true;
-      var rotY = Math.max(-65, Math.min(65, dx * 0.45));
-      var rotX = Math.max(-65, Math.min(65, -dy * 0.45));
+
+      // Dinámica de apuntado estilo tirachinas / arrastre con resistencia elástica
+      var maxPull = 75;
+      var pullDist = Math.min(maxPull, dist * 0.55);
+      var angle = Math.atan2(dy, dx);
+      var pullX = Math.cos(angle) * pullDist;
+      var pullY = Math.sin(angle) * pullDist;
+
+      var rotX = Math.max(-45, Math.min(45, -pullY * 0.55));
+      var rotY = Math.max(-45, Math.min(45, pullX * 0.55));
+      var rotZ = Math.max(-30, Math.min(30, pullX * 0.25));
 
       var diceEls = document.querySelectorAll(".bg3-die-3d");
       diceEls.forEach(function(el){
-        el.style.transform = 'perspective(600px) rotateX(' + rotX + 'deg) rotateY(' + rotY + 'deg) scale(1.08)';
+        el.style.transform = 'perspective(600px) translate3d(' + pullX.toFixed(1) + 'px, ' + pullY.toFixed(1) + 'px, 0) rotateX(' + rotX.toFixed(1) + 'deg) rotateY(' + rotY.toFixed(1) + 'deg) rotateZ(' + rotZ.toFixed(1) + 'deg) scale(1.12)';
       });
 
       var now = performance.now();
-      if((Math.abs(dx) > 10 || Math.abs(dy) > 10) && now - bg3InteractionState.lastRattleTime > 120){
+      if(dist > 12 && Math.abs(dist - lastDragDist) > 16 && (now - bg3InteractionState.lastRattleTime > 95)){
+        triggerBg3Haptic('aim-tick');
         playBg3DiceRattle();
         bg3InteractionState.lastRattleTime = now;
+        lastDragDist = dist;
       }
     }
   });
@@ -548,13 +632,27 @@ function setupDiceInteractions(stage){
     bg3InteractionState.isDragging = false;
     try { stage.releasePointerCapture(e.pointerId); } catch(err){}
 
+    var sct = document.getElementById("bg3Sanctuary");
+    if(sct) sct.classList.remove("aiming");
+
     var diceEls = document.querySelectorAll(".bg3-die-3d");
-    diceEls.forEach(function(el){ el.style.transform = ''; });
+    diceEls.forEach(function(el){
+      el.classList.remove("aiming");
+      // Siempre vuelve a su origen físico de reposo
+      el.style.transform = '';
+    });
 
     if(!bg3RollState.active || bg3RollState.rolling || bg3RollState.resolved) return;
 
+    var dx = e.clientX - bg3InteractionState.dragStartX;
+    var dy = e.clientY - bg3InteractionState.dragStartY;
+    var releaseDist = Math.hypot(dx, dy);
+
+    // Calcular la fuerza del lanzamiento según el arrastre
+    var launchIntensity = (releaseDist > 52) ? "intense" : "normal";
+
     // Disparar lanzamiento al soltar o hacer clic
-    triggerBg3Roll();
+    triggerBg3Roll(launchIntensity);
   };
 
   stage.addEventListener('pointerup', onPointerEnd);
@@ -574,7 +672,7 @@ function renderBg3DiceSlots(){
   slot1.style.filter = "none";
   slot1.innerHTML = '<div class="bg3-die-3d" id="bg3Die3DPrimary">' + getBg3DieSvg(bg3RollState.sides, bg3RollState.sides) + '</div><div class="bg3-die-shadow"></div>';
 
-  var showSecond = (bg3RollState.mode === "adv" || bg3RollState.mode === "disadv");
+  var showSecond = (bg3RollState.mode === "adv" || bg3RollState.mode === "disadv" || (bg3RollState.qty && bg3RollState.qty > 1));
   if(slot2){
     if(showSecond){
       slot2.className = "bg3-die-slot";
@@ -708,7 +806,7 @@ function renderBg3ModCards(){
   }
 }
 
-function triggerBg3Roll(){
+function triggerBg3Roll(launchIntensity){
   if(bg3RollState.rolling) return;
   bg3RollState.rolling = true;
   bg3RollState.resolved = false;
@@ -722,13 +820,27 @@ function triggerBg3Roll(){
   var addModBtn = document.getElementById("bg3BtnAddMod");
   if(addModBtn) addModBtn.style.display = "none";
 
-  playBg3DiceRoll();
+  var isIntense = (launchIntensity === "intense");
+  var totalDuration = isIntense ? 1680 : 1450;
+  var rollClass = isIntense ? "rolling-intense" : "rolling";
 
+  triggerBg3Haptic('roll-start');
+  playBg3DiceRoll(launchIntensity);
+
+  var isMultiDice = (bg3RollState.qty && bg3RollState.qty > 1 && bg3RollState.mode === "normal");
   var r1 = rollDie(bg3RollState.sides);
-  var r2 = (bg3RollState.mode !== "normal") ? rollDie(bg3RollState.sides) : null;
+  var r2 = (bg3RollState.mode !== "normal" || isMultiDice) ? rollDie(bg3RollState.sides) : null;
+  var extraSum = 0;
+  if(isMultiDice && bg3RollState.qty > 2){
+    for(var q = 2; q < bg3RollState.qty; q++){
+      extraSum += rollDie(bg3RollState.sides);
+    }
+  }
+
   var chosen = r1;
   if(bg3RollState.mode === "adv") chosen = Math.max(r1, r2);
   else if(bg3RollState.mode === "disadv") chosen = Math.min(r1, r2);
+  else if(isMultiDice) chosen = r1 + (r2 || 0) + extraSum;
 
   bg3RollState.r1 = r1;
   bg3RollState.r2 = r2;
@@ -736,40 +848,75 @@ function triggerBg3Roll(){
 
   var die1El = document.getElementById("bg3Die3DPrimary");
   var die2El = document.getElementById("bg3Die3DSecondary");
-  if(die1El) die1El.classList.add("rolling");
-  if(die2El) die2El.classList.add("rolling");
+  if(die1El) die1El.classList.add(rollClass);
+  if(die2El) die2El.classList.add(rollClass);
 
-  // Giro y barajado rápido de caras en tiempo real
-  var rollInterval = setInterval(function(){
+  // Giro con desaceleración progresiva y suspense al acercarse al final
+  var startTime = performance.now();
+  var lastPulseTime = 0;
+
+  function cycleStep(){
+    if(!bg3RollState.rolling) return;
+    var now = performance.now();
+    var elapsed = now - startTime;
+    var progress = Math.min(1, elapsed / totalDuration);
+
+    // Barajado de caras en tiempo real
     var rand1 = Math.floor(Math.random() * bg3RollState.sides) + 1;
     if(die1El) die1El.innerHTML = getBg3DieSvg(bg3RollState.sides, rand1);
-    if(die2El){
+    if(die2El && (bg3RollState.mode !== "normal" || isMultiDice)){
       var rand2 = Math.floor(Math.random() * bg3RollState.sides) + 1;
       die2El.innerHTML = getBg3DieSvg(bg3RollState.sides, rand2);
     }
-  }, 45);
 
-  setTimeout(function(){
-    clearInterval(rollInterval);
+    // Vibración táctil periódica mientras rueda el dado
+    if(now - lastPulseTime > 140 && progress < 0.88){
+      triggerBg3Haptic('tumble-pulse');
+      lastPulseTime = now;
+    }
 
-    // Asentar en el resultado final
+    if(progress >= 1){
+      finalizeLanding();
+      return;
+    }
+
+    // Curva de desaceleración física:
+    // 0 - 45%: giro rápido (36ms a 55ms)
+    // 45% - 75%: desaceleración perceptible (55ms a 115ms)
+    // 75% - 100%: avance lento con suspense dramático (115ms a 265ms) para casi ver el número final
+    var delay;
+    if(progress < 0.45){
+      delay = 36 + (progress / 0.45) * 20;
+    } else if(progress < 0.75){
+      delay = 56 + ((progress - 0.45) / 0.3) * 60;
+    } else {
+      delay = 116 + ((progress - 0.75) / 0.25) * 150;
+    }
+
+    setTimeout(cycleStep, delay);
+  }
+
+  setTimeout(cycleStep, 36);
+
+  function finalizeLanding(){
+    // Asentar en el resultado final en el centro de reposo
     if(die1El){
-      die1El.classList.remove("rolling");
+      die1El.classList.remove("rolling", "rolling-intense");
       die1El.classList.add("settling");
       die1El.innerHTML = getBg3DieSvg(bg3RollState.sides, r1);
     }
-    if(die2El){
-      die2El.classList.remove("rolling");
+    if(die2El && (bg3RollState.mode !== "normal" || isMultiDice)){
+      die2El.classList.remove("rolling", "rolling-intense");
       die2El.classList.add("settling");
       die2El.innerHTML = getBg3DieSvg(bg3RollState.sides, r2);
     }
 
     playBg3DiceLand();
 
-    // Resaltar dado ganador en Ventaja / Desventaja
+    // Resaltar dados ganadores en Ventaja, Desventaja o Multi-dados
     var slot1 = document.getElementById("bg3DieSlotPrimary");
     var slot2 = document.getElementById("bg3DieSlotSecondary");
-    if(slot1 && slot2 && (bg3RollState.mode === "adv" || bg3RollState.mode === "disadv")){
+    if(slot1 && slot2){
       if(bg3RollState.mode === "adv"){
         if(r1 >= r2){
           slot1.classList.add("winner");
@@ -778,7 +925,7 @@ function triggerBg3Roll(){
           slot2.classList.add("winner");
           slot1.classList.add("discarded");
         }
-      } else {
+      } else if(bg3RollState.mode === "disadv"){
         if(r1 <= r2){
           slot1.classList.add("winner-disadv");
           slot2.classList.add("discarded");
@@ -786,6 +933,9 @@ function triggerBg3Roll(){
           slot2.classList.add("winner-disadv");
           slot1.classList.add("discarded");
         }
+      } else if(isMultiDice){
+        slot1.classList.add("winner");
+        slot2.classList.add("winner");
       }
     }
 
@@ -809,8 +959,8 @@ function triggerBg3Roll(){
     var isCrit = false;
     var isFumble = false;
     if(bg3RollState.isDamage){
-      isCrit = false;
-      isFumble = false;
+      isCrit = (r1 === bg3RollState.sides);
+      isFumble = (r1 === 1);
     } else if(bg3RollState.sides === 20){
       isCrit = (chosen === 20);
       isFumble = (chosen === 1);
@@ -845,9 +995,9 @@ function triggerBg3Roll(){
 
         if(bg3RollState.isDamage){
           vPlate.classList.add("success");
-          var isMax = (chosen === bg3RollState.sides);
+          var isMax = (chosen === bg3RollState.sides * (bg3RollState.qty || 1));
           if(isMax){
-            vTitle.textContent = grandTotal + " DAÑO (¡MÁXIMO EN DADO!)";
+            vTitle.textContent = grandTotal + " DAÑO (¡MÁXIMO EN DADOS!)";
             playBg3Crit();
           } else {
             vTitle.textContent = grandTotal + " PUNTOS DE DAÑO";
@@ -876,7 +1026,7 @@ function triggerBg3Roll(){
           vTitle.textContent = "RESULTADO: " + grandTotal;
         }
 
-        var mathText = "[" + chosen + "] " + (bg3RollState.isDamage ? "Arma" : "Dado");
+        var mathText = "[" + r1 + (r2 !== null ? " + " + r2 : "") + (extraSum > 0 ? " + " + extraSum : "") + "] " + (bg3RollState.isDamage ? "Arma (" + (bg3RollState.qty || 1) + "d" + bg3RollState.sides + ")" : "Dado");
         if(modSum !== 0){
           mathText += " + [" + (modSum > 0 ? "+" + modSum : modSum) + "] Bonos = " + grandTotal + (bg3RollState.isDamage ? " Daño" : "");
         }
@@ -886,12 +1036,13 @@ function triggerBg3Roll(){
         vMath.textContent = mathText;
       }
 
+      var formulaStr = (bg3RollState.isDamage ? "Daño: " : "") + (bg3RollState.qty && bg3RollState.qty > 1 ? bg3RollState.qty : "1") + "d" + bg3RollState.sides + " [" + r1 + (r2 !== null ? ", " + r2 : "") + (extraSum > 0 ? ", +" + extraSum : "") + "]" + (modSum !== 0 ? (modSum > 0 ? " +" + modSum : " " + modSum) : "") + " = " + grandTotal;
       var rollItem = {
         id: uid(),
         charName: bg3RollState.charName,
         label: bg3RollState.title,
         total: grandTotal,
-        formulaText: (bg3RollState.isDamage ? "Daño: " : "") + "1d" + bg3RollState.sides + " [" + chosen + "]" + (modSum !== 0 ? (modSum > 0 ? " +" + modSum : " " + modSum) : "") + " = " + grandTotal,
+        formulaText: formulaStr,
         isCrit: isCrit,
         isFumble: isFumble,
         ts: Date.now()
@@ -907,7 +1058,7 @@ function triggerBg3Roll(){
       bg3RollState.rolling = false;
       bg3RollState.resolved = true;
     }, delayVerdict);
-  }, 850);
+  }
 }
 
 function closeBg3Roll(){
@@ -1168,6 +1319,7 @@ function openBg3WeaponAttackRoll(c, wpn){
 function openBg3WeaponRoll(c, wpn, formulaRaw){
   var reg = new RegExp('(\\d+)\\s*[dD]\\s*(\\d+)');
   var m = String(formulaRaw || "1d6").match(reg);
+  var qty = m ? parseInt(m[1], 10) : 1;
   var sides = m ? parseInt(m[2], 10) : 6;
   var rest = String(formulaRaw || "").slice(m ? (m.index + m[0].length) : 0);
   var modM = rest.match(new RegExp('^\\s*([+-]\\s*\\d+)'));
@@ -1222,8 +1374,9 @@ function openBg3WeaponRoll(c, wpn, formulaRaw){
 
   openBg3RollModal({
     title: "Daño — " + wpnName,
-    subtitle: "Tirada de Daño (" + (formulaRaw || ("1d" + sides)) + ")",
+    subtitle: "Tirada de Daño (" + (formulaRaw || (qty + "d" + sides)) + ")",
     sides: sides,
+    qty: qty,
     dc: 10,
     dcActive: false,
     isDamage: true,
@@ -1284,6 +1437,7 @@ function openBg3InitRoll(c){
 
 function openBg3FreeRoll(sides, qty, mod, mode){
   var s = parseInt(sides, 10) || 20;
+  var q = parseInt(qty, 10) || 1;
   var m = parseInt(mod, 10) || 0;
   var curC = (typeof activeChar === "function") ? activeChar() : null;
   var cName = (curC && curC.name) ? curC.name : "Aventurero";
@@ -1294,9 +1448,10 @@ function openBg3FreeRoll(sides, qty, mod, mode){
   }
 
   openBg3RollModal({
-    title: (s === 100 ? "d% Percentil" : "Tirada 1d" + s),
-    subtitle: "Tirada Libre (" + (s === 100 ? "1d100" : "1d" + s) + ")",
+    title: (s === 100 ? "d% Percentil" : (q > 1 ? q + "d" + s : "1d" + s)),
+    subtitle: "Tirada Libre (" + (s === 100 ? "1d100" : q + "d" + s) + ")",
     sides: s,
+    qty: q,
     dc: 10,
     dcActive: false,
     mode: mode || "normal",
@@ -1348,7 +1503,31 @@ function parseSummonFormula(raw){
 
 function performSummonRoll(charName, summonName, actionName, formulaRaw){
   var parsed = parseSummonFormula(formulaRaw);
-  openBg3FreeRoll(parsed.sides, parsed.qty, parsed.mod, "normal");
+  var curC = (typeof activeChar === "function") ? activeChar() : null;
+  var cName = charName || ((curC && curC.name) ? curC.name : "Aventurero");
+  var sName = summonName || "Invocación";
+  var aName = actionName || "Tirada";
+
+  var modifiers = [];
+  if(parsed.mod !== 0){
+    modifiers.push({ label: "Bono " + aName, val: parsed.mod, icon: "sword", type: "attr" });
+  }
+
+  var isDmg = aName.toLowerCase().includes("daño") || aName.toLowerCase().includes("dano");
+  var formulaDisplay = (parsed.qty > 1 ? parsed.qty : "1") + "d" + parsed.sides + (parsed.mod ? (parsed.mod > 0 ? "+" + parsed.mod : parsed.mod) : "");
+
+  openBg3RollModal({
+    title: sName + " — " + aName,
+    subtitle: "Tirada de " + aName + " (" + formulaDisplay + ")",
+    sides: parsed.sides,
+    qty: parsed.qty,
+    dc: 10,
+    dcActive: false,
+    isDamage: isDmg,
+    mode: "normal",
+    charName: sName + " (" + cName + ")",
+    modifiers: modifiers
+  });
 }
 
 function broadcastDiceRoll(rollObj){
@@ -1401,17 +1580,26 @@ var diceConfig = {
 };
 
 function openDiceModal(){
-  var sidesList = [4, 6, 8, 10, 12, 20, 100];
-  var diceCards = sidesList.map(function(s){
-    return '<div class="dtype-card '+(diceConfig.sides===s?'active':'')+'" data-action="pick-die" data-sides="'+s+'" role="button" tabindex="0">'+
-      getDieSvg(s)+
-      '<span>'+(s===100?'d%':'d'+s)+'</span>'+
+  var sidesList = [
+    { sides: 4, name: "d4", geom: "Tetraedro" },
+    { sides: 6, name: "d6", geom: "Cubo" },
+    { sides: 8, name: "d8", geom: "Octaedro" },
+    { sides: 10, name: "d10", geom: "Decaedro" },
+    { sides: 12, name: "d12", geom: "Dodecaedro" },
+    { sides: 20, name: "d20", geom: "Icosaedro" },
+    { sides: 100, name: "d%", geom: "Percentil" }
+  ];
+  var diceCards = sidesList.map(function(item){
+    return '<div class="dtype-card '+(diceConfig.sides===item.sides?'active':'')+'" data-action="pick-die" data-sides="'+item.sides+'" role="button" tabindex="0" title="'+item.name+' ('+item.geom+')">'+
+      '<div class="die-icon-box">' + getDieSvg(item.sides) + '</div>'+
+      '<span class="die-code">'+item.name+'</span>'+
+      '<span class="die-geom-label">'+item.geom+'</span>'+
     '</div>';
   }).join('');
 
   document.getElementById("diceModal").innerHTML =
     '<div class="cup-modal-header">'+
-      '<div class="cup-modal-icon" style="width:40px;height:40px;">'+getDieSvg(diceConfig.sides)+'</div>'+
+      '<div class="cup-modal-icon" style="width:42px;height:42px;">'+getDieSvg(diceConfig.sides)+'</div>'+
       '<div class="cup-modal-title">'+
         '<h3>Lanzador de Dados 3D</h3>'+
         '<div class="cup-modal-sub">Elige tu dado, modalidad y lanza en la Cámara 3D</div>'+
