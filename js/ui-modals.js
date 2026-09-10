@@ -733,6 +733,8 @@ function closeModals(){
 // ==============================================================================
 var DEFAULT_DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1547672027035472003/8soKhpr6HxuSSvJDOhwsDxrhn5Sqgn8rRRPEpyxfQQDSYMnklfLOam6vO7sop4qMHcIM";
 var currentFeedbackCategory = "bug";
+var currentFeedbackTab = "new"; // "new" | "my_tickets"
+var adminFeedbackFilter = "all"; // "all" | "pending" | "in_progress" | "resolved"
 var lastGeneratedReport = null;
 
 function getMasterDiscordWebhook(){
@@ -749,72 +751,262 @@ function setMasterDiscordWebhook(url){
   } catch(e){}
 }
 
-function openFeedbackModal(prefilledCategory, prefilledTitle){
-  currentFeedbackCategory = prefilledCategory || "bug";
+function generateTicketCode(){
+  var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  var code = "";
+  for(var i=0; i<4; i++){
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return "TK-" + code;
+}
+
+function getCategoryLabel(cat){
+  var catIcons = {
+    bug: "🐛 Error / Bug",
+    sugerencia: "💡 Sugerencia",
+    balance: "⚖️ Reglas / Balance",
+    otro: "💬 Consulta / Otro"
+  };
+  return catIcons[cat] || cat || "Incidencia";
+}
+
+function getPlayerTickets(){
+  try {
+    return JSON.parse(localStorage.getItem("krysalis_player_tickets") || "[]");
+  } catch(e){
+    return [];
+  }
+}
+
+function savePlayerTickets(tickets){
+  try {
+    localStorage.setItem("krysalis_player_tickets", JSON.stringify(tickets.slice(0, 50)));
+  } catch(e){}
+}
+
+async function syncPlayerTicketsWithSupabase(){
+  var tickets = getPlayerTickets();
+  if(!tickets.length) return tickets;
+  if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine) return tickets;
+  try {
+    var ids = tickets.map(function(t){ return t.id; }).filter(Boolean);
+    if(!ids.length) return tickets;
+    var res = await supabaseClient.from("app_feedback").select("id, status, admin_reply, resolved_at").in("id", ids);
+    if(res && res.data && res.data.length){
+      var map = {};
+      res.data.forEach(function(row){ map[row.id] = row; });
+      var changed = false;
+      tickets.forEach(function(t){
+        if(map[t.id]){
+          var row = map[t.id];
+          if(row.status && row.status !== t.status){ t.status = row.status; changed = true; }
+          if(row.admin_reply !== undefined && row.admin_reply !== t.adminReply){ t.adminReply = row.admin_reply || ""; changed = true; }
+          if(row.resolved_at !== undefined && row.resolved_at !== t.resolvedAt){ t.resolvedAt = row.resolved_at; changed = true; }
+        }
+      });
+      if(changed){
+        savePlayerTickets(tickets);
+        var modal = document.getElementById("feedbackModal");
+        if(modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
+          openFeedbackModal("my_tickets");
+        }
+      }
+    }
+  } catch(e){}
+  return tickets;
+}
+
+async function syncAdminTicketsWithSupabase(){
+  if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine) return state.feedbackReports || [];
+  try {
+    var res = await supabaseClient.from("app_feedback").select("*").order("created_at", { ascending: false }).limit(50);
+    if(res && res.data && res.data.length){
+      var cloudReports = res.data.map(function(row){
+        return {
+          id: row.id,
+          ticketCode: row.ticket_code || ("TK-" + row.id.slice(-4).toUpperCase()),
+          category: row.category,
+          categoryLabel: getCategoryLabel(row.category),
+          title: row.title,
+          description: row.description,
+          contact: row.contact,
+          character: row.character_name ? { name: row.character_name } : null,
+          system: row.system_metadata || {},
+          aiTriage: row.ai_triage || {},
+          status: row.status || "pending",
+          adminReply: row.admin_reply || "",
+          resolvedAt: row.resolved_at || null,
+          timestamp: row.created_at,
+          displayDate: new Date(row.created_at).toLocaleString()
+        };
+      });
+
+      var map = {};
+      cloudReports.forEach(function(cr){ map[cr.id] = cr; });
+      (state.feedbackReports || []).forEach(function(lr){
+        if(!map[lr.id]) cloudReports.push(lr);
+      });
+      state.feedbackReports = cloudReports;
+      saveState(false);
+
+      var modal = document.getElementById("feedbackModal");
+      if(modal && modal.getAttribute("data-mode") === "admin"){
+        openFeedbackAdminModal(adminFeedbackFilter);
+      }
+    }
+  } catch(e){}
+  return state.feedbackReports || [];
+}
+
+function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle){
+  currentFeedbackTab = activeTab || currentFeedbackTab || "new";
+  if(prefilledCategory) currentFeedbackCategory = prefilledCategory;
+
+  var myTickets = getPlayerTickets();
   var c = (typeof activeChar === "function") ? activeChar() : null;
   var userEmail = (typeof currentUser !== "undefined" && currentUser && currentUser.email) ? currentUser.email : "";
   var defaultContact = c ? (c.name + (userEmail ? " (" + userEmail + ")" : "")) : userEmail;
 
-  var catOptions = [
-    { id: "bug", label: "🐛 Error / Bug", desc: "Algo no funciona o se rompió" },
-    { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o propuesta de mejora" },
-    { id: "balance", label: "⚖️ Reglas / Balance", desc: "Cálculo, daño o habilidad" },
-    { id: "otro", label: "💬 Consulta / Otro", desc: "Duda general del juego" }
-  ];
-
-  var catPills = catOptions.map(function(cat){
-    var active = (cat.id === currentFeedbackCategory) ? "active" : "";
-    return '<button type="button" class="f-pill feedback-cat-pill ' + active + '" data-val="' + cat.id + '" title="' + cat.desc + '">' +
-      '<span>' + cat.label + '</span>' +
-    '</button>';
-  }).join('');
+  var hasNewReply = myTickets.some(function(t){ return t.adminReply && t.status === "resolved"; });
 
   var gmPanelBtn = isGM() ? 
     '<button type="button" class="btn-compact" style="width:100%;margin-bottom:12px;padding:8px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.8rem;background:rgba(88,101,242,0.12);" data-action="open-feedback-admin">' +
-      '🎮 Panel de Administración: Ver reportes recibidos y configurar Discord' +
+      '🎮 Panel de Administración: Gestionar tickets, responder y Discord' +
     '</button>' : '';
+
+  var tabsHeader = '<div class="feedback-nav-tabs">' +
+    '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "new" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="new">' +
+      '📝 Nuevo Reporte' +
+    '</button>' +
+    '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "my_tickets" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="my_tickets">' +
+      '📬 Mis Reportes y Respuestas ' + (hasNewReply ? '<span class="feedback-badge-dot" title="Tienes respuestas nuevas"></span>' : '') + ' (' + myTickets.length + ')' +
+    '</button>' +
+  '</div>';
+
+  var contentHtml = '';
+
+  if(currentFeedbackTab === "new"){
+    var catOptions = [
+      { id: "bug", label: "🐛 Error / Bug", desc: "Algo no funciona o se rompió" },
+      { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o propuesta de mejora" },
+      { id: "balance", label: "⚖️ Reglas / Balance", desc: "Cálculo, daño o habilidad" },
+      { id: "otro", label: "💬 Consulta / Otro", desc: "Duda general del juego" }
+    ];
+
+    var catPills = catOptions.map(function(cat){
+      var active = (cat.id === currentFeedbackCategory) ? "active" : "";
+      return '<button type="button" class="f-pill feedback-cat-pill ' + active + '" data-val="' + cat.id + '" title="' + cat.desc + '">' +
+        '<span>' + cat.label + '</span>' +
+      '</button>';
+    }).join('');
+
+    contentHtml = '<p class="feedback-subtitle">Envía cualquier incidencia o sugerencia. El sistema analizará el contexto de tu partida con IA y notificará al Administrador.</p>' +
+      '<div class="field" style="margin-top:8px;">' +
+        '<label style="display:block;margin-bottom:6px;">Tipo de Incidencia</label>' +
+        '<div class="filter-pills feedback-cat-grid" id="feedbackCategoryPills">' + catPills + '</div>' +
+      '</div>' +
+
+      '<div class="field" style="margin-top:10px;">' +
+        '<label for="fbTitle">Título o Asunto breve *</label>' +
+        '<input type="text" id="fbTitle" placeholder="Ej: No se aplica el crítico de mi espada, duda de sigilo..." value="' + (prefilledTitle ? esc(prefilledTitle) : "") + '" required>' +
+      '</div>' +
+
+      '<div class="field" style="margin-top:10px;">' +
+        '<label for="fbDesc">Descripción detallada *</label>' +
+        '<textarea id="fbDesc" rows="4" placeholder="Explica con detalle qué ocurrió o qué te gustaría mejorar..." required></textarea>' +
+      '</div>' +
+
+      '<div class="field" style="margin-top:10px;">' +
+        '<label for="fbContact">Tu Nombre / Personaje (Opcional)</label>' +
+        '<input type="text" id="fbContact" placeholder="Tu nombre o personaje..." value="' + esc(defaultContact) + '">' +
+      '</div>' +
+
+      '<div class="feedback-privacy-note">' +
+        '🔒 <b>100% Privado y Directo:</b> Tu reporte generará un ticket con código único. El Administrador te responderá directamente en la pestaña <b>"Mis Reportes y Respuestas"</b>.' +
+      '</div>' +
+
+      '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
+        '<button type="button" class="btn-solid-gold" id="btnSubmitFeedback" style="width:100%;padding:12px 14px;font-size:0.95rem;font-weight:700;" data-action="submit-feedback-report">' +
+          '🚀 Enviar Reporte al Administrador' +
+        '</button>' +
+        '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
+          'Cancelar' +
+        '</button>' +
+      '</div>';
+  } else {
+    // Vista "Mis Reportes y Respuestas"
+    if(!myTickets.length){
+      contentHtml = '<div style="text-align:center;padding:30px 16px;color:var(--ink-faint);line-height:1.5;">' +
+        '<div style="font-size:2.2rem;margin-bottom:8px;">📭</div>' +
+        '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);margin-bottom:6px;">No tienes reportes enviados aún</div>' +
+        '<p style="font-size:0.82rem;margin:0 0 16px;">Cualquier duda, error o sugerencia que envíes aparecerá aquí junto a la respuesta oficial del Administrador.</p>' +
+        '<button type="button" class="btn-solid-gold" style="padding:8px 16px;font-size:0.85rem;" data-action="switch-feedback-tab" data-tab="new">' +
+          '📝 Enviar mi primer reporte' +
+        '</button>' +
+      '</div>';
+    } else {
+      var ticketCards = myTickets.map(function(t){
+        var st = t.status || "pending";
+        var statusBadge = '';
+        if(st === "resolved"){
+          statusBadge = '<span class="ticket-badge resolved">🟢 Resuelto</span>';
+        } else if(st === "in_progress"){
+          statusBadge = '<span class="ticket-badge in_progress">🔵 En proceso</span>';
+        } else {
+          statusBadge = '<span class="ticket-badge pending">🟡 En revisión</span>';
+        }
+
+        var replyBlock = '';
+        if(t.adminReply){
+          replyBlock = '<div class="player-reply-box">' +
+            '<div class="player-reply-header">🛡️ Respuesta Oficial del Administrador:</div>' +
+            '<div class="player-reply-body">' + esc(t.adminReply) + '</div>' +
+            (t.resolvedAt ? '<div style="font-size:0.68rem;color:var(--ink-faint);margin-top:6px;text-align:right;">Respondido el ' + esc(new Date(t.resolvedAt).toLocaleString()) + '</div>' : '') +
+          '</div>';
+        } else {
+          replyBlock = '<div style="margin-top:8px;font-size:0.75rem;color:var(--ink-faint);background:rgba(0,0,0,0.25);border-radius:4px;padding:6px 8px;border-left:2px solid var(--line);">' +
+            (st === "in_progress" ? '🔵 El Administrador está trabajando en solucionar esta incidencia.' : '⏳ En cola de revisión. El Administrador te responderá aquí tan pronto lo evalúe.') +
+          '</div>';
+        }
+
+        return '<div class="player-ticket-card">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:6px;">' +
+            '<div>' +
+              '<span class="ticket-code-tag">#' + esc(t.ticketCode || "TK-0000") + '</span> ' +
+              '<span style="font-size:0.7rem;color:var(--ink-faint);margin-left:4px;">' + esc(t.displayDate || (t.timestamp ? new Date(t.timestamp).toLocaleDateString() : "")) + '</span>' +
+              '<div style="font-weight:700;font-size:0.88rem;color:var(--ink);margin-top:4px;">' + esc(t.title) + '</div>' +
+            '</div>' +
+            statusBadge +
+          '</div>' +
+          '<div style="font-size:0.76rem;color:var(--ink-dim);line-height:1.4;background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:4px;">' +
+            esc(t.description) +
+          '</div>' +
+          replyBlock +
+        '</div>';
+      }).join('');
+
+      contentHtml = '<div style="max-height:360px;overflow-y:auto;padding-right:4px;">' + ticketCards + '</div>' +
+        '<div style="margin-top:12px;display:flex;gap:8px;">' +
+          '<button type="button" class="btn-solid-gold" style="flex:1;padding:8px;" data-action="switch-feedback-tab" data-tab="new">+ Nuevo Reporte</button>' +
+          '<button type="button" class="btn-compact" style="flex:1;padding:8px;" data-action="close-feedback-modal">Cerrar</button>' +
+        '</div>';
+    }
+  }
 
   var html = '<h2>📬 Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     gmPanelBtn +
-    '<p class="feedback-subtitle">Envía cualquier problema, duda o sugerencia. Nuestro sistema lo procesará junto al contexto de tu partida y notificará directamente al Administrador.</p>' +
-
-    '<div class="field" style="margin-top:8px;">' +
-      '<label style="display:block;margin-bottom:6px;">Tipo de Incidencia</label>' +
-      '<div class="filter-pills feedback-cat-grid" id="feedbackCategoryPills">' + catPills + '</div>' +
-    '</div>' +
-
-    '<div class="field" style="margin-top:10px;">' +
-      '<label for="fbTitle">Título o Asunto breve *</label>' +
-      '<input type="text" id="fbTitle" placeholder="Ej: No se aplica el crítico de mi espada, duda de sigilo..." value="' + (prefilledTitle ? esc(prefilledTitle) : "") + '" required>' +
-    '</div>' +
-
-    '<div class="field" style="margin-top:10px;">' +
-      '<label for="fbDesc">Descripción detallada *</label>' +
-      '<textarea id="fbDesc" rows="4" placeholder="Explica con detalle qué ocurrió o qué te gustaría mejorar..." required></textarea>' +
-    '</div>' +
-
-    '<div class="field" style="margin-top:10px;">' +
-      '<label for="fbContact">Tu Nombre / Personaje (Opcional)</label>' +
-      '<input type="text" id="fbContact" placeholder="Tu nombre o personaje..." value="' + esc(defaultContact) + '">' +
-    '</div>' +
-
-    '<div class="feedback-privacy-note">' +
-      '🔒 <b>100% Privado y Directo:</b> Tu reporte se procesará de forma segura y se enviará directamente al Administrador sin intermediarios.' +
-    '</div>' +
-
-    '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
-      '<button type="button" class="btn-solid-gold" id="btnSubmitFeedback" style="width:100%;padding:12px 14px;font-size:0.95rem;font-weight:700;" data-action="submit-feedback-report">' +
-        '🚀 Enviar Reporte al Administrador' +
-      '</button>' +
-      '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
-        'Cancelar' +
-      '</button>' +
-    '</div>';
+    tabsHeader +
+    contentHtml;
 
   var modal = document.getElementById("feedbackModal");
-  if(modal) modal.innerHTML = html;
+  if(modal){
+    modal.setAttribute("data-mode", "player");
+    modal.innerHTML = html;
+  }
   var overlay = document.getElementById("feedbackModalOverlay");
   if(overlay) overlay.classList.remove("hidden");
+
+  syncPlayerTicketsWithSupabase();
 }
 
 function buildFeedbackDiagnostic(cat, title, desc, contact){
@@ -832,13 +1024,6 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
   else if(/windows/i.test(ua)) os = "Windows";
   else if(/mac/i.test(ua)) os = "macOS";
   else if(/linux/i.test(ua)) os = "Linux";
-
-  var catIcons = {
-    bug: "🐛 Error / Bug",
-    sugerencia: "💡 Sugerencia",
-    balance: "⚖️ Balance / Reglas",
-    otro: "💬 Consulta"
-  };
 
   var recentRolls = [];
   try {
@@ -866,17 +1051,23 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
   }
 
   var now = new Date();
+  var ticketCode = generateTicketCode();
+
   return {
     id: (typeof uid === "function") ? uid() : ("fb_" + Date.now()),
+    ticketCode: ticketCode,
     timestamp: now.toISOString(),
     displayDate: now.toLocaleString(),
     category: cat,
-    categoryLabel: catIcons[cat] || cat,
+    categoryLabel: getCategoryLabel(cat),
     title: title.trim(),
     description: desc.trim(),
     contact: contact.trim() || (c ? c.name : "Anónimo"),
     character: charStats,
     recentRolls: recentRolls,
+    status: "pending",
+    adminReply: "",
+    resolvedAt: null,
     system: {
       appVersion: "v1.0.6",
       screen: window.innerWidth + "x" + window.innerHeight,
@@ -949,14 +1140,13 @@ function generateAiTriageAnalysis(report){
 async function sendDiscordWebhookReport(report){
   var webhookUrl = getMasterDiscordWebhook();
   if(!webhookUrl){
-    console.log("Discord Webhook no configurado. El reporte se conserva en el panel del Máster.");
+    console.log("Discord Webhook no configurado.");
     return { success: false, reason: "no_webhook" };
   }
 
   var triage = report.aiTriage || {};
   var c = report.character;
 
-  // Colores Discord Embed
   var colorMap = {
     bug: 0xEF4444,        // Rojo
     sugerencia: 0xFBBF24, // Dorado
@@ -973,12 +1163,14 @@ async function sendDiscordWebhookReport(report){
     report.recentRolls.join("\n") : 
     "Sin tiradas registradas";
 
+  var ticketTag = report.ticketCode ? ("#" + report.ticketCode) : "TICKET";
+
   var payload = {
     username: "Krysalis • Triage IA",
     avatar_url: "https://rolillo55ac-svg.github.io/ficha-rol/images/icon-192.png",
     embeds: [
       {
-        title: report.categoryLabel + ": " + report.title,
+        title: "[" + ticketTag + "] " + report.categoryLabel + ": " + report.title,
         description: "**Mensaje del Jugador:**\n> " + report.description.split("\n").join("\n> "),
         color: embedColor,
         fields: [
@@ -1004,7 +1196,7 @@ async function sendDiscordWebhookReport(report){
           },
           {
             name: "🛡️ Ciberseguridad",
-            value: triage.isSecuritySafe ? "✅ Verificada (Sin riesgos de inyección)" : "⚠️ Alerta de sanitización",
+            value: triage.isSecuritySafe ? "✅ Verificada (Sin riesgos)" : "⚠️ Alerta de sanitización",
             inline: true
           },
           {
@@ -1013,13 +1205,18 @@ async function sendDiscordWebhookReport(report){
             inline: true
           },
           {
-            name: "💬 Respuesta sugerida para el jugador (Copiar y Enviar)",
-            value: "```\n" + (triage.suggestedReply || "Sin respuesta generada.") + "\n```",
+            name: "🤖 Para aplicar la solución técnica con la IA en tu IDE",
+            value: "Copia y dile a Antigravity en el chat:\n> `Aplica la solución del ticket " + ticketTag + ": " + report.title + "`",
+            inline: false
+          },
+          {
+            name: "💬 Respuesta sugerida para el jugador",
+            value: "```\n" + (triage.suggestedReply || "Sin respuesta sugerida.") + "\n```",
             inline: false
           }
         ],
         footer: {
-          text: "Krysalis Rol • " + report.displayDate
+          text: "Krysalis Rol • " + ticketTag + " • Estado: 🟡 Pendiente • " + report.displayDate
         }
       }
     ]
@@ -1076,6 +1273,10 @@ async function submitFeedbackReport(){
   report.aiTriage = aiTriage;
   lastGeneratedReport = report;
 
+  var playerTickets = getPlayerTickets();
+  playerTickets.unshift(report);
+  savePlayerTickets(playerTickets);
+
   state.feedbackReports = state.feedbackReports || [];
   state.feedbackReports.unshift(report);
   if(state.feedbackReports.length > 50) state.feedbackReports.pop();
@@ -1085,6 +1286,7 @@ async function submitFeedbackReport(){
     try {
       supabaseClient.from("app_feedback").insert([{
         id: report.id,
+        ticket_code: report.ticketCode,
         category: report.category,
         title: report.title,
         description: report.description,
@@ -1092,6 +1294,7 @@ async function submitFeedbackReport(){
         character_name: report.character ? report.character.name : null,
         system_metadata: report.system,
         ai_triage: report.aiTriage,
+        status: "pending",
         created_at: report.timestamp
       }]).then(function(res){
         if(res && res.error) console.warn("Supabase feedback insert:", res.error.message);
@@ -1107,113 +1310,172 @@ function showPlayerSuccessScreen(report){
   var html = '<h2>🎉 ¡Reporte Enviado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="feedback-success-card">' +
       '<div class="success-icon-badge">✅</div>' +
-      '<div class="success-title">Recibido y Procesado con Éxito</div>' +
-      '<p class="success-text">Tu reporte ha sido registrado en el sistema y remitido directamente al Administrador con el análisis de tu partida para revisarlo cuanto antes.</p>' +
+      '<div class="success-title">Ticket Registrado con Éxito</div>' +
+      '<p class="success-text">Tu reporte ha sido remitido al Administrador con el diagnóstico de la IA y el contexto de tu partida.</p>' +
     '</div>' +
 
     '<div style="background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.45;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+        '<span>🎫 <b>Ticket:</b></span>' +
+        '<span class="ticket-code-tag">#' + esc(report.ticketCode) + '</span>' +
+      '</div>' +
       '<div>📌 <b>Asunto:</b> ' + esc(report.title) + '</div>' +
       '<div style="margin-top:4px;">🏷️ <b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
-      '<div style="margin-top:4px;color:var(--gold-light);">🤖 <b>Estado:</b> Procesado por Asistencia IA y notificado al Administrador</div>' +
+      '<div style="margin-top:4px;color:var(--gold-light);">🤖 <b>Estado:</b> <span class="ticket-badge pending">🟡 En revisión</span></div>' +
+      '<div style="margin-top:8px;font-size:0.73rem;color:var(--ink-faint);border-top:1px dashed var(--line);padding-top:6px;">' +
+        'El Administrador revisará tu reporte y te responderá directamente en la pestaña <b>"Mis Reportes y Respuestas"</b>.' +
+      '</div>' +
     '</div>' +
 
     '<div style="display:flex;flex-direction:column;gap:8px;">' +
-      '<button type="button" class="btn-solid-gold" style="width:100%;padding:10px 14px;font-size:0.9rem;" data-action="close-feedback-modal">' +
-        'Entendido / Cerrar' +
+      '<button type="button" class="btn-solid-gold" style="width:100%;padding:10px 14px;font-size:0.9rem;" data-action="switch-feedback-tab" data-tab="my_tickets">' +
+        '📬 Ver Mis Reportes y Respuestas' +
+      '</button>' +
+      '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
+        'Cerrar' +
       '</button>' +
     '</div>';
 
   var modal = document.getElementById("feedbackModal");
   if(modal) modal.innerHTML = html;
-  showToast("¡Reporte enviado al Administrador con éxito!", "success");
+  showToast("¡Ticket #" + report.ticketCode + " creado con éxito!", "success");
 }
 
-function openFeedbackAdminModal(){
+function openFeedbackAdminModal(filter){
+  adminFeedbackFilter = filter || adminFeedbackFilter || "all";
   var webhookUrl = getMasterDiscordWebhook();
   var reports = state.feedbackReports || [];
+
+  var pendingCount = 0, inProgressCount = 0, resolvedCount = 0;
+  reports.forEach(function(r){
+    var st = r.status || "pending";
+    if(st === "pending") pendingCount++;
+    else if(st === "in_progress") inProgressCount++;
+    else if(st === "resolved") resolvedCount++;
+  });
+  var allCount = reports.length;
 
   var statusBadge = webhookUrl ? 
     '<span class="storage-pill optimal">🟢 Discord Conectado</span>' : 
     '<span class="storage-pill warning">⚠️ Discord Sin Configurar</span>';
 
+  var filteredReports = reports.filter(function(r){
+    var st = r.status || "pending";
+    if(adminFeedbackFilter === "pending") return st === "pending";
+    if(adminFeedbackFilter === "in_progress") return st === "in_progress";
+    if(adminFeedbackFilter === "resolved") return st === "resolved";
+    return true;
+  });
+
+  var filterPillsHtml = '<div class="admin-filter-bar">' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "all" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="all">Todos (' + allCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "pending" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="pending">🟡 Pendientes (' + pendingCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "in_progress" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="in_progress">🔵 En Proceso (' + inProgressCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "resolved" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="resolved">🟢 Resueltos (' + resolvedCount + ')</button>' +
+  '</div>';
+
   var reportsListHtml = '';
-  if(!reports.length){
-    reportsListHtml = '<div style="font-size:0.8rem;color:var(--ink-faint);font-style:italic;padding:12px;text-align:center;">No hay reportes registrados aún.</div>';
+  if(!filteredReports.length){
+    reportsListHtml = '<div style="font-size:0.8rem;color:var(--ink-faint);font-style:italic;padding:16px;text-align:center;">No hay reportes en esta categoría.</div>';
   } else {
-    reportsListHtml = reports.map(function(r, idx){
+    reportsListHtml = filteredReports.map(function(r){
       var triage = r.aiTriage || {};
       var diagSnippet = triage.diagnostic || "Reporte técnico pendiente de revisión.";
-      var replySnippet = triage.suggestedReply || "";
+      var ticketTag = r.ticketCode ? ("#" + r.ticketCode) : ("#" + r.id.slice(-4).toUpperCase());
+      var st = r.status || "pending";
 
-      return '<div class="admin-report-item" style="background:rgba(0,0,0,0.4);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px;">' +
+      return '<div class="admin-ticket-card">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
           '<div>' +
-            '<span style="font-size:0.7rem;color:var(--gold);font-weight:700;text-transform:uppercase;">' + esc(r.categoryLabel || r.category) + '</span>' +
-            '<div style="font-weight:700;font-size:0.9rem;color:var(--ink);">' + esc(r.title) + '</div>' +
-            '<div style="font-size:0.75rem;color:var(--ink-faint);">Por ' + esc(r.contact || "Anónimo") + ' · ' + esc(r.displayDate || "") + '</div>' +
+            '<span class="ticket-code-tag">' + esc(ticketTag) + '</span> ' +
+            '<span style="font-size:0.7rem;color:var(--gold);font-weight:700;text-transform:uppercase;margin-left:4px;">' + esc(r.categoryLabel || r.category) + '</span>' +
+            '<div style="font-weight:700;font-size:0.9rem;color:var(--ink);margin-top:4px;">' + esc(r.title) + '</div>' +
+            '<div style="font-size:0.72rem;color:var(--ink-faint);">Por <b>' + esc(r.contact || "Anónimo") + '</b> · ' + esc(r.displayDate || "") + '</div>' +
           '</div>' +
           '<span class="storage-pill ' + (triage.isSecuritySafe === false ? 'critical' : 'optimal') + '" style="font-size:0.65rem;">' + esc(triage.classification || "Tratado") + '</span>' +
+        '</div>' +
+
+        '<div class="status-btn-group">' +
+          '<button type="button" class="btn-status-toggle ' + ((st === 'pending') ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending">🟡 Pendiente</button>' +
+          '<button type="button" class="btn-status-toggle ' + ((st === 'in_progress') ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress">🔵 En Proceso</button>' +
+          '<button type="button" class="btn-status-toggle ' + ((st === 'resolved') ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved">🟢 Resuelto</button>' +
         '</div>' +
 
         '<div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:8px;margin-top:8px;font-size:0.78rem;color:var(--ink-dim);line-height:1.4;">' +
           '<b>Mensaje:</b> "' + esc(r.description) + '"' +
         '</div>' +
 
-        '<div style="background:rgba(212,175,55,0.08);border-left:3px solid var(--gold);padding:8px;margin-top:8px;font-size:0.76rem;color:var(--gold-light);line-height:1.4;">' +
-          '🧠 <b>Análisis IA:</b> ' + esc(diagSnippet) +
+        '<div style="background:rgba(212,175,55,0.08);border-left:3px solid var(--gold);padding:8px;margin-top:8px;font-size:0.75rem;color:var(--gold-light);line-height:1.4;">' +
+          '🧠 <b>Diagnóstico IA:</b> ' + esc(diagSnippet) +
         '</div>' +
 
-        (replySnippet ? 
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;">' +
-            '<button type="button" class="btn-compact" style="flex:1;padding:6px 8px;font-size:0.72rem;" data-action="copy-admin-reply" data-idx="' + idx + '">' +
-              '📋 Copiar respuesta para el jugador' +
+        '<div class="ai-assistant-action-box">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+            '<span style="font-size:0.72rem;color:#8EA1E1;font-weight:700;">🤖 Acción Técnica para Antigravity AI (IDE)</span>' +
+            '<button type="button" class="btn-compact" style="padding:2px 7px;font-size:0.68rem;border-color:rgba(88,101,242,0.6);color:#A5B4FC;" data-action="copy-ai-prompt" data-id="' + esc(r.id) + '" title="Copiar prompt para pegar al chat de Antigravity">' +
+              '📋 Copiar orden para Antigravity' +
             '</button>' +
-            '<button type="button" class="btn-compact" style="padding:6px 8px;font-size:0.72rem;border-color:rgba(88,101,242,0.5);color:#8EA1E1;" data-action="resend-admin-discord" data-idx="' + idx + '" title="Reenviar a Discord">' +
-              '📡 Enviar a Discord' +
+          '</div>' +
+          '<div style="font-size:0.73rem;color:var(--ink-dim);line-height:1.4;">' + esc(triage.technicalAction || "Revisar en sesión con el jugador o en código.") + '</div>' +
+        '</div>' +
+
+        '<div style="background:rgba(0,0,0,0.3);border-radius:6px;padding:8px;margin-top:8px;border:1px solid var(--line);">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+            '<span style="font-size:0.73rem;font-weight:700;color:var(--gold-light);">💬 Respuesta para ' + esc(r.contact || 'el jugador') + ':</span>' +
+            (triage.suggestedReply ? '<button type="button" class="btn-compact" style="padding:2px 6px;font-size:0.68rem;color:var(--gold);" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">🪄 Usar sugerencia IA</button>' : '') +
+          '</div>' +
+          '<textarea id="admin_reply_text_' + esc(r.id) + '" rows="2" placeholder="Escribe la respuesta oficial que verá el jugador en su app..." style="width:100%;font-size:0.78rem;padding:6px 8px;background:rgba(0,0,0,0.4);border:1px solid var(--line);border-radius:4px;color:var(--ink);resize:vertical;">' + esc(r.adminReply || "") + '</textarea>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">' +
+            '<span style="font-size:0.68rem;color:var(--ink-faint);">' + (r.resolvedAt ? ('Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Sin responder') + '</span>' +
+            '<button type="button" class="btn-solid-gold" style="padding:4px 10px;font-size:0.73rem;" data-action="save-admin-reply" data-id="' + esc(r.id) + '">' +
+              '🚀 Guardar respuesta y Resolver' +
             '</button>' +
-          '</div>' : ''
-        ) +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;">' +
+          '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.7rem;border-color:rgba(88,101,242,0.4);color:#8EA1E1;" data-action="resend-admin-discord" data-id="' + esc(r.id) + '" title="Reenviar a Discord">' +
+            '📡 Enviar a Discord' +
+          '</button>' +
+          '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.7rem;border-color:rgba(239,68,68,0.3);color:#EF4444;" data-action="delete-admin-ticket" data-id="' + esc(r.id) + '" title="Eliminar ticket">' +
+            '🗑️ Eliminar' +
+          '</button>' +
+        '</div>' +
       '</div>';
     }).join('');
   }
 
-  var html = '<h2>🛡️ Buzón de Administración y Discord Webhook<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>🛡️ Gestión de Tickets de Administración<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="storage-monitor-box" style="margin-top:0;">' +
       '<div class="storage-monitor-header">' +
-        '<div class="storage-monitor-title">🎮 Notificaciones a tu Discord</div>' +
+        '<div class="storage-monitor-title">🎮 Notificaciones Discord</div>' +
         statusBadge +
       '</div>' +
-      '<p style="font-size:0.78rem;color:var(--ink-dim);margin:0 0 8px;line-height:1.4;">' +
-        'Recibe las alertas tratadas por la IA directamente en un canal de tu servidor de Discord:' +
+      '<p style="font-size:0.75rem;color:var(--ink-dim);margin:0 0 6px;line-height:1.4;">' +
+        'Las incidencias se envían en directo a tu Discord con el análisis y la orden para el Asistente AI.' +
       '</p>' +
-      '<div style="font-size:0.72rem;color:var(--ink-faint);margin-bottom:10px;line-height:1.4;background:rgba(0,0,0,0.3);padding:8px;border-radius:6px;border:1px solid var(--line);">' +
-        '1. En Discord, ve a <b>Ajustes del canal</b> (ej: #reportes-rol) ➔ <b>Integraciones</b> ➔ <b>Webhooks</b>.<br>' +
-        '2. Crea un <b>Nuevo Webhook</b> y pulsa <b>Copiar URL de Webhook</b>.<br>' +
-        '3. Pega el enlace aquí abajo y pulsa <b>Guardar</b>.' +
-      '</div>' +
       '<div style="display:flex;gap:6px;">' +
-        '<input type="url" id="inputDiscordWebhook" placeholder="https://discord.com/api/webhooks/..." value="' + esc(webhookUrl) + '" style="font-size:0.78rem;padding:6px 8px;flex:1;">' +
-        '<button type="button" class="btn-solid-gold" style="padding:6px 12px;font-size:0.78rem;" data-action="save-discord-webhook">Guardar</button>' +
+        '<input type="url" id="inputDiscordWebhook" placeholder="https://discord.com/api/webhooks/..." value="' + esc(webhookUrl) + '" style="font-size:0.75rem;padding:5px 8px;flex:1;">' +
+        '<button type="button" class="btn-solid-gold" style="padding:5px 10px;font-size:0.75rem;" data-action="save-discord-webhook">Guardar</button>' +
       '</div>' +
-      '<div style="margin-top:8px;display:flex;gap:6px;">' +
-        '<button type="button" class="btn-compact" style="flex:1;font-size:0.74rem;padding:6px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;" data-action="test-discord-ping">' +
-          '🧪 Enviar mensaje de prueba a mi Discord' +
+      '<div style="margin-top:6px;display:flex;gap:6px;">' +
+        '<button type="button" class="btn-compact" style="flex:1;font-size:0.72rem;padding:5px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;" data-action="test-discord-ping">' +
+          '🧪 Probar alerta en Discord' +
         '</button>' +
       '</div>' +
     '</div>' +
 
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;">' +
-      '<div style="font-weight:700;font-size:0.85rem;color:var(--gold-light);">📋 Reportes recibidos (' + reports.length + ')</div>' +
-      '<button type="button" class="btn-compact" style="font-size:0.7rem;padding:3px 8px;" data-action="clear-all-feedback" title="Borrar historial local">Limpiar</button>' +
+    '<div style="margin:12px 0 6px;">' +
+      filterPillsHtml +
     '</div>' +
 
-    '<div style="max-height:260px;overflow-y:auto;padding-right:4px;">' +
+    '<div style="max-height:300px;overflow-y:auto;padding-right:4px;">' +
       reportsListHtml +
     '</div>' +
 
     '<div style="margin-top:12px;display:flex;gap:8px;">' +
       '<button type="button" class="btn-compact" style="flex:1;padding:8px;" data-action="open-feedback-modal">' +
-        'Volver al Buzón' +
+        'Buzón de Jugador' +
       '</button>' +
       '<button type="button" class="btn-solid-gold" style="flex:1;padding:8px;" data-action="close-feedback-modal">' +
         'Cerrar' +
@@ -1221,9 +1483,14 @@ function openFeedbackAdminModal(){
     '</div>';
 
   var modal = document.getElementById("feedbackModal");
-  if(modal) modal.innerHTML = html;
+  if(modal){
+    modal.setAttribute("data-mode", "admin");
+    modal.innerHTML = html;
+  }
   var overlay = document.getElementById("feedbackModalOverlay");
   if(overlay) overlay.classList.remove("hidden");
+
+  syncAdminTicketsWithSupabase();
 }
 
 function feedbackModalClick(e){
@@ -1244,6 +1511,141 @@ function feedbackModalClick(e){
   if(action === "open-feedback-modal"){ openFeedbackModal(); return; }
   if(action === "open-feedback-admin"){ openFeedbackAdminModal(); return; }
   if(action === "submit-feedback-report"){ submitFeedbackReport(); return; }
+
+  if(action === "switch-feedback-tab"){
+    var tab = btn.getAttribute("data-tab") || "new";
+    openFeedbackModal(tab);
+    return;
+  }
+
+  if(action === "filter-admin-tickets"){
+    var filter = btn.getAttribute("data-filter") || "all";
+    openFeedbackAdminModal(filter);
+    return;
+  }
+
+  if(action === "set-ticket-status"){
+    var id = btn.getAttribute("data-id");
+    var newStatus = btn.getAttribute("data-status") || "pending";
+    var target = (state.feedbackReports || []).find(function(x){ return x.id === id; });
+    if(target){
+      target.status = newStatus;
+      if(newStatus === "resolved" && !target.resolvedAt){
+        target.resolvedAt = new Date().toISOString();
+      }
+      saveState(false);
+
+      if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
+        supabaseClient.from("app_feedback").update({
+          status: newStatus,
+          resolved_at: target.resolvedAt
+        }).eq("id", id).then(function(){}).catch(function(){});
+      }
+
+      var playerTickets = getPlayerTickets();
+      playerTickets.forEach(function(pt){
+        if(pt.id === id){
+          pt.status = newStatus;
+          pt.resolvedAt = target.resolvedAt;
+        }
+      });
+      savePlayerTickets(playerTickets);
+
+      openFeedbackAdminModal();
+      showToast("Estado actualizado a: " + newStatus, "info");
+    }
+    return;
+  }
+
+  if(action === "copy-ai-prompt"){
+    var idPrompt = btn.getAttribute("data-id");
+    var targetP = (state.feedbackReports || []).find(function(x){ return x.id === idPrompt; });
+    if(targetP){
+      var triageP = targetP.aiTriage || {};
+      var tagP = targetP.ticketCode ? ("#" + targetP.ticketCode) : ("#" + targetP.id);
+      var promptText = "Antigravity, resuelve el ticket " + tagP + ":\n" +
+        "• Título: " + targetP.title + "\n" +
+        "• Categoría: " + (targetP.categoryLabel || targetP.category) + "\n" +
+        "• Remitente: " + (targetP.contact || "Jugador") + "\n" +
+        "• Problema reportado: " + targetP.description + "\n" +
+        "• Diagnóstico IA: " + (triageP.diagnostic || "Sin diagnóstico") + "\n" +
+        "• Acción técnica sugerida: " + (triageP.technicalAction || "Inspeccionar código") + "\n" +
+        "• Entorno del usuario: " + ((targetP.system && targetP.system.os) ? (targetP.system.os + " - " + targetP.system.browser) : "Navegador Web");
+      fallbackCopyText(promptText);
+      showToast("¡Orden para Antigravity copiada! Pégala en el chat 🤖", "success");
+    }
+    return;
+  }
+
+  if(action === "autofill-ai-reply"){
+    var idReply = btn.getAttribute("data-id");
+    var targetR = (state.feedbackReports || []).find(function(x){ return x.id === idReply; });
+    var textarea = document.getElementById("admin_reply_text_" + idReply);
+    if(targetR && targetR.aiTriage && targetR.aiTriage.suggestedReply && textarea){
+      textarea.value = targetR.aiTriage.suggestedReply;
+      textarea.focus();
+      showToast("🪄 Respuesta sugerida cargada", "info");
+    }
+    return;
+  }
+
+  if(action === "save-admin-reply"){
+    var idSave = btn.getAttribute("data-id");
+    var textEl = document.getElementById("admin_reply_text_" + idSave);
+    var replyText = textEl ? textEl.value.trim() : "";
+    if(!replyText){
+      showToast("Escribe una respuesta para el jugador antes de guardar.", "warning");
+      if(textEl) textEl.focus();
+      return;
+    }
+
+    var targetSave = (state.feedbackReports || []).find(function(x){ return x.id === idSave; });
+    if(targetSave){
+      var nowIso = new Date().toISOString();
+      targetSave.adminReply = replyText;
+      targetSave.status = "resolved";
+      targetSave.resolvedAt = nowIso;
+      saveState(false);
+
+      if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
+        supabaseClient.from("app_feedback").update({
+          admin_reply: replyText,
+          status: "resolved",
+          resolved_at: nowIso
+        }).eq("id", idSave).then(function(){}).catch(function(){});
+      }
+
+      var myTickets = getPlayerTickets();
+      myTickets.forEach(function(pt){
+        if(pt.id === idSave){
+          pt.adminReply = replyText;
+          pt.status = "resolved";
+          pt.resolvedAt = nowIso;
+        }
+      });
+      savePlayerTickets(myTickets);
+
+      openFeedbackAdminModal();
+      showToast("¡Respuesta enviada y ticket resuelto 🟢!", "success");
+    }
+    return;
+  }
+
+  if(action === "delete-admin-ticket"){
+    var idDel = btn.getAttribute("data-id");
+    if(confirm("¿Seguro que deseas eliminar este ticket?")){
+      state.feedbackReports = (state.feedbackReports || []).filter(function(x){ return x.id !== idDel; });
+      saveState(false);
+
+      if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
+        supabaseClient.from("app_feedback").delete().eq("id", idDel).then(function(){}).catch(function(){});
+      }
+
+      openFeedbackAdminModal();
+      showToast("Ticket eliminado.", "info");
+    }
+    return;
+  }
 
   if(action === "save-discord-webhook"){
     var urlInput = document.getElementById("inputDiscordWebhook");
@@ -1280,36 +1682,17 @@ function feedbackModalClick(e){
     return;
   }
 
-  if(action === "copy-admin-reply"){
-    var idx = parseInt(btn.getAttribute("data-idx"), 10);
-    var r = (state.feedbackReports || [])[idx];
-    if(r && r.aiTriage && r.aiTriage.suggestedReply){
-      fallbackCopyText(r.aiTriage.suggestedReply);
-    }
-    return;
-  }
-
   if(action === "resend-admin-discord"){
-    var rIdx = parseInt(btn.getAttribute("data-idx"), 10);
-    var targetR = (state.feedbackReports || [])[rIdx];
+    var targetIdResend = btn.getAttribute("data-id");
+    var targetR = (state.feedbackReports || []).find(function(x){ return x.id === targetIdResend; });
     if(targetR){
       sendDiscordWebhookReport(targetR).then(function(res){
         if(res.success){
           showToast("Enviado a Discord 🎮", "success");
         } else {
-          showToast("Pega tu Webhook de Discord arriba para activarlo.", "warning");
+          showToast("Comprueba el Webhook de Discord arriba.", "warning");
         }
       });
-    }
-    return;
-  }
-
-  if(action === "clear-all-feedback"){
-    if(confirm("¿Seguro que quieres vaciar la lista local de reportes?")){
-      state.feedbackReports = [];
-      saveState(false);
-      openFeedbackAdminModal();
-      showToast("Historial local vaciado.", "info");
     }
     return;
   }

@@ -4,7 +4,7 @@
 // con respaldo en caché para apertura instantánea y modo sin conexión).
 // ==============================================================================
 
-const CACHE_NAME = 'krysalis-app-v1.0.6';
+const CACHE_NAME = 'krysalis-app-v1.0.7';
 
 const PRECACHE_ASSETS = [
   './',
