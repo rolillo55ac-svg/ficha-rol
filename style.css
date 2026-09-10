@@ -1709,6 +1709,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  touch-action: none;
 }
 .bg3-die-slot {
   position: relative;
@@ -1717,9 +1718,16 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease;
+  will-change: transform, opacity;
 }
 .bg3-die-slot.hidden { display: none !important; }
+
+@media (max-width: 420px) {
+  .bg3-dice-stage { gap: 10px; min-height: 125px; }
+  .bg3-die-slot { width: 108px; height: 108px; }
+  .bg3-die-3d { width: 96px; height: 96px; }
+}
 
 /* Contenedor del Dado 3D */
 .bg3-die-3d {

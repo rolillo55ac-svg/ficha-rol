@@ -4,7 +4,7 @@
 // con respaldo en caché para apertura instantánea y modo sin conexión).
 // ==============================================================================
 
-const CACHE_NAME = 'krysalis-app-v1.0.2';
+const CACHE_NAME = 'krysalis-app-v1.0.3';
 
 const PRECACHE_ASSETS = [
   './',
@@ -32,7 +32,6 @@ const PRECACHE_ASSETS = [
   './js/maps.js',
   './js/markers.js',
   './js/quests.js',
-  './js/three.min.js',
   './js/dice.js',
   './js/ui-modals.js',
   './js/ui-render.js',
