@@ -333,6 +333,8 @@ function defaultState(){
     activeMapId: "world_main",
     quests: getSeedQuests(),
     questClues: getSeedQuestClues(),
+    _deletedSeedQuests: [],
+    _deletedSeedClues: [],
     questMap: getSeedQuestMap(),
     sessionSummary: getSeedSessionSummary()
   };
@@ -416,10 +418,20 @@ function migrateState(s){
     }
   }
 
-  // 6. Integridad de Misiones de Campaña (Restauración garantizada de "La Infiltración en Trysar")
-  if(!s.quests || !Array.isArray(s.quests) || !s.quests.length){
+  if(!Array.isArray(s._deletedSeedQuests)) s._deletedSeedQuests = [];
+  if(!Array.isArray(s._deletedSeedClues)) s._deletedSeedClues = [];
+
+  // 6. Integridad de Misiones de Campaña
+  if(!Array.isArray(s.quests)){
     s.quests = getSeedQuests();
   } else {
+    // Si la misión semilla de Trysar fue explícitamente eliminada, garantizar que no reaparezca
+    if(s._deletedSeedQuests.indexOf("quest_trysar_infil") !== -1){
+      s.quests = s.quests.filter(function(q){
+        var isTrysar = q.id === "quest_trysar_infil" || ((q.title||"").toLowerCase().includes("trysar") && (q.title||"").toLowerCase().includes("infiltraci"));
+        return !isTrysar;
+      });
+    }
     s.quests.forEach(function(q){
       if(!q.type) q.type = q.category || "principal";
       if(!q.category) q.category = q.type;
@@ -429,19 +441,15 @@ function migrateState(s){
       if(q.reward === undefined) q.reward = "";
       if(!Array.isArray(q.markers)) q.markers = [];
     });
-    var hasTrysar = s.quests.some(function(q){
-      var t = (q.title || "").toLowerCase();
-      return t.includes("trysar") || t.includes("infiltraci");
-    });
-    var wasDeleted = Array.isArray(s._deletedSeedQuests) && s._deletedSeedQuests.indexOf("quest_trysar_infil") !== -1;
-    if(!hasTrysar && !wasDeleted){
-      s.quests.unshift(getSeedQuests()[0]);
-    }
   }
 
   // 7. Integridad de Pistas de Misión
-  if(!s.questClues || !Array.isArray(s.questClues) || !s.questClues.length){
+  if(!Array.isArray(s.questClues)){
     s.questClues = getSeedQuestClues();
+  } else {
+    if(s._deletedSeedClues.indexOf("clue_sello_purpura") !== -1){
+      s.questClues = s.questClues.filter(function(c){ return c.id !== "clue_sello_purpura"; });
+    }
   }
 
   // 8. Integridad de Mapa de Misión
@@ -451,7 +459,7 @@ function migrateState(s){
   if(!Array.isArray(s.questMap.markers)) s.questMap.markers = [];
 
   // 9. Integridad de Resumen de Sesión
-  if(s.sessionSummary === undefined || s.sessionSummary === null || s.sessionSummary === ""){
+  if(s.sessionSummary === undefined || s.sessionSummary === null){
     s.sessionSummary = getSeedSessionSummary();
   }
 

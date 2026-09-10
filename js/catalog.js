@@ -120,10 +120,12 @@ async function pullSharedDataFromSupabase(){
       if(Array.isArray(comp.bestiary) && comp.bestiary.length) state.bestiary = comp.bestiary;
       if(Array.isArray(comp.buffCatalog) && comp.buffCatalog.length) state.buffCatalog = comp.buffCatalog;
       if(comp.lore && comp.lore.objetos && comp.lore.objetos.length) state.lore = comp.lore;
-      if(Array.isArray(comp.quests) && comp.quests.length) state.quests = comp.quests;
-      if(Array.isArray(comp.questClues) && comp.questClues.length) state.questClues = comp.questClues;
+      if(Array.isArray(comp.quests)) state.quests = comp.quests;
+      if(Array.isArray(comp.questClues)) state.questClues = comp.questClues;
+      if(Array.isArray(comp._deletedSeedQuests)) state._deletedSeedQuests = comp._deletedSeedQuests;
+      if(Array.isArray(comp._deletedSeedClues)) state._deletedSeedClues = comp._deletedSeedClues;
       if(comp.questMap && comp.questMap.name) state.questMap = comp.questMap;
-      if(typeof comp.sessionSummary === "string" && comp.sessionSummary.trim()) state.sessionSummary = comp.sessionSummary;
+      if(typeof comp.sessionSummary === "string") state.sessionSummary = comp.sessionSummary;
     } else {
       // Fallback secundario si aún no existe el documento world_compendium
       try{
@@ -166,15 +168,31 @@ function pushSharedData(patch){
   if(!supabaseClient) return;
   if(currentUser && !isGM()) return;
   var dataPatch = patch || {
-    weaponsCatalog: (state.weaponsCatalog && state.weaponsCatalog.length) ? state.weaponsCatalog : getSeedWeaponsCatalog(),
-    bestiary: (state.bestiary && state.bestiary.length) ? state.bestiary : getSeedBestiary(),
+    weaponsCatalog: Array.isArray(state.weaponsCatalog) ? state.weaponsCatalog : getSeedWeaponsCatalog(),
+    bestiary: Array.isArray(state.bestiary) ? state.bestiary : getSeedBestiary(),
     lore: (state.lore && state.lore.objetos && state.lore.objetos.length) ? state.lore : getSeedLore(),
-    buffCatalog: (state.buffCatalog && state.buffCatalog.length) ? state.buffCatalog : getSeedBuffCatalog(),
-    quests: (state.quests && state.quests.length) ? state.quests : getSeedQuests(),
-    questClues: (state.questClues && state.questClues.length) ? state.questClues : getSeedQuestClues(),
+    buffCatalog: Array.isArray(state.buffCatalog) ? state.buffCatalog : getSeedBuffCatalog(),
+    quests: Array.isArray(state.quests) ? state.quests : getSeedQuests(),
+    questClues: Array.isArray(state.questClues) ? state.questClues : getSeedQuestClues(),
+    _deletedSeedQuests: state._deletedSeedQuests || [],
+    _deletedSeedClues: state._deletedSeedClues || [],
     questMap: (state.questMap && state.questMap.name) ? state.questMap : getSeedQuestMap(),
-    sessionSummary: state.sessionSummary || getSeedSessionSummary()
+    sessionSummary: state.sessionSummary !== undefined ? state.sessionSummary : getSeedSessionSummary()
   };
+
+  // Broadcast inmediato por websocket para sincronización en tiempo real con todos los jugadores
+  if(realtimeChannel && typeof realtimeChannel.send === 'function'){
+    try {
+      realtimeChannel.send({
+        type: 'broadcast',
+        event: 'campaign_compendium_update',
+        payload: dataPatch
+      });
+    } catch(errBc){
+      console.warn('Aviso broadcast campaign_compendium_update:', errBc);
+    }
+  }
+
   supabaseClient.rpc('update_campaign_map', {
     map_id: 'world_compendium',
     patch: dataPatch

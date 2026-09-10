@@ -2059,14 +2059,17 @@ function handleClick(e){
     var qid = btn.getAttribute("data-id");
     if(confirm("¿Eliminar esta misión y todas sus tareas asociadas?")){
       state.quests = (state.quests||[]).filter(function(q){ return q.id !== qid; });
+      state._deletedSeedQuests = state._deletedSeedQuests || [];
+      if(qid && state._deletedSeedQuests.indexOf(qid) === -1){
+        state._deletedSeedQuests.push(qid);
+      }
       if(qid === "quest_trysar_infil" || (qid && qid.includes("trysar"))){
-        state._deletedSeedQuests = state._deletedSeedQuests || [];
         if(state._deletedSeedQuests.indexOf("quest_trysar_infil") === -1){
           state._deletedSeedQuests.push("quest_trysar_infil");
         }
       }
       saveState(true);
-      pushSharedData({ quests: state.quests });
+      pushSharedData({ quests: state.quests, _deletedSeedQuests: state._deletedSeedQuests });
       renderTab();
       showToast("Misión eliminada", "info");
     }
@@ -2170,7 +2173,9 @@ function handleClick(e){
     if(clTitle && clTitle.trim()){
       state.questClues = state.questClues || [];
       state.questClues.push({ id: uid(), title: clTitle.trim(), text: "", image: null, visible: true });
-      saveState(true); pushSharedData(); renderTab();
+      saveState(true);
+      pushSharedData({ questClues: state.questClues });
+      renderTab();
       showToast("Pista añadida", "success");
     }
     return;
@@ -2180,7 +2185,18 @@ function handleClick(e){
     var clId = btn.getAttribute("data-id");
     if(confirm("¿Eliminar esta pista?")){
       state.questClues = (state.questClues||[]).filter(function(c){ return c.id !== clId; });
-      saveState(true); pushSharedData(); renderTab();
+      state._deletedSeedClues = state._deletedSeedClues || [];
+      if(clId && state._deletedSeedClues.indexOf(clId) === -1){
+        state._deletedSeedClues.push(clId);
+      }
+      if(clId === "clue_sello_purpura" || (clId && clId.includes("sello"))){
+        if(state._deletedSeedClues.indexOf("clue_sello_purpura") === -1){
+          state._deletedSeedClues.push("clue_sello_purpura");
+        }
+      }
+      saveState(true);
+      pushSharedData({ questClues: state.questClues, _deletedSeedClues: state._deletedSeedClues });
+      renderTab();
       showToast("Pista eliminada", "info");
     }
     return;
@@ -2200,7 +2216,9 @@ function handleClick(e){
       var clUrl = prompt("Enlace de la imagen para esta pista (de GitHub, web, etc.):", clObj.image||"");
       if(clUrl !== null){
         clObj.image = clUrl.trim() || null;
-        saveState(true); pushSharedData(); renderTab();
+        saveState(true);
+        pushSharedData({ questClues: state.questClues });
+        renderTab();
         showToast(clObj.image ? "Imagen de pista asignada" : "Imagen quitada", "info");
       }
     }
@@ -2212,7 +2230,9 @@ function handleClick(e){
     var clObj2 = (state.questClues||[]).find(function(c){ return c.id === clId3; });
     if(clObj2){
       clObj2.image = null;
-      saveState(true); pushSharedData(); renderTab();
+      saveState(true);
+      pushSharedData({ questClues: state.questClues });
+      renderTab();
       showToast("Imagen de pista eliminada", "info");
     }
     return;
@@ -2229,7 +2249,9 @@ function handleClick(e){
     var qmUrl = prompt("Introduce el enlace o URL de la imagen para el plano de misión:", state.questMap.image||"");
     if(qmUrl !== null){
       state.questMap.image = qmUrl.trim() || null;
-      saveState(true); pushSharedData(); renderTab();
+      saveState(true);
+      pushSharedData({ questMap: state.questMap });
+      renderTab();
       showToast(state.questMap.image ? "Mapa de misión fijado" : "Mapa de misión quitado", "info");
     }
     return;
@@ -2238,7 +2260,9 @@ function handleClick(e){
     if(!isGM() && currentUser) return;
     if(state.questMap){
       state.questMap.image = null;
-      saveState(true); pushSharedData(); renderTab();
+      saveState(true);
+      pushSharedData({ questMap: state.questMap });
+      renderTab();
       showToast("Mapa de misión quitado", "info");
     }
     return;

@@ -148,33 +148,33 @@ function renderQuestCard(q, canEdit){
 function tplMision(c, s){
   var canEdit = isGM() || !currentUser;
 
-  // Autoprotección en caliente: si la lista está vacía o falta Trysar, reponerla al instante en pantalla
-  if((!s.quests || !s.quests.length) && typeof getSeedQuests === "function"){
-    s.quests = getSeedQuests();
-    if(typeof saveState === "function") saveState(true);
+  // Asegurar estructura válida sin forzar reaparición de misiones o pistas borradas
+  if(!Array.isArray(s.quests)){
+    s.quests = (typeof getSeedQuests === "function") ? getSeedQuests() : [];
   }
-  var quests = s.quests || [];
-  var hasTrysar = quests.some(function(q){
-    var t = (q.title || "").toLowerCase();
-    return t.includes("trysar") || t.includes("infiltraci");
-  });
-  var wasDeleted = Array.isArray(s._deletedSeedQuests) && s._deletedSeedQuests.indexOf("quest_trysar_infil") !== -1;
-  if(!hasTrysar && !wasDeleted && typeof getSeedQuests === "function"){
-    quests.unshift(getSeedQuests()[0]);
-    s.quests = quests;
-    if(typeof saveState === "function") saveState(true);
+  if(!Array.isArray(s.questClues)){
+    s.questClues = (typeof getSeedQuestClues === "function") ? getSeedQuestClues() : [];
   }
-  if((!s.questClues || !s.questClues.length) && typeof getSeedQuestClues === "function"){
-    s.questClues = getSeedQuestClues();
-    if(typeof saveState === "function") saveState(true);
+  if(!s.questMap || typeof s.questMap !== "object"){
+    s.questMap = (typeof getSeedQuestMap === "function") ? getSeedQuestMap() : { name: "Mapa de la Misión", image: null, notes: "", markers: [] };
   }
-  if((!s.sessionSummary || !s.sessionSummary.trim()) && typeof getSeedSessionSummary === "function"){
-    s.sessionSummary = getSeedSessionSummary();
-    if(typeof saveState === "function") saveState(true);
+  if(s.sessionSummary === undefined || s.sessionSummary === null){
+    s.sessionSummary = (typeof getSeedSessionSummary === "function") ? getSeedSessionSummary() : "";
   }
 
-  var clues = s.questClues || [];
-  var qMap = s.questMap || { name: "Mapa de la Misión", image: null, notes: "" };
+  // Si la misión o pista semilla fue marcada como eliminada, filtrar para que no aparezca
+  if(Array.isArray(s._deletedSeedQuests) && s._deletedSeedQuests.indexOf("quest_trysar_infil") !== -1){
+    s.quests = s.quests.filter(function(q){
+      return q.id !== "quest_trysar_infil" && !((q.title||"").toLowerCase().includes("trysar") && (q.title||"").toLowerCase().includes("infiltraci"));
+    });
+  }
+  if(Array.isArray(s._deletedSeedClues) && s._deletedSeedClues.indexOf("clue_sello_purpura") !== -1){
+    s.questClues = s.questClues.filter(function(cl){ return cl.id !== "clue_sello_purpura"; });
+  }
+
+  var quests = s.quests;
+  var clues = s.questClues;
+  var qMap = s.questMap;
 
   // Filtrado y estadísticas
   var filter = state.questTypeFilter || "all";
