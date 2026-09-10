@@ -902,8 +902,12 @@ async function syncPlayerTicketsWithSupabase(){
   return tickets;
 }
 
+var isSyncingAdminTickets = false;
+
 async function syncAdminTicketsWithSupabase(){
+  if(isSyncingAdminTickets) return state.feedbackReports || [];
   if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine) return state.feedbackReports || [];
+  isSyncingAdminTickets = true;
   try {
     // 1. Cargar respuestas y estados desde campaign_map ('app_feedback_sync')
     var cmRes = await supabaseClient.from("campaign_map").select("data").eq("id", "app_feedback_sync").maybeSingle();
@@ -951,16 +955,25 @@ async function syncAdminTicketsWithSupabase(){
       (state.feedbackReports || []).forEach(function(lr){
         if(!map[lr.id]) cloudReports.push(lr);
       });
-      state.feedbackReports = cloudReports;
-      saveState(false);
 
-      var modal = document.getElementById("feedbackModal");
-      var overlay = document.getElementById("feedbackModalOverlay");
-      if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "admin"){
-        openFeedbackAdminModal(adminFeedbackFilter);
+      var prevSig = (state.feedbackReports || []).map(function(x){ return x.id + ':' + x.status + ':' + (x.adminReply || '') + ':' + (x.resolvedAt || ''); }).join('|');
+      var nextSig = cloudReports.map(function(x){ return x.id + ':' + x.status + ':' + (x.adminReply || '') + ':' + (x.resolvedAt || ''); }).join('|');
+
+      if(prevSig !== nextSig){
+        state.feedbackReports = cloudReports;
+        saveState(false);
+
+        var modal = document.getElementById("feedbackModal");
+        var overlay = document.getElementById("feedbackModalOverlay");
+        if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "admin"){
+          openFeedbackAdminModal(adminFeedbackFilter);
+        }
       }
     }
-  } catch(e){}
+  } catch(e){
+  } finally {
+    isSyncingAdminTickets = false;
+  }
   return state.feedbackReports || [];
 }
 
@@ -1512,7 +1525,6 @@ function showPlayerSuccessScreen(report){
 
 function openFeedbackAdminModal(filter){
   adminFeedbackFilter = filter || adminFeedbackFilter || "all";
-  var webhookUrl = getMasterDiscordWebhook();
   var reports = state.feedbackReports || [];
 
   var pendingCount = 0, inProgressCount = 0, resolvedCount = 0;
@@ -1523,10 +1535,6 @@ function openFeedbackAdminModal(filter){
     else if(st === "resolved") resolvedCount++;
   });
   var allCount = reports.length;
-
-  var statusBadge = webhookUrl ? 
-    '<span class="storage-pill optimal">🟢 Discord Conectado</span>' : 
-    '<span class="storage-pill warning">⚠️ Discord Sin Configurar</span>';
 
   var filteredReports = reports.filter(function(r){
     var st = r.status || "pending";
@@ -1545,69 +1553,85 @@ function openFeedbackAdminModal(filter){
 
   var reportsListHtml = '';
   if(!filteredReports.length){
-    reportsListHtml = '<div style="font-size:0.8rem;color:var(--ink-faint);font-style:italic;padding:16px;text-align:center;">No hay reportes en esta categoría.</div>';
+    reportsListHtml = '<div class="admin-empty-state">' +
+      '<div style="font-size:2rem;margin-bottom:6px;">📭</div>' +
+      '<div style="font-weight:600;color:var(--ink);">No hay tickets en esta categoría</div>' +
+      '<div style="font-size:0.75rem;color:var(--ink-faint);margin-top:4px;">Los reportes enviados por los jugadores aparecerán aquí directamente.</div>' +
+    '</div>';
   } else {
     reportsListHtml = filteredReports.map(function(r){
       var triage = r.aiTriage || {};
-      var diagSnippet = triage.diagnostic || "Reporte técnico pendiente de revisión.";
-      var ticketTag = r.ticketCode ? ("#" + r.ticketCode) : ("#" + r.id.slice(-4).toUpperCase());
+      var ticketTag = r.ticketCode ? ("#" + r.ticketCode) : ("#" + (r.id ? r.id.slice(-4).toUpperCase() : "TK"));
       var st = r.status || "pending";
+      var contactName = r.contact || (r.character ? r.character.name : "Jugador");
 
-      return '<div class="admin-ticket-card">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
-          '<div>' +
-            '<span class="ticket-code-tag">' + esc(ticketTag) + '</span> ' +
-            '<span style="font-size:0.7rem;color:var(--gold);font-weight:700;text-transform:uppercase;margin-left:4px;">' + esc(r.categoryLabel || r.category) + '</span>' +
-            '<div style="font-weight:700;font-size:0.9rem;color:var(--ink);margin-top:4px;">' + esc(r.title) + '</div>' +
-            '<div style="font-size:0.72rem;color:var(--ink-faint);">Por <b>' + esc(r.contact || "Anónimo") + '</b> · ' + esc(r.displayDate || "") + '</div>' +
+      return '<div class="admin-ticket-card ' + (st === 'resolved' ? 'is-resolved' : '') + '">' +
+        // Fila 1: Encabezado con Código, Categoría y Selector Segmentado de Estado
+        '<div class="admin-ticket-header">' +
+          '<div class="admin-ticket-meta">' +
+            '<span class="ticket-code-tag">' + esc(ticketTag) + '</span>' +
+            '<span class="ticket-cat-badge ' + esc(r.category || "otro") + '">' + esc(r.categoryLabel || r.category || "Reporte") + '</span>' +
+            (triage.classification ? ('<span class="ticket-triage-badge">' + esc(triage.classification) + '</span>') : '') +
           '</div>' +
-          '<span class="storage-pill ' + (triage.isSecuritySafe === false ? 'critical' : 'optimal') + '" style="font-size:0.65rem;">' + esc(triage.classification || "Tratado") + '</span>' +
+          '<div class="status-segmented-control">' +
+            '<button type="button" class="seg-btn ' + (st === 'pending' ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending" title="Marcar como Pendiente">🟡 Pendiente</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'in_progress' ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress" title="Marcar En Proceso">🔵 En Proceso</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'resolved' ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved" title="Marcar como Resuelto">🟢 Resuelto</button>' +
+          '</div>' +
         '</div>' +
 
-        '<div class="status-btn-group">' +
-          '<button type="button" class="btn-status-toggle ' + ((st === 'pending') ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending">🟡 Pendiente</button>' +
-          '<button type="button" class="btn-status-toggle ' + ((st === 'in_progress') ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress">🔵 En Proceso</button>' +
-          '<button type="button" class="btn-status-toggle ' + ((st === 'resolved') ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved">🟢 Resuelto</button>' +
+        // Fila 2: Título y Remitente
+        '<div class="admin-ticket-title-row">' +
+          '<h3 class="admin-ticket-title">' + esc(r.title) + '</h3>' +
+          '<div class="admin-ticket-sender">Por <b>' + esc(contactName) + '</b> · ' + esc(r.displayDate || "") + '</div>' +
         '</div>' +
 
-        '<div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:8px;margin-top:8px;font-size:0.78rem;color:var(--ink-dim);line-height:1.4;">' +
-          '<b>Mensaje:</b> "' + esc(r.description) + '"' +
+        // Fila 3: Mensaje del Jugador
+        '<div class="admin-ticket-quote">' +
+          '<span class="quote-icon">💬</span>' +
+          '<div class="quote-text">' + esc(r.description) + '</div>' +
         '</div>' +
 
-        '<div style="background:rgba(212,175,55,0.08);border-left:3px solid var(--gold);padding:8px;margin-top:8px;font-size:0.75rem;color:var(--gold-light);line-height:1.4;">' +
-          '🧠 <b>Diagnóstico IA:</b> ' + esc(diagSnippet) +
-        '</div>' +
+        // Fila 4: Diagnóstico y Asistente IA (Plegable y discreto)
+        '<details class="admin-ticket-accordion">' +
+          '<summary class="admin-ticket-accordion-summary">' +
+            '<span>🧠 Diagnóstico IA & Asistente IDE</span>' +
+            '<span class="accordion-hint">Detalles ▾</span>' +
+          '</summary>' +
+          '<div class="admin-ticket-accordion-body">' +
+            '<div style="font-size:0.75rem;color:var(--ink-dim);line-height:1.4;margin-bottom:8px;">' +
+              '<b>Diagnóstico:</b> ' + esc(triage.diagnostic || "Sin análisis técnico.") +
+            '</div>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(88,101,242,0.1);padding:6px 10px;border-radius:6px;border:1px solid rgba(88,101,242,0.3);">' +
+              '<span style="font-size:0.73rem;color:#8EA1E1;flex:1;">🛠️ ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
+              '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.68rem;border-color:rgba(88,101,242,0.5);color:#A5B4FC;white-space:nowrap;" data-action="copy-ai-prompt" data-id="' + esc(r.id) + '">' +
+                '📋 Copiar orden IDE' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+        '</details>' +
 
-        '<div class="ai-assistant-action-box">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
-            '<span style="font-size:0.72rem;color:#8EA1E1;font-weight:700;">🤖 Acción Técnica para Antigravity AI (IDE)</span>' +
-            '<button type="button" class="btn-compact" style="padding:2px 7px;font-size:0.68rem;border-color:rgba(88,101,242,0.6);color:#A5B4FC;" data-action="copy-ai-prompt" data-id="' + esc(r.id) + '" title="Copiar prompt para pegar al chat de Antigravity">' +
-              '📋 Copiar orden para Antigravity' +
+        // Fila 5: Área de Respuesta al Jugador
+        '<div class="admin-ticket-reply-section">' +
+          '<div class="reply-section-header">' +
+            '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">💬 Responder a ' + esc(contactName) + ':</span>' +
+            (triage.suggestedReply ? '<button type="button" class="btn-text-gold" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">🪄 Sugerencia IA</button>' : '') +
+          '</div>' +
+          '<textarea id="admin_reply_text_' + esc(r.id) + '" rows="2" class="admin-reply-textarea" placeholder="Escribe la respuesta que verá el jugador en su app...">' + esc(r.adminReply || "") + '</textarea>' +
+          '<div class="reply-section-actions">' +
+            '<span style="font-size:0.7rem;color:var(--ink-faint);">' + 
+              (r.resolvedAt ? ('✓ Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Esperando respuesta') + 
+            '</span>' +
+            '<button type="button" class="btn-solid-gold" style="padding:6px 14px;font-size:0.78rem;font-weight:700;" data-action="save-admin-reply" data-id="' + esc(r.id) + '">' +
+              '🚀 Guardar y Enviar al Jugador' +
             '</button>' +
           '</div>' +
-          '<div style="font-size:0.73rem;color:var(--ink-dim);line-height:1.4;">' + esc(triage.technicalAction || "Revisar en sesión con el jugador o en código.") + '</div>' +
         '</div>' +
 
-        '<div style="background:rgba(0,0,0,0.3);border-radius:6px;padding:8px;margin-top:8px;border:1px solid var(--line);">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-            '<span style="font-size:0.73rem;font-weight:700;color:var(--gold-light);">💬 Respuesta para ' + esc(r.contact || 'el jugador') + ':</span>' +
-            (triage.suggestedReply ? '<button type="button" class="btn-compact" style="padding:2px 6px;font-size:0.68rem;color:var(--gold);" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">🪄 Usar sugerencia IA</button>' : '') +
-          '</div>' +
-          '<textarea id="admin_reply_text_' + esc(r.id) + '" rows="2" placeholder="Escribe la respuesta oficial que verá el jugador en su app..." style="width:100%;font-size:0.78rem;padding:6px 8px;background:rgba(0,0,0,0.4);border:1px solid var(--line);border-radius:4px;color:var(--ink);resize:vertical;">' + esc(r.adminReply || "") + '</textarea>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">' +
-            '<span style="font-size:0.68rem;color:var(--ink-faint);">' + (r.resolvedAt ? ('Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Sin responder') + '</span>' +
-            '<button type="button" class="btn-solid-gold" style="padding:4px 10px;font-size:0.73rem;" data-action="save-admin-reply" data-id="' + esc(r.id) + '">' +
-              '🚀 Guardar respuesta y Resolver' +
-            '</button>' +
-          '</div>' +
-        '</div>' +
-
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;">' +
-          '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.7rem;border-color:rgba(88,101,242,0.4);color:#8EA1E1;" data-action="resend-admin-discord" data-id="' + esc(r.id) + '" title="Reenviar a Discord">' +
-            '📡 Enviar a Discord' +
-          '</button>' +
-          '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.7rem;border-color:rgba(239,68,68,0.3);color:#EF4444;" data-action="delete-admin-ticket" data-id="' + esc(r.id) + '" title="Eliminar ticket">' +
-            '🗑️ Eliminar' +
+        // Fila 6: Botón discreto de eliminar
+        '<div class="admin-ticket-footer">' +
+          '<button type="button" class="btn-delete-subtle" data-action="delete-admin-ticket" data-id="' + esc(r.id) + '">' +
+            '🗑️ Eliminar ticket' +
           '</button>' +
         '</div>' +
       '</div>';
@@ -1615,58 +1639,13 @@ function openFeedbackAdminModal(filter){
   }
 
   var html = '<h2>🛡️ Gestión de Tickets de Administración<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
-    '<div class="storage-monitor-box" style="margin-top:0;">' +
-      '<div class="storage-monitor-header">' +
-        '<div class="storage-monitor-title">🎮 Notificaciones Discord</div>' +
-        statusBadge +
-      '</div>' +
-      '<p style="font-size:0.75rem;color:var(--ink-dim);margin:0 0 6px;line-height:1.4;">' +
-        'Las incidencias se envían en directo a tu Discord con el análisis y la orden para el Asistente AI.' +
-      '</p>' +
-      '<div style="display:flex;gap:6px;">' +
-        '<input type="url" id="inputDiscordWebhook" placeholder="https://discord.com/api/webhooks/..." value="' + esc(webhookUrl) + '" style="font-size:0.75rem;padding:5px 8px;flex:1;">' +
-        '<button type="button" class="btn-solid-gold" style="padding:5px 10px;font-size:0.75rem;" data-action="save-discord-webhook">Guardar</button>' +
-      '</div>' +
-      '<div style="margin-top:6px;display:flex;gap:6px;">' +
-        '<button type="button" class="btn-compact" style="flex:1;font-size:0.72rem;padding:5px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;" data-action="test-discord-ping">' +
-          '🧪 Probar alerta en Discord' +
-        '</button>' +
-      '</div>' +
-    '</div>' +
-
-    '<div class="storage-monitor-box" style="margin-top:8px;border-color:rgba(212,175,55,0.4);background:rgba(212,175,55,0.05);">' +
-      '<div class="storage-monitor-header">' +
-        '<div class="storage-monitor-title" style="color:var(--gold-light);">☁️ Sincronización en la Nube (Supabase)</div>' +
-        '<span class="storage-pill optimal">WebSockets Activo</span>' +
-      '</div>' +
-      '<p style="font-size:0.75rem;color:var(--ink-dim);margin:0 0 8px;line-height:1.4;">' +
-        'Tus mensajes se transmiten en directo por WebSockets. Para sincronizarlos permanentemente en la nube con jugadores que estén desconectados, pega este SQL en Supabase (solo 5 segundos):' +
-      '</p>' +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
-        '<button type="button" class="btn-solid-gold" style="flex:1;min-width:140px;font-size:0.74rem;padding:6px 10px;" data-action="copy-sql-migration">' +
-          '📋 Copiar SQL Migración 011' +
-        '</button>' +
-        '<a href="https://supabase.com/dashboard/project/nwjbdevshaucnjrwebtb/sql/new" target="_blank" rel="noopener" class="btn-compact" style="flex:1;min-width:140px;font-size:0.74rem;padding:6px 10px;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;border-color:rgba(212,175,55,0.4);color:var(--gold-light);">' +
-          '🌐 Abrir SQL Editor de Supabase ↗' +
-        '</a>' +
-      '</div>' +
-    '</div>' +
-
-    '<div style="margin:12px 0 6px;">' +
-      filterPillsHtml +
-    '</div>' +
-
-    '<div style="max-height:300px;overflow-y:auto;padding-right:4px;">' +
+    filterPillsHtml +
+    '<div class="admin-tickets-container">' +
       reportsListHtml +
     '</div>' +
-
-    '<div style="margin-top:12px;display:flex;gap:8px;">' +
-      '<button type="button" class="btn-compact" style="flex:1;padding:8px;" data-action="open-feedback-modal">' +
-        'Buzón de Jugador' +
-      '</button>' +
-      '<button type="button" class="btn-solid-gold" style="flex:1;padding:8px;" data-action="close-feedback-modal">' +
-        'Cerrar' +
-      '</button>' +
+    '<div class="admin-modal-footer">' +
+      '<button type="button" class="btn-compact" style="padding:8px 16px;" data-action="open-feedback-modal">Buzón de Jugador</button>' +
+      '<button type="button" class="btn-solid-gold" style="padding:8px 20px;" data-action="close-feedback-modal">Cerrar</button>' +
     '</div>';
 
   var modal = document.getElementById("feedbackModal");
@@ -1676,8 +1655,6 @@ function openFeedbackAdminModal(filter){
   }
   var overlay = document.getElementById("feedbackModalOverlay");
   if(overlay) overlay.classList.remove("hidden");
-
-  syncAdminTicketsWithSupabase();
 }
 
 function feedbackModalClick(e){
@@ -1696,8 +1673,22 @@ function feedbackModalClick(e){
 
   if(action === "close-feedback-modal"){ closeModals(); return; }
   if(action === "open-feedback-modal"){ openFeedbackModal(); return; }
-  if(action === "open-feedback-admin"){ openFeedbackAdminModal(); return; }
+  if(action === "open-feedback-admin"){ openFeedbackAdminModal(); syncAdminTicketsWithSupabase(); return; }
   if(action === "submit-feedback-report"){ submitFeedbackReport(); return; }
+
+  if(action === "autofill-ai-reply"){
+    var idAi = btn.getAttribute("data-id");
+    var reportAi = (state.feedbackReports || []).find(function(x){ return x.id === idAi; });
+    if(reportAi && reportAi.aiTriage && reportAi.aiTriage.suggestedReply){
+      var txtEl = document.getElementById("admin_reply_text_" + idAi);
+      if(txtEl){
+        txtEl.value = reportAi.aiTriage.suggestedReply;
+        txtEl.focus();
+        showToast("Sugerencia de IA cargada en el campo 🪄", "info");
+      }
+    }
+    return;
+  }
 
   if(action === "switch-feedback-tab"){
     var tab = btn.getAttribute("data-tab") || "new";
