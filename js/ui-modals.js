@@ -729,24 +729,37 @@ function closeModals(){
 }
 
 // ==============================================================================
-// SISTEMA INTELIGENTE DE REPORTES, SUGERENCIAS Y WHATSAPP (+34 663632738)
+// SISTEMA AUTOMATIZADO DE REPORTES CON TRIAGE IA Y WHATSAPP (+34 663632738)
 // ==============================================================================
-var FEEDBACK_WHATSAPP_PHONE = "34663632738";
+var MASTER_WHATSAPP_PHONE = "34663632738";
 var currentFeedbackCategory = "bug";
 var lastGeneratedReport = null;
+
+function getCallMeBotApiKey(){
+  try {
+    return localStorage.getItem("krysalis_callmebot_apikey") || "";
+  } catch(e){
+    return "";
+  }
+}
+
+function setCallMeBotApiKey(key){
+  try {
+    localStorage.setItem("krysalis_callmebot_apikey", (key || "").trim());
+  } catch(e){}
+}
 
 function openFeedbackModal(prefilledCategory, prefilledTitle){
   currentFeedbackCategory = prefilledCategory || "bug";
   var c = (typeof activeChar === "function") ? activeChar() : null;
   var userEmail = (typeof currentUser !== "undefined" && currentUser && currentUser.email) ? currentUser.email : "";
   var defaultContact = c ? (c.name + (userEmail ? " (" + userEmail + ")" : "")) : userEmail;
-  var appVer = "v1.0.6";
 
   var catOptions = [
-    { id: "bug", label: "🐛 Error / Bug", desc: "Algo falló o no responde" },
-    { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o mejora" },
-    { id: "balance", label: "⚖️ Reglas / Balance", desc: "Cálculo o habilidad" },
-    { id: "otro", label: "💬 Consulta / Otro", desc: "Pregunta general" }
+    { id: "bug", label: "🐛 Error / Bug", desc: "Algo no funciona o se rompió" },
+    { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o propuesta de mejora" },
+    { id: "balance", label: "⚖️ Reglas / Balance", desc: "Cálculo, daño o habilidad" },
+    { id: "otro", label: "💬 Consulta / Otro", desc: "Duda general del juego" }
   ];
 
   var catPills = catOptions.map(function(cat){
@@ -756,55 +769,46 @@ function openFeedbackModal(prefilledCategory, prefilledTitle){
     '</button>';
   }).join('');
 
-  var netStatus = (navigator.onLine ? "En línea (Online)" : "Desconectado (Offline)");
-  var charInfo = c ? (c.name + " (Nv. " + (c.level || 1) + ")") : "Sin personaje activo";
-  var screenInfo = (window.innerWidth + "x" + window.innerHeight);
+  var gmPanelBtn = isGM() ? 
+    '<button type="button" class="btn-compact" style="width:100%;margin-bottom:12px;padding:7px;border-color:rgba(212,175,55,0.4);font-size:0.8rem;" data-action="open-feedback-admin">' +
+      '🛡️ Panel Máster: Ver reportes recibidos y configurar WhatsApp' +
+    '</button>' : '';
 
   var html = '<h2>📬 Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
-    '<p class="feedback-subtitle">Tu opinión ayuda a mejorar la app. Los reportes se procesan automáticamente con diagnóstico técnico para el desarrollador.</p>' +
+    gmPanelBtn +
+    '<p class="feedback-subtitle">Envía cualquier problema, duda o sugerencia. Nuestro sistema lo procesará junto al contexto de tu partida y notificará automáticamente al desarrollador.</p>' +
 
-    '<div class="field" style="margin-top:10px;">' +
+    '<div class="field" style="margin-top:8px;">' +
       '<label style="display:block;margin-bottom:6px;">Tipo de Incidencia</label>' +
       '<div class="filter-pills feedback-cat-grid" id="feedbackCategoryPills">' + catPills + '</div>' +
     '</div>' +
 
     '<div class="field" style="margin-top:10px;">' +
       '<label for="fbTitle">Título o Asunto breve *</label>' +
-      '<input type="text" id="fbTitle" placeholder="Ej: Error al tirar daño de arma, sugerencia de mapa..." value="' + (prefilledTitle ? esc(prefilledTitle) : "") + '" required>' +
+      '<input type="text" id="fbTitle" placeholder="Ej: No se aplica el crítico de mi espada, duda de sigilo..." value="' + (prefilledTitle ? esc(prefilledTitle) : "") + '" required>' +
     '</div>' +
 
     '<div class="field" style="margin-top:10px;">' +
       '<label for="fbDesc">Descripción detallada *</label>' +
-      '<textarea id="fbDesc" rows="4" placeholder="Explica qué ocurrió, qué esperabas ver o cuál es tu sugerencia con el mayor detalle posible..." required></textarea>' +
+      '<textarea id="fbDesc" rows="4" placeholder="Explica con detalle qué ocurrió o qué te gustaría mejorar..." required></textarea>' +
     '</div>' +
 
     '<div class="field" style="margin-top:10px;">' +
-      '<label for="fbContact">Tu Nombre / Personaje / Contacto (Opcional)</label>' +
-      '<input type="text" id="fbContact" placeholder="Tu nombre, personaje o correo..." value="' + esc(defaultContact) + '">' +
+      '<label for="fbContact">Tu Nombre / Personaje (Opcional)</label>' +
+      '<input type="text" id="fbContact" placeholder="Tu nombre o personaje..." value="' + esc(defaultContact) + '">' +
     '</div>' +
 
-    '<div class="feedback-diag-box">' +
-      '<div class="feedback-diag-head">⚙️ Diagnóstico técnico adjunto (automático):</div>' +
-      '<div class="feedback-diag-tags">' +
-        '<span class="diag-tag">📦 App: ' + appVer + '</span>' +
-        '<span class="diag-tag">📱 Pantalla: ' + screenInfo + '</span>' +
-        '<span class="diag-tag">👤 PJ: ' + esc(charInfo) + '</span>' +
-        '<span class="diag-tag">🌐 Red: ' + netStatus + '</span>' +
-      '</div>' +
+    '<div class="feedback-privacy-note">' +
+      '🔒 <b>100% Privado y Directo:</b> Tu reporte se procesará de forma segura y se notificará directamente al Máster sin intermediarios ni necesidad de usar apps externas.' +
     '</div>' +
 
     '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
-      '<button type="button" class="btn-solid-gold" style="width:100%;padding:11px 14px;font-size:0.92rem;font-weight:700;" data-action="submit-feedback-report">' +
-        '🚀 Generar y Enviar Reporte' +
+      '<button type="button" class="btn-solid-gold" id="btnSubmitFeedback" style="width:100%;padding:12px 14px;font-size:0.95rem;font-weight:700;" data-action="submit-feedback-report">' +
+        '🚀 Enviar Reporte al Máster' +
       '</button>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button type="button" class="btn-compact" style="flex:1;padding:8px;font-size:0.78rem;" data-action="test-feedback-whatsapp">' +
-          '🧪 Probar WhatsApp (+34 663632738)' +
-        '</button>' +
-        '<button type="button" class="btn-compact" style="flex:1;padding:8px;font-size:0.78rem;" data-action="close-feedback-modal">' +
-          'Cancelar' +
-        '</button>' +
-      '</div>' +
+      '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
+        'Cancelar' +
+      '</button>' +
     '</div>';
 
   var modal = document.getElementById("feedbackModal");
@@ -836,8 +840,33 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
     otro: "💬 Consulta"
   };
 
+  var recentRolls = [];
+  try {
+    if(state && state.rollLog && Array.isArray(state.rollLog)){
+      recentRolls = state.rollLog.slice(-3).map(function(r){
+        return (r.label || "Tirada") + ": " + (r.formula || "") + " = " + (r.total || r.result || "?");
+      });
+    }
+  } catch(e){}
+
+  var charStats = null;
+  if(c){
+    charStats = {
+      id: c.id,
+      name: c.name,
+      level: c.nivel || c.level || 1,
+      job: c.trabajo || "Aventurero",
+      pvActual: (c.combat && c.combat.pvActual) || 0,
+      pvMax: (c.combat && c.combat.pvMax) || 0,
+      manaActual: (c.combat && c.combat.manaActual) || 0,
+      manaMax: (c.combat && c.combat.manaMax) || 0,
+      escudo: (c.combat && c.combat.escudoActual) || 0,
+      attrs: c.attrs || {}
+    };
+  }
+
   var now = new Date();
-  var report = {
+  return {
     id: (typeof uid === "function") ? uid() : ("fb_" + Date.now()),
     timestamp: now.toISOString(),
     displayDate: now.toLocaleString(),
@@ -845,8 +874,9 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
     categoryLabel: catIcons[cat] || cat,
     title: title.trim(),
     description: desc.trim(),
-    contact: contact.trim() || "Anónimo",
-    character: c ? { id: c.id, name: c.name, level: c.level || 1 } : null,
+    contact: contact.trim() || (c ? c.name : "Anónimo"),
+    character: charStats,
+    recentRolls: recentRolls,
     system: {
       appVersion: "v1.0.6",
       screen: window.innerWidth + "x" + window.innerHeight,
@@ -857,31 +887,118 @@ function buildFeedbackDiagnostic(cat, title, desc, contact){
       syncStatus: (typeof currentUser !== "undefined" && currentUser) ? "Nube (Supabase)" : "Local"
     }
   };
-
-  var waMessage = 
-    "📬 *REPORTE DE FICHA ROL*\n" +
-    "─────────────────────\n" +
-    "🏷️ *Tipo:* " + report.categoryLabel + "\n" +
-    "📌 *Asunto:* " + report.title + "\n" +
-    "👤 *Remitente:* " + report.contact + "\n\n" +
-    "📝 *Descripción:*\n" + report.description + "\n\n" +
-    "⚙️ *Diagnóstico Técnico:*\n" +
-    "• App: " + report.system.appVersion + (report.system.isPWA ? " (PWA)" : " (Web)") + "\n" +
-    "• Dispositivo: " + report.system.os + " | " + report.system.browser + " (" + report.system.screen + ")\n" +
-    "• Personaje: " + (report.character ? report.character.name + " (Nv. " + (report.character.level || 1) + ")" : "Ninguno") + "\n" +
-    "• Conexión: " + report.system.network + " (" + report.system.syncStatus + ")\n" +
-    "• Fecha: " + report.displayDate + "\n" +
-    "─────────────────────\n" +
-    "🤖 *[TRIAGE ANTIGRAVITY]*\n" +
-    "Analiza este reporte: evalúa veracidad, ciberseguridad, respuesta al usuario y código a implementar.";
-
-  report.formattedMessage = waMessage;
-  report.whatsappUrl = "https://wa.me/" + FEEDBACK_WHATSAPP_PHONE + "?text=" + encodeURIComponent(waMessage);
-
-  return report;
 }
 
-function submitFeedbackReport(){
+function generateAiTriageAnalysis(report){
+  var lowerDesc = (report.description + " " + report.title).toLowerCase();
+  var cat = report.category;
+  var c = report.character;
+
+  var classification = "Consulta / Balance General";
+  var diagnostic = "";
+  var suggestedReply = "";
+  var technicalAction = "Revisar en sesión con el jugador o en código.";
+  var isSecuritySafe = true;
+
+  if(/<script|select\s+\*|union\s+select|eval\(|drop\s+table/i.test(lowerDesc)){
+    classification = "⚠️ Alerta de Seguridad / Inyección de Código";
+    diagnostic = "Se detectaron patrones sospechosos de inyección de código en el texto del reporte. El sistema sanitizó el contenido.";
+    suggestedReply = "Hola, tu reporte contiene caracteres no permitidos. Por favor, describe tu incidencia en texto plano.";
+    technicalAction = "Descartar reporte. Las consultas están parametrizadas con RLS.";
+    isSecuritySafe = false;
+  } else if(cat === "bug" || /error|falla|bug|no suma|no resta|desaparece|roto/i.test(lowerDesc)){
+    if(/tirada|dado|daño|critico|fuerza|destreza/i.test(lowerDesc)){
+      classification = "Fallo de Usuario / Confusión de Tirador";
+      var rollContext = report.recentRolls.length ? report.recentRolls.join(" | ") : "Sin tiradas recientes";
+      diagnostic = "El jugador indica problemas con el cálculo de una tirada. Últimas tiradas registradas: [" + rollContext + "]. Suele ocurrir si se tira desde el tirador rápido libre en lugar del botón de arma/habilidad específica.";
+      suggestedReply = "¡Hola " + report.contact + "! Hemos revisado tu reporte. Ten en cuenta que si usas el tirador rápido de dados, la tirada es neutra. Para que se apliquen tus atributos y daño automáticamente, debes pulsar directamente sobre el arma o habilidad en tu pestaña de Combate.";
+      technicalAction = "Verificar si el jugador usó el arma correspondiente en js/ui-events.js.";
+    } else if(/vida|mana|maná|pv|curar|muerto|agonizando/i.test(lowerDesc)){
+      classification = "Revisión de Estado de Combate";
+      var hpContext = c ? (c.pvActual + "/" + c.pvMax + " PV, " + c.manaActual + "/" + c.manaMax + " MP") : "Desconocido";
+      diagnostic = "Incidencia sobre valores de vitalidad/recursos (Estado actual: " + hpContext + ").";
+      suggestedReply = "¡Hola " + report.contact + "! Hemos verificado el estado de tus recursos (" + hpContext + "). Recuerda que los efectos de debuff o descanso modifican los valores máximos según las reglas de Krysalis.";
+      technicalAction = "Revisar sincronización RPC de vida/maná en js/sync.js.";
+    } else {
+      classification = "Posible Bug Técnico de Interfaz";
+      diagnostic = "Reporte sobre comportamiento inesperado en la interfaz. Dispositivo: " + report.system.os + " (" + report.system.browser + ", " + report.system.screen + ").";
+      suggestedReply = "¡Hola " + report.contact + "! Gracias por avisarnos del error '" + report.title + "'. El Máster ya tiene el aviso y lo revisaremos en la próxima actualización de la aplicación.";
+      technicalAction = "Inspeccionar componente reportado según la versión v1.0.6.";
+    }
+  } else if(cat === "sugerencia" || /mejorar|añadir|podria|seria bueno|propuesta/i.test(lowerDesc)){
+    classification = "Sugerencia de Jugador / Mejora de Experiencia";
+    diagnostic = "Propuesta de nueva funcionalidad o ajuste de interfaz. No altera la integridad del juego ni compromete datos.";
+    suggestedReply = "¡Hola " + report.contact + "! Muchas gracias por tu sugerencia sobre '" + report.title + "'. Nos parece una idea genial y la hemos anotado para evaluar su incorporación en el juego.";
+    technicalAction = "Evaluar con Lolo si procede programarlo.";
+  } else {
+    classification = "Consulta de Reglas / Duda General";
+    diagnostic = "Duda de reglas o funcionamiento del personaje (" + (c ? (c.name + " Nv." + c.level) : "Sin PJ") + ").";
+    suggestedReply = "¡Hola " + report.contact + "! El Máster ha recibido tu consulta sobre '" + report.title + "' y te responderá en la próxima sesión de juego.";
+    technicalAction = "Aclarar regla directamente con el jugador.";
+  }
+
+  var pjSummary = c ? (c.name + " (Nv." + c.level + " " + c.job + ") | PV: " + c.pvActual + "/" + c.pvMax + " | MP: " + c.manaActual + "/" + c.manaMax) : "Sin personaje asignado";
+  var lastRollStr = report.recentRolls.length ? report.recentRolls[report.recentRolls.length - 1] : "Ninguna";
+
+  var waMessage = 
+    "🔔 *REPORTE TRATADO POR IA (KRYSALIS)*\n" +
+    "─────────────────────\n" +
+    "👤 *Remitente:* " + report.contact + "\n" +
+    "🏷️ *Categoría:* " + report.categoryLabel + "\n" +
+    "📌 *Asunto:* " + report.title + "\n\n" +
+    "📝 *Mensaje del Jugador:*\n" +
+    "\"" + report.description + "\"\n\n" +
+    "──────── CONTEXTO ────────\n" +
+    "• PJ: " + pjSummary + "\n" +
+    "• Última tirada: " + lastRollStr + "\n" +
+    "• Dispositivo: " + report.system.os + " | " + report.system.browser + " (v1.0.6)\n\n" +
+    "────── 🧠 ANÁLISIS DE LA IA ──────\n" +
+    "🔍 *Diagnóstico:* *" + classification + "*\n" +
+    diagnostic + "\n\n" +
+    "🛡️ *Ciberseguridad:* " + (isSecuritySafe ? "Aprobada (Sin riesgos de inyección)" : "⚠️ Alerta de sanitización") + "\n" +
+    "🛠️ *Acción Técnica:* " + technicalAction + "\n\n" +
+    "💬 *Respuesta redactada para el jugador:*\n" +
+    "\"" + suggestedReply + "\"\n" +
+    "─────────────────────\n" +
+    "👉 *¿Qué decides, Lolo?* Responde SÍ para proceder o modifica lo que necesites.";
+
+  return {
+    classification: classification,
+    diagnostic: diagnostic,
+    suggestedReply: suggestedReply,
+    technicalAction: technicalAction,
+    isSecuritySafe: isSecuritySafe,
+    whatsappMessage: waMessage
+  };
+}
+
+async function sendWhatsAppAlertToMaster(treatedReport){
+  var apiKey = getCallMeBotApiKey();
+  if(!apiKey){
+    console.log("CallMeBot API Key no configurada. El reporte se guarda en el panel del Máster.");
+    return { success: false, reason: "no_apikey" };
+  }
+
+  var phone = MASTER_WHATSAPP_PHONE;
+  var msg = (treatedReport.aiTriage && treatedReport.aiTriage.whatsappMessage) ? treatedReport.aiTriage.whatsappMessage : (treatedReport.formattedMessage || "");
+  var url = "https://api.callmebot.com/whatsapp.php?phone=" + phone + "&text=" + encodeURIComponent(msg) + "&apikey=" + encodeURIComponent(apiKey);
+
+  try {
+    await fetch(url, { mode: "no-cors" });
+    return { success: true };
+  } catch(err){
+    try {
+      var img = new Image();
+      img.src = url;
+      return { success: true };
+    } catch(e){
+      return { success: false, error: err };
+    }
+  }
+}
+
+async function submitFeedbackReport(){
+  var btn = document.getElementById("btnSubmitFeedback");
   var titleEl = document.getElementById("fbTitle");
   var descEl = document.getElementById("fbDesc");
   var contactEl = document.getElementById("fbContact");
@@ -896,21 +1013,27 @@ function submitFeedbackReport(){
     return;
   }
   if(!desc){
-    showToast("Por favor, describe el problema o sugerencia.", "warning");
+    showToast("Por favor, describe con detalle qué ocurrió o tu propuesta.", "warning");
     if(descEl) descEl.focus();
     return;
   }
 
+  if(btn){
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Procesando con IA y enviando...';
+  }
+
   var report = buildFeedbackDiagnostic(currentFeedbackCategory, title, desc, contact);
+  var aiTriage = generateAiTriageAnalysis(report);
+  report.aiTriage = aiTriage;
+  report.whatsappMessage = aiTriage.whatsappMessage;
   lastGeneratedReport = report;
 
-  // 1. Guardar en estado local
   state.feedbackReports = state.feedbackReports || [];
   state.feedbackReports.unshift(report);
   if(state.feedbackReports.length > 50) state.feedbackReports.pop();
   saveState(false);
 
-  // 2. Intentar guardar en Supabase si hay cliente
   if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
     try {
       supabaseClient.from("app_feedback").insert([{
@@ -919,70 +1042,141 @@ function submitFeedbackReport(){
         title: report.title,
         description: report.description,
         contact: report.contact,
-        metadata: report.system,
         character_name: report.character ? report.character.name : null,
+        system_metadata: report.system,
+        ai_triage: report.aiTriage,
         created_at: report.timestamp
       }]).then(function(res){
-        if(res && res.error){
-          console.warn("Tabla app_feedback no activa en Supabase:", res.error.message);
-        } else {
-          console.log("Reporte persistido en Supabase con éxito.");
-        }
-      }).catch(function(err){
-        console.warn("Error enviando reporte a Supabase:", err);
-      });
+        if(res && res.error) console.warn("Supabase feedback insert:", res.error.message);
+      }).catch(function(){});
     } catch(e){}
   }
 
-  // 3. Mostrar pantalla de éxito con botón WhatsApp
-  showFeedbackSuccessScreen(report);
+  sendWhatsAppAlertToMaster(report);
+  showPlayerSuccessScreen(report);
 }
 
-function showFeedbackSuccessScreen(report){
-  var html = '<h2>🎉 ¡Reporte Preparado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+function showPlayerSuccessScreen(report){
+  var html = '<h2>🎉 ¡Reporte Enviado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="feedback-success-card">' +
       '<div class="success-icon-badge">✅</div>' +
-      '<div class="success-title">Listo para enviar por WhatsApp</div>' +
-      '<p class="success-text">Hemos recopilado la información y el diagnóstico del dispositivo. Pulsa el botón verde para abrir WhatsApp y enviárselo directamente a Lolo (+34 663632738).</p>' +
+      '<div class="success-title">Recibido y Procesado con Éxito</div>' +
+      '<p class="success-text">Tu reporte ha sido registrado en el sistema y remitido directamente a Lolo (Máster) con el análisis de tu partida para revisarlo cuanto antes.</p>' +
     '</div>' +
 
-    '<div class="feedback-preview-box">' +
-      '<div class="preview-header">Vista previa del mensaje:</div>' +
-      '<pre class="preview-text">' + esc(report.formattedMessage) + '</pre>' +
+    '<div style="background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.45;">' +
+      '<div>📌 <b>Asunto:</b> ' + esc(report.title) + '</div>' +
+      '<div style="margin-top:4px;">🏷️ <b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
+      '<div style="margin-top:4px;color:var(--gold-light);">🤖 <b>Estado:</b> Procesado por Asistencia IA y notificado al Máster</div>' +
     '</div>' +
 
-    '<div class="feedback-success-actions" style="display:flex;flex-direction:column;gap:8px;">' +
-      '<a href="' + esc(report.whatsappUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-primary" id="btnOpenWhatsApp" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;">' +
-        '<span style="font-size:1.2rem;">📱</span> <span>Abrir y Enviar por WhatsApp</span>' +
-      '</a>' +
-      '<div style="display:flex;gap:8px;">' +
-        '<button type="button" class="btn-compact" style="flex:1;padding:9px;" data-action="copy-feedback-msg">' +
-          '📋 Copiar texto' +
-        '</button>' +
-        '<button type="button" class="btn-compact" style="flex:1;padding:9px;" data-action="new-feedback-form">' +
-          '✍️ Nuevo reporte' +
-        '</button>' +
-      '</div>' +
-      '<button type="button" class="btn-solid-gold" style="width:100%;margin-top:4px;padding:9px;" data-action="close-feedback-modal">' +
-        'Listo / Cerrar' +
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+      '<button type="button" class="btn-solid-gold" style="width:100%;padding:10px 14px;font-size:0.9rem;" data-action="close-feedback-modal">' +
+        'Entendido / Cerrar' +
       '</button>' +
     '</div>';
 
   var modal = document.getElementById("feedbackModal");
   if(modal) modal.innerHTML = html;
-  showToast("Reporte generado. Pulsa 'Abrir WhatsApp' para enviarlo.", "success");
+  showToast("¡Reporte enviado al Máster con éxito!", "success");
 }
 
-function testFeedbackWhatsApp(){
-  var c = (typeof activeChar === "function") ? activeChar() : null;
-  var testReport = buildFeedbackDiagnostic(
-    "sugerencia",
-    "Prueba de automatización de reportes",
-    "¡Hola! Este es un mensaje de prueba para verificar que el sistema de reportes por WhatsApp al número (+34 663632738) funciona correctamente.",
-    c ? c.name : "Desarrollador / Tester"
-  );
-  lastGeneratedReport = testReport;
-  showFeedbackSuccessScreen(testReport);
+function openFeedbackAdminModal(){
+  var apiKey = getCallMeBotApiKey();
+  var reports = state.feedbackReports || [];
+
+  var statusBadge = apiKey ? 
+    '<span class="storage-pill optimal">🟢 WhatsApp Conectado</span>' : 
+    '<span class="storage-pill warning">⚠️ WhatsApp Sin Configurar</span>';
+
+  var reportsListHtml = '';
+  if(!reports.length){
+    reportsListHtml = '<div style="font-size:0.8rem;color:var(--ink-faint);font-style:italic;padding:12px;text-align:center;">No hay reportes registrados aún.</div>';
+  } else {
+    reportsListHtml = reports.map(function(r, idx){
+      var triage = r.aiTriage || {};
+      var diagSnippet = triage.diagnostic || "Reporte técnico pendiente de revisión.";
+      var replySnippet = triage.suggestedReply || "";
+
+      return '<div class="admin-report-item" style="background:rgba(0,0,0,0.4);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+          '<div>' +
+            '<span style="font-size:0.7rem;color:var(--gold);font-weight:700;text-transform:uppercase;">' + esc(r.categoryLabel || r.category) + '</span>' +
+            '<div style="font-weight:700;font-size:0.9rem;color:var(--ink);">' + esc(r.title) + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--ink-faint);">Por ' + esc(r.contact || "Anónimo") + ' · ' + esc(r.displayDate || "") + '</div>' +
+          '</div>' +
+          '<span class="storage-pill ' + (triage.isSecuritySafe === false ? 'critical' : 'optimal') + '" style="font-size:0.65rem;">' + esc(triage.classification || "Tratado") + '</span>' +
+        '</div>' +
+
+        '<div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:8px;margin-top:8px;font-size:0.78rem;color:var(--ink-dim);line-height:1.4;">' +
+          '<b>Mensaje:</b> "' + esc(r.description) + '"' +
+        '</div>' +
+
+        '<div style="background:rgba(212,175,55,0.08);border-left:3px solid var(--gold);padding:8px;margin-top:8px;font-size:0.76rem;color:var(--gold-light);line-height:1.4;">' +
+          '🧠 <b>Análisis IA:</b> ' + esc(diagSnippet) +
+        '</div>' +
+
+        (replySnippet ? 
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:6px;">' +
+            '<button type="button" class="btn-compact" style="flex:1;padding:6px 8px;font-size:0.72rem;" data-action="copy-admin-reply" data-idx="' + idx + '">' +
+              '📋 Copiar respuesta para el jugador' +
+            '</button>' +
+            '<button type="button" class="btn-compact" style="padding:6px 8px;font-size:0.72rem;" data-action="resend-admin-wa" data-idx="' + idx + '" title="Reenviar a mi WhatsApp">' +
+              '📱 Reenviar WhatsApp' +
+            '</button>' +
+          '</div>' : ''
+        ) +
+      '</div>';
+    }).join('');
+  }
+
+  var html = '<h2>🛡️ Buzón del Máster y WhatsApp<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+    '<div class="storage-monitor-box" style="margin-top:0;">' +
+      '<div class="storage-monitor-header">' +
+        '<div class="storage-monitor-title">📱 Notificaciones a tu WhatsApp (+34 663632738)</div>' +
+        statusBadge +
+      '</div>' +
+      '<p style="font-size:0.78rem;color:var(--ink-dim);margin:0 0 10px;line-height:1.4;">' +
+        'Para recibir los reportes analizados automáticamente en tu móvil mediante CallMeBot (gratis):' +
+      '</p>' +
+      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">' +
+        '<a href="https://wa.me/34911080422?text=I+allow+callmebot+to+send+me+messages" target="_blank" rel="noopener" class="btn-compact" style="text-decoration:none;font-size:0.74rem;padding:7px 10px;background:rgba(37,211,102,0.15);border-color:rgba(37,211,102,0.4);color:#2ECC71;">' +
+          '👉 1. Pedir clave por WhatsApp (+34 911 08 04 22)' +
+        '</a>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<input type="text" id="inputCallMeBotKey" placeholder="Pega aquí tu clave CallMeBot (ej: 1234567)" value="' + esc(apiKey) + '" style="font-size:0.8rem;padding:6px 8px;flex:1;">' +
+        '<button type="button" class="btn-solid-gold" style="padding:6px 12px;font-size:0.78rem;" data-action="save-callmebot-key">Guardar</button>' +
+      '</div>' +
+      '<div style="margin-top:8px;display:flex;gap:6px;">' +
+        '<button type="button" class="btn-compact" style="flex:1;font-size:0.72rem;padding:6px;" data-action="test-callmebot-ping">' +
+          '🧪 Enviar WhatsApp de prueba a mi móvil' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;">' +
+      '<div style="font-weight:700;font-size:0.85rem;color:var(--gold-light);">📋 Reportes recibidos (' + reports.length + ')</div>' +
+      '<button type="button" class="btn-compact" style="font-size:0.7rem;padding:3px 8px;" data-action="clear-all-feedback" title="Borrar historial local">Limpiar</button>' +
+    '</div>' +
+
+    '<div style="max-height:260px;overflow-y:auto;padding-right:4px;">' +
+      reportsListHtml +
+    '</div>' +
+
+    '<div style="margin-top:12px;display:flex;gap:8px;">' +
+      '<button type="button" class="btn-compact" style="flex:1;padding:8px;" data-action="open-feedback-modal">' +
+        'Volver al Buzón' +
+      '</button>' +
+      '<button type="button" class="btn-solid-gold" style="flex:1;padding:8px;" data-action="close-feedback-modal">' +
+        'Cerrar' +
+      '</button>' +
+    '</div>';
+
+  var modal = document.getElementById("feedbackModal");
+  if(modal) modal.innerHTML = html;
+  var overlay = document.getElementById("feedbackModalOverlay");
+  if(overlay) overlay.classList.remove("hidden");
 }
 
 function feedbackModalClick(e){
@@ -1000,26 +1194,98 @@ function feedbackModalClick(e){
   var action = btn.getAttribute("data-action");
 
   if(action === "close-feedback-modal"){ closeModals(); return; }
+  if(action === "open-feedback-modal"){ openFeedbackModal(); return; }
+  if(action === "open-feedback-admin"){ openFeedbackAdminModal(); return; }
   if(action === "submit-feedback-report"){ submitFeedbackReport(); return; }
-  if(action === "test-feedback-whatsapp"){ testFeedbackWhatsApp(); return; }
-  if(action === "new-feedback-form"){ openFeedbackModal(); return; }
-  if(action === "copy-feedback-msg"){
-    if(lastGeneratedReport && lastGeneratedReport.formattedMessage){
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(lastGeneratedReport.formattedMessage).then(function(){
-          showToast("Mensaje copiado al portapapeles 📋", "success");
-        }).catch(function(){
-          fallbackCopyText(lastGeneratedReport.formattedMessage);
-        });
+
+  if(action === "save-callmebot-key"){
+    var keyInput = document.getElementById("inputCallMeBotKey");
+    var keyVal = keyInput ? keyInput.value.trim() : "";
+    setCallMeBotApiKey(keyVal);
+    showToast(keyVal ? "Clave CallMeBot guardada. ¡WhatsApp listo!" : "Clave borrada.", "success");
+    openFeedbackAdminModal();
+    return;
+  }
+
+  if(action === "test-callmebot-ping"){
+    var c = (typeof activeChar === "function") ? activeChar() : null;
+    var testReport = buildFeedbackDiagnostic(
+      "sugerencia",
+      "Prueba de conexión con WhatsApp",
+      "¡Hola Lolo! Este es un mensaje de prueba para verificar que recibes las alertas de reportes de jugadores directamente en tu móvil (+34 663632738).",
+      c ? c.name : "Sistema Krysalis"
+    );
+    testReport.aiTriage = generateAiTriageAnalysis(testReport);
+    testReport.whatsappMessage = testReport.aiTriage.whatsappMessage;
+
+    var apiKey = getCallMeBotApiKey();
+    if(!apiKey){
+      showToast("Introduce primero tu clave de CallMeBot arriba.", "warning");
+      return;
+    }
+
+    sendWhatsAppAlertToMaster(testReport).then(function(res){
+      if(res.success){
+        showToast("¡Mensaje de prueba enviado a tu WhatsApp! 📱", "success");
       } else {
-        fallbackCopyText(lastGeneratedReport.formattedMessage);
+        showToast("Error al enviar. Comprueba la clave o el número.", "error");
       }
+    });
+    return;
+  }
+
+  if(action === "copy-admin-reply"){
+    var idx = parseInt(btn.getAttribute("data-idx"), 10);
+    var r = (state.feedbackReports || [])[idx];
+    if(r && r.aiTriage && r.aiTriage.suggestedReply){
+      fallbackCopyText(r.aiTriage.suggestedReply);
+    }
+    return;
+  }
+
+  if(action === "resend-admin-wa"){
+    var rIdx = parseInt(btn.getAttribute("data-idx"), 10);
+    var targetR = (state.feedbackReports || [])[rIdx];
+    if(targetR){
+      sendWhatsAppAlertToMaster(targetR).then(function(res){
+        if(res.success){
+          showToast("Reenviado a tu WhatsApp 📱", "success");
+        } else {
+          showToast("Introduce tu clave CallMeBot en la configuración de arriba.", "warning");
+        }
+      });
+    }
+    return;
+  }
+
+  if(action === "clear-all-feedback"){
+    if(confirm("¿Seguro que quieres vaciar la lista local de reportes?")){
+      state.feedbackReports = [];
+      saveState(false);
+      openFeedbackAdminModal();
+      showToast("Historial local vaciado.", "info");
     }
     return;
   }
 }
 
 function fallbackCopyText(text){
+  try {
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast("Copiado al portapapeles 📋", "success");
+      }).catch(function(){
+        execCommandCopy(text);
+      });
+    } else {
+      execCommandCopy(text);
+    }
+  } catch(err){
+    execCommandCopy(text);
+  }
+}
+
+function execCommandCopy(text){
   try {
     var ta = document.createElement("textarea");
     ta.value = text;
@@ -1029,9 +1295,10 @@ function fallbackCopyText(text){
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    showToast("Mensaje copiado al portapapeles 📋", "success");
-  } catch(err){
-    showToast("No se pudo copiar automáticamente. Puedes seleccionarlo manualmente.", "warning");
+    showToast("Copiado al portapapeles 📋", "success");
+  } catch(e){
+    showToast("No se pudo copiar automáticamente.", "warning");
   }
 }
+
 

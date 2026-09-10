@@ -2566,6 +2566,22 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   color: var(--ink-dim);
   font-family: var(--font-mono);
 }
+.feedback-privacy-note {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(176, 141, 87, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+  line-height: 1.4;
+  margin-top: 10px;
+}
+.admin-report-item {
+  transition: all var(--transition-fast);
+}
+.admin-report-item:hover {
+  border-color: var(--line-strong);
+}
 .feedback-success-card {
   background: linear-gradient(145deg, rgba(39, 174, 96, 0.15), rgba(18, 60, 35, 0.25));
   border: 1.5px solid rgba(46, 204, 113, 0.45);
