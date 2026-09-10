@@ -414,7 +414,7 @@ function getBg3DieSvg(sides, value){
     '</svg>';
   }
 
-  // D100: Percentil (Par de dados)
+  // D100: Porcentual (Par de dados)
   if(sides === 100){
     var tensVal = Math.floor(val / 10) * 10;
     if(tensVal === 100) tensVal = 0;
@@ -533,6 +533,26 @@ function getRotationForFaceNormal(normal){
   return mat3Mul(mx, my);
 }
 
+function getRotationForFace(face){
+  if(!face) return mat3Identity();
+  var r = face.right;
+  var u = face.up;
+  var n = face.normal;
+  if(!r || !u || !n){
+    var norm = face.normal || face;
+    return getRotationForFaceNormal(norm);
+  }
+  // Matriz ortonormal que alinea la cara frontalmente y con su ápice hacia arriba
+  var mBase = [
+    r[0], r[1], r[2],
+    u[0], u[1], u[2],
+    n[0], n[1], n[2]
+  ];
+  // Inclinación cinematográfica Baldur's Gate 3 (-14° en X) para revelar volumen y biselado
+  var tiltM = mat3FromAxisAngle(1, 0, 0, -0.24);
+  return mat3Mul(tiltM, mBase);
+}
+
 function computeMeshInfo(vertices, rawFaces, sides, isPercentileTens){
   var faces = rawFaces.map(function(f, idx){
     var v0 = vertices[f[0]], v1 = vertices[f[1]], v2 = vertices[f[2]];
@@ -546,6 +566,37 @@ function computeMeshInfo(vertices, rawFaces, sides, isPercentileTens){
     cx /= f.length; cy /= f.length; cz /= f.length;
     var dot = cx * nx + cy * ny + cz * nz;
     if (dot < 0){ nx = -nx; ny = -ny; nz = -nz; }
+
+    // Vector Up intrínseco de la cara:
+    // Para cubos (d6, 4 vértices), orientar hacia el punto medio del borde superior
+    // Para todas las demás facetas (triángulos, deltoides, pentágonos), orientar hacia el vértice ápice v0
+    var ux, uy, uz;
+    if(f.length === 4 && sides === 6){
+      var vTop0 = vertices[f[0]], vTop1 = vertices[f[1]];
+      var midX = (vTop0[0] + vTop1[0]) * 0.5;
+      var midY = (vTop0[1] + vTop1[1]) * 0.5;
+      var midZ = (vTop0[2] + vTop1[2]) * 0.5;
+      ux = midX - cx; uy = midY - cy; uz = midZ - cz;
+    } else {
+      var apex = vertices[f[0]];
+      ux = apex[0] - cx; uy = apex[1] - cy; uz = apex[2] - cz;
+    }
+    var uLen = Math.hypot(ux, uy, uz) || 1;
+    ux /= uLen; uy /= uLen; uz /= uLen;
+
+    // Ortogonalizar Up respecto a Normal (Gram-Schmidt)
+    var uDotN = ux * nx + uy * ny + uz * nz;
+    ux -= uDotN * nx; uy -= uDotN * ny; uz -= uDotN * nz;
+    uLen = Math.hypot(ux, uy, uz) || 1;
+    ux /= uLen; uy /= uLen; uz /= uLen;
+
+    // Vector Right = Up x Normal
+    var rx = uy * nz - uz * ny;
+    var ry = uz * nx - ux * nz;
+    var rz = ux * ny - uy * nx;
+    var rLen = Math.hypot(rx, ry, rz) || 1;
+    rx /= rLen; ry /= rLen; rz /= rLen;
+
     var faceVal = idx + 1;
     if(isPercentileTens){
       faceVal = (idx === 9) ? 0 : (idx * 10);
@@ -553,6 +604,8 @@ function computeMeshInfo(vertices, rawFaces, sides, isPercentileTens){
     return {
       indices: f,
       normal: [nx, ny, nz],
+      up: [ux, uy, uz],
+      right: [rx, ry, rz],
       center: [cx, cy, cz],
       value: faceVal
     };
@@ -743,7 +796,7 @@ function initBg3Simulation(sim, canvasId, sides, initialVal, isPercentileTens){
   sim.targetValue = initialVal || sides;
 
   var targetFace = sim.mesh.faces.find(function(f){ return f.value === sim.targetValue; }) || sim.mesh.faces[0];
-  sim.targetMatrix = getRotationForFaceNormal(targetFace.normal);
+  sim.targetMatrix = getRotationForFace(targetFace);
   sim.matrix = sim.targetMatrix.slice();
 }
 
@@ -763,7 +816,7 @@ function startBg3SimRoll(sim, sides, targetVal, isIntense, duration){
   ];
 
   var targetFace = sim.mesh.faces.find(function(f){ return f.value === targetVal; }) || sim.mesh.faces[0];
-  sim.targetMatrix = getRotationForFaceNormal(targetFace.normal);
+  sim.targetMatrix = getRotationForFace(targetFace);
 }
 
 function drawBg3DieSimulation(sim, time){
@@ -857,21 +910,33 @@ function drawBg3DieSimulation(sim, time){
 
   visibleFaces.sort(function(a, b){ return a.avgZ - b.avgZ; });
 
-  var camDist = 3.6;
+  var camDist = 5.2;
   var dieScale = sim.scale * bounceScale;
+
+  // Sombra de contacto suave en la base (ambient occlusion BG3)
+  var groundY = cy + dieScale * 0.94 + jy + bounceY * 0.2;
+  var shadowR = dieScale * 0.82;
+  var shadowGrad = ctx.createRadialGradient(cx + jx, groundY, 4, cx + jx, groundY, shadowR);
+  shadowGrad.addColorStop(0, "rgba(0, 0, 0, 0.55)");
+  shadowGrad.addColorStop(0.5, "rgba(0, 0, 0, 0.22)");
+  shadowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.beginPath();
+  ctx.ellipse(cx + jx, groundY, shadowR, shadowR * 0.26, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shadowGrad;
+  ctx.fill();
 
   visibleFaces.forEach(function(vf){
     var f = vf.face;
     var n = vf.normal;
 
     var faceCenter = mat3VecMul(renderMatrix, f.center);
-    var cPersp = camDist / (camDist - faceCenter[2] * 0.6);
+    var cPersp = camDist / (camDist - faceCenter[2] * 0.38);
     var fx = cx + faceCenter[0] * dieScale * cPersp + jx;
     var fy = cy - faceCenter[1] * dieScale * cPersp + jy + bounceY;
 
     var pts = f.indices.map(function(vi){
       var v = transformedV[vi];
-      var persp = camDist / (camDist - v[2] * 0.6);
+      var persp = camDist / (camDist - v[2] * 0.38);
       return [
         cx + v[0] * dieScale * persp + jx,
         cy - v[1] * dieScale * persp + jy + bounceY
@@ -882,9 +947,9 @@ function drawBg3DieSimulation(sim, time){
     var diffuse = Math.max(0, dot);
     var spec = Math.pow(Math.max(0, n[2]), 3.2) * 0.45;
 
-    var r = Math.min(255, Math.floor(46 + diffuse * 90 + spec * 95));
-    var g = Math.min(255, Math.floor(22 + diffuse * 52 + spec * 65));
-    var b = Math.min(255, Math.floor(82 + diffuse * 135 + spec * 115));
+    var r = Math.min(255, Math.floor(42 + diffuse * 85 + spec * 95));
+    var g = Math.min(255, Math.floor(18 + diffuse * 48 + spec * 65));
+    var b = Math.min(255, Math.floor(76 + diffuse * 130 + spec * 120));
 
     // Polígono exterior de la faceta
     ctx.beginPath();
@@ -894,64 +959,57 @@ function drawBg3DieSimulation(sim, time){
     }
     ctx.closePath();
 
-    // Relleno con profundidad de gema tallada (degradado radial)
+    // Relleno con profundidad de gema tallada (degradado radial con highlight esférico)
     try {
-      var radGrad = ctx.createRadialGradient(fx, fy, 2, fx, fy, dieScale * 0.65);
-      radGrad.addColorStop(0, 'rgb(' + Math.min(255, r + 24) + ',' + Math.min(255, g + 16) + ',' + Math.min(255, b + 32) + ')');
-      radGrad.addColorStop(0.7, 'rgb(' + r + ',' + g + ',' + b + ')');
-      radGrad.addColorStop(1, 'rgb(' + Math.max(12, r - 18) + ',' + Math.max(8, g - 10) + ',' + Math.max(18, b - 14) + ')');
+      var radGrad = ctx.createRadialGradient(fx - dieScale * 0.12, fy - dieScale * 0.12, 2, fx, fy, dieScale * 0.7);
+      radGrad.addColorStop(0, 'rgb(' + Math.min(255, r + 40) + ',' + Math.min(255, g + 28) + ',' + Math.min(255, b + 50) + ')');
+      radGrad.addColorStop(0.65, 'rgb(' + r + ',' + g + ',' + b + ')');
+      radGrad.addColorStop(1, 'rgb(' + Math.max(10, r - 26) + ',' + Math.max(6, g - 16) + ',' + Math.max(16, b - 24) + ')');
       ctx.fillStyle = radGrad;
     } catch(err){
       ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
     }
     ctx.fill();
 
-    var goldAlpha = Math.max(0.45, Math.min(1.0, 0.65 + diffuse * 0.35));
+    var goldAlpha = Math.max(0.55, Math.min(1.0, 0.72 + diffuse * 0.28));
 
-    // 1. Aristas exteriores en Oro Antiguo de doble trazo
-    ctx.strokeStyle = 'rgba(105, 68, 28, ' + Math.min(1.0, goldAlpha + 0.25) + ')';
-    ctx.lineWidth = 3.0;
+    // 1. Aristas exteriores en Bronce Dorado Envejecido
+    ctx.strokeStyle = 'rgba(76, 46, 16, ' + Math.min(1.0, goldAlpha + 0.2) + ')';
+    ctx.lineWidth = 2.8;
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(255, 238, 185, ' + goldAlpha + ')';
-    ctx.lineWidth = 1.3;
+    // 2. Trazo de filo pulido en Oro Brillante
+    ctx.strokeStyle = 'rgba(255, 238, 175, ' + goldAlpha + ')';
+    ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    // 2. Doble bisel de filigrana concéntrica interior (Double Inset Bezel)
-    var insetFactor = 0.76;
-    var insetPts = pts.map(function(p){
-      return [
-        p[0] * insetFactor + fx * (1 - insetFactor),
-        p[1] * insetFactor + fy * (1 - insetFactor)
-      ];
-    });
+    // 3. Bisel concéntrico interior en facetas orientadas a la vista
+    if(n[2] > 0.45){
+      var insetFactor = 0.80;
+      var insetPts = pts.map(function(p){
+        return [
+          p[0] * insetFactor + fx * (1 - insetFactor),
+          p[1] * insetFactor + fy * (1 - insetFactor)
+        ];
+      });
 
-    ctx.beginPath();
-    ctx.moveTo(insetPts[0][0], insetPts[0][1]);
-    for(var k = 1; k < insetPts.length; k++){
-      ctx.lineTo(insetPts[k][0], insetPts[k][1]);
+      ctx.beginPath();
+      ctx.moveTo(insetPts[0][0], insetPts[0][1]);
+      for(var k = 1; k < insetPts.length; k++){
+        ctx.lineTo(insetPts[k][0], insetPts[k][1]);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(248, 222, 155, ' + (goldAlpha * 0.52) + ')';
+      ctx.lineWidth = 0.9;
+      ctx.stroke();
     }
-    ctx.closePath();
-    ctx.strokeStyle = 'rgba(248, 222, 155, ' + (goldAlpha * 0.68) + ')';
-    ctx.lineWidth = 1.0;
-    ctx.stroke();
 
-    // Anclajes góticos de esquina que unen el bisel exterior con el interior
-    ctx.beginPath();
-    for(var k = 0; k < pts.length; k++){
-      ctx.moveTo(pts[k][0], pts[k][1]);
-      ctx.lineTo(insetPts[k][0], insetPts[k][1]);
-    }
-    ctx.strokeStyle = 'rgba(215, 180, 115, ' + (goldAlpha * 0.42) + ')';
-    ctx.lineWidth = 0.85;
-    ctx.stroke();
-
-    // 3. Anillo rúnico sagrado astrolábico detrás del número en facetas frontales
-    if(n[2] > 0.38){
-      var ringR = (sim.mesh.sides > 12 ? 14 : (sim.mesh.sides > 6 ? 17 : 20)) * cPersp;
+    // 4. Anillo rúnico sagrado astrolábico EXCLUSIVO en la cara frontal principal
+    if(n[2] > 0.82){
+      var ringR = (sim.mesh.sides > 12 ? 15 : (sim.mesh.sides > 6 ? 18 : 22)) * cPersp;
       ctx.beginPath();
       ctx.arc(fx, fy, ringR, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(253, 224, 71, ' + Math.min(0.48, n[2] * 0.45) + ')';
+      ctx.strokeStyle = 'rgba(253, 224, 71, ' + Math.min(0.55, n[2] * 0.5) + ')';
       ctx.lineWidth = 0.85;
       if(ctx.setLineDash){
         ctx.setLineDash([3, 2]);
@@ -962,10 +1020,12 @@ function drawBg3DieSimulation(sim, time){
       }
     }
 
-    // 4. Número grabado en la cara
-    if(n[2] > 0.14){
-      var baseSz = (sim.mesh.sides > 12 ? 22 : (sim.mesh.sides > 6 ? 26 : (sim.mesh.sides === 6 ? 32 : 28)));
-      var fontSz = Math.floor(baseSz * cPersp * bounceScale);
+    // 5. Número grabado en la cara (sólo en caras visibles para evitar amontonamiento)
+    if(n[2] > 0.52){
+      var isHero = (n[2] > 0.82);
+      var baseSz = (sim.mesh.sides > 12 ? 24 : (sim.mesh.sides > 6 ? 28 : (sim.mesh.sides === 6 ? 32 : 30)));
+      var fontSz = Math.floor(baseSz * cPersp * bounceScale * (isHero ? 1.0 : 0.82));
+      ctx.save();
       ctx.font = "800 " + fontSz + "px 'Cinzel Decorative', Georgia, serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -975,14 +1035,26 @@ function drawBg3DieSimulation(sim, time){
         label = (f.value === 0) ? "00" : String(f.value);
       }
 
-      ctx.fillStyle = "rgba(10, 4, 14, 0.88)";
-      ctx.fillText(label, fx + 1.2, fy + 1.2);
+      var alpha = isHero ? 1.0 : Math.min(0.5, Math.pow((n[2] - 0.52) / 0.30, 1.2) * 0.5);
 
-      var alpha = Math.min(1.0, n[2] * 1.35);
-      ctx.fillStyle = "rgba(255, 245, 220, " + alpha + ")";
+      // Sombra profunda tallada
+      ctx.fillStyle = "rgba(10, 4, 14, " + (alpha * 0.9) + ")";
+      ctx.fillText(label, fx + 1.2, fy + 1.4);
+
+      // Texto con resplandor dorado si es cara principal
+      if(isHero){
+        ctx.shadowColor = "rgba(253, 224, 71, 0.65)";
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = "#fff8e7";
+      } else {
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(235, 215, 185, " + alpha + ")";
+      }
       ctx.fillText(label, fx, fy);
+      ctx.restore();
 
-      if(!sim.isRolling && n[2] > 0.82 && f.value === sim.targetValue && sim.sides === 20){
+      if(!sim.isRolling && isHero && f.value === sim.targetValue && sim.sides === 20){
         if(f.value === 20){
           ctx.strokeStyle = "rgba(253, 224, 71, 0.85)";
           ctx.lineWidth = 2.8;
@@ -1595,7 +1667,7 @@ function triggerBg3Roll(launchIntensity){
           playBg3Crit();
         } else if(isFumble){
           vPlate.classList.add("fumble");
-          vTitle.textContent = "¡PIFIA CRÍTICA!";
+          vTitle.textContent = "¡PIFIA!";
           playBg3Fumble();
         } else if(bg3RollState.dcActive){
           if(isSuccess){
@@ -2035,7 +2107,7 @@ function openBg3FreeRoll(sides, qty, mod, mode){
   }
 
   openBg3RollModal({
-    title: (s === 100 ? "d% Percentil" : (q > 1 ? q + "d" + s : "1d" + s)),
+    title: (s === 100 ? "d% Porcentual" : (q > 1 ? q + "d" + s : "1d" + s)),
     subtitle: "Tirada Libre (" + (s === 100 ? "1d100" : q + "d" + s) + ")",
     sides: s,
     qty: q,
@@ -2144,7 +2216,7 @@ function handleRemoteDiceRoll(rollObj){
   if(state.rollLog.length > 20) state.rollLog.length = 20;
   saveState(true);
 
-  var critText = rollObj.isCrit ? " ¡Éxito Crítico!" : (rollObj.isFumble ? " ¡Pifia Crítica!" : "");
+  var critText = rollObj.isCrit ? " ¡Éxito Crítico!" : (rollObj.isFumble ? " ¡Pifia!" : "");
   var toastType = rollObj.isCrit ? "success" : (rollObj.isFumble ? "error" : "info");
   showToast("🎲 " + rollObj.charName + " tiró " + rollObj.label + ": " + rollObj.total + critText, toastType);
 
@@ -2174,7 +2246,7 @@ function openDiceModal(){
     { sides: 10, name: "d10", geom: "Decaedro" },
     { sides: 12, name: "d12", geom: "Dodecaedro" },
     { sides: 20, name: "d20", geom: "Icosaedro" },
-    { sides: 100, name: "d%", geom: "Percentil" }
+    { sides: 100, name: "d%", geom: "Porcentual" }
   ];
   var diceCards = sidesList.map(function(item){
     return '<div class="dtype-card '+(diceConfig.sides===item.sides?'active':'')+'" data-action="pick-die" data-sides="'+item.sides+'" role="button" tabindex="0" title="'+item.name+' ('+item.geom+')">'+
@@ -2196,8 +2268,8 @@ function openDiceModal(){
     '<div class="cup-modal-header">'+
       '<div class="cup-modal-icon">'+getDieSvg(diceConfig.sides)+'</div>'+
       '<div class="cup-modal-title">'+
-        '<h3>Lanzador de Dados 3D</h3>'+
-        '<div class="cup-modal-sub">Elige tu dado, modalidad y lanza en la Cámara 3D</div>'+
+        '<h3>Lanzador de Dados</h3>'+
+        '<div class="cup-modal-sub">Elige tu dado, modalidad y lanza</div>'+
       '</div>'+
       '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>'+
     '</div>'+
@@ -2236,7 +2308,7 @@ function openDiceModal(){
         '</div>'+
       '</div>'+
     '</div>'+
-    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 ¡Lanzar ' + esc(fullFormula) + ' en la Cámara 3D!</button>';
+    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>';
 
   document.getElementById("diceModalOverlay").classList.remove("hidden");
 }
