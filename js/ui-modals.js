@@ -621,6 +621,41 @@ function modalClick(e){
     showToast("¡Compendio verificado! Misiones, Bestiario, Lore y Armas protegidos con éxito.", "success");
     return;
   }
+  if(action==="mod-inv-qty"){
+    var c = activeChar();
+    if(!c || !canEditChar(c)) return;
+    var iid = btn.getAttribute("data-id");
+    var delta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
+    var it = (c.inventory || []).find(function(x){ return x.id === iid; });
+    if(it){
+      it.qty = Math.max(1, num(it.qty, 1) + delta);
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { inventory: c.inventory });
+      saveState(false);
+      openInventoryItemModal(iid);
+      renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { inventory: c.inventory });
+      }
+    }
+    return;
+  }
+  if(action==="del-inventory-modal"){
+    var c = activeChar();
+    if(!c || !canEditChar(c)) return;
+    if(!confirm("¿Eliminar este objeto del inventario?")) return;
+    var iid = btn.getAttribute("data-id");
+    c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;});
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { inventory: c.inventory });
+    saveState(false);
+    closeModals();
+    renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { inventory: c.inventory });
+    }
+    return;
+  }
   if(action==="reset-all-characters"){
     if(confirm("¿Deseas resetear los atributos, habilidades, combate, magias y equipo de los 5 personajes oficiales (Cherk, Ink, Bucky, Scarleth, Derek) a los valores exactos de sus fichas oficiales en PDF? Se conservarán las fotos de perfil.")){
       resetCharactersToOfficial(true);
@@ -635,6 +670,59 @@ function modalClick(e){
     }
     return;
   }
+}
+
+function openInventoryItemModal(itemId){
+  var c = activeChar();
+  if(!c || !c.inventory) return;
+  var it = c.inventory.find(function(x){ return x.id === itemId; });
+  if(!it) return;
+  var canEdit = canEditChar(c);
+  var icon = typeof getItemIcon === "function" ? getItemIcon(it) : "📦";
+  var categories = typeof INVENTORY_CATEGORIES !== "undefined" ? INVENTORY_CATEGORIES : [
+    "Armas", "Armadura y vestimenta", "Accesorios", "Consumibles", "Supervivencia", "Objetos de misión", "Materiales/Ingredientes", "Objetos especiales/únicos", "Miscelánea"
+  ];
+  var itCat = it.category || "Miscelánea";
+
+  var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="close-modal" aria-label="Cerrar">✕</button></div>'+
+    '<div class="inv-modal-content">'+
+      '<div class="inv-modal-icon-header">'+
+        '<div class="inv-modal-icon-display">'+icon+'</div>'+
+        '<div class="inv-modal-title-area">'+
+          (canEdit ?
+            '<input type="text" class="inv-modal-name-input" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" placeholder="Nombre del objeto">' :
+            '<div class="inv-modal-name-static">'+esc(it.name || 'Objeto sin nombre')+'</div>'
+          )+
+          '<div class="inv-modal-cat-tag">'+esc(itCat)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="inv-modal-grid">'+
+        '<div class="field"><label>Categoría</label>'+
+          '<select data-bind="inventory.'+it.id+'.category" '+(canEdit?'':'disabled')+'>'+
+            categories.map(function(cat){
+              return '<option value="'+cat+'" '+(itCat===cat?'selected':'')+'>'+cat+'</option>';
+            }).join('')+
+          '</select>'+
+        '</div>'+
+        '<div class="field"><label>Cantidad</label>'+
+          '<div class="inv-modal-qty-ctrl">'+
+            (canEdit ? '<button type="button" class="btn-compact" data-action="mod-inv-qty" data-id="'+it.id+'" data-delta="-1">-1</button>' : '')+
+            '<input type="number" data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'" min="1" '+(canEdit?'':'readonly')+'>'+
+            (canEdit ? '<button type="button" class="btn-compact" data-action="mod-inv-qty" data-id="'+it.id+'" data-delta="1">+1</button>' : '')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="field" style="margin-top:10px;"><label>Descripción / Propiedades</label>'+
+        '<textarea data-bind="inventory.'+it.id+'.desc" placeholder="Detalles, peso, propiedades mágicas o notas del objeto..." '+(canEdit?'':'readonly')+'>'+esc(it.desc || it.notes || '')+'</textarea>'+
+      '</div>'+
+      '<div class="modal-actions" style="margin-top:16px;display:flex;justify-content:space-between;gap:8px;">'+
+        (canEdit ? '<button class="btn-danger" data-action="del-inventory-modal" data-id="'+it.id+'">🗑️ Eliminar</button>' : '<div></div>')+
+        '<button class="btn-solid-gold" data-action="close-modal">Listo</button>'+
+      '</div>'+
+    '</div>';
+
+  document.getElementById("dataModal").innerHTML = html;
+  document.getElementById("dataModalOverlay").classList.remove("hidden");
 }
 
 function openBeastMobilityModal(beastId, isSummon){

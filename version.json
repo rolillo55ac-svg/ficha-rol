@@ -1,7 +1,7 @@
 {
-  "version": "1.3.0",
-  "build": "2026.09.11.4",
-  "updatedAt": "2026-09-11T16:08:00Z",
+  "version": "1.3.1",
+  "build": "2026.09.11.5",
+  "updatedAt": "2026-09-11T18:05:00Z",
   "forceReload": true,
-  "changelog": "Diseño estético y refinado para la vista original de habilidades y selector de vista estilizado."
+  "changelog": "Sistema de mochila de aventurero e inventario en cuadrícula (Grid System) con audio inmersivo, pestañas y vista dual."
 }

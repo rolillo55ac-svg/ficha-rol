@@ -226,6 +226,22 @@ function handleClick(e){
     renderTab();
     return;
   }
+  if(action==="set-inv-view"){
+    var iVal = btn.getAttribute("data-val") || "grid";
+    if(!state) state = {};
+    state.invView = iVal;
+    try { localStorage.setItem("krysalis_inv_view", iVal); } catch(err){}
+    if(iVal === "grid" && typeof playBackpackOpenSound === "function") playBackpackOpenSound();
+    renderTab();
+    return;
+  }
+  if(action==="set-inv-group"){
+    var gVal = btn.getAttribute("data-val") || "all";
+    if(!state) state = {};
+    state.invGroupFilter = gVal;
+    renderTab();
+    return;
+  }
   if(action==="resolve-conflict-server"){
     if(activeConflictData && activeConflictData.remoteData){
       var rem = activeConflictData.remoteData;
@@ -264,9 +280,14 @@ function handleClick(e){
       try { document.activeElement.blur(); } catch(e){}
     }
     flushPendingSync();
-    state.activeTab = btn.getAttribute("data-tab");
+    var nextTab = btn.getAttribute("data-tab");
+    state.activeTab = nextTab;
     saveState(true);
-    if(typeof playBg3Parchment === "function") playBg3Parchment();
+    if(nextTab === "inventario" && typeof playBackpackOpenSound === "function"){
+      playBackpackOpenSound();
+    } else if(typeof playBg3Parchment === "function"){
+      playBg3Parchment();
+    }
     renderTabbar();
     renderTab();
     return;
@@ -882,16 +903,31 @@ function handleClick(e){
     renderTab();
     return;
   }
-  if(action==="add-inventory"){
+  if(action==="inspect-inv-item"){
+    var inspectId = btn.getAttribute("data-id");
+    if(typeof openInventoryItemModal === "function") openInventoryItemModal(inspectId);
+    return;
+  }
+  if(action==="add-inventory" || action==="add-inventory-slot"){
     if(!c || !canEditChar(c)) return;
     c.inventory = c.inventory || [];
-    var defaultCat = (state.invCategoryFilter && state.invCategoryFilter !== "all") ? state.invCategoryFilter : "Miscelánea";
-    var newInv = {id:uid(), name:"", qty:1, category: defaultCat};
+    var defaultCat = "Miscelánea";
+    var grp = state.invGroupFilter || "all";
+    if(grp === "combate") defaultCat = "Armas";
+    else if(grp === "consumibles") defaultCat = "Consumibles";
+    else if(grp === "aventura") defaultCat = "Supervivencia";
+    else if(grp === "botin") defaultCat = "Miscelánea";
+    else if(state.invCategoryFilter && state.invCategoryFilter !== "all") defaultCat = state.invCategoryFilter;
+
+    var newInv = {id:uid(), name:"", qty:1, category: defaultCat, desc:""};
     c.inventory.push(newInv);
     c._lastLocalEdit = Date.now();
     markCharDirty(c.id, { inventory: c.inventory });
     saveState(false);
     renderTab();
+    if(typeof openInventoryItemModal === "function"){
+      openInventoryItemModal(newInv.id);
+    }
     if(typeof pushCharacterPatch === 'function'){
       pushCharacterPatch(c.id, { inventory: c.inventory });
     }

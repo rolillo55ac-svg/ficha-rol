@@ -1,5 +1,5 @@
-var APP_VERSION = "1.3.0";
-var APP_BUILD = "2026.09.11.4";
+var APP_VERSION = "1.3.1";
+var APP_BUILD = "2026.09.11.5";
 
 var state = null;
 var supabaseClient = null;
@@ -340,7 +340,9 @@ function defaultState(){
     _deletedSeedClues: [],
     questMap: getSeedQuestMap(),
     sessionSummary: getSeedSessionSummary(),
-    skillsView: "attr"
+    skillsView: "attr",
+    invView: "grid",
+    invGroupFilter: "all"
   };
 }
 
@@ -351,6 +353,10 @@ function migrateState(s){
   if(!s.skillsView) {
     try { s.skillsView = localStorage.getItem("krysalis_skills_view") || "attr"; } catch(e){ s.skillsView = "attr"; }
   }
+  if(!s.invView) {
+    try { s.invView = localStorage.getItem("krysalis_inv_view") || "grid"; } catch(e){ s.invView = "grid"; }
+  }
+  if(!s.invGroupFilter) s.invGroupFilter = "all";
 
   // 1. Integridad de Armas y Armaduras
   if(!s.weaponsCatalog || !Array.isArray(s.weaponsCatalog) || !s.weaponsCatalog.length){
