@@ -367,8 +367,26 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .field textarea{resize:vertical;min-height:50px;line-height:1.5;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px;background:rgba(0,0,0,0.14);}
 
 /* ATRIBUTOS */
-.attr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
-@media(max-width:420px){.attr-grid{grid-template-columns:repeat(auto-fit,minmax(62px,1fr));}}
+.attr-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.attr-grid .attr-card {
+  flex: 1 1 calc(20% - 8px);
+  min-width: 68px;
+}
+@media (max-width: 767px) {
+  .attr-grid .attr-card {
+    flex: 1 1 calc(33.333% - 8px);
+  }
+}
+@media (max-width: 380px) {
+  .attr-grid .attr-card {
+    flex: 1 1 calc(50% - 6px);
+  }
+}
 .attr-card{
   background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));
   border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 4px;text-align:center;
@@ -486,57 +504,246 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35), inset 0 0 8px rgba(176, 141, 87, 0.15);
 }
 
-/* TABLA CONTINUA TIPO FICHA ORIGINAL */
-.skills-excel-wrapper {
+/* === VISTA FICHA ORIGINAL (RESPONSIVA / 3 COLUMNAS) === */
+.skills-original-container {
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   margin-bottom: 14px;
 }
-.skills-excel-table {
-  min-width: 100%;
+
+/* 1. Atributos superiores horizontales adaptativos */
+.skills-orig-attr-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
 }
-.skills-excel-headers {
-  display: grid;
-  grid-template-columns: 1fr 58px 36px 82px 42px 34px;
-  gap: 4px;
-  align-items: center;
-  font-size: 0.60rem;
-  color: var(--teal-light);
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding-bottom: 6px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--line-strong);
-}
-.skills-excel-headers span {
+.skills-orig-attr-card {
+  flex: 1 1 calc(20% - 8px);
+  min-width: 68px;
+  background: linear-gradient(160deg, var(--bg-elev), var(--bg-card));
+  border: 1px solid rgba(176, 141, 87, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 6px;
   text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: pointer;
+  user-select: none;
 }
-.skills-excel-headers span:first-child {
-  text-align: left;
+.skills-orig-attr-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 8px rgba(176, 141, 87, 0.35);
 }
-.skills-excel-row {
-  display: grid;
-  grid-template-columns: 1fr 58px 36px 82px 42px 34px;
-  gap: 4px;
+.skills-orig-attr-card:active {
+  transform: scale(0.97);
+}
+.skills-orig-attr-card label {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.skills-orig-attr-val {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  text-shadow: 0 0 10px rgba(176, 141, 87, 0.3);
+  line-height: 1.1;
+}
+.skills-orig-attr-card .attr-roll-hint {
+  display: block;
+  font-size: 0.54rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+  opacity: 0.85;
+}
+
+@media (max-width: 767px) {
+  .skills-orig-attr-bar {
+    gap: 6px;
+  }
+  .skills-orig-attr-card {
+    flex: 1 1 calc(33.333% - 6px);
+    padding: 8px 4px;
+  }
+}
+@media (max-width: 380px) {
+  .skills-orig-attr-card {
+    flex: 1 1 calc(50% - 6px);
+  }
+}
+
+/* 2. Grid de Habilidades: Mobile First (1 columna vertical fluida) */
+.skills-original-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.skills-orig-col {
+  display: flex;
+  flex-direction: column;
+  background: rgba(18, 13, 10, 0.48);
+  border: 1px solid rgba(176, 141, 87, 0.22);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px 10px 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  min-width: 0;
+}
+
+.skills-orig-col-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 6px 2px;
-  border-bottom: 1px dashed var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--teal-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 4px 8px 4px;
+  border-bottom: 1px solid rgba(176, 141, 87, 0.35);
+  margin-bottom: 2px;
+  font-weight: 700;
+}
+
+/* 3. Filas de Habilidad: Limpias, sutiles y touch-friendly (>=12px padding) */
+.skills-orig-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 6px;
+  border-bottom: 1px solid rgba(176, 141, 87, 0.14);
   border-radius: 4px;
-  transition: background var(--transition-fast);
+  gap: 8px;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  min-width: 0;
 }
-.skills-excel-row:hover {
-  background: rgba(176, 141, 87, 0.05);
-}
-.skills-excel-row:last-child {
+.skills-orig-row:last-child {
   border-bottom: none;
 }
-.skill-excel-attr-wrap {
+.skills-orig-row:hover {
+  background: rgba(176, 141, 87, 0.06);
+}
+
+/* Izquierda: Nombre y tag de atributo */
+.skills-orig-info {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.skills-orig-name {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skills-orig-attr-badge {
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
 }
+
+/* Derecha: Valores numéricos y tirada (no se comprimen ni solapan) */
+.skills-orig-data {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.skills-orig-base {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  min-width: 22px;
+  text-align: center;
+}
+
+.skills-orig-total {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--gold-light);
+  min-width: 24px;
+  text-align: center;
+  text-shadow: 0 0 6px rgba(176, 141, 87, 0.3);
+}
+
+.skills-orig-data .skill-bonus-ctrl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.skills-orig-data .skill-bonus-ctrl span {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--gold-light);
+  min-width: 38px;
+  text-align: center;
+}
+
+.skills-orig-data .skill-bonus-ctrl button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  background: var(--bg-elev);
+  border: 1px solid rgba(176, 141, 87, 0.3);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--gold-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.skills-orig-data .skill-bonus-ctrl button:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: rgba(176, 141, 87, 0.2);
+}
+
+.skills-orig-data .skill-bonus-ctrl button:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+.skills-orig-data .dice-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  font-size: 0.90rem;
+  border-radius: 6px;
+  background: linear-gradient(160deg, var(--bg-elev), var(--bg-card));
+  border: 1px solid rgba(176, 141, 87, 0.35);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Badges y selectores de atributos */
 .skill-attr-tag {
   font-family: var(--font-mono);
   font-size: 0.64rem;
@@ -625,47 +832,51 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
     padding: 7px 10px;
     font-size: 0.70rem;
   }
-  .skills-excel-headers,
-  .skills-excel-row {
-    grid-template-columns: 1fr 48px 28px 70px 34px 30px;
-    gap: 2px;
-    padding: 5px 2px;
+}
+
+/* 4. MEDIA QUERY PARA PANTALLAS GRANDES: 3 COLUMNAS */
+@media (min-width: 768px) {
+  .skills-original-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    align-items: start;
   }
-  .skills-excel-headers {
-    font-size: 0.56rem;
+  .skills-orig-row {
+    padding: 8px 4px;
+    gap: 4px;
   }
-  .skill-attr-tag {
-    font-size: 0.58rem;
-    min-width: 30px;
-    padding: 1px 3px;
+  .skills-orig-name {
+    font-size: 0.78rem;
   }
-  .skill-excel-hybrid-select {
-    font-size: 0.58rem;
-    min-width: 38px;
-    padding: 1px 2px;
+  .skills-orig-data {
+    gap: 4px;
   }
-  .skills-excel-row .dice-btn {
+  .skills-orig-data .dice-btn {
     width: 30px;
     height: 30px;
     min-width: 30px;
     min-height: 30px;
-    font-size: 0.80rem;
+    font-size: 0.82rem;
   }
-  .skills-excel-row .skill-bonus-ctrl button {
+  .skills-orig-data .skill-bonus-ctrl button {
     width: 24px;
     height: 24px;
     min-width: 24px;
     min-height: 24px;
-    font-size: 0.62rem;
+    font-size: 0.64rem;
   }
-  .skills-excel-row .skill-bonus-ctrl span {
+  .skills-orig-data .skill-bonus-ctrl span {
     font-size: 0.66rem;
-    min-width: 16px;
+    min-width: 30px;
   }
-}
-@media (max-width: 360px) {
-  .skills-excel-table {
-    min-width: 330px;
+  .skills-orig-base {
+    font-size: 0.76rem;
+    min-width: 18px;
+  }
+  .skills-orig-total {
+    font-size: 0.84rem;
+    min-width: 20px;
   }
 }
 

@@ -1,7 +1,7 @@
 {
-  "version": "1.3.3",
-  "build": "2026.09.11.7",
-  "updatedAt": "2026-09-11T18:18:00Z",
+  "version": "1.3.4",
+  "build": "2026.09.11.8",
+  "updatedAt": "2026-09-11T18:27:00Z",
   "forceReload": true,
-  "changelog": "Perfeccionamiento responsive de mochila sin desbordes, guardado directo de objetos y eliminación de slots vacíos sobrantes."
+  "changelog": "Reestructuración responsiva de ficha original en 3 columnas en escritorio y columna fluida con touch targets amigables en móvil, con cabecera de atributos adaptable."
 }

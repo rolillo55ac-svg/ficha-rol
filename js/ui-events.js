@@ -2431,6 +2431,12 @@ function handleKeyDown(e){
     var trId = e.target.getAttribute("data-manual-for");
     var btn = document.querySelector('button[data-action="add-manual-training-roll"][data-id="' + trId + '"]');
     if(btn) btn.click();
+    return;
+  }
+  if((e.key === "Enter" || e.key === " ") && e.target && e.target.matches('[role="button"][data-action]')){
+    e.preventDefault();
+    e.target.click();
+    return;
   }
 }
 

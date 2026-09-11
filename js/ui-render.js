@@ -323,28 +323,59 @@ function tplHabilidades(c){
       html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-custom-skill">+ Añadir habilidad personalizada</button>';
     }
   } else {
-    html += '<div class="skills-excel-wrapper">'+
-      '<div class="skills-excel-table">'+
-        '<div class="skills-excel-headers">'+
-          '<span>Habilidad</span>'+
-          '<span style="text-align:center;">Atrib.</span>'+
-          '<span style="text-align:center;">Base</span>'+
-          '<span style="text-align:center;">Bono (Prog)</span>'+
-          '<span style="text-align:center;">Total</span>'+
-          '<span></span>'+
-        '</div>';
+    // === VISTA FICHA ORIGINAL (3 COLUMNAS / RESPONSIVA) ===
+    html += '<div class="skills-original-container">';
 
-    SKILL_DEFS.forEach(function(s){
+    // 1. Cabecera horizontal de atributos principales adaptativa a móviles
+    html += '<div class="skills-orig-attr-bar">';
+    ATTRS.forEach(function(a){
+      var effVal = getEffectiveAttr(a, c);
+      html += '<div class="skills-orig-attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Lanzar tirada de '+ATTR_LABELS[a]+'">'+
+        '<label>'+ATTR_LABELS[a]+'</label>'+
+        '<div class="skills-orig-attr-val">'+effVal+'</div>'+
+        '<span class="attr-roll-hint">Tirar 🎲</span>'+
+      '</div>';
+    });
+    html += '</div>';
+
+    // 2. Grilla de 3 columnas (en escritorio) y 1 columna fluida (en móviles)
+    var col1Skills = SKILL_DEFS.slice(0, 10);
+    var col2Skills = SKILL_DEFS.slice(10, 20);
+    var col3Skills = SKILL_DEFS.slice(20, 30);
+
+    html += '<div class="skills-original-grid">';
+
+    // Columna 1
+    html += '<div class="skills-orig-col">'+
+      '<div class="skills-orig-col-header"><span>Columna I</span><span>Base · Bono · Total</span></div>';
+    col1Skills.forEach(function(s){
       html += skillRowExcelHtml(s, c, unlocked, canEdit);
     });
+    html += '</div>';
 
+    // Columna 2
+    html += '<div class="skills-orig-col">'+
+      '<div class="skills-orig-col-header"><span>Columna II</span><span>Base · Bono · Total</span></div>';
+    col2Skills.forEach(function(s){
+      html += skillRowExcelHtml(s, c, unlocked, canEdit);
+    });
+    html += '</div>';
+
+    // Columna 3
+    html += '<div class="skills-orig-col">'+
+      '<div class="skills-orig-col-header"><span>Columna III</span><span>Base · Bono · Total</span></div>';
+    col3Skills.forEach(function(s){
+      html += skillRowExcelHtml(s, c, unlocked, canEdit);
+    });
     if(c.customSkills && c.customSkills.length){
       c.customSkills.forEach(function(cs){
         html += customSkillRowExcelHtml(cs, c, unlocked, canEdit);
       });
     }
+    html += '</div>';
 
-    html += '</div></div>';
+    html += '</div>'; // Cierre skills-original-grid
+    html += '</div>'; // Cierre skills-original-container
 
     if(isGM()){
       html += '<button class="btn-compact" style="width:100%;margin-top:10px;" data-action="add-custom-skill">+ Añadir habilidad personalizada</button>';
@@ -444,19 +475,23 @@ function skillRowExcelHtml(s, c, unlocked, canEdit){
     '</span>';
   }
 
-  return '<div class="skills-excel-row" data-skill-id="'+s.id+'">'+
-    '<span class="skill-name" title="'+esc(s.name)+'">'+esc(s.name)+'</span>'+
-    '<div class="skill-excel-attr-wrap">'+attrCol+'</div>'+
-    '<span class="skill-base">'+base+'</span>'+
-    '<span class="skill-bonus-ctrl">'+
-      (isGM() ? gmControls : (
-        '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso a '+esc(s.name)+'">-</button>'+
-        '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
-        '<button data-action="skill-add" data-id="'+s.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso a '+esc(s.name)+'">+</button>'
-      ))+
-    '</span>'+
-    '<span class="skill-total">'+total+'</span>'+
-    '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'" aria-label="Tirar '+esc(s.name)+'">&#127922;</button>'+
+  return '<div class="skills-orig-row skills-excel-row" data-skill-id="'+s.id+'">'+
+    '<div class="skills-orig-info">'+
+      '<span class="skills-orig-name" title="'+esc(s.name)+'">'+esc(s.name)+'</span>'+
+      '<div class="skills-orig-attr-badge">'+attrCol+'</div>'+
+    '</div>'+
+    '<div class="skills-orig-data">'+
+      '<span class="skills-orig-base" title="Base: '+base+'">'+base+'</span>'+
+      '<span class="skill-bonus-ctrl">'+
+        (isGM() ? gmControls : (
+          '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso a '+esc(s.name)+'">-</button>'+
+          '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+          '<button data-action="skill-add" data-id="'+s.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso a '+esc(s.name)+'">+</button>'
+        ))+
+      '</span>'+
+      '<span class="skills-orig-total" title="Total: '+total+'">'+total+'</span>'+
+      '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'" aria-label="Tirar '+esc(s.name)+'">&#127922;</button>'+
+    '</div>'+
   '</div>';
 }
 
@@ -488,19 +523,23 @@ function customSkillRowExcelHtml(cs, c, unlocked, canEdit){
   var shortA = ATTR_LABELS[cs.attr] ? ATTR_LABELS[cs.attr].slice(0,3).toUpperCase() : (cs.attr ? cs.attr.slice(0,3).toUpperCase() : "GEN");
   var attrCol = '<span class="skill-attr-tag attr-'+(cs.attr||'custom')+'" title="'+(ATTR_LABELS[cs.attr]||cs.attr)+'">'+shortA+'</span>';
 
-  return '<div class="skills-excel-row" data-skill-id="'+cs.id+'">'+
-    '<span class="skill-name" title="'+esc(cs.name)+'">'+esc(cs.name)+'<small class="custom-skill-badge">Pers.</small></span>'+
-    '<div class="skill-excel-attr-wrap">'+attrCol+'</div>'+
-    '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
-    '<span class="skill-bonus-ctrl">'+
-      (isGM() ? gmCustomTools : (
-        '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso">-</button>'+
-        '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
-        '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso">+</button>'
-      ))+
-    '</span>'+
-    '<span class="skill-total">'+customSkillTotal(cs,c)+'</span>'+
-    '<button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'" aria-label="Tirar '+esc(cs.name)+'">&#127922;</button>'+
+  return '<div class="skills-orig-row skills-excel-row" data-skill-id="'+cs.id+'">'+
+    '<div class="skills-orig-info">'+
+      '<span class="skills-orig-name" title="'+esc(cs.name)+'">'+esc(cs.name)+'<small class="custom-skill-badge">Pers.</small></span>'+
+      '<div class="skills-orig-attr-badge">'+attrCol+'</div>'+
+    '</div>'+
+    '<div class="skills-orig-data">'+
+      '<span class="skills-orig-base" title="Base: '+getEffectiveAttr(cs.attr,c)+'">'+getEffectiveAttr(cs.attr,c)+'</span>'+
+      '<span class="skill-bonus-ctrl">'+
+        (isGM() ? gmCustomTools : (
+          '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso">-</button>'+
+          '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+          '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso">+</button>'
+        ))+
+      '</span>'+
+      '<span class="skills-orig-total" title="Total: '+customSkillTotal(cs,c)+'">'+customSkillTotal(cs,c)+'</span>'+
+      '<button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'" aria-label="Tirar '+esc(cs.name)+'">&#127922;</button>'+
+    '</div>'+
   '</div>';
 }
 
