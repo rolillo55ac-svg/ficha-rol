@@ -1,7 +1,7 @@
 {
-  "version": "1.3.5",
-  "build": "2026.09.11.9",
-  "updatedAt": "2026-09-11T18:35:00Z",
+  "version": "1.3.6",
+  "build": "2026.09.11.10",
+  "updatedAt": "2026-09-11T18:38:00Z",
   "forceReload": true,
-  "changelog": "Expansión del sistema de audio de la topbar con mapeo centralizado e instantáneo, corrección de recursión al guardar objetos de inventario y optimización responsive de slots para evitar solapamientos."
+  "changelog": "Diseño en dos niveles para las habilidades en Ficha Original en móviles: nombre completo en primera fila y barra de estadísticas (base, bonos, total y dado) en segunda fila para evitar texto cortado."
 }
