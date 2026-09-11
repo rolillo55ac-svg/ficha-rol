@@ -186,31 +186,31 @@ function openCharModal(){
 function openDataModal(){
   var html = '<h2>Ajustes y Cuenta<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   if(currentUser){
-    html += '<div style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.3);padding:10px 12px;border-radius:8px;border:1px solid var(--line);">'+
-      '<div>'+
-        '<div style="font-size:0.7rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.04em;">Conectado como</div>'+
-        '<div style="color:var(--gold-light);font-weight:700;font-size:0.95rem;">'+esc(currentUser.email)+' <span style="font-size:0.72rem;color:var(--gold);font-weight:400;">('+ (currentRole === 'gm' ? 'Máster' : 'Jugador') +')</span></div>'+
+    html += '<div class="data-modal-user-box">'+
+      '<div class="data-modal-user-info">'+
+        '<div class="data-modal-user-label">Conectado como</div>'+
+        '<div class="data-modal-user-email">'+esc(currentUser.email)+' <span class="data-modal-user-role">('+ (currentRole === 'gm' ? 'Máster' : 'Jugador') +')</span></div>'+
       '</div>'+
-      '<button class="btn-compact" data-action="auth-logout" style="padding:6px 12px;">Cerrar sesión</button>'+
+      '<button class="btn-compact data-modal-logout-btn" data-action="auth-logout">Cerrar sesión</button>'+
     '</div>';
   } else {
     html += '<div style="font-size:0.8rem;color:var(--ink-dim);margin-bottom:10px;">Inicia sesión con tu cuenta para guardar y sincronizar tu personaje:</div>'+
       '<div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="tu-correo@gmail.com"></div>'+
       '<div class="field" style="margin-top:8px;"><label>Contraseña</label><input type="password" id="authPass" placeholder="••••••••"></div>'+
-      '<div style="display:flex;gap:8px;margin-top:12px;">'+
-        '<button class="btn-solid-gold" style="flex:1;padding:8px;" data-action="auth-login">Entrar</button>'+
-        '<button class="btn-compact" style="flex:1;padding:8px;" data-action="auth-signup">Crear cuenta</button>'+
+      '<div class="data-modal-auth-actions">'+
+        '<button class="btn-solid-gold data-modal-btn" data-action="auth-login">Entrar</button>'+
+        '<button class="btn-compact data-modal-btn" data-action="auth-signup">Crear cuenta</button>'+
       '</div>';
   }
 
   // === MONITOR DE ALMACENAMIENTO Y VERSIÓN UNIFICADO ===
   var local = typeof getLocalStorageUsage === "function" ? getLocalStorageUsage() : { pct: 0, usedStr: "0 B", totalStr: "5.0 MB", freeStr: "5.0 MB" };
   var localPillClass = local.pct > 90 ? "critical" : (local.pct > 70 ? "warning" : "optimal");
-  var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.2");
+  var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.7");
 
   html += '<div class="storage-monitor-box">'+
     '<div class="storage-monitor-header">'+
-      '<div class="storage-monitor-title">📊 Espacio y Versión de la Aplicación</div>'+
+      '<div class="storage-monitor-title"><span>📊</span> <span>Espacio y Versión</span></div>'+
       '<span class="storage-pill optimal" id="appVersionBadge">v' + curVerStr + '</span>'+
     '</div>'+
     '<div class="storage-cards-grid">'+
@@ -232,7 +232,7 @@ function openDataModal(){
           (local.base64Count > 0 ?
             '<div style="margin-top:4px;padding:6px 8px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:4px;display:flex;flex-direction:column;gap:5px;">'+
               '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">⚠️ Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
-              '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
+              '<button class="btn-compact highlight data-modal-btn" data-action="migrate-local-images" style="font-size:0.72rem;background:var(--gold);color:#120D0A;font-weight:700;padding:6px 8px;width:100%;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
             '</div>' : ''
           )+
         '</div>'+
@@ -255,32 +255,32 @@ function openDataModal(){
     '</div>'+
     // Control Unificado de Actualización y Limpieza de Caché
     '<div style="margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;">'+
-      '<button class="btn-solid-gold" style="width:100%;padding:9px 12px;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;" data-action="unified-app-update-cache" title="Comprueba si hay una nueva versión, purga cachés de navegadores/PWA y recarga limpiamente">'+
-        '<span>🚀</span> <span>Actualizar y Limpiar Caché</span>'+
+      '<button class="btn-solid-gold data-modal-btn" style="width:100%;padding:9px 12px;font-size:0.82rem;font-weight:700;" data-action="unified-app-update-cache" title="Comprueba si hay una nueva versión, purga cachés de navegadores/PWA y recarga limpiamente">'+
+        '<span>🚀 Actualizar y Limpiar Caché</span>'+
       '</button>'+
-      '<div id="versionCheckResult" style="font-size:0.7rem;color:var(--ink-faint);margin-top:5px;text-align:center;">'+
+      '<div id="versionCheckResult" style="font-size:0.7rem;color:var(--ink-faint);margin-top:5px;text-align:center;word-break:break-word;">'+
         '✓ Versión v' + curVerStr + ' sincronizada · Pulsa para forzar recarga limpia'+
       '</div>'+
       (isGM() ? 
-        '<button class="btn-compact" style="width:100%;margin-top:8px;padding:7px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.75rem;background:rgba(88,101,242,0.12);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="broadcast-force-update" title="Envía una señal en tiempo real a todos los jugadores conectados para forzarles a actualizar su versión y limpiar caché">'+
-          '<span>📢</span> <span>Forzar actualización inmediata a todos los jugadores</span>'+
+        '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;padding:8px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.75rem;background:rgba(88,101,242,0.12);" data-action="broadcast-force-update" title="Envía una señal en tiempo real a todos los jugadores conectados para forzarles a actualizar su versión y limpiar caché">'+
+          '<span>📢 Forzar actualización a jugadores</span>'+
         '</button>' : '')+
     '</div>'+
   '</div>';
 
   html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">'+
     '<div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);margin-bottom:8px;">💾 Guardar y restaurar partida</div>'+
-    '<div style="display:flex;gap:8px;">'+
-      '<button class="btn-compact" style="flex:1;padding:8px;" data-action="download-full-backup" title="Descargar un archivo JSON con todos los datos">Descargar copia (.json)</button>'+
-      '<button class="btn-compact" style="flex:1;padding:8px;" data-action="import-data" title="Cargar un archivo de copia anterior">Cargar copia</button>'+
+    '<div class="data-modal-backup-grid">'+
+      '<button class="btn-compact data-modal-btn" data-action="download-full-backup" title="Descargar un archivo JSON con todos los datos">Descargar copia (.json)</button>'+
+      '<button class="btn-compact data-modal-btn" data-action="import-data" title="Cargar un archivo de copia anterior">Cargar copia</button>'+
     '</div>'+
-    (isGM() ? '<button class="btn-compact btn-solid-gold" style="width:100%;margin-top:8px;padding:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
-    '<button class="btn-compact highlight" style="width:100%;margin-top:8px;padding:8px;background:rgba(176,141,87,0.18);border:1px solid var(--gold);color:var(--gold-light);font-weight:700;" data-action="repair-compendium-data" title="Verifica y recupera todas las misiones oficiales, criaturas del bestiario, armas y lore sin borrar tus datos">🛡️ Reparar y asegurar compendio oficial (Misiones y Bestiario)</button>'+
-    '<button class="btn-compact" style="width:100%;margin-top:10px;padding:9px;border-color:rgba(212,175,55,0.4);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="open-feedback-modal"><span>📬</span> <span>Buzón de Reportes y Sugerencias</span></button>'+
+    (isGM() ? '<button class="btn-compact btn-solid-gold data-modal-btn" style="width:100%;margin-top:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
+    '<button class="btn-compact highlight data-modal-btn" style="width:100%;margin-top:8px;background:rgba(176,141,87,0.18);border:1px solid var(--gold);color:var(--gold-light);font-weight:700;" data-action="repair-compendium-data" title="Verifica y recupera todas las misiones oficiales, criaturas del bestiario, armas y lore sin borrar tus datos">🛡️ Reparar compendio oficial (Misiones y Bestiario)</button>'+
+    '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;border-color:rgba(212,175,55,0.4);" data-action="open-feedback-modal"><span>📬</span> <span>Buzón de Reportes y Sugerencias</span></button>'+
     '<div style="font-size:0.72rem;color:var(--ink-faint);margin-top:10px;line-height:1.4;">'+
       '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo al Administrador (rolillo55ac@gmail.com).</i>'+
     '</div>'+
-    '<button class="btn-solid-gold" style="width:100%;margin-top:12px;padding:9px;" data-action="reset-all-characters">↻ Restablecer personajes oficiales (PDF)</button>'+
+    '<button class="btn-solid-gold data-modal-btn" style="width:100%;margin-top:12px;" data-action="reset-all-characters">↻ Restablecer personajes oficiales (PDF)</button>'+
   '</div>';
 
   document.getElementById("dataModal").innerHTML = html;

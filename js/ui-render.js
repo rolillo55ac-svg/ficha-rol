@@ -1214,7 +1214,7 @@ function tplInvocaciones(c){
             '<button type="button" class="row-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + idx + '" title="Eliminar ' + esc(rp.label) + '">✕</button>' +
           '</div>';
         }).join('') : '<div style="font-size:0.75rem;color:var(--ink-faint);padding:6px 0;font-style:italic;">No hay tiradas todavía. Pulsa "+ Añadir tirada" para crear una.</div>') +
-        '<div style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap;">' +
+        '<div class="summon-skills-editor-actions" style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap;">' +
           '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '">+ Añadir tirada</button>' +
           '<button type="button" class="btn-solid-gold" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" style="padding:6px 14px;font-size:0.75rem;">✓ Guardar y Ver Botones</button>' +
         '</div>' +
@@ -1276,15 +1276,15 @@ function tplInvocaciones(c){
       '<div class="summon-modules-container">' +
         '<div class="summon-block summon-rolls-block">' +
           '<div class="summon-block-header">' +
-            '<div style="display:flex;align-items:center;gap:6px;">' +
-              '<span class="summon-block-title">⚔️ Tiradas y Habilidades de Acción</span>' +
+            '<div class="summon-block-title-wrap">' +
+              '<span class="summon-block-title">⚔️ Tiradas y Habilidades</span>' +
               '<span class="summon-block-sub">Toca para tirar</span>' +
             '</div>' +
-            (canEdit ? ('<div style="display:flex;gap:4px;align-items:center;">' +
-              '<button type="button" class="btn-compact' + (isEditingSkills ? ' btn-solid-gold' : '') + '" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" title="Editar lista de habilidades">' +
+            (canEdit ? ('<div class="summon-block-actions">' +
+              '<button type="button" class="btn-compact summon-action-btn' + (isEditingSkills ? ' btn-solid-gold' : '') + '" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" title="Editar lista de habilidades">' +
                 (isEditingSkills ? '✓ Ver Botones' : '✏️ Editar Habilidades') +
               '</button>' +
-              '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '" title="Añadir nueva tirada">+ Añadir</button>' +
+              '<button type="button" class="btn-compact summon-action-btn" data-action="add-summon-skill" data-id="' + s.id + '" title="Añadir nueva tirada">+ Añadir</button>' +
             '</div>') : '') +
           '</div>' +
           skillsContentHtml +

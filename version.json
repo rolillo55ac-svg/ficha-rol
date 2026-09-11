@@ -1,7 +1,7 @@
 {
-  "version": "1.2.6",
-  "build": "2026.09.10.7",
-  "updatedAt": "2026-09-10T23:30:00Z",
+  "version": "1.2.7",
+  "build": "2026.09.11.1",
+  "updatedAt": "2026-09-11T13:15:00Z",
   "forceReload": true,
-  "changelog": "Desactivado el cambio de pestaña por deslizamiento táctil en móviles para permitir scroll vertical y lectura fluida sin cambios involuntarios de menú."
+  "changelog": "Perfeccionado el diseño responsive en móviles: los botones de ajustes y cuenta se adaptan limpiamente sin desbordar, y los botones de habilidades en invocaciones quedan organizados y accesibles."
 }
