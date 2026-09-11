@@ -5724,12 +5724,18 @@ textarea,
   font-style: italic;
 }
 
+/* Tooltip oculto por defecto (en móviles no distorsiona ni comprime las ranuras) */
+.slot-tooltip {
+  display: none;
+}
+
 /* Tooltip sólo en dispositivos con puntero fino (Desktop) */
 @media (hover: hover) and (pointer: fine) {
   .backpack-slot.occupied {
     overflow: visible;
   }
   .slot-tooltip {
+    display: block;
     position: absolute;
     bottom: calc(100% + 8px);
     left: 50%;
@@ -5950,19 +5956,26 @@ textarea,
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 460px) {
   .backpack-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+    gap: 6px;
   }
   .backpack-slot {
-    padding: 2px 1px;
+    padding: 4px 2px;
+    min-height: 76px;
   }
   .slot-icon {
-    font-size: 1.25rem;
+    font-size: 1.45rem;
   }
   .slot-name-label {
-    font-size: 0.5rem;
+    font-size: 0.58rem;
+  }
+}
+@media (max-width: 320px) {
+  .backpack-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
   }
 }
 

@@ -283,7 +283,9 @@ function handleClick(e){
     var nextTab = btn.getAttribute("data-tab");
     state.activeTab = nextTab;
     saveState(true);
-    if(nextTab === "inventario" && typeof playBackpackOpenSound === "function"){
+    if(typeof playTopbarTabSound === "function"){
+      playTopbarTabSound(nextTab);
+    } else if(nextTab === "inventario" && typeof playBackpackOpenSound === "function"){
       playBackpackOpenSound();
     } else if(typeof playBg3Parchment === "function"){
       playBg3Parchment();

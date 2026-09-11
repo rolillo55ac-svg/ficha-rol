@@ -252,20 +252,68 @@ function playBg3Parchment(){
   } catch(e){}
 }
 
-var backpackAudioInstance = null;
+// === MAPEO CENTRALIZADO DE ARCHIVOS DE AUDIO PARA LA TOPBAR / MENÚ ===
+var TOPBAR_AUDIO_MAP = {
+  ficha: 'sounds/ficha_pergamino.mp3',
+  mision: 'sounds/mision_brujula.mp3',
+  habilidades: 'sounds/habilidades_click.mp3',
+  entrenamiento: 'sounds/entrenamiento_tela.mp3',
+  combate: 'sounds/combate_espada.mp3',
+  estados: 'sounds/estados_magia.mp3',
+  inventario: 'sounds/backpack_open.mp3',
+  magia: 'sounds/magia_destello.mp3',
+  alquimia: 'sounds/alquimia_poción.mp3',
+  invocaciones: 'sounds/invocaciones_eco.mp3',
+  bestiario: 'sounds/bestiario_paginas.mp3',
+  extra: 'sounds/extra_dados.mp3',
+  mundo: 'sounds/mundo_viento.mp3'
+};
+
+var topbarAudioInstances = {};
+
+function playTopbarTabSound(tabId){
+  if(!tabId) return;
+  try {
+    var fileSrc = TOPBAR_AUDIO_MAP[tabId];
+    if(!fileSrc) return;
+
+    if(!topbarAudioInstances[tabId]){
+      topbarAudioInstances[tabId] = new Audio(fileSrc);
+      topbarAudioInstances[tabId].volume = 0.35;
+      topbarAudioInstances[tabId].addEventListener('error', function(){
+        if(tabId === 'alquimia' && topbarAudioInstances[tabId].src.indexOf('alquimia_pocion') === -1){
+          topbarAudioInstances[tabId].src = 'sounds/alquimia_pocion.mp3';
+        }
+      });
+    }
+
+    var audio = topbarAudioInstances[tabId];
+    // Reinicio rápido al reproducir: respuesta instantánea al cambiar rápidamente de menú
+    audio.currentTime = 0;
+    var playPromise = audio.play();
+    if(playPromise !== undefined){
+      playPromise.catch(function(){
+        playProceduralTabFallback(tabId);
+      });
+    }
+  } catch(e){
+    playProceduralTabFallback(tabId);
+  }
+}
+
+function playProceduralTabFallback(tabId){
+  try {
+    var ctx = getAudioCtx(); if(!ctx) return;
+    if(tabId === "ficha" || tabId === "bestiario") playBg3Parchment();
+    else if(tabId === "mision" || tabId === "habilidades") playBg3Click();
+    else if(tabId === "magia" || tabId === "estados" || tabId === "invocaciones") playBg3RuneActivate();
+    else if(tabId === "extra") playBg3DiceRoll(0.5);
+    else playBg3Click();
+  } catch(err){}
+}
 
 function playBackpackOpenSound(){
-  try {
-    if(!backpackAudioInstance){
-      backpackAudioInstance = new Audio('sounds/sonido_mochila.mp3');
-      backpackAudioInstance.volume = 0.35;
-    }
-    backpackAudioInstance.currentTime = 0;
-    var p = backpackAudioInstance.play();
-    if(p !== undefined){
-      p.catch(function(){});
-    }
-  } catch(e){}
+  playTopbarTabSound('inventario');
 }
 
 function playBg3RuneActivate(){

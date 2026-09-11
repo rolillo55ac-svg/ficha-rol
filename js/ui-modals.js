@@ -684,33 +684,58 @@ function modalClick(e){
   }
 }
 
+var isSavingInvModal = false;
+
 function saveInventoryItemModal(itemId){
-  var c = activeChar();
-  if(!c || !c.inventory){ closeModals(); renderTab(); return; }
-  var it = c.inventory.find(function(x){ return x.id === itemId; });
-  if(!it){ closeModals(); renderTab(); return; }
+  if(isSavingInvModal) return;
+  isSavingInvModal = true;
+  try {
+    var c = activeChar();
+    if(!c || !c.inventory){
+      var overlay = document.getElementById("dataModalOverlay");
+      if(overlay) overlay.classList.add("hidden");
+      var dModal = document.getElementById("dataModal");
+      if(dModal) dModal.innerHTML = "";
+      renderTab();
+      return;
+    }
+    var it = c.inventory.find(function(x){ return x.id === itemId; });
+    if(!it){
+      var overlay2 = document.getElementById("dataModalOverlay");
+      if(overlay2) overlay2.classList.add("hidden");
+      var dModal2 = document.getElementById("dataModal");
+      if(dModal2) dModal2.innerHTML = "";
+      renderTab();
+      return;
+    }
 
-  var nameEl = document.getElementById("invModalName");
-  var catEl = document.getElementById("invModalCategory");
-  var qtyEl = document.getElementById("invModalQty");
-  var descEl = document.getElementById("invModalDesc");
+    var nameEl = document.getElementById("invModalName");
+    var catEl = document.getElementById("invModalCategory");
+    var qtyEl = document.getElementById("invModalQty");
+    var descEl = document.getElementById("invModalDesc");
 
-  if(nameEl){
-    var nVal = nameEl.value.trim();
-    it.name = nVal || "Nuevo Objeto";
+    if(nameEl){
+      var nVal = nameEl.value.trim();
+      it.name = nVal || "Nuevo Objeto";
+    }
+    if(catEl && catEl.value) it.category = catEl.value;
+    if(qtyEl) it.qty = Math.max(1, parseInt(qtyEl.value, 10) || 1);
+    if(descEl) it.desc = descEl.value;
+
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { inventory: c.inventory });
+    saveState(false);
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { inventory: c.inventory });
+    }
+    var dataOverlay = document.getElementById("dataModalOverlay");
+    if(dataOverlay) dataOverlay.classList.add("hidden");
+    var dataModal = document.getElementById("dataModal");
+    if(dataModal) dataModal.innerHTML = "";
+    renderTab();
+  } finally {
+    isSavingInvModal = false;
   }
-  if(catEl && catEl.value) it.category = catEl.value;
-  if(qtyEl) it.qty = Math.max(1, parseInt(qtyEl.value, 10) || 1);
-  if(descEl) it.desc = descEl.value;
-
-  c._lastLocalEdit = Date.now();
-  markCharDirty(c.id, { inventory: c.inventory });
-  saveState(false);
-  if(typeof pushCharacterPatch === 'function'){
-    pushCharacterPatch(c.id, { inventory: c.inventory });
-  }
-  closeModals();
-  renderTab();
 }
 
 function openInventoryItemModal(itemId){
@@ -873,6 +898,7 @@ function showConflictModal(localChar, remoteData, remoteTs){
 }
 
 function closeModals(){
+  if(isSavingInvModal) return;
   var nameEl = document.getElementById("invModalName");
   if(nameEl && nameEl.offsetParent !== null){
     var saveBtn = document.querySelector('#dataModal [data-action="save-inv-modal"]');
