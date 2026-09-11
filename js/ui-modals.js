@@ -1065,16 +1065,16 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
   var hasNewReply = myTickets.some(function(t){ return t.adminReply && t.status === "resolved"; });
 
   var gmPanelBtn = isGM() ? 
-    '<button type="button" class="btn-compact" style="width:100%;margin-bottom:12px;padding:8px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.8rem;background:rgba(88,101,242,0.12);" data-action="open-feedback-admin">' +
-      '🎮 Panel de Administración: Gestionar tickets, responder y Discord' +
+    '<button type="button" class="btn-compact feedback-gm-panel-btn" data-action="open-feedback-admin">' +
+      '🎮 Panel de Administración: Gestionar tickets' +
     '</button>' : '';
 
   var tabsHeader = '<div class="feedback-nav-tabs">' +
     '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "new" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="new">' +
-      '📝 Nuevo Reporte' +
+      '<span>📝 Nuevo Reporte</span>' +
     '</button>' +
     '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "my_tickets" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="my_tickets">' +
-      '📬 Mis Reportes y Respuestas ' + (hasNewReply ? '<span class="feedback-badge-dot" title="Tienes respuestas nuevas"></span>' : '') + ' (' + myTickets.length + ')' +
+      '<span>📬 Mis Reportes ' + (hasNewReply ? '<span class="feedback-badge-dot" title="Tienes respuestas nuevas"></span>' : '') + ' (' + myTickets.length + ')</span>' +
     '</button>' +
   '</div>';
 
@@ -1117,11 +1117,11 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
       '</div>' +
 
       '<div class="feedback-privacy-note">' +
-        '🔒 <b>100% Privado y Directo:</b> Tu reporte generará un ticket con código único. El Administrador te responderá directamente en la pestaña <b>"Mis Reportes y Respuestas"</b>.' +
+        '🔒 <b>100% Privado y Directo:</b> Tu reporte generará un ticket con código único. El Administrador te responderá directamente en la pestaña <b>"Mis Reportes"</b>.' +
       '</div>' +
 
       '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
-        '<button type="button" class="btn-solid-gold" id="btnSubmitFeedback" style="width:100%;padding:12px 14px;font-size:0.95rem;font-weight:700;" data-action="submit-feedback-report">' +
+        '<button type="button" class="btn-solid-gold feedback-submit-btn" id="btnSubmitFeedback" data-action="submit-feedback-report">' +
           '🚀 Enviar Reporte al Administrador' +
         '</button>' +
         '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
@@ -1165,15 +1165,15 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
         }
 
         return '<div class="player-ticket-card">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:6px;">' +
-            '<div>' +
+          '<div class="player-ticket-header-row">' +
+            '<div style="min-width:0;flex:1 1 auto;">' +
               '<span class="ticket-code-tag">#' + esc(t.ticketCode || "TK-0000") + '</span> ' +
               '<span style="font-size:0.7rem;color:var(--ink-faint);margin-left:4px;">' + esc(t.displayDate || (t.timestamp ? new Date(t.timestamp).toLocaleDateString() : "")) + '</span>' +
-              '<div style="font-weight:700;font-size:0.88rem;color:var(--ink);margin-top:4px;">' + esc(t.title) + '</div>' +
+              '<div style="font-weight:700;font-size:0.88rem;color:var(--ink);margin-top:4px;word-break:break-word;">' + esc(t.title) + '</div>' +
             '</div>' +
             statusBadge +
           '</div>' +
-          '<div style="font-size:0.76rem;color:var(--ink-dim);line-height:1.4;background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:4px;">' +
+          '<div style="font-size:0.76rem;color:var(--ink-dim);line-height:1.4;background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:4px;word-break:break-word;">' +
             esc(t.description) +
           '</div>' +
           replyBlock +
@@ -1655,8 +1655,8 @@ function openFeedbackAdminModal(filter){
             '<div style="font-size:0.75rem;color:var(--ink-dim);line-height:1.4;margin-bottom:8px;">' +
               '<b>Detalle:</b> ' + esc(triage.diagnostic || "Sin análisis técnico.") +
             '</div>' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(88,101,242,0.1);padding:6px 10px;border-radius:6px;border:1px solid rgba(88,101,242,0.3);">' +
-              '<span style="font-size:0.73rem;color:#8EA1E1;flex:1;">🛠️ ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
+            '<div class="admin-ticket-diag-row">' +
+              '<span class="admin-ticket-diag-text">🛠️ ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
               '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.68rem;border-color:rgba(88,101,242,0.5);color:#A5B4FC;white-space:nowrap;" data-action="copy-ticket-info" data-id="' + esc(r.id) + '">' +
                 '📋 Copiar Resumen' +
               '</button>' +
@@ -1675,8 +1675,8 @@ function openFeedbackAdminModal(filter){
             '<span style="font-size:0.7rem;color:var(--ink-faint);">' + 
               (r.resolvedAt ? ('✓ Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Esperando respuesta') + 
             '</span>' +
-            '<button type="button" class="btn-solid-gold" style="padding:6px 14px;font-size:0.78rem;font-weight:700;" data-action="save-admin-reply" data-id="' + esc(r.id) + '">' +
-              '🚀 Guardar y Enviar al Jugador' +
+            '<button type="button" class="btn-solid-gold" style="padding:7px 14px;font-size:0.78rem;font-weight:700;" data-action="save-admin-reply" data-id="' + esc(r.id) + '">' +
+              '🚀 Guardar y Enviar' +
             '</button>' +
           '</div>' +
         '</div>' +

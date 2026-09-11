@@ -3086,10 +3086,6 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 
 /* Reportes */
-.feedback-modal-box {
-  max-width: 540px;
-  width: 95vw;
-}
 .feedback-subtitle {
   font-size: 0.82rem;
   color: var(--ink-dim);
@@ -3104,9 +3100,10 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   padding-bottom: 8px;
 }
 .feedback-nav-tab {
-  flex: 1;
-  padding: 8px 10px;
-  font-size: 0.82rem;
+  flex: 1 1 0%;
+  min-width: 0;
+  padding: 8px 6px;
+  font-size: 0.78rem;
   font-weight: 600;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--line);
@@ -3118,7 +3115,10 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
 }
 .feedback-nav-tab:hover {
   border-color: var(--gold);
@@ -3276,10 +3276,77 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 
 /* Modal de Feedback espacioso y prémium */
 .feedback-modal-box {
-  width: 95%;
-  max-width: 660px;
+  width: 100%;
+  max-width: 640px;
   max-height: 90vh;
-  padding: 22px;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+#feedbackModal button,
+#feedbackModal .btn-compact,
+#feedbackModal .btn-solid-gold,
+#feedbackModal .btn-gm {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  box-sizing: border-box;
+  line-height: 1.35;
+}
+
+.feedback-gm-panel-btn {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-color: rgba(88, 101, 242, 0.5);
+  color: #8EA1E1;
+  font-size: 0.78rem;
+  background: rgba(88, 101, 242, 0.12);
+  text-align: center;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+}
+
+.feedback-submit-btn {
+  width: 100%;
+  padding: 11px 14px !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  justify-content: center !important;
+  display: flex;
+  align-items: center;
+}
+
+.player-ticket-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.admin-ticket-diag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(88, 101, 242, 0.1);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(88, 101, 242, 0.3);
+  flex-wrap: wrap;
+}
+
+.admin-ticket-diag-text {
+  font-size: 0.73rem;
+  color: #8EA1E1;
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .admin-tickets-container {
@@ -3578,6 +3645,52 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   color: var(--ink-faint);
   line-height: 1.4;
   margin-top: 10px;
+}
+
+@media (max-width: 480px) {
+  .feedback-modal-box {
+    padding: 14px 10px !important;
+    max-height: 92vh !important;
+  }
+  .feedback-nav-tabs {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .feedback-nav-tab {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 0.8rem;
+  }
+  .status-segmented-control {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .seg-btn {
+    text-align: center;
+    padding: 6px 2px;
+    font-size: 0.65rem;
+  }
+  .reply-section-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .reply-section-actions button {
+    width: 100%;
+  }
+  .admin-modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .admin-modal-footer button {
+    width: 100%;
+  }
+  .admin-ticket-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
 }
 .feedback-success-card {
   background: linear-gradient(145deg, rgba(39, 174, 96, 0.15), rgba(18, 60, 35, 0.25));

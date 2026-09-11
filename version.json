@@ -1,7 +1,7 @@
 {
-  "version": "1.2.7",
-  "build": "2026.09.11.1",
-  "updatedAt": "2026-09-11T13:15:00Z",
+  "version": "1.2.8",
+  "build": "2026.09.11.2",
+  "updatedAt": "2026-09-11T13:40:00Z",
   "forceReload": true,
-  "changelog": "Perfeccionado el diseño responsive en móviles: los botones de ajustes y cuenta se adaptan limpiamente sin desbordar, y los botones de habilidades en invocaciones quedan organizados y accesibles."
+  "changelog": "Perfeccionado el responsive en móvil para el buzón de reportes y sugerencias y el panel de tickets de administración."
 }
