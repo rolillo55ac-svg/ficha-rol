@@ -1051,13 +1051,34 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .row-del:active{transform:scale(0.9);}
 .weapons-row{grid-template-columns:1fr 36px 36px;}
 .armor-row{grid-template-columns:1fr 65px 65px 36px;}
-.inv-row{grid-template-columns:1fr 145px 55px 36px;}
+.inv-row{grid-template-columns:36px 1fr 145px 55px 36px;}
+.inv-row-icon-btn {
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  font-size: 1.15rem;
+  background: rgba(28, 18, 12, 0.7);
+  border: 1px solid rgba(176, 141, 87, 0.25);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+.inv-row-icon-btn:hover {
+  border-color: var(--gold);
+  background: rgba(176, 141, 87, 0.25);
+  transform: scale(1.08);
+}
 .spell-row{grid-template-columns:1fr 75px 85px 36px;}
 .stone-row{grid-template-columns:85px 1fr 36px;}
 .text-row{grid-template-columns:1fr 36px;}
 .god-row{grid-template-columns:1fr 1fr 1fr 36px;}
 @media(max-width:540px){
-  .inv-row{grid-template-columns:1fr 115px 48px 36px;}
+  .inv-row{grid-template-columns:32px 1fr 115px 48px 32px;}
+  .inv-row-icon-btn { height: 32px; min-height: 32px; font-size: 1.05rem; }
 }
 @media(max-width:480px){
   .armor-row{grid-template-columns:1fr 1fr 36px;}
@@ -1066,7 +1087,8 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   .stone-row{grid-template-columns:1fr 36px;}
 }
 @media(max-width:400px){
-  .inv-row{grid-template-columns:1fr 1fr 45px 32px;}
+  .inv-row{grid-template-columns:30px 1fr 1fr 45px 30px;}
+  .inv-row-icon-btn { height: 30px; min-height: 30px; font-size: 0.95rem; }
 }
 
 .money-row{display:flex;gap:12px;}
@@ -5879,6 +5901,36 @@ textarea,
   margin-bottom: 12px;
 }
 
+.inv-modal-icon-wrap {
+  position: relative;
+  cursor: pointer;
+  flex: none;
+  transition: transform var(--transition-fast);
+}
+
+.inv-modal-icon-wrap:hover .inv-modal-icon-display {
+  border-color: var(--gold-light);
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(176, 141, 87, 0.4);
+}
+
+.inv-modal-icon-badge {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  background: var(--bg-card);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
 .inv-modal-icon-display {
   width: 54px;
   height: 54px;
@@ -5891,6 +5943,149 @@ textarea,
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
   flex: none;
+  transition: all var(--transition-fast);
+}
+
+/* Selector de Iconos para Inventario */
+.inv-modal-icon-section {
+  background: rgba(14, 9, 6, 0.7);
+  border: 1px solid rgba(176, 141, 87, 0.25);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-bottom: 12px;
+}
+
+.inv-modal-icon-sec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.inv-modal-sec-label {
+  font-size: 0.70rem;
+  color: var(--gold-light);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inv-modal-icon-status {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+}
+
+.inv-modal-icon-status .status-custom {
+  color: var(--teal-light);
+  background: rgba(118, 172, 157, 0.15);
+  border: 1px solid rgba(118, 172, 157, 0.35);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 600;
+}
+
+.inv-modal-icon-status .status-auto {
+  color: var(--ink-faint);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.inv-preset-icons-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 86px;
+  overflow-y: auto;
+  padding: 4px 2px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(176, 141, 87, 0.12);
+}
+
+.inv-preset-icons-shelf::-webkit-scrollbar {
+  width: 4px;
+}
+
+.inv-preset-icons-shelf::-webkit-scrollbar-thumb {
+  background: rgba(176, 141, 87, 0.4);
+  border-radius: 2px;
+}
+
+.inv-preset-icon-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 1.18rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 18, 12, 0.7);
+  border: 1px solid rgba(176, 141, 87, 0.22);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.inv-preset-icon-btn:hover {
+  border-color: var(--gold);
+  background: rgba(176, 141, 87, 0.25);
+  transform: scale(1.15);
+}
+
+.inv-preset-icon-btn.active {
+  border-color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.38);
+  box-shadow: 0 0 8px rgba(176, 141, 87, 0.6);
+  transform: scale(1.08);
+}
+
+.inv-custom-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.inv-custom-icon-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 170px;
+}
+
+.inv-custom-icon-lbl {
+  font-size: 0.68rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.inv-custom-icon-input {
+  width: 52px;
+  text-align: center;
+  font-size: 1.15rem;
+  padding: 3px 6px;
+  background: rgba(10, 6, 4, 0.8);
+  border: 1px solid rgba(176, 141, 87, 0.3);
+  border-radius: 5px;
+  color: var(--ink);
+}
+
+.inv-custom-icon-input:focus {
+  border-color: var(--gold);
+  outline: none;
+  box-shadow: 0 0 6px rgba(176, 141, 87, 0.3);
+}
+
+.inv-icon-auto-btn {
+  font-size: 0.68rem;
+  padding: 4px 8px;
 }
 
 .inv-modal-title-area {

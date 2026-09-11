@@ -1,7 +1,7 @@
 {
-  "version": "1.3.6",
-  "build": "2026.09.11.10",
-  "updatedAt": "2026-09-11T18:38:00Z",
+  "version": "1.3.7",
+  "build": "2026.09.11.11",
+  "updatedAt": "2026-09-11T18:45:00Z",
   "forceReload": true,
-  "changelog": "Diseño en dos niveles para las habilidades en Ficha Original en móviles: nombre completo en primera fila y barra de estadísticas (base, bonos, total y dado) en segunda fila para evitar texto cortado."
+  "changelog": "Personalización completa de iconos para objetos de inventario: selector con catálogo temático RPG, entrada libre para escribir o pegar cualquier emoji y modo automático contextual."
 }

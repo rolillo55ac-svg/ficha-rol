@@ -1416,7 +1416,9 @@ function tplInventario(c){
     } else {
       filteredListItems.forEach(function(it){
         var itCat = it.category || "Miscelánea";
+        var icon = getItemIcon(it);
         html += '<div class="list-row inv-row">'+
+          '<button type="button" class="inv-row-icon-btn" data-action="inspect-inv-item" data-id="'+it.id+'" title="Ver / editar detalle e icono de '+esc(it.name)+'">'+icon+'</button>'+
           '<input type="text" placeholder="Nombre del objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" '+(canEdit?'':'readonly')+'>'+
           '<select class="inv-cat-select" data-bind="inventory.'+it.id+'.category" aria-label="Categoría" '+(canEdit?'':'disabled')+'>'+
             categories.map(function(cat){
@@ -1424,7 +1426,7 @@ function tplInventario(c){
             }).join('')+
           '</select>'+
           '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'" '+(canEdit?'':'readonly')+'>'+
-          (canEdit ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '')+
+          (canEdit ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '<div></div>')+
         '</div>';
       });
     }

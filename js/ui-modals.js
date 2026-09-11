@@ -631,9 +631,15 @@ function modalClick(e){
       var nameEl = document.getElementById("invModalName");
       var catEl = document.getElementById("invModalCategory");
       var descEl = document.getElementById("invModalDesc");
+      var iconEl = document.getElementById("invModalIconVal");
       if(nameEl && nameEl.value.trim()) it.name = nameEl.value.trim();
       if(catEl && catEl.value) it.category = catEl.value;
       if(descEl) it.desc = descEl.value;
+      if(iconEl){
+        var cIco = iconEl.value.trim();
+        if(cIco) it.icon = cIco;
+        else delete it.icon;
+      }
 
       it.qty = Math.max(1, num(it.qty, 1) + delta);
       c._lastLocalEdit = Date.now();
@@ -644,6 +650,50 @@ function modalClick(e){
       if(typeof pushCharacterPatch === 'function'){
         pushCharacterPatch(c.id, { inventory: c.inventory });
       }
+    }
+    return;
+  }
+  if(action==="pick-inv-icon"){
+    var ico = btn.getAttribute("data-icon");
+    var disp = document.getElementById("invModalIconDisplay");
+    var iconVal = document.getElementById("invModalIconVal");
+    var customInput = document.getElementById("invModalCustomIcon");
+    var statusEl = document.getElementById("invModalIconStatus");
+    if(disp) disp.textContent = ico;
+    if(iconVal) iconVal.value = ico;
+    if(customInput) customInput.value = ico;
+    if(statusEl) statusEl.innerHTML = '<span class="status-custom">Personalizado</span>';
+    var allBtns = document.querySelectorAll(".inv-preset-icon-btn");
+    allBtns.forEach(function(b){
+      if(b.getAttribute("data-icon") === ico) b.classList.add("active");
+      else b.classList.remove("active");
+    });
+    return;
+  }
+  if(action==="reset-inv-icon"){
+    var disp = document.getElementById("invModalIconDisplay");
+    var iconVal = document.getElementById("invModalIconVal");
+    var customInput = document.getElementById("invModalCustomIcon");
+    var statusEl = document.getElementById("invModalIconStatus");
+    var nameEl = document.getElementById("invModalName");
+    var catEl = document.getElementById("invModalCategory");
+    if(iconVal) iconVal.value = "";
+    if(customInput) customInput.value = "";
+    var autoIco = typeof getItemIcon === "function" ? getItemIcon({
+      name: nameEl ? nameEl.value : "",
+      category: catEl ? catEl.value : ""
+    }) : "📦";
+    if(disp) disp.textContent = autoIco;
+    if(statusEl) statusEl.innerHTML = '<span class="status-auto">Automático</span>';
+    var allBtns = document.querySelectorAll(".inv-preset-icon-btn");
+    allBtns.forEach(function(b){ b.classList.remove("active"); });
+    return;
+  }
+  if(action==="focus-inv-icon"){
+    var customInput = document.getElementById("invModalCustomIcon");
+    if(customInput){
+      customInput.focus();
+      try { customInput.select(); } catch(e){}
     }
     return;
   }
@@ -713,6 +763,7 @@ function saveInventoryItemModal(itemId){
     var catEl = document.getElementById("invModalCategory");
     var qtyEl = document.getElementById("invModalQty");
     var descEl = document.getElementById("invModalDesc");
+    var iconEl = document.getElementById("invModalIconVal");
 
     if(nameEl){
       var nVal = nameEl.value.trim();
@@ -721,6 +772,14 @@ function saveInventoryItemModal(itemId){
     if(catEl && catEl.value) it.category = catEl.value;
     if(qtyEl) it.qty = Math.max(1, parseInt(qtyEl.value, 10) || 1);
     if(descEl) it.desc = descEl.value;
+    if(iconEl){
+      var customIco = iconEl.value.trim();
+      if(customIco){
+        it.icon = customIco;
+      } else {
+        delete it.icon;
+      }
+    }
 
     c._lastLocalEdit = Date.now();
     markCharDirty(c.id, { inventory: c.inventory });
@@ -738,6 +797,16 @@ function saveInventoryItemModal(itemId){
   }
 }
 
+var INVENTORY_PRESET_ICONS = [
+  "⚔️", "🗡️", "🏹", "🪓", "🔨", "🛡️", "💣", "🪄",
+  "🧪", "🔮", "📜", "✨", "⭐", "⚡", "🕯️", "⚗️",
+  "🧥", "👑", "💍", "📿", "👢", "🧤", "🎭", "🕶️",
+  "⛺", "🔦", "🔥", "🧭", "🗺️", "🪢", "🎣", "🪤",
+  "🍖", "🍞", "🍎", "🧀", "🍷", "🍺", "🍯", "🍄",
+  "🪙", "💎", "🗝️", "📦", "🏆", "🏺", "💰", "📯",
+  "🌿", "🌸", "🪨", "🪵", "🦴", "🦷", "💀", "👁️"
+];
+
 function openInventoryItemModal(itemId){
   var c = activeChar();
   if(!c || !c.inventory) return;
@@ -753,7 +822,10 @@ function openInventoryItemModal(itemId){
   var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="save-inv-modal" data-id="'+it.id+'" aria-label="Cerrar">✕</button></div>'+
     '<div class="inv-modal-content">'+
       '<div class="inv-modal-icon-header">'+
-        '<div class="inv-modal-icon-display" id="invModalIconDisplay">'+icon+'</div>'+
+        '<div class="inv-modal-icon-wrap" data-action="focus-inv-icon" title="'+(canEdit?'Toca para personalizar el icono del objeto':'Icono del objeto')+'">'+
+          '<div class="inv-modal-icon-display" id="invModalIconDisplay">'+icon+'</div>'+
+          (canEdit ? '<div class="inv-modal-icon-badge" title="Editar icono">✏️</div>' : '')+
+        '</div>'+
         '<div class="inv-modal-title-area">'+
           (canEdit ?
             '<input type="text" class="inv-modal-name-input" id="invModalName" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" placeholder="Nombre del objeto">' :
@@ -762,6 +834,30 @@ function openInventoryItemModal(itemId){
           '<div class="inv-modal-cat-tag" id="invModalCatTag">'+esc(itCat)+'</div>'+
         '</div>'+
       '</div>'+
+      (canEdit ?
+        '<div class="inv-modal-icon-section">'+
+          '<div class="inv-modal-icon-sec-header">'+
+            '<label class="inv-modal-sec-label">🎨 Icono del Objeto</label>'+
+            '<div class="inv-modal-icon-status" id="invModalIconStatus">'+
+              (it.icon ? '<span class="status-custom">Personalizado</span>' : '<span class="status-auto">Automático</span>')+
+            '</div>'+
+          '</div>'+
+          '<div class="inv-preset-icons-shelf" id="invPresetIconsShelf">'+
+            INVENTORY_PRESET_ICONS.map(function(ico){
+              var isSel = (it.icon === ico);
+              return '<button type="button" class="inv-preset-icon-btn '+(isSel?'active':'')+'" data-action="pick-inv-icon" data-icon="'+ico+'" title="Elegir '+ico+'">'+ico+'</button>';
+            }).join('')+
+          '</div>'+
+          '<div class="inv-custom-icon-row">'+
+            '<div class="inv-custom-icon-input-wrap">'+
+              '<span class="inv-custom-icon-lbl">O escribe/pega cualquier emoji:</span>'+
+              '<input type="text" id="invModalCustomIcon" class="inv-custom-icon-input" value="'+esc(it.icon || '')+'" placeholder="Ej: 🐉, ⚡, 🩸" maxlength="6" autocomplete="off">'+
+            '</div>'+
+            '<button type="button" class="btn-compact inv-icon-auto-btn" data-action="reset-inv-icon" title="Restablece el icono según el nombre o categoría">🔄 Auto</button>'+
+          '</div>'+
+          '<input type="hidden" id="invModalIconVal" value="'+esc(it.icon || '')+'">'+
+        '</div>' : ''
+      )+
       '<div class="inv-modal-grid">'+
         '<div class="field"><label>Categoría</label>'+
           '<select id="invModalCategory" data-bind="inventory.'+it.id+'.category" '+(canEdit?'':'disabled')+'>'+
@@ -794,9 +890,66 @@ function openInventoryItemModal(itemId){
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 
   if(canEdit){
+    var customInput = document.getElementById("invModalCustomIcon");
     var nameEl = document.getElementById("invModalName");
-    if(nameEl && !it.name){
-      setTimeout(function(){ nameEl.focus(); }, 100);
+    var catEl = document.getElementById("invModalCategory");
+    var disp = document.getElementById("invModalIconDisplay");
+    var iconVal = document.getElementById("invModalIconVal");
+    var statusEl = document.getElementById("invModalIconStatus");
+    var catTag = document.getElementById("invModalCatTag");
+
+    if(customInput){
+      customInput.addEventListener("input", function(){
+        var v = this.value.trim();
+        if(v){
+          if(iconVal) iconVal.value = v;
+          if(disp) disp.textContent = v;
+          if(statusEl) statusEl.innerHTML = '<span class="status-custom">Personalizado</span>';
+          var allBtns = document.querySelectorAll(".inv-preset-icon-btn");
+          allBtns.forEach(function(b){
+            if(b.getAttribute("data-icon") === v) b.classList.add("active");
+            else b.classList.remove("active");
+          });
+        } else {
+          if(iconVal) iconVal.value = "";
+          var autoIco = typeof getItemIcon === "function" ? getItemIcon({
+            name: nameEl ? nameEl.value : "",
+            category: catEl ? catEl.value : ""
+          }) : "📦";
+          if(disp) disp.textContent = autoIco;
+          if(statusEl) statusEl.innerHTML = '<span class="status-auto">Automático</span>';
+          var allBtns = document.querySelectorAll(".inv-preset-icon-btn");
+          allBtns.forEach(function(b){ b.classList.remove("active"); });
+        }
+      });
+    }
+
+    if(nameEl){
+      nameEl.addEventListener("input", function(){
+        if(iconVal && !iconVal.value){
+          var autoIco = typeof getItemIcon === "function" ? getItemIcon({
+            name: this.value,
+            category: catEl ? catEl.value : ""
+          }) : "📦";
+          if(disp) disp.textContent = autoIco;
+        }
+      });
+      if(!it.name){
+        setTimeout(function(){ nameEl.focus(); }, 100);
+      }
+    }
+
+    if(catEl){
+      catEl.addEventListener("change", function(){
+        if(catTag) catTag.textContent = this.value;
+        if(iconVal && !iconVal.value){
+          var autoIco = typeof getItemIcon === "function" ? getItemIcon({
+            name: nameEl ? nameEl.value : "",
+            category: this.value
+          }) : "📦";
+          if(disp) disp.textContent = autoIco;
+        }
+      });
     }
   }
 }
