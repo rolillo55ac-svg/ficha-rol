@@ -435,79 +435,80 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .dice-btn.damage-roll-btn{border-color:rgba(200,75,87,0.35);font-size:0.95rem;}
 .dice-btn.damage-roll-btn:hover{border-color:var(--blood-light);color:var(--blood-light);box-shadow:0 0 10px -2px rgba(var(--accent-rgb),0.6);}
 
-/* SELECTOR DE VISTA DE HABILIDADES Y VISTA EXCEL */
+/* SELECTOR DE VISTA DE HABILIDADES */
 .skills-tab-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--line);
 }
 .skills-view-switcher {
   display: inline-flex;
-  background: var(--bg-card);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background: rgba(18, 13, 10, 0.65);
+  border: 1px solid rgba(176, 141, 87, 0.35);
+  border-radius: 20px;
   padding: 3px;
-  gap: 3px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+  gap: 4px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
 }
 .skills-view-btn {
   background: transparent;
   border: 1px solid transparent;
   color: var(--ink-faint);
-  padding: 5px 12px;
+  padding: 5px 14px;
   font-size: 0.72rem;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 16px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.skills-view-btn .view-btn-icon {
+  font-size: 0.78rem;
+  color: var(--gold);
 }
 .skills-view-btn:hover {
   color: var(--ink);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 .skills-view-btn.active {
-  background: linear-gradient(135deg, rgba(176,141,87,0.22), rgba(176,141,87,0.08));
+  background: linear-gradient(135deg, rgba(176, 141, 87, 0.28), rgba(176, 141, 87, 0.1));
   color: var(--gold-light);
-  border-color: rgba(176,141,87,0.4);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  border-color: rgba(176, 141, 87, 0.5);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35), inset 0 0 8px rgba(176, 141, 87, 0.15);
 }
+
+/* TABLA CONTINUA TIPO FICHA ORIGINAL */
 .skills-excel-wrapper {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   margin-bottom: 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--bg-card);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
 }
 .skills-excel-table {
-  min-width: 320px;
-  width: 100%;
+  min-width: 100%;
 }
 .skills-excel-headers {
   display: grid;
-  grid-template-columns: 1fr 48px 34px 74px 38px 36px;
+  grid-template-columns: 1fr 58px 36px 82px 42px 34px;
   gap: 4px;
   align-items: center;
-  padding: 8px 10px;
-  background: rgba(0,0,0,0.35);
-  border-bottom: 2px solid var(--line-strong);
-  font-size: 0.65rem;
-  color: var(--gold-light);
-  text-transform: uppercase;
+  font-size: 0.60rem;
+  color: var(--teal-light);
   font-family: var(--font-mono);
-  letter-spacing: 0.05em;
-  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line-strong);
 }
 .skills-excel-headers span {
   text-align: center;
@@ -517,138 +518,102 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .skills-excel-row {
   display: grid;
-  grid-template-columns: 1fr 48px 34px 74px 38px 36px;
+  grid-template-columns: 1fr 58px 36px 82px 42px 34px;
   gap: 4px;
   align-items: center;
-  padding: 6px 10px;
-  border-bottom: 1px solid rgba(176,141,87,0.12);
+  padding: 6px 2px;
+  border-bottom: 1px dashed var(--line);
+  border-radius: 4px;
   transition: background var(--transition-fast);
 }
-.skills-excel-row:nth-child(even) {
-  background: rgba(255,255,255,0.015);
-}
 .skills-excel-row:hover {
-  background: rgba(176,141,87,0.06);
+  background: rgba(176, 141, 87, 0.05);
 }
 .skills-excel-row:last-child {
   border-bottom: none;
 }
-.skill-excel-name {
+.skill-excel-attr-wrap {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  color: var(--ink);
-  min-width: 0;
 }
-.skill-excel-idx {
+.skill-attr-tag {
   font-family: var(--font-mono);
   font-size: 0.64rem;
-  color: var(--ink-faint);
-  background: rgba(0,0,0,0.32);
-  border: 1px solid rgba(176,141,87,0.15);
-  padding: 1px 4px;
-  border-radius: 3px;
-  min-width: 19px;
-  text-align: center;
-  flex: none;
-}
-.skill-excel-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.skill-excel-attr {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.skill-attr-badge {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
   font-weight: 700;
-  padding: 2px 4px;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
   border-radius: 4px;
-  letter-spacing: 0.03em;
   text-align: center;
   display: inline-block;
-  min-width: 32px;
+  min-width: 34px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
 }
-.skill-attr-badge.attr-fisico {
-  background: rgba(192, 57, 43, 0.22);
-  color: #E74C3C;
-  border: 1px solid rgba(192, 57, 43, 0.45);
+.skill-attr-tag.attr-fisico {
+  color: #E57373;
+  background: rgba(140, 37, 47, 0.16);
+  border: 1px solid rgba(140, 37, 47, 0.35);
 }
-.skill-attr-badge.attr-destreza {
-  background: rgba(39, 174, 96, 0.22);
-  color: #2ECC71;
-  border: 1px solid rgba(39, 174, 96, 0.45);
+.skill-attr-tag.attr-destreza {
+  color: #81C784;
+  background: rgba(38, 70, 31, 0.18);
+  border: 1px solid rgba(76, 175, 80, 0.3);
 }
-.skill-attr-badge.attr-inteligencia {
-  background: rgba(41, 128, 185, 0.22);
-  color: #5DADE2;
-  border: 1px solid rgba(41, 128, 185, 0.45);
+.skill-attr-tag.attr-inteligencia {
+  color: #64B5F6;
+  background: rgba(40, 75, 118, 0.18);
+  border: 1px solid rgba(33, 150, 243, 0.3);
 }
-.skill-attr-badge.attr-percepcion {
-  background: rgba(211, 84, 0, 0.22);
-  color: #F39C12;
-  border: 1px solid rgba(211, 84, 0, 0.45);
+.skill-attr-tag.attr-percepcion {
+  color: #FFB74D;
+  background: rgba(139, 69, 19, 0.18);
+  border: 1px solid rgba(255, 152, 0, 0.3);
 }
-.skill-attr-badge.attr-carisma {
-  background: rgba(142, 68, 173, 0.22);
-  color: #AF7AC5;
-  border: 1px solid rgba(142, 68, 173, 0.45);
+.skill-attr-tag.attr-carisma {
+  color: #BA68C8;
+  background: rgba(90, 47, 130, 0.18);
+  border: 1px solid rgba(156, 39, 176, 0.3);
 }
-.skill-attr-badge.attr-custom {
-  background: rgba(176, 141, 87, 0.22);
-  color: #DEC392;
-  border: 1px solid rgba(176, 141, 87, 0.45);
+.skill-attr-tag.attr-custom {
+  color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.14);
+  border: 1px solid rgba(176, 141, 87, 0.35);
 }
 .skill-excel-hybrid-select {
-  font-size: 0.62rem;
-  background: var(--bg-elev);
-  border: 1px solid var(--line-strong);
-  color: var(--gold-light);
-  border-radius: 4px;
-  padding: 2px 1px;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
   font-weight: 700;
-  font-family: var(--font-mono);
-  text-align: center;
-  cursor: pointer;
-}
-.skill-excel-base {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--ink-faint);
-  text-align: center;
-}
-.skill-excel-total {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--gold-light);
-  text-align: center;
-}
-.skill-excel-action {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.skill-excel-custom-tag {
-  font-size: 0.6rem;
   color: var(--teal-light);
-  background: rgba(118,172,157,0.15);
-  border: 1px solid rgba(118,172,157,0.3);
+  background: var(--bg-elev);
+  border: 1px solid rgba(118, 172, 157, 0.45);
+  border-radius: 4px;
+  padding: 2px 3px;
+  cursor: pointer;
+  outline: none;
+  min-width: 44px;
+  text-align: center;
+}
+.skill-excel-hybrid-select:hover:not(:disabled) {
+  border-color: var(--teal-light);
+  background: rgba(61, 110, 96, 0.25);
+}
+.custom-skill-badge {
+  font-family: var(--font-mono);
+  font-size: 0.60rem;
+  color: var(--teal-light);
+  background: rgba(118, 172, 157, 0.15);
+  border: 1px solid rgba(118, 172, 157, 0.3);
   border-radius: 3px;
   padding: 1px 4px;
   margin-left: 6px;
   vertical-align: middle;
 }
+
 @media (max-width: 600px) {
   .skills-tab-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 10px;
   }
   .skills-view-switcher {
     display: grid;
@@ -657,45 +622,50 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
   }
   .skills-view-btn {
     justify-content: center;
-    padding: 7px 6px;
-    font-size: 0.68rem;
+    padding: 7px 10px;
+    font-size: 0.70rem;
   }
   .skills-excel-headers,
   .skills-excel-row {
-    grid-template-columns: 1fr 42px 28px 68px 32px 32px;
-    gap: 3px;
-    padding: 5px 6px;
+    grid-template-columns: 1fr 48px 28px 70px 34px 30px;
+    gap: 2px;
+    padding: 5px 2px;
+  }
+  .skills-excel-headers {
+    font-size: 0.56rem;
+  }
+  .skill-attr-tag {
+    font-size: 0.58rem;
+    min-width: 30px;
+    padding: 1px 3px;
+  }
+  .skill-excel-hybrid-select {
+    font-size: 0.58rem;
+    min-width: 38px;
+    padding: 1px 2px;
   }
   .skills-excel-row .dice-btn {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    font-size: 0.82rem;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    font-size: 0.80rem;
   }
   .skills-excel-row .skill-bonus-ctrl button {
     width: 24px;
     height: 24px;
     min-width: 24px;
     min-height: 24px;
-    font-size: 0.65rem;
+    font-size: 0.62rem;
   }
   .skills-excel-row .skill-bonus-ctrl span {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     min-width: 16px;
   }
-  .skill-excel-idx {
-    font-size: 0.58rem;
-    padding: 1px 2px;
-    min-width: 15px;
-  }
-  .skill-excel-name {
-    gap: 4px;
-  }
 }
-@media (max-width: 380px) {
+@media (max-width: 360px) {
   .skills-excel-table {
-    min-width: 310px;
+    min-width: 330px;
   }
 }
 
