@@ -246,62 +246,111 @@ function tplHabilidades(c){
     '</div>';
   }
 
-  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Habilidades Generales</span></div>'+banner;
-  ATTRS.forEach(function(a){
-    html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
-    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
-    groups[a].forEach(function(s){ html += skillRowHtml(s, c, unlocked, canEdit); });
-    html += '</div>';
-  });
-  html += '<div class="attr-group"><div class="attr-group-title">Híbridas</div>';
-  html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
-  hybrids.forEach(function(s){ html += skillRowHtml(s, c, unlocked, canEdit); });
-  html += '</div>';
+  var viewMode = (state && state.skillsView) || (function(){
+    try { return localStorage.getItem("krysalis_skills_view"); } catch(e){ return null; }
+  })() || "attr";
 
-  if(c.customSkills && c.customSkills.length){
-    html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
-    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
-    c.customSkills.forEach(function(cs){
-      var bonusVal = num(cs.bonus, 0);
-      if(!c.skillProgress) c.skillProgress = {};
-      var prog = num(c.skillProgress[cs.id], 0);
-      var costNeeded = bonusVal + 1;
-      var canSub = canEdit && prog > 0;
-      var canAdd = false;
-      if(canEdit && bonusVal > 0 && bonusVal < 8){
-        if(c.isNPC){
-          canAdd = num(c.skillPoints,0) >= 1;
-        } else {
-          canAdd = unlocked && num(c.skillPoints,0) >= 1;
-        }
-      }
+  var switcherHtml = '<div class="skills-view-switcher" role="group" aria-label="Modo de vista de habilidades">'+
+    '<button type="button" class="skills-view-btn '+(viewMode==="attr"?"active":"")+'" data-action="set-skills-view" data-val="attr" title="Organizar habilidades agrupadas por atributo">'+
+      '<span>🏷️</span> Por Atributo'+
+    '</button>'+
+    '<button type="button" class="skills-view-btn '+(viewMode==="excel"?"active":"")+'" data-action="set-skills-view" data-val="excel" title="Lista continua según la estructura y orden de la ficha original de Excel">'+
+      '<span>📋</span> Ficha Original (Excel)'+
+    '</button>'+
+  '</div>';
 
-      var gmCustomTools = '';
-      if(isGM()){
-        gmCustomTools = '<span class="gm-skill-tools" title="Ajuste directo del Máster por Lore">'+
-          '<button class="gm-skill-btn" data-action="gm-custom-skill-sub" data-id="'+cs.id+'" title="Restar 1 nivel (GM)">-</button>'+
-          '<span class="gm-skill-lvl">'+bonusVal+'</span>'+
-          '<button class="gm-skill-btn" data-action="gm-custom-skill-add" data-id="'+cs.id+'" title="Otorgar +1 nivel directamente (GM)">+ GM</button>'+
-        '</span>';
-      }
-      
-      var attrLbl = ATTR_LABELS[cs.attr] ? ATTR_LABELS[cs.attr].slice(0,3) : "Gen";
-      html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+attrLbl+')</small></span>'+
-        '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
-        '<span class="skill-bonus-ctrl">'+
-          (isGM() ? gmCustomTools : (
-            '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso">-</button>'+
-            '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
-            '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso">+</button>'
-          ))+
-        '</span>'+
-        '<span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'" aria-label="Tirar '+esc(cs.name)+'">&#127922;</button></div>';
+  var html = '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
+    '<div class="skills-tab-header">'+
+      '<div class="section-title" style="margin-bottom:0;"><span>Habilidades</span></div>'+
+      switcherHtml+
+    '</div>'+
+    banner;
+
+  if(viewMode === "attr"){
+    ATTRS.forEach(function(a){
+      html += '<div class="attr-group"><div class="attr-group-title">'+ATTR_LABELS[a]+'</div>';
+      html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
+      groups[a].forEach(function(s){ html += skillRowHtml(s, c, unlocked, canEdit); });
+      html += '</div>';
     });
+    html += '<div class="attr-group"><div class="attr-group-title">Híbridas</div>';
+    html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
+    hybrids.forEach(function(s){ html += skillRowHtml(s, c, unlocked, canEdit); });
     html += '</div>';
+
+    if(c.customSkills && c.customSkills.length){
+      html += '<div class="attr-group"><div class="attr-group-title">Personalizadas</div>';
+      html += '<div class="skill-col-headers"><span>Habilidad</span><span>Base</span><span>Bono (Prog)</span><span>Total</span><span></span></div>';
+      c.customSkills.forEach(function(cs){
+        var bonusVal = num(cs.bonus, 0);
+        if(!c.skillProgress) c.skillProgress = {};
+        var prog = num(c.skillProgress[cs.id], 0);
+        var costNeeded = bonusVal + 1;
+        var canSub = canEdit && prog > 0;
+        var canAdd = false;
+        if(canEdit && bonusVal > 0 && bonusVal < 8){
+          if(c.isNPC){
+            canAdd = num(c.skillPoints,0) >= 1;
+          } else {
+            canAdd = unlocked && num(c.skillPoints,0) >= 1;
+          }
+        }
+
+        var gmCustomTools = '';
+        if(isGM()){
+          gmCustomTools = '<span class="gm-skill-tools" title="Ajuste directo del Máster por Lore">'+
+            '<button class="gm-skill-btn" data-action="gm-custom-skill-sub" data-id="'+cs.id+'" title="Restar 1 nivel (GM)">-</button>'+
+            '<span class="gm-skill-lvl">'+bonusVal+'</span>'+
+            '<button class="gm-skill-btn" data-action="gm-custom-skill-add" data-id="'+cs.id+'" title="Otorgar +1 nivel directamente (GM)">+ GM</button>'+
+          '</span>';
+        }
+        
+        var attrLbl = ATTR_LABELS[cs.attr] ? ATTR_LABELS[cs.attr].slice(0,3) : "Gen";
+        html += '<div class="skill-row"><span>'+esc(cs.name)+' <small style="color:var(--ink-faint);">('+attrLbl+')</small></span>'+
+          '<span class="skill-base">'+getEffectiveAttr(cs.attr,c)+'</span>'+
+          '<span class="skill-bonus-ctrl">'+
+            (isGM() ? gmCustomTools : (
+              '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso">-</button>'+
+              '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+              '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso">+</button>'
+            ))+
+          '</span>'+
+          '<span class="skill-total">'+customSkillTotal(cs,c)+'</span><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'" aria-label="Tirar '+esc(cs.name)+'">&#127922;</button></div>';
+      });
+      html += '</div>';
+    }
+    if(isGM()){
+      html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-custom-skill">+ Añadir habilidad personalizada</button>';
+    }
+  } else {
+    html += '<div class="skills-excel-wrapper">'+
+      '<div class="skills-excel-table">'+
+        '<div class="skills-excel-headers">'+
+          '<span>Habilidad</span>'+
+          '<span style="text-align:center;">Atrib</span>'+
+          '<span style="text-align:center;">Base</span>'+
+          '<span style="text-align:center;">Bono (Prog)</span>'+
+          '<span style="text-align:center;">Total</span>'+
+          '<span></span>'+
+        '</div>';
+
+    SKILL_DEFS.forEach(function(s, idx){
+      html += skillRowExcelHtml(s, c, unlocked, canEdit, idx + 1);
+    });
+
+    if(c.customSkills && c.customSkills.length){
+      c.customSkills.forEach(function(cs, cidx){
+        html += customSkillRowExcelHtml(cs, c, unlocked, canEdit, SKILL_DEFS.length + cidx + 1);
+      });
+    }
+
+    html += '</div></div>';
+
+    if(isGM()){
+      html += '<button class="btn-compact" style="width:100%;margin-top:10px;" data-action="add-custom-skill">+ Añadir habilidad personalizada</button>';
+    }
   }
-  if(isGM()){
-    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-custom-skill">+ Añadir habilidad personalizada</button>';
-  }
+
   html += '</div>';
   html += rollLogHtml();
   return html;
@@ -354,6 +403,111 @@ function skillRowHtml(s, c, unlocked, canEdit){
     '</span>'+
     '<span class="skill-total">'+total+'</span>'+
     '<button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'" aria-label="Tirar '+esc(s.name)+'">&#127922;</button>'+
+  '</div>';
+}
+
+function skillRowExcelHtml(s, c, unlocked, canEdit, index){
+  var base = skillBase(s,c);
+  var total = skillTotal(s,c);
+  var bonusVal = num(c.skillBonus ? c.skillBonus[s.id] : 0, 0);
+  if(!c.skillProgress) c.skillProgress = {};
+  var prog = num(c.skillProgress[s.id],0);
+  var costNeeded = bonusVal + 1;
+
+  var attrBadge = "";
+  if(s.attr==="hybrid"){
+    var chosen = (c.skillHybrid && c.skillHybrid[s.id]) || s.hybridOptions[0];
+    attrBadge = '<select class="skill-hybrid-select skill-excel-hybrid-select" data-bind="skillHybrid.'+s.id+'" aria-label="Atributo para '+esc(s.name)+'" '+(canEdit?'':'disabled')+'>'+
+      s.hybridOptions.map(function(o){return '<option value="'+o+'"'+(o===chosen?' selected':'')+'>'+(ATTR_LABELS[o]?ATTR_LABELS[o].slice(0,3).toUpperCase():o)+'</option>';}).join('')+
+      '</select>';
+  } else {
+    var shortA = ATTR_LABELS[s.attr] ? ATTR_LABELS[s.attr].slice(0,3).toUpperCase() : s.attr.slice(0,3).toUpperCase();
+    attrBadge = '<span class="skill-attr-badge attr-'+s.attr+'" title="'+(ATTR_LABELS[s.attr]||s.attr)+'">'+shortA+'</span>';
+  }
+
+  var canSub = canEdit && prog > 0;
+  var canAdd = false;
+  if(canEdit && bonusVal > 0 && bonusVal < 8){
+    if(c.isNPC){
+      canAdd = num(c.skillPoints,0) >= 1;
+    } else {
+      canAdd = unlocked && num(c.skillPoints,0) >= 1;
+    }
+  }
+
+  var gmControls = '';
+  if(isGM()){
+    gmControls = '<span class="gm-skill-tools" title="Ajuste directo del Máster por Lore">'+
+      '<button class="gm-skill-btn" data-action="gm-skill-sub" data-id="'+s.id+'" title="Restar 1 nivel base (GM)">-</button>'+
+      '<span class="gm-skill-lvl">'+bonusVal+'</span>'+
+      '<button class="gm-skill-btn" data-action="gm-skill-add" data-id="'+s.id+'" title="Otorgar +1 nivel base directamente (GM)">+ GM</button>'+
+    '</span>';
+  }
+
+  var idxStr = index ? '<span class="skill-excel-idx">'+(index < 10 ? '0' + index : index)+'</span>' : '';
+
+  return '<div class="skill-excel-row" data-skill-id="'+s.id+'">'+
+    '<div class="skill-excel-name">'+idxStr+'<span class="skill-excel-text" title="'+esc(s.name)+'">'+esc(s.name)+'</span></div>'+
+    '<div class="skill-excel-attr">'+attrBadge+'</div>'+
+    '<div class="skill-excel-base">'+base+'</div>'+
+    '<div class="skill-bonus-ctrl">'+
+      (isGM() ? gmControls : (
+        '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso a '+esc(s.name)+'">-</button>'+
+        '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+        '<button data-action="skill-add" data-id="'+s.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso a '+esc(s.name)+'">+</button>'
+      ))+
+    '</div>'+
+    '<div class="skill-excel-total">'+total+'</div>'+
+    '<div class="skill-excel-action"><button class="dice-btn" data-action="roll-skill" data-id="'+s.id+'" aria-label="Tirar '+esc(s.name)+'">&#127922;</button></div>'+
+  '</div>';
+}
+
+function customSkillRowExcelHtml(cs, c, unlocked, canEdit, index){
+  var bonusVal = num(cs.bonus, 0);
+  if(!c.skillProgress) c.skillProgress = {};
+  var prog = num(c.skillProgress[cs.id], 0);
+  var costNeeded = bonusVal + 1;
+
+  var canSub = canEdit && prog > 0;
+  var canAdd = false;
+  if(canEdit && bonusVal > 0 && bonusVal < 8){
+    if(c.isNPC){
+      canAdd = num(c.skillPoints,0) >= 1;
+    } else {
+      canAdd = unlocked && num(c.skillPoints,0) >= 1;
+    }
+  }
+
+  var gmCustomTools = '';
+  if(isGM()){
+    gmCustomTools = '<span class="gm-skill-tools" title="Ajuste directo del Máster por Lore">'+
+      '<button class="gm-skill-btn" data-action="gm-custom-skill-sub" data-id="'+cs.id+'" title="Restar 1 nivel (GM)">-</button>'+
+      '<span class="gm-skill-lvl">'+bonusVal+'</span>'+
+      '<button class="gm-skill-btn" data-action="gm-custom-skill-add" data-id="'+cs.id+'" title="Otorgar +1 nivel directamente (GM)">+ GM</button>'+
+    '</span>';
+  }
+
+  var shortA = ATTR_LABELS[cs.attr] ? ATTR_LABELS[cs.attr].slice(0,3).toUpperCase() : (cs.attr ? cs.attr.slice(0,3).toUpperCase() : "GEN");
+  var attrBadge = '<span class="skill-attr-badge attr-'+(cs.attr||'custom')+'" title="'+(ATTR_LABELS[cs.attr]||cs.attr)+'">'+shortA+'</span>';
+  var idxStr = index ? '<span class="skill-excel-idx">'+(index < 10 ? '0' + index : index)+'</span>' : '';
+
+  return '<div class="skill-excel-row skill-excel-custom-row" data-skill-id="'+cs.id+'">'+
+    '<div class="skill-excel-name">'+idxStr+
+      '<span class="skill-excel-text" title="'+esc(cs.name)+'">'+esc(cs.name)+
+        '<span class="skill-excel-custom-tag">Personalizada</span>'+
+      '</span>'+
+    '</div>'+
+    '<div class="skill-excel-attr">'+attrBadge+'</div>'+
+    '<div class="skill-excel-base">'+getEffectiveAttr(cs.attr,c)+'</div>'+
+    '<div class="skill-bonus-ctrl">'+
+      (isGM() ? gmCustomTools : (
+        '<button data-action="skill-sub-custom" data-id="'+cs.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso">-</button>'+
+        '<span>'+bonusVal+' ('+prog+'/'+costNeeded+')</span>'+
+        '<button data-action="skill-add-custom" data-id="'+cs.id+'" '+(canAdd?'':'disabled')+' aria-label="Añadir progreso">+</button>'
+      ))+
+    '</div>'+
+    '<div class="skill-excel-total">'+customSkillTotal(cs,c)+'</div>'+
+    '<div class="skill-excel-action"><button class="dice-btn" data-action="roll-custom-skill" data-id="'+cs.id+'" aria-label="Tirar '+esc(cs.name)+'">&#127922;</button></div>'+
   '</div>';
 }
 

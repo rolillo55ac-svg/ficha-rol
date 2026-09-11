@@ -165,6 +165,11 @@ function handleChange(e){
     renderTab();
     return;
   }
+  if(e.type === "change" && bind && bind.startsWith("skillHybrid.")){
+    saveState(false);
+    renderTab();
+    return;
+  }
   if(isGlobal){
     isGlobalDirty = true;
     saveState(true);
@@ -213,6 +218,14 @@ function handleClick(e){
   if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-terrain"){ loreTerrainFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="set-skills-view"){
+    var sVal = btn.getAttribute("data-val") || "attr";
+    if(!state) state = {};
+    state.skillsView = sVal;
+    try { localStorage.setItem("krysalis_skills_view", sVal); } catch(err){}
+    renderTab();
+    return;
+  }
   if(action==="resolve-conflict-server"){
     if(activeConflictData && activeConflictData.remoteData){
       var rem = activeConflictData.remoteData;

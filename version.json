@@ -1,7 +1,7 @@
 {
-  "version": "1.2.8",
-  "build": "2026.09.11.2",
-  "updatedAt": "2026-09-11T13:40:00Z",
+  "version": "1.2.9",
+  "build": "2026.09.11.3",
+  "updatedAt": "2026-09-11T16:00:00Z",
   "forceReload": true,
-  "changelog": "Perfeccionado el responsive en móvil para el buzón de reportes y sugerencias y el panel de tickets de administración."
+  "changelog": "Añadida vista alternativa continua tipo ficha original Excel en el panel de habilidades con selector dinámico."
 }

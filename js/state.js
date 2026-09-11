@@ -1,5 +1,5 @@
-var APP_VERSION = "1.2.8";
-var APP_BUILD = "2026.09.11.2";
+var APP_VERSION = "1.2.9";
+var APP_BUILD = "2026.09.11.3";
 
 var state = null;
 var supabaseClient = null;
@@ -339,7 +339,8 @@ function defaultState(){
     _deletedSeedQuests: [],
     _deletedSeedClues: [],
     questMap: getSeedQuestMap(),
-    sessionSummary: getSeedSessionSummary()
+    sessionSummary: getSeedSessionSummary(),
+    skillsView: "attr"
   };
 }
 
@@ -347,6 +348,9 @@ function migrateState(s){
   if(!s) return defaultState();
   if(!s.activeTab) s.activeTab="ficha";
   if(!s.rollLog) s.rollLog=[];
+  if(!s.skillsView) {
+    try { s.skillsView = localStorage.getItem("krysalis_skills_view") || "attr"; } catch(e){ s.skillsView = "attr"; }
+  }
 
   // 1. Integridad de Armas y Armaduras
   if(!s.weaponsCatalog || !Array.isArray(s.weaponsCatalog) || !s.weaponsCatalog.length){
