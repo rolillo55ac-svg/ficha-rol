@@ -1,7 +1,7 @@
 {
-  "version": "1.3.2",
-  "build": "2026.09.11.6",
-  "updatedAt": "2026-09-11T18:10:00Z",
+  "version": "1.3.3",
+  "build": "2026.09.11.7",
+  "updatedAt": "2026-09-11T18:18:00Z",
   "forceReload": true,
-  "changelog": "Integración del archivo de audio personalizado sonido_mochila.mp3 para la apertura del inventario."
+  "changelog": "Perfeccionamiento responsive de mochila sin desbordes, guardado directo de objetos y eliminación de slots vacíos sobrantes."
 }

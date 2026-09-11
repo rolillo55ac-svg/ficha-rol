@@ -57,6 +57,8 @@ function init(){
     safeListen("tabbar", "click", handleClick);
     safeListen("charModal", "click", modalClick);
     safeListen("dataModal", "click", modalClick);
+    safeListen("dataModal", "change", handleChange);
+    safeListen("dataModal", "input", handleChange);
     safeListen("diceModal", "click", diceModalClick);
     safeListen("pinModal", "click", pinModalClick);
     safeListen("loreModal", "click", loreModalClick);

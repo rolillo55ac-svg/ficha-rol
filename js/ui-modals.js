@@ -628,6 +628,13 @@ function modalClick(e){
     var delta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
     var it = (c.inventory || []).find(function(x){ return x.id === iid; });
     if(it){
+      var nameEl = document.getElementById("invModalName");
+      var catEl = document.getElementById("invModalCategory");
+      var descEl = document.getElementById("invModalDesc");
+      if(nameEl && nameEl.value.trim()) it.name = nameEl.value.trim();
+      if(catEl && catEl.value) it.category = catEl.value;
+      if(descEl) it.desc = descEl.value;
+
       it.qty = Math.max(1, num(it.qty, 1) + delta);
       c._lastLocalEdit = Date.now();
       markCharDirty(c.id, { inventory: c.inventory });
@@ -638,6 +645,11 @@ function modalClick(e){
         pushCharacterPatch(c.id, { inventory: c.inventory });
       }
     }
+    return;
+  }
+  if(action==="save-inv-modal"){
+    var iid = btn.getAttribute("data-id");
+    saveInventoryItemModal(iid);
     return;
   }
   if(action==="del-inventory-modal"){
@@ -672,6 +684,35 @@ function modalClick(e){
   }
 }
 
+function saveInventoryItemModal(itemId){
+  var c = activeChar();
+  if(!c || !c.inventory){ closeModals(); renderTab(); return; }
+  var it = c.inventory.find(function(x){ return x.id === itemId; });
+  if(!it){ closeModals(); renderTab(); return; }
+
+  var nameEl = document.getElementById("invModalName");
+  var catEl = document.getElementById("invModalCategory");
+  var qtyEl = document.getElementById("invModalQty");
+  var descEl = document.getElementById("invModalDesc");
+
+  if(nameEl){
+    var nVal = nameEl.value.trim();
+    it.name = nVal || "Nuevo Objeto";
+  }
+  if(catEl && catEl.value) it.category = catEl.value;
+  if(qtyEl) it.qty = Math.max(1, parseInt(qtyEl.value, 10) || 1);
+  if(descEl) it.desc = descEl.value;
+
+  c._lastLocalEdit = Date.now();
+  markCharDirty(c.id, { inventory: c.inventory });
+  saveState(false);
+  if(typeof pushCharacterPatch === 'function'){
+    pushCharacterPatch(c.id, { inventory: c.inventory });
+  }
+  closeModals();
+  renderTab();
+}
+
 function openInventoryItemModal(itemId){
   var c = activeChar();
   if(!c || !c.inventory) return;
@@ -684,21 +725,21 @@ function openInventoryItemModal(itemId){
   ];
   var itCat = it.category || "Miscelánea";
 
-  var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="close-modal" aria-label="Cerrar">✕</button></div>'+
+  var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="save-inv-modal" data-id="'+it.id+'" aria-label="Cerrar">✕</button></div>'+
     '<div class="inv-modal-content">'+
       '<div class="inv-modal-icon-header">'+
-        '<div class="inv-modal-icon-display">'+icon+'</div>'+
+        '<div class="inv-modal-icon-display" id="invModalIconDisplay">'+icon+'</div>'+
         '<div class="inv-modal-title-area">'+
           (canEdit ?
-            '<input type="text" class="inv-modal-name-input" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" placeholder="Nombre del objeto">' :
+            '<input type="text" class="inv-modal-name-input" id="invModalName" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" placeholder="Nombre del objeto">' :
             '<div class="inv-modal-name-static">'+esc(it.name || 'Objeto sin nombre')+'</div>'
           )+
-          '<div class="inv-modal-cat-tag">'+esc(itCat)+'</div>'+
+          '<div class="inv-modal-cat-tag" id="invModalCatTag">'+esc(itCat)+'</div>'+
         '</div>'+
       '</div>'+
       '<div class="inv-modal-grid">'+
         '<div class="field"><label>Categoría</label>'+
-          '<select data-bind="inventory.'+it.id+'.category" '+(canEdit?'':'disabled')+'>'+
+          '<select id="invModalCategory" data-bind="inventory.'+it.id+'.category" '+(canEdit?'':'disabled')+'>'+
             categories.map(function(cat){
               return '<option value="'+cat+'" '+(itCat===cat?'selected':'')+'>'+cat+'</option>';
             }).join('')+
@@ -707,22 +748,32 @@ function openInventoryItemModal(itemId){
         '<div class="field"><label>Cantidad</label>'+
           '<div class="inv-modal-qty-ctrl">'+
             (canEdit ? '<button type="button" class="btn-compact" data-action="mod-inv-qty" data-id="'+it.id+'" data-delta="-1">-1</button>' : '')+
-            '<input type="number" data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'" min="1" '+(canEdit?'':'readonly')+'>'+
+            '<input type="number" id="invModalQty" data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'" min="1" '+(canEdit?'':'readonly')+'>'+
             (canEdit ? '<button type="button" class="btn-compact" data-action="mod-inv-qty" data-id="'+it.id+'" data-delta="1">+1</button>' : '')+
           '</div>'+
         '</div>'+
       '</div>'+
       '<div class="field" style="margin-top:10px;"><label>Descripción / Propiedades</label>'+
-        '<textarea data-bind="inventory.'+it.id+'.desc" placeholder="Detalles, peso, propiedades mágicas o notas del objeto..." '+(canEdit?'':'readonly')+'>'+esc(it.desc || it.notes || '')+'</textarea>'+
+        '<textarea id="invModalDesc" data-bind="inventory.'+it.id+'.desc" placeholder="Detalles, peso, propiedades mágicas o notas del objeto..." '+(canEdit?'':'readonly')+'>'+esc(it.desc || it.notes || '')+'</textarea>'+
       '</div>'+
       '<div class="modal-actions" style="margin-top:16px;display:flex;justify-content:space-between;gap:8px;">'+
         (canEdit ? '<button class="btn-danger" data-action="del-inventory-modal" data-id="'+it.id+'">🗑️ Eliminar</button>' : '<div></div>')+
-        '<button class="btn-solid-gold" data-action="close-modal">Listo</button>'+
+        (canEdit ?
+          '<button class="btn-solid-gold" data-action="save-inv-modal" data-id="'+it.id+'">Guardar y Cerrar</button>' :
+          '<button class="btn-solid-gold" data-action="close-modal">Cerrar</button>'
+        )+
       '</div>'+
     '</div>';
 
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
+
+  if(canEdit){
+    var nameEl = document.getElementById("invModalName");
+    if(nameEl && !it.name){
+      setTimeout(function(){ nameEl.focus(); }, 100);
+    }
+  }
 }
 
 function openBeastMobilityModal(beastId, isSummon){
@@ -822,6 +873,17 @@ function showConflictModal(localChar, remoteData, remoteTs){
 }
 
 function closeModals(){
+  var nameEl = document.getElementById("invModalName");
+  if(nameEl && nameEl.offsetParent !== null){
+    var saveBtn = document.querySelector('#dataModal [data-action="save-inv-modal"]');
+    if(saveBtn){
+      var iid = saveBtn.getAttribute("data-id");
+      if(iid && typeof saveInventoryItemModal === "function"){
+        saveInventoryItemModal(iid);
+        return;
+      }
+    }
+  }
   ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay","feedbackModalOverlay"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.classList.add("hidden");

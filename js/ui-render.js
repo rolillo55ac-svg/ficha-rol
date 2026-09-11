@@ -1294,42 +1294,47 @@ function tplInventario(c){
     // Grid de ranuras (slots)
     html += '<div class="backpack-grid">';
 
-    // Renderizado de objetos ocupados
-    filteredItems.forEach(function(it){
-      var icon = getItemIcon(it);
-      var itCat = it.category || "Miscelánea";
-      var qty = num(it.qty, 1);
-      var qtyBadge = qty > 1 ? '<span class="slot-qty-badge">x'+qty+'</span>' : '';
-      var descText = it.desc || it.notes || '';
-
-      html += '<div class="backpack-slot occupied" data-action="inspect-inv-item" data-id="'+it.id+'" role="button" tabindex="0" title="'+esc(it.name)+'">'+
-        '<div class="slot-icon">'+icon+'</div>'+
-        '<div class="slot-name-label">'+esc(it.name || 'Objeto')+'</div>'+
-        qtyBadge+
-        '<div class="slot-tooltip">'+
-          '<div class="tooltip-header">'+
-            '<span class="tooltip-icon">'+icon+'</span>'+
-            '<span class="tooltip-name">'+esc(it.name || 'Objeto sin nombre')+'</span>'+
-          '</div>'+
-          '<div class="tooltip-meta">'+
-            '<span class="tooltip-cat-pill">'+esc(itCat)+'</span>'+
-            '<span>Cant: '+qty+'</span>'+
-          '</div>'+
-          (descText ? '<div class="tooltip-desc">'+esc(descText)+'</div>' : '<div class="tooltip-desc" style="opacity:0.6;">Sin descripción</div>')+
-          (canEdit ? '<div class="tooltip-hint">Haz clic para editar / gestionar</div>' : '')+
-        '</div>'+
+    if(filteredItems.length === 0){
+      html += '<div class="backpack-empty-state">'+
+        '<div class="backpack-empty-icon">🎒</div>'+
+        '<div class="backpack-empty-msg">'+(currentGroup === "all" ? 'La mochila está vacía.' : 'No hay objetos en esta categoría.')+'</div>'+
+        (canEdit ? '<button type="button" class="btn-solid-gold" data-action="add-inventory-slot" style="margin-top:6px;font-size:0.76rem;padding:6px 14px;">+ Añadir Primer Objeto</button>' : '')+
       '</div>';
-    });
+    } else {
+      // Renderizado de objetos ocupados
+      filteredItems.forEach(function(it){
+        var icon = getItemIcon(it);
+        var itCat = it.category || "Miscelánea";
+        var qty = num(it.qty, 1);
+        var qtyBadge = qty > 1 ? '<span class="slot-qty-badge">x'+qty+'</span>' : '';
+        var descText = it.desc || it.notes || '';
 
-    // Slots vacíos para completar la estética de mochila RPG
-    var minSlots = 20;
-    var totalSlotsToShow = Math.max(minSlots, Math.ceil((filteredItems.length + 3) / 5) * 5);
-    var emptySlotsCount = Math.max(0, totalSlotsToShow - filteredItems.length);
+        html += '<div class="backpack-slot occupied" data-action="inspect-inv-item" data-id="'+it.id+'" role="button" tabindex="0" title="'+esc(it.name)+'">'+
+          '<div class="slot-icon">'+icon+'</div>'+
+          '<div class="slot-name-label">'+esc(it.name || 'Objeto')+'</div>'+
+          qtyBadge+
+          '<div class="slot-tooltip">'+
+            '<div class="tooltip-header">'+
+              '<span class="tooltip-icon">'+icon+'</span>'+
+              '<span class="tooltip-name">'+esc(it.name || 'Objeto sin nombre')+'</span>'+
+            '</div>'+
+            '<div class="tooltip-meta">'+
+              '<span class="tooltip-cat-pill">'+esc(itCat)+'</span>'+
+              '<span>Cant: '+qty+'</span>'+
+            '</div>'+
+            (descText ? '<div class="tooltip-desc">'+esc(descText)+'</div>' : '<div class="tooltip-desc" style="opacity:0.6;">Sin descripción</div>')+
+            (canEdit ? '<div class="tooltip-hint">Toca o haz clic para editar / gestionar</div>' : '')+
+          '</div>'+
+        '</div>';
+      });
 
-    for(var sIdx = 0; sIdx < emptySlotsCount; sIdx++){
-      html += '<div class="backpack-slot empty" '+(canEdit ? 'data-action="add-inventory-slot" role="button" tabindex="0" title="Añadir objeto en esta ranura"' : '')+'>'+
-        (canEdit ? '<span class="empty-plus">+</span>' : '')+
-      '</div>';
+      // Ranura única para añadir nuevo objeto si el usuario puede editar
+      if(canEdit){
+        html += '<div class="backpack-slot add-slot" data-action="add-inventory-slot" role="button" tabindex="0" title="Añadir nuevo objeto">'+
+          '<span class="add-slot-plus">+</span>'+
+          '<span class="add-slot-label">Añadir</span>'+
+        '</div>';
+      }
     }
 
     html += '</div></div>'; // Cierre .backpack-grid y .backpack-container
