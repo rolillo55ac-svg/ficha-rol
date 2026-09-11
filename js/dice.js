@@ -252,56 +252,20 @@ function playBg3Parchment(){
   } catch(e){}
 }
 
+var backpackAudioInstance = null;
+
 function playBackpackOpenSound(){
   try {
-    var snd = new Audio('sounds/backpack_open.mp3');
-    snd.volume = 0.25; // Volumen bajo por defecto para no molestar en mesa de juego
-    var p = snd.play();
+    if(!backpackAudioInstance){
+      backpackAudioInstance = new Audio('sounds/sonido_mochila.mp3');
+      backpackAudioInstance.volume = 0.35;
+    }
+    backpackAudioInstance.currentTime = 0;
+    var p = backpackAudioInstance.play();
     if(p !== undefined){
-      p.catch(function(){
-        playSyntheticBackpackSound();
-      });
+      p.catch(function(){});
     }
-  } catch(e){
-    playSyntheticBackpackSound();
-  }
-}
-
-function playSyntheticBackpackSound(){
-  var ctx = getAudioCtx(); if(!ctx) return;
-  var now = ctx.currentTime;
-  try {
-    // 1. Fricción suave de cuero y tela (mochila de aventurero)
-    var bufferSize = Math.floor(ctx.sampleRate * 0.15);
-    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    var data = buffer.getChannelData(0);
-    for(var i = 0; i < bufferSize; i++){
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.04));
-    }
-    var noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-    var filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(450, now);
-    filter.frequency.exponentialRampToValueAtTime(160, now + 0.13);
-    var gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.06, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
-    noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.15);
-
-    // 2. Tintineo sutil metálico de hebilla
-    var osc = ctx.createOscillator(), clinkGain = ctx.createGain();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(1400, now + 0.03);
-    osc.frequency.exponentialRampToValueAtTime(860, now + 0.11);
-    clinkGain.gain.setValueAtTime(0.0001, now);
-    clinkGain.gain.linearRampToValueAtTime(0.03, now + 0.035);
-    clinkGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
-    osc.connect(clinkGain); clinkGain.connect(ctx.destination);
-    osc.start(now + 0.03); osc.stop(now + 0.12);
-  } catch(err){}
+  } catch(e){}
 }
 
 function playBg3RuneActivate(){

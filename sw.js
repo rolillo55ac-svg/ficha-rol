@@ -1,7 +1,7 @@
 // Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
 // Modo offline y carga rapida
 
-const CACHE_NAME = 'rol-krysalis-v1.3.1';
+const CACHE_NAME = 'rol-krysalis-v1.3.2';
 
 const PRECACHE_ASSETS = [
   './',
@@ -17,6 +17,7 @@ const PRECACHE_ASSETS = [
   './images/icon-maskable.png',
   './images/icon-32.png',
   './images/icon-16.png',
+  './sounds/sonido_mochila.mp3',
   './js/utils.js',
   './js/state.js',
   './js/supabase-client.js',
