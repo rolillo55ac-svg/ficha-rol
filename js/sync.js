@@ -16,7 +16,7 @@ var CHAR_DATA_KEYS = [
   "magiaTipo", "spells", "stones", "passivesNeg", "passivesPos",
   "goddessCurses", "goddessBlessings", "goddessTable",
   "summons", "buffs", "customBuffs", "poisons", "skillPoints",
-  "activeBuffs", "personalNotes", "trainings"
+  "activeBuffs", "personalNotes", "trainings", "charSound"
 ];
 
 function getCharacterDiffPatch(c){
