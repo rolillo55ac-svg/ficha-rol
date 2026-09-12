@@ -2408,11 +2408,12 @@ function execCommandCopy(text){
 // === CONFIGURACIÓN DE SONIDO DE PERSONAJE (TICKET #TK-CFJX) ===
 
 var CHAR_SOUND_PRESETS = [
-  { name: "Ruido murciélago", icon: "🦇", type: "bat", url: "sounds/ruido_murcielago.wav", desc: "Chillido y ecolocalización de murciélago" },
+  { name: "Ruido murciélago", icon: "🦇", type: "bat", url: "sounds/ruido_murcielago.wav", desc: "Chillido y ecolocalización" },
   { name: "Aullido de lobo", icon: "🐺", type: "wolf", url: "", desc: "Aullido nocturno misterioso" },
-  { name: "Graznido de cuervo", icon: "🦅", type: "crow", url: "", desc: "Llamada de cuervo o ave mística" },
-  { name: "Grito de batalla", icon: "⚔️", type: "shout", url: "", desc: "Grito bélico o fanfarria" },
-  { name: "Personalizado", icon: "🎵", type: "custom", url: "", desc: "Configura tu propio icono, nombre o URL" }
+  { name: "Graznido de cuervo", icon: "🦅", type: "crow", url: "", desc: "Graznido místico" },
+  { name: "Grito de batalla", icon: "⚔️", type: "shout", url: "sounds/combate_espada.mp3", desc: "Grito de guerra y acero" },
+  { name: "Destello arcano", icon: "✨", type: "magic", url: "sounds/magia_destello.mp3", desc: "Resonancia mágica" },
+  { name: "Personalizado", icon: "🎵", type: "custom", url: "", desc: "Audio libre o enlace propio" }
 ];
 
 var currentSoundModalCharId = null;
@@ -2441,6 +2442,12 @@ function handlePickCharSoundPreset(btn){
 
   if(pType === "bat" && typeof playBatSound === "function"){
     playBatSound();
+  } else if(pUrl){
+    try {
+      var a = new Audio(pUrl);
+      a.volume = 0.6;
+      a.play().catch(function(){});
+    } catch(e){}
   } else if(typeof playBg3Click === "function"){
     playBg3Click();
   }
@@ -2466,6 +2473,7 @@ function openCharSoundModal(c){
         '<strong>' + esc(p.name) + '</strong>' +
         '<small>' + esc(p.desc) + '</small>' +
       '</div>' +
+      '<span class="char-sound-preset-check">✓</span>' +
     '</button>';
   }).join('');
 
