@@ -548,6 +548,27 @@ async function checkForAppUpdates(isManual){
     var isOutdated = (data.version !== currentVer) || (data.build && currentBuild && data.build !== currentBuild);
 
     if(isOutdated){
+      var reloadAttemptKey = "krysalis_update_attempt_" + data.version + "_" + (data.build || "");
+      var alreadyAttempted = false;
+      try {
+        alreadyAttempted = !!sessionStorage.getItem(reloadAttemptKey);
+      } catch(e){}
+
+      if(alreadyAttempted && !isManual){
+        if(badgeEl){
+          badgeEl.textContent = "v" + currentVer;
+          badgeEl.className = "storage-pill warning";
+        }
+        if(statusEl){
+          statusEl.innerHTML = '<span style="color:#FDE047;">⚠️ Versión en caché: v' + esc(currentVer) + ' (Servidor: v' + esc(data.version) + ').</span>';
+        }
+        return;
+      }
+
+      try {
+        sessionStorage.setItem(reloadAttemptKey, "true");
+      } catch(e){}
+
       if(badgeEl){
         badgeEl.textContent = "v" + currentVer + " → v" + data.version;
         badgeEl.className = "storage-pill warning";
