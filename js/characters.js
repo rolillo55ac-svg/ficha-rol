@@ -132,6 +132,12 @@ function getOfficialCharacters(){
       ojos: "Amarillos",
       pelo: "Blanco con coleta",
       descripcion: "",
+      charSound: {
+        name: "Ruido murciélago",
+        type: "bat",
+        icon: "🦇",
+        url: "sounds/ruido_murcielago.wav"
+      },
       attrs: { fisico: 8, destreza: 8, inteligencia: 4, percepcion: 6, carisma: 4 },
       skillBonus: {
         advertir: 5, distancia: 1, melee: 4, atletismo: 3, buscar: 2,

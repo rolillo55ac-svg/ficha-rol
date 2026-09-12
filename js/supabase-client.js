@@ -93,6 +93,9 @@ function initSupabase(){
         .on('broadcast', { event: 'app_version_update' }, function(payload){
           if(payload && payload.payload && typeof handleRemoteVersionUpdate === 'function') handleRemoteVersionUpdate(payload.payload);
         })
+        .on('broadcast', { event: 'char_sound' }, function(payload){
+          if(payload && payload.payload && typeof handleRemoteCharSound === 'function') handleRemoteCharSound(payload.payload);
+        })
         .on('postgres_changes', {event:'*', schema:'public', table:'map_markers'}, function(payload){
           handleRemoteMarkerChange(payload);
         })

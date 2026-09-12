@@ -2319,6 +2319,55 @@ function handleClick(e){
     if(!c || !canEditChar(c)) return;
     c.portrait=null; saveState(); renderTopbar(); renderTab(); return;
   }
+  if(action==="play-char-sound"){
+    if(c) playCharacterSound(c);
+    return;
+  }
+  if(action==="edit-char-sound"){
+    if(!c || !canEditChar(c)) return;
+    openCharSoundModal(c);
+    return;
+  }
+  if(action==="save-char-sound"){
+    saveCharSoundFromModal();
+    return;
+  }
+  if(action==="remove-char-sound"){
+    removeCharSoundFromModal();
+    return;
+  }
+  if(action==="test-modal-char-sound"){
+    testCharSoundFromModal();
+    return;
+  }
+  if(action==="pick-char-sound-preset"){
+    var pName = btn.getAttribute("data-name") || "";
+    var pIcon = btn.getAttribute("data-icon") || "";
+    var pType = btn.getAttribute("data-type") || "";
+    var pUrl = btn.getAttribute("data-url") || "";
+
+    var nInp = document.getElementById("charSoundNameInput");
+    if(nInp && pName !== "Personalizado") nInp.value = pName;
+    var iInp = document.getElementById("charSoundIconInput");
+    if(iInp) iInp.value = pIcon;
+    var uInp = document.getElementById("charSoundUrlInput");
+    if(uInp) uInp.value = pUrl;
+    var tInp = document.getElementById("charSoundTypeInput");
+    if(tInp) tInp.value = pType;
+
+    var container = btn.closest(".char-sound-presets-grid");
+    if(container){
+      container.querySelectorAll(".char-sound-preset-card").forEach(function(el){ el.classList.remove("active"); });
+      btn.classList.add("active");
+    }
+
+    if(pType === "bat" && typeof playBatSound === "function"){
+      playBatSound();
+    } else if(typeof playBg3Click === "function"){
+      playBg3Click();
+    }
+    return;
+  }
   if(action==="close-roll-modal" || action==="close-bg3-roll"){ closeBg3Roll(); return; }
   if(action==="bg3-trigger-roll"){ triggerBg3Roll(); return; }
   if(action==="bg3-dc-dec"){

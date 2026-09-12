@@ -338,6 +338,163 @@ function playDiceAudio(type){
   else { playBg3DiceRoll(); setTimeout(playBg3DiceLand, 380); }
 }
 
+/* --- SONIDOS DE PERSONAJE & EFECTO MURCIÉLAGO (TICKET #TK-CFJX) --- */
+
+var charAudioInstance = null;
+
+function playBatSound(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  
+  // Ráfagas de chasquidos de ecolocalización y chillidos
+  var chirps = [
+    { t: 0.04, dur: 0.045, f0: 4200, f1: 1800, vol: 0.24 },
+    { t: 0.12, dur: 0.040, f0: 4500, f1: 1900, vol: 0.26 },
+    { t: 0.20, dur: 0.048, f0: 3900, f1: 1700, vol: 0.22 },
+    { t: 0.28, dur: 0.042, f0: 4600, f1: 2000, vol: 0.28 },
+    { t: 0.82, dur: 0.040, f0: 4800, f1: 2100, vol: 0.24 },
+    { t: 0.90, dur: 0.045, f0: 4300, f1: 1900, vol: 0.22 },
+    { t: 1.02, dur: 0.038, f0: 3800, f1: 1800, vol: 0.18 }
+  ];
+
+  chirps.forEach(function(ch){
+    try {
+      var tStart = now + ch.t;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(ch.f0, tStart);
+      osc.frequency.exponentialRampToValueAtTime(ch.f1, tStart + ch.dur);
+      gain.gain.setValueAtTime(0.0001, tStart);
+      gain.gain.linearRampToValueAtTime(ch.vol, tStart + ch.dur * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.0001, tStart + ch.dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(tStart); osc.stop(tStart + ch.dur + 0.01);
+    } catch(e){}
+  });
+
+  // Chillido sostenido con vibrato rápido
+  try {
+    var sqStart = now + 0.36;
+    var sqDur = 0.40;
+    var sqOsc = ctx.createOscillator();
+    var sqGain = ctx.createGain();
+    var lfo = ctx.createOscillator();
+    var lfoGain = ctx.createGain();
+
+    sqOsc.type = "sawtooth";
+    sqOsc.frequency.setValueAtTime(2900, sqStart);
+
+    lfo.type = "sine";
+    lfo.frequency.setValueAtTime(22, sqStart);
+    lfoGain.gain.setValueAtTime(350, sqStart);
+    lfo.connect(sqOsc.frequency);
+
+    var filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(4500, sqStart);
+
+    sqGain.gain.setValueAtTime(0.0001, sqStart);
+    sqGain.gain.linearRampToValueAtTime(0.14, sqStart + 0.06);
+    sqGain.gain.exponentialRampToValueAtTime(0.0001, sqStart + sqDur);
+
+    sqOsc.connect(filter);
+    filter.connect(sqGain);
+    sqGain.connect(ctx.destination);
+
+    lfo.start(sqStart); lfo.stop(sqStart + sqDur);
+    sqOsc.start(sqStart); sqOsc.stop(sqStart + sqDur);
+  } catch(e){}
+}
+
+function playCharacterSound(c, isRemote){
+  if(!c) return;
+  var sound = c.charSound;
+  if(!sound || !sound.name){
+    if(!isRemote && typeof showToast === "function"){
+      showToast("Este personaje no tiene un sonido asignado todavía.", "info");
+    }
+    return;
+  }
+
+  var icon = sound.icon || "🦇";
+  var sName = sound.name || "Sonido";
+
+  // Efecto visual en los botones de sonido
+  var btns = document.querySelectorAll(".char-sound-play-btn");
+  btns.forEach(function(b){
+    b.classList.add("playing");
+    setTimeout(function(){ b.classList.remove("playing"); }, 1400);
+  });
+
+  if(typeof showToast === "function"){
+    showToast(icon + " " + c.name + " emite: " + sName, "info");
+  }
+
+  var playedFile = false;
+  var isBat = (sound.type === "bat") || (sound.name && sound.name.toLowerCase().indexOf("murci") !== -1);
+
+  if(sound.url){
+    try {
+      if(!charAudioInstance){
+        charAudioInstance = new Audio();
+      }
+      charAudioInstance.src = sound.url;
+      charAudioInstance.volume = 0.6;
+      charAudioInstance.currentTime = 0;
+      var p = charAudioInstance.play();
+      if(p !== undefined){
+        p.catch(function(){
+          if(isBat) playBatSound();
+        });
+        playedFile = true;
+      }
+    } catch(e){
+      playedFile = false;
+    }
+  }
+
+  if(!playedFile){
+    if(isBat){
+      playBatSound();
+    } else {
+      playBg3Click();
+    }
+  }
+
+  if(!isRemote && typeof broadcastCharSound === "function"){
+    broadcastCharSound(c.name, sound);
+  }
+}
+
+function broadcastCharSound(charName, soundObj){
+  try {
+    if(typeof supabaseClient !== 'undefined' && supabaseClient && typeof realtimeChannel !== 'undefined' && realtimeChannel){
+      realtimeChannel.send({
+        type: 'broadcast',
+        event: 'char_sound',
+        payload: {
+          charName: charName,
+          sound: soundObj,
+          ts: Date.now()
+        }
+      });
+    }
+  } catch(e){}
+}
+
+function handleRemoteCharSound(payload){
+  if(!payload || !payload.sound) return;
+  var pseudoChar = {
+    name: payload.charName || "Personaje",
+    charSound: payload.sound
+  };
+  playCharacterSound(pseudoChar, true);
+}
+window.playCharacterSound = playCharacterSound;
+window.handleRemoteCharSound = handleRemoteCharSound;
+window.playBatSound = playBatSound;
+
 /* --- GENERADOR DE DADOS 3D POLIÉDRICOS (ESTILO BALDUR'S GATE 3) --- */
 
 function getBg3DieSvg(sides, value){
@@ -1458,8 +1615,8 @@ function openBg3RollModal(cfg){
   bg3RollState.subtitle = cfg.subtitle || ("Tirada (1d" + (cfg.sides || 20) + ")");
   bg3RollState.sides = cfg.sides || 20;
   bg3RollState.qty = cfg.qty || 1;
-  bg3RollState.dc = (cfg.dc !== undefined && cfg.dc !== null) ? parseInt(cfg.dc, 10) : 10;
-  bg3RollState.dcActive = cfg.dcActive !== undefined ? Boolean(cfg.dcActive) : true;
+  bg3RollState.dc = 0;
+  bg3RollState.dcActive = false;
   bg3RollState.isDamage = cfg.isDamage !== undefined ? Boolean(cfg.isDamage) : false;
   bg3RollState.mode = cfg.mode || "normal";
   bg3RollState.charName = cfg.charName || ((typeof activeChar === "function" && activeChar() && activeChar().name) ? activeChar().name : "Aventurero");
@@ -1486,12 +1643,11 @@ function openBg3RollModal(cfg){
   var subEl = document.getElementById("bg3RollSubtitle");
   if(subEl) subEl.textContent = bg3RollState.subtitle;
 
-  var dcValEl = document.getElementById("bg3DcValue");
-  if(dcValEl) dcValEl.textContent = bg3RollState.dc;
-  var dcStatusEl = document.getElementById("bg3DcStatus");
-  if(dcStatusEl) dcStatusEl.textContent = bg3RollState.dcActive ? "Objetivo activo" : (bg3RollState.isDamage ? "Tirada de daño" : "Sin CD (Libre)");
   var dcPlate = document.getElementById("bg3DcPlate");
-  if(dcPlate) dcPlate.style.opacity = bg3RollState.dcActive ? "1" : "0.45";
+  if(dcPlate){
+    dcPlate.style.display = "none";
+    dcPlate.classList.add("hidden");
+  }
 
   var promptTextEl = document.getElementById("bg3PromptText");
   if(promptTextEl){
@@ -1725,33 +1881,31 @@ function triggerBg3Roll(launchIntensity){
     bg3RollState.isCrit = isCrit;
     bg3RollState.isFumble = isFumble;
 
-    var isSuccess = true;
-    if(bg3RollState.dcActive){
-      if(isCrit) isSuccess = true;
-      else if(isFumble) isSuccess = false;
-      else isSuccess = (grandTotal >= bg3RollState.dc);
-    } else {
-      isSuccess = !isFumble;
-    }
+    var isSuccess = !isFumble;
     bg3RollState.isSuccess = isSuccess;
 
     var delayVerdict = Math.max(300, cards.length * 140 + 100);
     setTimeout(function(){
       var vPlate = document.getElementById("bg3VerdictBanner");
+      var vScore = document.getElementById("bg3VerdictScore");
       var vTitle = document.getElementById("bg3VerdictText");
       var vMath = document.getElementById("bg3VerdictBreakdown");
 
       if(vPlate && vTitle && vMath){
         vPlate.classList.remove("hidden", "success", "failure", "crit", "fumble");
 
+        if(vScore){
+          vScore.textContent = grandTotal;
+        }
+
         if(bg3RollState.isDamage){
           vPlate.classList.add("success");
           var isMax = (chosen === bg3RollState.sides * (bg3RollState.qty || 1));
           if(isMax){
-            vTitle.textContent = grandTotal + " DAÑO (¡MÁXIMO EN DADOS!)";
+            vTitle.textContent = "¡DAÑO MÁXIMO!";
             playBg3Crit();
           } else {
-            vTitle.textContent = grandTotal + " PUNTOS DE DAÑO";
+            vTitle.textContent = "PUNTOS DE DAÑO";
             playBg3DiceLand();
           }
         } else if(isCrit){
@@ -1762,29 +1916,28 @@ function triggerBg3Roll(launchIntensity){
           vPlate.classList.add("fumble");
           vTitle.textContent = "¡PIFIA!";
           playBg3Fumble();
-        } else if(bg3RollState.dcActive){
-          if(isSuccess){
-            vPlate.classList.add("success");
-            vTitle.textContent = "¡ÉXITO!";
-            playBg3Crit();
-          } else {
-            vPlate.classList.add("failure");
-            vTitle.textContent = "FALLO";
-            playBg3Fumble();
-          }
         } else {
           vPlate.classList.add("success");
-          vTitle.textContent = "RESULTADO: " + grandTotal;
+          vTitle.textContent = "TIRADA TOTAL";
         }
 
-        var mathText = "[" + r1 + (r2 !== null ? " + " + r2 : "") + (extraSum > 0 ? " + " + extraSum : "") + "] " + (bg3RollState.isDamage ? "Arma (" + (bg3RollState.qty || 1) + "d" + bg3RollState.sides + ")" : "Dado");
+        var diceLabel = bg3RollState.isDamage ? "Arma" : "Dado";
+        var diceVal = r1 + (r2 !== null ? " (" + (bg3RollState.mode === "adv" ? "Ventaja " : "Desventaja ") + r2 + ")" : "") + (extraSum > 0 ? " +" + extraSum : "");
+
+        var breakdownHtml = '<div class="v-breakdown-row">' +
+          '<span class="v-chip v-chip-dice" title="Tirada de dados"><span class="v-chip-label">🎲 ' + diceLabel + '</span> <b>' + diceVal + '</b></span>';
+
         if(modSum !== 0){
-          mathText += " + [" + (modSum > 0 ? "+" + modSum : modSum) + "] Bonos = " + grandTotal + (bg3RollState.isDamage ? " Daño" : "");
+          var modSign = modSum > 0 ? "+" + modSum : String(modSum);
+          breakdownHtml += '<span class="v-chip-op">+</span>' +
+            '<span class="v-chip v-chip-mod" title="Bonificadores"><span class="v-chip-label">⚡ Bono</span> <b>' + modSign + '</b></span>';
         }
-        if(bg3RollState.dcActive){
-          mathText += " (vs CD " + bg3RollState.dc + ")";
-        }
-        vMath.textContent = mathText;
+
+        breakdownHtml += '<span class="v-chip-op">=</span>' +
+          '<span class="v-chip v-chip-total" title="Total final"><span class="v-chip-label">★ Total</span> <b>' + grandTotal + '</b></span>' +
+          '</div>';
+
+        vMath.innerHTML = breakdownHtml;
       }
 
       var formulaStr = (bg3RollState.isDamage ? "Daño: " : "") + (bg3RollState.qty && bg3RollState.qty > 1 ? bg3RollState.qty : "1") + "d" + bg3RollState.sides + " [" + r1 + (r2 !== null ? ", " + r2 : "") + (extraSum > 0 ? ", +" + extraSum : "") + "]" + (modSum !== 0 ? (modSum > 0 ? " +" + modSum : " " + modSum) : "") + " = " + grandTotal;
@@ -1897,8 +2050,8 @@ function openBg3SkillRoll(c, sdef){
     title: sdef.name,
     subtitle: "Tirada de " + sdef.name + " (1d10)",
     sides: 10,
-    dc: 10,
-    dcActive: true,
+    dc: 0,
+    dcActive: false,
     isDamage: false,
     mode: "normal",
     charName: c.name,
@@ -1964,8 +2117,8 @@ function openBg3CustomSkillRoll(c, cs){
     title: cs.name,
     subtitle: "Tirada de " + cs.name + " (1d10)",
     sides: 10,
-    dc: 10,
-    dcActive: true,
+    dc: 0,
+    dcActive: false,
     isDamage: false,
     mode: "normal",
     charName: c.name,
@@ -2026,8 +2179,8 @@ function openBg3AttrRoll(c, attrKey){
     title: "Prueba de " + attrName,
     subtitle: "Tirada de Atributo (1d20)",
     sides: 20,
-    dc: 10,
-    dcActive: true,
+    dc: 0,
+    dcActive: false,
     isDamage: false,
     mode: "normal",
     charName: c.name,
@@ -2110,8 +2263,8 @@ function openBg3WeaponAttackRoll(c, wpn){
     title: wpnName + " (Ataque)",
     subtitle: "Tirada de Ataque a " + (isMelee ? "Melé" : "Distancia") + " (1d10)",
     sides: 10,
-    dc: 10,
-    dcActive: true,
+    dc: 0,
+    dcActive: false,
     isDamage: false,
     mode: "normal",
     charName: c ? c.name : "Aventurero",
@@ -2465,7 +2618,7 @@ function rollLogHtml(){
   if(!logs.length){ html += '<div class="roll-empty">Sin tiradas recientes.</div>'; }
   else {
     html += '<div class="roll-log">'+logs.map(function(r){
-      return '<div class="roll-log-item"><span>'+esc(r.charName)+' — '+esc(r.label)+'<br><span class="rl-formula">'+esc(r.formulaText)+'</span></span><span class="rl-result">'+r.total+'</span></div>';
+      return '<div class="roll-log-item"><div class="rl-info"><span class="rl-char">'+esc(r.charName)+'</span> — <span class="rl-label">'+esc(r.label)+'</span><div class="rl-formula">'+esc(r.formulaText)+'</div></div><div class="rl-result-badge" title="Resultado">'+r.total+'</div></div>';
     }).join('')+'</div>';
   }
   html += '</div>';

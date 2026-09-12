@@ -1063,7 +1063,7 @@ function closeModals(){
       }
     }
   }
-  ["charModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay","feedbackModalOverlay"].forEach(function(id){
+  ["charModalOverlay","charSoundModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay","feedbackModalOverlay"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.classList.add("hidden");
   });
@@ -2398,5 +2398,169 @@ function execCommandCopy(text){
   }
 }
 
+// === CONFIGURACIÓN DE SONIDO DE PERSONAJE (TICKET #TK-CFJX) ===
 
+var CHAR_SOUND_PRESETS = [
+  { name: "Ruido murciélago", icon: "🦇", type: "bat", url: "sounds/ruido_murcielago.wav", desc: "Chillido y ecolocalización de murciélago" },
+  { name: "Aullido de lobo", icon: "🐺", type: "wolf", url: "", desc: "Aullido nocturno misterioso" },
+  { name: "Graznido de cuervo", icon: "🦅", type: "crow", url: "", desc: "Llamada de cuervo o ave mística" },
+  { name: "Grito de batalla", icon: "⚔️", type: "shout", url: "", desc: "Grito bélico o fanfarria" },
+  { name: "Personalizado", icon: "🎵", type: "custom", url: "", desc: "Configura tu propio icono, nombre o URL" }
+];
 
+function openCharSoundModal(c){
+  c = c || (typeof activeChar === "function" ? activeChar() : null);
+  if(!c) return;
+
+  var curSound = c.charSound || {};
+  var curName = curSound.name || "";
+  var curIcon = curSound.icon || (c.id === "char_ink" ? "🦇" : "🎵");
+  var curUrl = curSound.url || "";
+  var curType = curSound.type || (c.id === "char_ink" ? "bat" : "custom");
+
+  var presetsHtml = CHAR_SOUND_PRESETS.map(function(p){
+    var isSelected = (curType === p.type) || (curName.toLowerCase() === p.name.toLowerCase());
+    return '<button type="button" class="char-sound-preset-card ' + (isSelected ? 'active' : '') + '" data-action="pick-char-sound-preset" data-name="' + esc(p.name) + '" data-icon="' + esc(p.icon) + '" data-type="' + esc(p.type) + '" data-url="' + esc(p.url) + '">' +
+      '<span class="preset-icon">' + p.icon + '</span>' +
+      '<div class="preset-info">' +
+        '<strong>' + esc(p.name) + '</strong>' +
+        '<small>' + esc(p.desc) + '</small>' +
+      '</div>' +
+    '</button>';
+  }).join('');
+
+  var html = '<h2>' +
+    '<span>🎵 Sonido de ' + esc(c.name) + '</span>' +
+    '<button data-action="close-modal" aria-label="Cerrar">&times;</button>' +
+  '</h2>' +
+  '<p style="font-size:0.88rem;color:var(--ink-dim);margin:0 0 14px;">Elige un efecto de sonido predefinido o introduce un nombre, icono y enlace de audio para este personaje.</p>' +
+  '<div class="field"><label>Efectos y Preajustes</label><div class="char-sound-presets-grid">' + presetsHtml + '</div></div>' +
+  '<div class="field" style="margin-top:14px;"><label>Nombre del Sonido</label>' +
+    '<input type="text" id="charSoundNameInput" value="' + esc(curName) + '" placeholder="Ej: Ruido murciélago, Aullido, etc.">' +
+  '</div>' +
+  '<div style="display:grid;grid-template-columns:80px 1fr;gap:10px;margin-top:10px;">' +
+    '<div class="field"><label>Icono</label>' +
+      '<input type="text" id="charSoundIconInput" value="' + esc(curIcon) + '" style="text-align:center;font-size:1.2rem;" maxlength="4">' +
+    '</div>' +
+    '<div class="field"><label>URL de Audio (.wav / .mp3) <small style="color:var(--ink-faint);">(Opcional)</small></label>' +
+      '<input type="text" id="charSoundUrlInput" value="' + esc(curUrl) + '" placeholder="sounds/ruido_murcielago.wav o https://...">' +
+    '</div>' +
+  '</div>' +
+  '<input type="hidden" id="charSoundTypeInput" value="' + esc(curType) + '">' +
+  '<div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">' +
+    '<button type="button" class="btn-compact" data-action="test-modal-char-sound" style="flex:1;min-width:130px;padding:8px 12px;font-size:0.9rem;" title="Escuchar sonido">▶ Probar sonido</button>' +
+    '<button type="button" class="btn-solid-gold" data-action="save-char-sound" style="flex:1;min-width:130px;padding:8px 12px;font-size:0.9rem;">✓ Guardar</button>' +
+    (curName ? '<button type="button" class="btn-compact" data-action="remove-char-sound" style="padding:8px 12px;color:var(--danger);border-color:rgba(200,75,87,0.4);" title="Quitar sonido de este personaje">Quitar</button>' : '') +
+  '</div>';
+
+  var modal = document.getElementById("charSoundModal");
+  if(modal){
+    modal.innerHTML = html;
+  }
+  var overlay = document.getElementById("charSoundModalOverlay");
+  if(overlay){
+    overlay.classList.remove("hidden");
+  }
+}
+
+function saveCharSoundFromModal(){
+  var c = typeof activeChar === "function" ? activeChar() : null;
+  if(!c) return;
+
+  var nameInput = document.getElementById("charSoundNameInput");
+  var iconInput = document.getElementById("charSoundIconInput");
+  var urlInput = document.getElementById("charSoundUrlInput");
+  var typeInput = document.getElementById("charSoundTypeInput");
+
+  var name = nameInput ? nameInput.value.trim() : "";
+  var icon = iconInput ? (iconInput.value.trim() || "🎵") : "🎵";
+  var url = urlInput ? urlInput.value.trim() : "";
+  var type = typeInput ? typeInput.value.trim() : "custom";
+
+  if(!name){
+    c.charSound = null;
+  } else {
+    c.charSound = {
+      name: name,
+      icon: icon,
+      url: url,
+      type: type
+    };
+  }
+
+  c._lastLocalEdit = Date.now();
+  if(typeof markCharDirty === "function") markCharDirty(c.id);
+  if(typeof saveState === "function") saveState();
+  if(typeof renderTab === "function") renderTab();
+
+  var overlay = document.getElementById("charSoundModalOverlay");
+  if(overlay) overlay.classList.add("hidden");
+
+  if(typeof showToast === "function"){
+    showToast(name ? ("Sonido guardado: " + icon + " " + name) : "Sonido eliminado", "success");
+  }
+}
+
+function removeCharSoundFromModal(){
+  var c = typeof activeChar === "function" ? activeChar() : null;
+  if(!c) return;
+  c.charSound = null;
+  c._lastLocalEdit = Date.now();
+  if(typeof markCharDirty === "function") markCharDirty(c.id);
+  if(typeof saveState === "function") saveState();
+  if(typeof renderTab === "function") renderTab();
+
+  var overlay = document.getElementById("charSoundModalOverlay");
+  if(overlay) overlay.classList.add("hidden");
+
+  if(typeof showToast === "function"){
+    showToast("Sonido eliminado de la ficha.", "info");
+  }
+}
+
+function testCharSoundFromModal(){
+  var nameInput = document.getElementById("charSoundNameInput");
+  var iconInput = document.getElementById("charSoundIconInput");
+  var urlInput = document.getElementById("charSoundUrlInput");
+  var typeInput = document.getElementById("charSoundTypeInput");
+
+  var sound = {
+    name: nameInput ? (nameInput.value.trim() || "Prueba") : "Prueba",
+    icon: iconInput ? (iconInput.value.trim() || "🦇") : "🦇",
+    url: urlInput ? urlInput.value.trim() : "",
+    type: typeInput ? typeInput.value.trim() : "bat"
+  };
+
+  var dummyChar = { name: "Prueba", charSound: sound };
+  if(typeof playCharacterSound === "function"){
+    playCharacterSound(dummyChar, true);
+  }
+}
+
+function ensureTkCfjxTicket(){
+  try {
+    var myTickets = getPlayerTickets();
+    var found = myTickets.find(function(t){ return t.ticketCode === "TK-CFJX" || (t.title && t.title.toLowerCase().indexOf("murci") !== -1); });
+    if(!found){
+      myTickets.unshift({
+        id: "ticket_cfjx",
+        ticketCode: "TK-CFJX",
+        title: "Ruido murciélago",
+        desc: "Añadir sonido de murciélago en la pestaña de ficha de Ink (con soporte para otros personajes vacíos).",
+        category: "sugerencia",
+        status: "resolved",
+        adminReply: "Resuelto: Añadido sonido de murciélago en la ficha de Ink (con reproductor de audio) y soporte personalizable para todos los personajes. Además, se ha rediseñado el resultado de las tiradas de dados eliminando la CD y haciendo el resultado final mucho más grande y claro.",
+        resolvedAt: new Date().toISOString(),
+        readReply: false,
+        createdAt: new Date(Date.now() - 3600000).toISOString()
+      });
+      savePlayerTickets(myTickets);
+    }
+  } catch(e){}
+}
+setTimeout(ensureTkCfjxTicket, 800);
+
+window.openCharSoundModal = openCharSoundModal;
+window.saveCharSoundFromModal = saveCharSoundFromModal;
+window.removeCharSoundFromModal = removeCharSoundFromModal;
+window.testCharSoundFromModal = testCharSoundFromModal;

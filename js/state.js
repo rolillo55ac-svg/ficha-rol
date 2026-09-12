@@ -504,6 +504,10 @@ function migrateState(s){
         if(!existing.weapons) existing.weapons = JSON.parse(JSON.stringify(off.weapons||[]));
         if(!existing.armors) existing.armors = JSON.parse(JSON.stringify(off.armors||[]));
         if(!existing.spells) existing.spells = JSON.parse(JSON.stringify(off.spells||[]));
+        if(off.charSound && !existing.charSound) existing.charSound = JSON.parse(JSON.stringify(off.charSound));
+        if((existing.id === "char_ink" || (existing.name && existing.name.toLowerCase().includes("ink"))) && !existing.charSound){
+          existing.charSound = { name: "Ruido murciélago", type: "bat", icon: "🦇", url: "sounds/ruido_murcielago.wav" };
+        }
         existing.officialDataVersion = 5;
       } else {
         var nOff = JSON.parse(JSON.stringify(off));

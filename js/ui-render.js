@@ -163,6 +163,34 @@ function tplFicha(c){
   var canEdit = canEditChar(c);
   var ro = !canEdit;
 
+  var sound = c.charSound;
+  if(!sound && (c.id === "char_ink" || (c.name && c.name.toLowerCase().includes("ink")))){
+    sound = { name: "Ruido murciélago", type: "bat", icon: "🦇", url: "sounds/ruido_murcielago.wav" };
+    c.charSound = sound;
+  }
+  var hasSound = !!(sound && sound.name && sound.name.trim());
+  var soundHtml = '';
+
+  if(hasSound){
+    var sIcon = sound.icon || "🦇";
+    var sName = sound.name || "Sonido";
+    soundHtml = '<div class="char-sound-widget" title="Efecto de sonido característico">'+
+      '<button class="char-sound-play-btn" data-action="play-char-sound" aria-label="Reproducir ' + esc(sName) + '" title="Reproducir: ' + esc(sName) + '">'+
+        '<span class="char-sound-icon">' + sIcon + '</span>'+
+        '<span class="char-sound-name">' + esc(sName) + '</span>'+
+        '<span class="char-sound-waves"><span></span><span></span><span></span></span>'+
+      '</button>'+
+      (canEdit ? '<button class="char-sound-cfg-btn" data-action="edit-char-sound" title="Configurar sonido del personaje">⚙️</button>' : '')+
+    '</div>';
+  } else if(canEdit){
+    soundHtml = '<div class="char-sound-widget empty">'+
+      '<button class="char-sound-add-btn" data-action="edit-char-sound" title="Asignar un sonido característico">'+
+        '<span class="char-sound-icon">🎵</span>'+
+        '<span class="char-sound-name">+ Añadir sonido</span>'+
+      '</button>'+
+    '</div>';
+  }
+
   return '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
     '<div class="section-title"><span>'+(c.isNPC?'Ficha de NPC (Solo GM)':(canEdit ? 'Datos del Personaje' : 'Datos del Personaje (Solo Lectura)'))+'</span></div>'+
     (!canEdit && currentUser ?
@@ -179,6 +207,7 @@ function tplFicha(c){
             '<button class="btn-compact" data-action="url-portrait" title="Pegar enlace de GitHub o web">URL</button>'+
             (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">✕</button>' : '')+
           '</div>' : '')+
+        soundHtml+
       '</div>'+
       '<div>'+
         '<div class="field-grid">'+

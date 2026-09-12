@@ -1,7 +1,7 @@
 {
-  "version": "1.3.7",
-  "build": "2026.09.11.11",
-  "updatedAt": "2026-09-11T18:45:00Z",
+  "version": "1.3.8",
+  "build": "2026.09.12.01",
+  "updatedAt": "2026-09-12T19:35:00Z",
   "forceReload": true,
-  "changelog": "Personalización completa de iconos para objetos de inventario: selector con catálogo temático RPG, entrada libre para escribir o pegar cualquier emoji y modo automático contextual."
+  "changelog": "Resolución del ticket #TK-CFJX: Sonido característico en la pestaña de ficha de personajes (Ruido de murciélago para Ink) y rediseño visual de tiradas de dados: resultado numérico gigante, veredicto claro y desglose estructurado sin mostrar la CD."
 }
