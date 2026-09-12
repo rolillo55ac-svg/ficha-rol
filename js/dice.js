@@ -2177,8 +2177,8 @@ function openBg3AttrRoll(c, attrKey){
 
   openBg3RollModal({
     title: "Prueba de " + attrName,
-    subtitle: "Tirada de Atributo (1d20)",
-    sides: 20,
+    subtitle: "Tirada de Atributo (1d10)",
+    sides: 10,
     dc: 0,
     dcActive: false,
     isDamage: false,
