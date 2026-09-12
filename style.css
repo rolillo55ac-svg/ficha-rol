@@ -338,9 +338,9 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .section.gm-section .section-title{color:var(--gm-light);}
 .section-title::after{content:'';position:absolute;left:0;bottom:-1px;height:1px;width:64px;background:linear-gradient(90deg,var(--gold),transparent);}
 .section.gm-section .section-title::after{background:linear-gradient(90deg,var(--gm-light),transparent);}
-.section-title span{display:flex;align-items:center;gap:7px;}
-.section-title span::before{content:'❖';color:var(--blood-light);font-size:.95rem;filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),0.6));}
-.section.gm-section .section-title span::before{content:'⚜️';}
+.section-title > span:first-child{display:flex;align-items:center;gap:7px;}
+.section-title > span:first-child::before{content:'❖';color:var(--blood-light);font-size:.95rem;filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),0.6));}
+.section.gm-section .section-title > span:first-child::before{content:'⚜️';}
 
 /* HERO PROFILE */
 .ficha-layout{display:grid;grid-template-columns:220px 1fr;gap:18px;}
@@ -6285,29 +6285,32 @@ textarea,
 .char-sound-widget {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   max-width: 100%;
   flex-shrink: 0;
+}
+.char-sound-widget span::before,
+.char-sound-widget span::after {
+  content: none !important;
+  display: none !important;
 }
 .char-sound-play-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   background: linear-gradient(135deg, rgba(84, 41, 120, 0.45) 0%, rgba(30, 15, 45, 0.75) 100%);
   border: 1px solid rgba(168, 85, 247, 0.5);
   border-radius: 18px;
-  padding: 4px 11px;
+  padding: 4px 12px;
   color: #F3E8FF;
   font-family: var(--font-body);
-  font-size: 0.78rem;
+  font-size: 0.80rem;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 0 8px rgba(147, 88, 194, 0.2);
-  max-width: 210px;
   white-space: nowrap;
-  overflow: hidden;
   box-sizing: border-box;
 }
 .char-sound-play-btn:hover {
@@ -6330,7 +6333,7 @@ textarea,
   100% { box-shadow: 0 0 16px rgba(253, 224, 71, 0.8), inset 0 0 10px rgba(253, 224, 71, 0.5); }
 }
 .char-sound-icon {
-  font-size: 0.98rem;
+  font-size: 1rem;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -6338,19 +6341,21 @@ textarea,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 260px;
+  line-height: 1.2;
 }
 .char-sound-waves {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: flex-end;
-  gap: 2px;
+  gap: 2.5px;
   height: 12px;
   flex-shrink: 0;
 }
 .char-sound-waves span {
+  display: inline-block !important;
   width: 2.5px;
   height: 4px;
-  background: rgba(216, 180, 254, 0.65);
+  background: rgba(216, 180, 254, 0.75);
   border-radius: 1px;
   transition: height 0.2s ease;
 }
@@ -6527,12 +6532,12 @@ textarea,
     margin-top: 4px;
   }
   .char-sound-play-btn {
-    max-width: 160px;
-    font-size: 0.72rem;
-    padding: 3px 8px;
+    max-width: none;
+    font-size: 0.75rem;
+    padding: 3px 9px;
   }
   .char-sound-name {
-    max-width: 85px;
+    max-width: 150px;
   }
   .char-sound-presets-grid {
     gap: 6px;
