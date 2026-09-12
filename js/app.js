@@ -56,6 +56,10 @@ function init(){
     safeListen("topbar", "click", handleClick);
     safeListen("tabbar", "click", handleClick);
     safeListen("charModal", "click", modalClick);
+    safeListen("charSoundModal", "click", function(e){
+      handleClick(e);
+      modalClick(e);
+    });
     safeListen("dataModal", "click", modalClick);
     safeListen("dataModal", "change", handleChange);
     safeListen("dataModal", "input", handleChange);
@@ -66,12 +70,20 @@ function init(){
     safeListen("feedbackModal", "click", feedbackModalClick);
     
     safeListen("charModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("charSoundModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("dataModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("diceModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("pinModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("loreModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("conflictModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("feedbackModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape"){
+        closeModals();
+        if(typeof closeBg3Roll === "function") closeBg3Roll();
+      }
+    });
     
     safeListen("rollOverlay", "click", function(e){
       if(e.target === this){

@@ -382,6 +382,13 @@ function modalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action==="close-modal"){ closeModals(); return; }
+  if(action==="save-char-sound"){ saveCharSoundFromModal(); return; }
+  if(action==="remove-char-sound"){ removeCharSoundFromModal(); return; }
+  if(action==="test-modal-char-sound"){ testCharSoundFromModal(); return; }
+  if(action==="pick-char-sound-preset"){
+    if(typeof handlePickCharSoundPreset === "function") handlePickCharSoundPreset(btn);
+    return;
+  }
   if(action==="open-feedback-modal"){ openFeedbackModal(); return; }
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
@@ -2408,9 +2415,42 @@ var CHAR_SOUND_PRESETS = [
   { name: "Personalizado", icon: "🎵", type: "custom", url: "", desc: "Configura tu propio icono, nombre o URL" }
 ];
 
+var currentSoundModalCharId = null;
+
+function handlePickCharSoundPreset(btn){
+  if(!btn) return;
+  var pName = btn.getAttribute("data-name") || "";
+  var pIcon = btn.getAttribute("data-icon") || "";
+  var pType = btn.getAttribute("data-type") || "";
+  var pUrl = btn.getAttribute("data-url") || "";
+
+  var nInp = document.getElementById("charSoundNameInput");
+  if(nInp && pName !== "Personalizado") nInp.value = pName;
+  var iInp = document.getElementById("charSoundIconInput");
+  if(iInp) iInp.value = pIcon;
+  var uInp = document.getElementById("charSoundUrlInput");
+  if(uInp) uInp.value = pUrl;
+  var tInp = document.getElementById("charSoundTypeInput");
+  if(tInp) tInp.value = pType;
+
+  var container = btn.closest(".char-sound-presets-grid");
+  if(container){
+    container.querySelectorAll(".char-sound-preset-card").forEach(function(el){ el.classList.remove("active"); });
+    btn.classList.add("active");
+  }
+
+  if(pType === "bat" && typeof playBatSound === "function"){
+    playBatSound();
+  } else if(typeof playBg3Click === "function"){
+    playBg3Click();
+  }
+}
+window.handlePickCharSoundPreset = handlePickCharSoundPreset;
+
 function openCharSoundModal(c){
   c = c || (typeof activeChar === "function" ? activeChar() : null);
   if(!c) return;
+  currentSoundModalCharId = c.id;
 
   var curSound = c.charSound || {};
   var curName = curSound.name || "";
@@ -2431,9 +2471,9 @@ function openCharSoundModal(c){
 
   var html = '<h2>' +
     '<span>🎵 Sonido de ' + esc(c.name) + '</span>' +
-    '<button data-action="close-modal" aria-label="Cerrar">&times;</button>' +
+    '<button type="button" data-action="close-modal" aria-label="Cerrar">&times;</button>' +
   '</h2>' +
-  '<p style="font-size:0.88rem;color:var(--ink-dim);margin:0 0 14px;">Elige un efecto de sonido predefinido o introduce un nombre, icono y enlace de audio para este personaje.</p>' +
+  '<p style="font-size:0.85rem;color:var(--ink-dim);margin:0 0 14px;line-height:1.4;">Elige un efecto de sonido predefinido o introduce un nombre, icono y audio para tu personaje.</p>' +
   '<div class="field"><label>Efectos y Preajustes</label><div class="char-sound-presets-grid">' + presetsHtml + '</div></div>' +
   '<div class="field" style="margin-top:14px;"><label>Nombre del Sonido</label>' +
     '<input type="text" id="charSoundNameInput" value="' + esc(curName) + '" placeholder="Ej: Ruido murciélago, Aullido, etc.">' +
@@ -2448,9 +2488,10 @@ function openCharSoundModal(c){
   '</div>' +
   '<input type="hidden" id="charSoundTypeInput" value="' + esc(curType) + '">' +
   '<div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">' +
-    '<button type="button" class="btn-compact" data-action="test-modal-char-sound" style="flex:1;min-width:130px;padding:8px 12px;font-size:0.9rem;" title="Escuchar sonido">▶ Probar sonido</button>' +
-    '<button type="button" class="btn-solid-gold" data-action="save-char-sound" style="flex:1;min-width:130px;padding:8px 12px;font-size:0.9rem;">✓ Guardar</button>' +
-    (curName ? '<button type="button" class="btn-compact" data-action="remove-char-sound" style="padding:8px 12px;color:var(--danger);border-color:rgba(200,75,87,0.4);" title="Quitar sonido de este personaje">Quitar</button>' : '') +
+    '<button type="button" class="btn-compact" data-action="test-modal-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;" title="Escuchar sonido">▶ Probar</button>' +
+    '<button type="button" class="btn-solid-gold" data-action="save-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;">✓ Guardar</button>' +
+    (curName ? '<button type="button" class="btn-compact" data-action="remove-char-sound" style="padding:9px 12px;color:var(--danger);border-color:rgba(200,75,87,0.4);" title="Quitar sonido de este personaje">Quitar</button>' : '') +
+    '<button type="button" class="btn-compact" data-action="close-modal" style="padding:9px 14px;">✕ Cancelar</button>' +
   '</div>';
 
   var modal = document.getElementById("charSoundModal");
@@ -2464,7 +2505,7 @@ function openCharSoundModal(c){
 }
 
 function saveCharSoundFromModal(){
-  var c = typeof activeChar === "function" ? activeChar() : null;
+  var c = (currentSoundModalCharId && (state.characters||[]).find(function(x){ return x.id === currentSoundModalCharId; })) || (typeof activeChar === "function" ? activeChar() : null);
   if(!c) return;
 
   var nameInput = document.getElementById("charSoundNameInput");
@@ -2493,8 +2534,7 @@ function saveCharSoundFromModal(){
   if(typeof saveState === "function") saveState();
   if(typeof renderTab === "function") renderTab();
 
-  var overlay = document.getElementById("charSoundModalOverlay");
-  if(overlay) overlay.classList.add("hidden");
+  closeModals();
 
   if(typeof showToast === "function"){
     showToast(name ? ("Sonido guardado: " + icon + " " + name) : "Sonido eliminado", "success");
@@ -2502,7 +2542,7 @@ function saveCharSoundFromModal(){
 }
 
 function removeCharSoundFromModal(){
-  var c = typeof activeChar === "function" ? activeChar() : null;
+  var c = (currentSoundModalCharId && (state.characters||[]).find(function(x){ return x.id === currentSoundModalCharId; })) || (typeof activeChar === "function" ? activeChar() : null);
   if(!c) return;
   c.charSound = null;
   c._lastLocalEdit = Date.now();
@@ -2510,8 +2550,7 @@ function removeCharSoundFromModal(){
   if(typeof saveState === "function") saveState();
   if(typeof renderTab === "function") renderTab();
 
-  var overlay = document.getElementById("charSoundModalOverlay");
-  if(overlay) overlay.classList.add("hidden");
+  closeModals();
 
   if(typeof showToast === "function"){
     showToast("Sonido eliminado de la ficha.", "info");

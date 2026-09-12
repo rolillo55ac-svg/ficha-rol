@@ -6283,35 +6283,37 @@ textarea,
 
 /* === WIDGET DE SONIDO DE PERSONAJE (#TK-CFJX) === */
 .char-sound-widget {
-  margin-top: 10px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
+  gap: 5px;
+  max-width: 100%;
+  flex-shrink: 0;
 }
 .char-sound-play-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  background: linear-gradient(135deg, rgba(84, 41, 120, 0.5) 0%, rgba(38, 15, 56, 0.75) 100%);
-  border: 1.5px solid #9358C2;
-  border-radius: 10px;
-  padding: 6px 14px;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(84, 41, 120, 0.45) 0%, rgba(30, 15, 45, 0.75) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  border-radius: 18px;
+  padding: 4px 11px;
   color: #F3E8FF;
-  font-family: var(--font-display);
-  font-size: 0.88rem;
-  font-weight: 700;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 0 10px rgba(147, 88, 194, 0.25);
-  max-width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 0 8px rgba(147, 88, 194, 0.2);
+  max-width: 210px;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .char-sound-play-btn:hover {
   transform: translateY(-1px);
   border-color: #D8B4FE;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.7), 0 0 14px rgba(147, 88, 194, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 10px rgba(147, 88, 194, 0.4);
   color: #FFFFFF;
 }
 .char-sound-play-btn:active {
@@ -6321,30 +6323,34 @@ textarea,
   animation: charSoundPulse 0.5s ease-in-out infinite alternate;
   border-color: #FDE047;
   color: #FFF5DC;
+  background: linear-gradient(135deg, rgba(161, 98, 7, 0.5) 0%, rgba(69, 26, 3, 0.8) 100%);
 }
 @keyframes charSoundPulse {
-  0% { box-shadow: 0 0 8px rgba(253, 224, 71, 0.4), inset 0 0 8px rgba(253, 224, 71, 0.3); }
-  100% { box-shadow: 0 0 22px rgba(253, 224, 71, 0.85), inset 0 0 14px rgba(253, 224, 71, 0.5); }
+  0% { box-shadow: 0 0 6px rgba(253, 224, 71, 0.4), inset 0 0 6px rgba(253, 224, 71, 0.3); }
+  100% { box-shadow: 0 0 16px rgba(253, 224, 71, 0.8), inset 0 0 10px rgba(253, 224, 71, 0.5); }
 }
 .char-sound-icon {
-  font-size: 1.15rem;
+  font-size: 0.98rem;
   line-height: 1;
+  flex-shrink: 0;
 }
 .char-sound-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 120px;
 }
 .char-sound-waves {
   display: inline-flex;
   align-items: flex-end;
   gap: 2px;
-  height: 14px;
+  height: 12px;
+  flex-shrink: 0;
 }
 .char-sound-waves span {
-  width: 3px;
-  height: 5px;
-  background: var(--gold);
+  width: 2.5px;
+  height: 4px;
+  background: rgba(216, 180, 254, 0.65);
   border-radius: 1px;
   transition: height 0.2s ease;
 }
@@ -6357,61 +6363,69 @@ textarea,
 .char-sound-play-btn.playing .char-sound-waves span:nth-child(3) {
   animation: wavePulse3 0.45s ease-in-out 0.2s infinite alternate;
 }
-@keyframes wavePulse1 { 0% { height: 3px; } 100% { height: 14px; background: #FDE047; } }
-@keyframes wavePulse2 { 0% { height: 5px; } 100% { height: 12px; background: #FDE047; } }
-@keyframes wavePulse3 { 0% { height: 4px; } 100% { height: 15px; background: #FDE047; } }
+@keyframes wavePulse1 { 0% { height: 3px; } 100% { height: 12px; background: #FDE047; } }
+@keyframes wavePulse2 { 0% { height: 4px; } 100% { height: 10px; background: #FDE047; } }
+@keyframes wavePulse3 { 0% { height: 3px; } 100% { height: 13px; background: #FDE047; } }
 
 .char-sound-cfg-btn {
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.3);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--ink-dim);
-  padding: 6px 9px;
+  padding: 0;
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 .char-sound-cfg-btn:hover {
   color: var(--gold);
   border-color: var(--gold);
-  background: rgba(176, 141, 87, 0.15);
+  background: rgba(176, 141, 87, 0.18);
 }
 
 .char-sound-add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px dashed rgba(176, 141, 87, 0.4);
-  border-radius: 8px;
-  padding: 6px 12px;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px dashed rgba(176, 141, 87, 0.45);
+  border-radius: 16px;
+  padding: 4px 10px;
   color: var(--ink-dim);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 .char-sound-add-btn:hover {
   border-color: var(--gold);
   color: var(--gold-light);
-  background: rgba(176, 141, 87, 0.12);
+  background: rgba(176, 141, 87, 0.15);
   transform: translateY(-1px);
 }
 
 /* Modal de selección y preajustes de sonido */
 .char-sound-presets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: 7px;
   margin-top: 6px;
 }
 .char-sound-preset-card {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   background: rgba(14, 10, 16, 0.7);
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   cursor: pointer;
   text-align: left;
   color: var(--ink);
@@ -6427,19 +6441,41 @@ textarea,
   box-shadow: 0 0 10px rgba(222, 195, 146, 0.25);
 }
 .char-sound-preset-card .preset-icon {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   flex: none;
 }
 .char-sound-preset-card .preset-info strong {
   display: block;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--gold-light);
+  line-height: 1.2;
 }
 .char-sound-preset-card .preset-info small {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--ink-faint);
-  line-height: 1.2;
+  line-height: 1.15;
+}
+
+@media (max-width: 480px) {
+  .char-sound-widget {
+    margin-top: 4px;
+  }
+  .char-sound-play-btn {
+    max-width: 160px;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+  }
+  .char-sound-name {
+    max-width: 85px;
+  }
+  .char-sound-presets-grid {
+    grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+    gap: 6px;
+  }
+  .char-sound-preset-card {
+    padding: 6px 7px;
+  }
 }
 
 /* Historial de tiradas mejorado */

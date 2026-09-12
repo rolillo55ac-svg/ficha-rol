@@ -175,16 +175,16 @@ function tplFicha(c){
     var sIcon = sound.icon || "🦇";
     var sName = sound.name || "Sonido";
     soundHtml = '<div class="char-sound-widget" title="Efecto de sonido característico">'+
-      '<button class="char-sound-play-btn" data-action="play-char-sound" aria-label="Reproducir ' + esc(sName) + '" title="Reproducir: ' + esc(sName) + '">'+
+      '<button class="char-sound-play-btn" data-action="play-char-sound" data-id="' + esc(c.id) + '" aria-label="Reproducir ' + esc(sName) + '" title="Reproducir: ' + esc(sName) + '">'+
         '<span class="char-sound-icon">' + sIcon + '</span>'+
         '<span class="char-sound-name">' + esc(sName) + '</span>'+
         '<span class="char-sound-waves"><span></span><span></span><span></span></span>'+
       '</button>'+
-      (canEdit ? '<button class="char-sound-cfg-btn" data-action="edit-char-sound" title="Configurar sonido del personaje">⚙️</button>' : '')+
+      (canEdit ? '<button class="char-sound-cfg-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Configurar sonido del personaje">⚙️</button>' : '')+
     '</div>';
   } else if(canEdit){
     soundHtml = '<div class="char-sound-widget empty">'+
-      '<button class="char-sound-add-btn" data-action="edit-char-sound" title="Asignar un sonido característico">'+
+      '<button class="char-sound-add-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Asignar un sonido característico">'+
         '<span class="char-sound-icon">🎵</span>'+
         '<span class="char-sound-name">+ Añadir sonido</span>'+
       '</button>'+
@@ -192,7 +192,10 @@ function tplFicha(c){
   }
 
   return '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
-    '<div class="section-title"><span>'+(c.isNPC?'Ficha de NPC (Solo GM)':(canEdit ? 'Datos del Personaje' : 'Datos del Personaje (Solo Lectura)'))+'</span></div>'+
+    '<div class="section-title">'+
+      '<span>'+(c.isNPC?'Ficha de NPC (Solo GM)':(canEdit ? 'Datos del Personaje' : 'Datos del Personaje (Solo Lectura)'))+'</span>'+
+      soundHtml+
+    '</div>'+
     (!canEdit && currentUser ?
       '<div class="tr-spectator-banner" style="margin-bottom:12px;">'+
         '<span style="font-size:1.15rem;flex:none;">👁️</span>'+
@@ -207,7 +210,6 @@ function tplFicha(c){
             '<button class="btn-compact" data-action="url-portrait" title="Pegar enlace de GitHub o web">URL</button>'+
             (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">✕</button>' : '')+
           '</div>' : '')+
-        soundHtml+
       '</div>'+
       '<div>'+
         '<div class="field-grid">'+

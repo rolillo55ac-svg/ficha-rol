@@ -212,6 +212,8 @@ function handleClick(e){
   var action = btn.getAttribute("data-action");
   var c = activeChar();
 
+  if(action==="close-modal" || action==="close-char-sound-modal"){ closeModals(); return; }
+
   if(action==="set-world-subtab"){ currentWorldSubtab = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-bestiary-continent"){ bestiaryContinentFilter = btn.getAttribute("data-continent"); renderTab(); return; }
   if(action==="set-lore-continent"){ loreContinentFilter = btn.getAttribute("data-val"); renderTab(); return; }
@@ -2320,12 +2322,15 @@ function handleClick(e){
     c.portrait=null; saveState(); renderTopbar(); renderTab(); return;
   }
   if(action==="play-char-sound"){
-    if(c) playCharacterSound(c);
+    var targetId = btn.getAttribute("data-id");
+    var targetChar = (targetId && (state.characters||[]).find(function(x){ return x.id === targetId; })) || c;
+    if(targetChar) playCharacterSound(targetChar);
     return;
   }
   if(action==="edit-char-sound"){
-    if(!c || !canEditChar(c)) return;
-    openCharSoundModal(c);
+    var targetId = btn.getAttribute("data-id");
+    var targetChar = (targetId && (state.characters||[]).find(function(x){ return x.id === targetId; })) || c;
+    if(targetChar && canEditChar(targetChar)) openCharSoundModal(targetChar);
     return;
   }
   if(action==="save-char-sound"){
@@ -2341,30 +2346,8 @@ function handleClick(e){
     return;
   }
   if(action==="pick-char-sound-preset"){
-    var pName = btn.getAttribute("data-name") || "";
-    var pIcon = btn.getAttribute("data-icon") || "";
-    var pType = btn.getAttribute("data-type") || "";
-    var pUrl = btn.getAttribute("data-url") || "";
-
-    var nInp = document.getElementById("charSoundNameInput");
-    if(nInp && pName !== "Personalizado") nInp.value = pName;
-    var iInp = document.getElementById("charSoundIconInput");
-    if(iInp) iInp.value = pIcon;
-    var uInp = document.getElementById("charSoundUrlInput");
-    if(uInp) uInp.value = pUrl;
-    var tInp = document.getElementById("charSoundTypeInput");
-    if(tInp) tInp.value = pType;
-
-    var container = btn.closest(".char-sound-presets-grid");
-    if(container){
-      container.querySelectorAll(".char-sound-preset-card").forEach(function(el){ el.classList.remove("active"); });
-      btn.classList.add("active");
-    }
-
-    if(pType === "bat" && typeof playBatSound === "function"){
-      playBatSound();
-    } else if(typeof playBg3Click === "function"){
-      playBg3Click();
+    if(typeof handlePickCharSoundPreset === "function"){
+      handlePickCharSoundPreset(btn);
     }
     return;
   }
