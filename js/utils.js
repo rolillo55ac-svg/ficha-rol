@@ -182,6 +182,77 @@ async function uploadImageToSupabase(file, folder, rawFileName, callback){
   });
 }
 
+async function uploadAudioToSupabase(file, rawFileName, callback){
+  if(!file){
+    if(typeof callback === "function") callback(null);
+    return;
+  }
+
+  // Límite de tamaño: 15 MB para clips de rol
+  if(file.size > 15 * 1024 * 1024){
+    showToast("El archivo de audio es demasiado grande (máximo 15 MB).", "warning");
+    if(typeof callback === "function") callback(null);
+    return;
+  }
+
+  var ext = (file.name && file.name.split('.').pop() || 'mp3').toLowerCase();
+  var allowedExts = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'weba'];
+  if(allowedExts.indexOf(ext) === -1){
+    ext = 'mp3';
+  }
+  var mime = file.type || ('audio/' + (ext === 'mp3' ? 'mpeg' : ext));
+
+  // 1. Intentar subir al bucket 'images' (carpeta sonidos) de Supabase Storage
+  if(typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.storage){
+    showToast("Subiendo pista de audio a la nube...", "info");
+    try {
+      var safeName = (rawFileName || "audio").toLowerCase().replace(/[^a-zA-Z0-9_\-]/g, "_").slice(0, 32);
+      var filePath = "sonidos/" + safeName + "_" + Date.now().toString(36) + "." + ext;
+
+      var res = await supabaseClient.storage
+        .from('images')
+        .upload(filePath, file, {
+          contentType: mime,
+          cacheControl: '86400',
+          upsert: true
+        });
+
+      if(res.error){
+        console.warn("Error subiendo audio a Supabase Storage:", res.error.message);
+        showToast("Storage: no se pudo guardar en la nube (" + res.error.message + ")", "warning");
+      } else {
+        var pubRes = supabaseClient.storage.from('images').getPublicUrl(filePath);
+        var publicUrl = (pubRes && pubRes.data && pubRes.data.publicUrl) ? pubRes.data.publicUrl : null;
+        if(publicUrl){
+          showToast("¡Pista de audio subida con éxito! 🎵", "success");
+          if(typeof callback === "function") callback(publicUrl, file.name);
+          return;
+        }
+      }
+    } catch(err){
+      console.warn("Excepción al subir audio:", err);
+    }
+  }
+
+  // 2. Respaldo local base64 si el archivo es menor a 1 MB
+  if(file.size <= 1024 * 1024){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      showToast("Audio guardado en almacenamiento local 🎵", "info");
+      if(typeof callback === "function") callback(e.target.result, file.name);
+    };
+    reader.onerror = function(){
+      showToast("Error leyendo archivo de audio local.", "error");
+      if(typeof callback === "function") callback(null);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    showToast("No se pudo subir a la nube y el archivo es muy pesado para almacenamiento local.", "error");
+    if(typeof callback === "function") callback(null);
+  }
+}
+window.uploadAudioToSupabase = uploadAudioToSupabase;
+
 function formatBytes(bytes, decimals){
   if(!bytes || bytes <= 0) return '0 B';
   var k = 1024;

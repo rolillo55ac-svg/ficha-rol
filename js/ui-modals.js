@@ -2486,12 +2486,15 @@ function openCharSoundModal(c){
   '<div class="field" style="margin-top:14px;"><label>Nombre del Sonido</label>' +
     '<input type="text" id="charSoundNameInput" value="' + esc(curName) + '" placeholder="Ej: Ruido murciélago, Aullido, etc.">' +
   '</div>' +
-  '<div style="display:grid;grid-template-columns:80px 1fr;gap:10px;margin-top:10px;">' +
+  '<div class="char-sound-inputs-row" style="display:grid;grid-template-columns:70px 1fr;gap:10px;margin-top:10px;">' +
     '<div class="field"><label>Icono</label>' +
       '<input type="text" id="charSoundIconInput" value="' + esc(curIcon) + '" style="text-align:center;font-size:1.2rem;" maxlength="4">' +
     '</div>' +
-    '<div class="field"><label>URL de Audio (.wav / .mp3) <small style="color:var(--ink-faint);">(Opcional)</small></label>' +
-      '<input type="text" id="charSoundUrlInput" value="' + esc(curUrl) + '" placeholder="sounds/ruido_murcielago.wav o https://...">' +
+    '<div class="field"><label>Pista de Audio (.mp3, .wav, .ogg) <small style="color:var(--ink-faint);">(Opcional)</small></label>' +
+      '<div style="display:flex;gap:6px;align-items:center;">' +
+        '<input type="text" id="charSoundUrlInput" value="' + esc(curUrl) + '" placeholder="sounds/..., https://... o sube archivo" style="flex:1;min-width:0;">' +
+        '<button type="button" class="btn-compact" data-action="upload-char-sound-file" title="Subir archivo de audio desde tu dispositivo" style="white-space:nowrap;padding:7px 11px;font-size:0.80rem;display:flex;align-items:center;gap:4px;flex:0 0 auto;">📁 Subir</button>' +
+      '</div>' +
     '</div>' +
   '</div>' +
   '<input type="hidden" id="charSoundTypeInput" value="' + esc(curType) + '">' +

@@ -112,6 +112,46 @@ function init(){
       }
       e.target.value="";
     });
+    safeListen("charSoundFileInput", "change", function(e){
+      if(e.target.files && e.target.files[0]){
+        var c = (typeof currentSoundModalCharId !== 'undefined' && currentSoundModalCharId && (state.characters||[]).find(function(x){ return x.id === currentSoundModalCharId; })) || (typeof activeChar === "function" ? activeChar() : null);
+        var file = e.target.files[0];
+        var defaultSoundName = file.name ? file.name.replace(/\.[^/.]+$/, "") : "Sonido";
+        defaultSoundName = defaultSoundName.replace(/[_\-]+/g, " ").replace(/\b\w/g, function(l){ return l.toUpperCase(); });
+
+        var uploadName = c ? (c.name + "_" + defaultSoundName) : defaultSoundName;
+        uploadAudioToSupabase(file, uploadName, function(url){
+          if(url){
+            var urlInput = document.getElementById("charSoundUrlInput");
+            if(urlInput) urlInput.value = url;
+            var nameInput = document.getElementById("charSoundNameInput");
+            if(nameInput && (!nameInput.value || nameInput.value.trim() === "" || nameInput.value.trim() === "Personalizado")){
+              nameInput.value = defaultSoundName;
+            }
+            var typeInput = document.getElementById("charSoundTypeInput");
+            if(typeInput) typeInput.value = "custom";
+
+            var grid = document.querySelector(".char-sound-presets-grid");
+            if(grid){
+              grid.querySelectorAll(".char-sound-preset-card").forEach(function(card){
+                if(card.getAttribute("data-type") === "custom"){
+                  card.classList.add("active");
+                } else {
+                  card.classList.remove("active");
+                }
+              });
+            }
+
+            try {
+              var a = new Audio(url);
+              a.volume = 0.65;
+              a.play().catch(function(){});
+            } catch(err){}
+          }
+        });
+      }
+      e.target.value = "";
+    });
     safeListen("mapFileInput", "change", function(e){
       if(e.target.files && e.target.files[0]){
         var curM = (state.maps||[]).find(function(m){return m.id===state.activeMapId;});

@@ -2345,6 +2345,11 @@ function handleClick(e){
     testCharSoundFromModal();
     return;
   }
+  if(action==="upload-char-sound-file"){
+    var sfInp = document.getElementById("charSoundFileInput");
+    if(sfInp) sfInp.click();
+    return;
+  }
   if(action==="pick-char-sound-preset"){
     if(typeof handlePickCharSoundPreset === "function"){
       handlePickCharSoundPreset(btn);
