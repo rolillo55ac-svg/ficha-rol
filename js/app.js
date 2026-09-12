@@ -256,14 +256,6 @@ function init(){
       navigator.serviceWorker.register("./sw.js").then(function(reg){
         reg.update().catch(function(){});
       }).catch(function(e){ console.warn("ServiceWorker aviso:", e); });
-
-      var isRefreshingApp = false;
-      navigator.serviceWorker.addEventListener("controllerchange", function(){
-        if(!isRefreshingApp){
-          isRefreshingApp = true;
-          window.location.reload();
-        }
-      });
     }
   } catch(err) {
     console.error("Critical error in init():", err);

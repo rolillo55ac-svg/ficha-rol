@@ -1,7 +1,7 @@
 // Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
 // Modo offline y carga rapida
 
-const CACHE_NAME = 'rol-krysalis-v1.3.7';
+const CACHE_NAME = 'rol-krysalis-v1.3.9';
 
 const PRECACHE_ASSETS = [
   './',
@@ -17,6 +17,8 @@ const PRECACHE_ASSETS = [
   './images/icon-maskable.png',
   './images/icon-32.png',
   './images/icon-16.png',
+  './sounds/ruido_murcielago.wav',
+  './assets/audio/ruido_murcielago.wav',
   './sounds/sonido_mochila.mp3',
   './sounds/backpack_open.mp3',
   './sounds/ficha_pergamino.mp3',

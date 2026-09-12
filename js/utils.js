@@ -528,6 +528,8 @@ async function executeUnifiedAppUpdate(isManual){
 }
 window.executeUnifiedAppUpdate = executeUnifiedAppUpdate;
 
+var hasNotifiedUpdateAvailable = false;
+
 async function checkForAppUpdates(isManual){
   if(isCheckingAppVersion) return;
   isCheckingAppVersion = true;
@@ -548,39 +550,22 @@ async function checkForAppUpdates(isManual){
     var isOutdated = (data.version !== currentVer) || (data.build && currentBuild && data.build !== currentBuild);
 
     if(isOutdated){
-      var reloadAttemptKey = "krysalis_update_attempt_" + data.version + "_" + (data.build || "");
-      var alreadyAttempted = false;
-      try {
-        alreadyAttempted = !!sessionStorage.getItem(reloadAttemptKey);
-      } catch(e){}
-
-      if(alreadyAttempted && !isManual){
-        if(badgeEl){
-          badgeEl.textContent = "v" + currentVer;
-          badgeEl.className = "storage-pill warning";
-        }
-        if(statusEl){
-          statusEl.innerHTML = '<span style="color:#FDE047;">⚠️ Versión en caché: v' + esc(currentVer) + ' (Servidor: v' + esc(data.version) + ').</span>';
-        }
-        return;
-      }
-
-      try {
-        sessionStorage.setItem(reloadAttemptKey, "true");
-      } catch(e){}
-
       if(badgeEl){
         badgeEl.textContent = "v" + currentVer + " → v" + data.version;
         badgeEl.className = "storage-pill warning";
       }
       if(statusEl){
-        statusEl.innerHTML = '<span style="color:#FDE047;font-weight:700;">⚠️ Nueva versión v' + esc(data.version) + ' detectada.</span>';
+        statusEl.innerHTML = '<span style="color:#FDE047;font-weight:700;">⚠️ Nueva versión v' + esc(data.version) + ' disponible. Pulsa "Actualizar" para aplicar.</span>';
       }
 
-      showToast("✨ ¡Nueva versión detectada (v" + data.version + ")! Actualizando app...", "info");
-      setTimeout(function(){
-        executeUnifiedAppUpdate(false);
-      }, 1400);
+      if(isManual){
+        showToast("🚀 Nueva versión encontrada (v" + data.version + "). Aplicando actualización...", "info");
+        executeUnifiedAppUpdate(true);
+      } else if(!hasNotifiedUpdateAvailable){
+        hasNotifiedUpdateAvailable = true;
+        // En segundo plano: solo avisar discretamente una vez por sesión sin interrumpir ni recargar nunca
+        showToast("✨ Hay una actualización disponible (v" + data.version + "). Puedes aplicarla en Ajustes cuando quieras.", "info", 5000);
+      }
     } else {
       if(badgeEl){
         badgeEl.textContent = "v" + currentVer;
