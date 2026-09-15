@@ -1,6 +1,8 @@
 // ============================================================================
 // SISTEMA EXPERIMENTAL "LA CASA" (PROTOTIPO BETA)
 // Módulo 100% aislado: js/house.js
+// Fases 2, 3 y 4: CRUD de salas, plano en cuadrícula, progresión atómica,
+// subida de nivel, stats independientes, catálogo de buffs e historial.
 // ============================================================================
 
 var CONFIG_ENABLE_HOUSE = true;
@@ -16,7 +18,9 @@ var houseState = {
   events: []
 };
 
-// Semilla local por defecto para modo local / sin conexión o tablas no migradas
+// ============================================================================
+// 1. SEMILLA LOCAL Y PERSISTENCIA
+// ============================================================================
 function getSeedHouseData(){
   var houseId = "h0000000-0000-0000-0000-000000000001";
   var cocinaId = "r0000000-0000-0000-0000-000000000002";
@@ -127,7 +131,8 @@ function getSeedHouseData(){
         name: "Horno Encantado",
         description: "Mantiene la comida caliente de forma mágica y realza las propiedades nutritivas.",
         unlocked: false,
-        effect_type: "narrativo",
+        effect_type: "buff",
+        buff_id: "buff_comida_reconfortante",
         required_house_level: 1
       },
       {
@@ -138,6 +143,7 @@ function getSeedHouseData(){
         description: "Permite cultivar especies vegetales tóxicas con mayor efectividad en cada descanso.",
         unlocked: false,
         effect_type: "narrativo",
+        buff_id: null,
         required_house_level: 1
       }
     ],
@@ -153,7 +159,6 @@ function getSeedHouseData(){
   };
 }
 
-// Inicialización de datos
 function loadHouseLocalData(){
   try {
     var raw = localStorage.getItem("krysalis_house_beta_v1");
@@ -164,6 +169,7 @@ function loadHouseLocalData(){
         houseState.rooms = parsed.rooms;
         houseState.upgrades = parsed.upgrades || [];
         houseState.events = parsed.events || [];
+        ensureSeedBuffsRegistered();
         return;
       }
     }
@@ -171,12 +177,12 @@ function loadHouseLocalData(){
     console.warn("Aviso cargando datos locales de La Casa:", e);
   }
 
-  // Fallback a semilla inicial
   var seed = getSeedHouseData();
   houseState.house = seed.house;
   houseState.rooms = seed.rooms;
   houseState.upgrades = seed.upgrades;
   houseState.events = seed.events;
+  ensureSeedBuffsRegistered();
   saveHouseLocalData();
 }
 
@@ -194,6 +200,40 @@ function saveHouseLocalData(){
   }
 }
 
+// Asegura que los buffs otorgados por mejoras de la casa existan en el catálogo global
+function ensureSeedBuffsRegistered(){
+  if(typeof state === "undefined" || !state) return;
+  if(!Array.isArray(state.buffCatalog)) state.buffCatalog = [];
+
+  var defaultHouseBuffs = [
+    {
+      id: "buff_comida_reconfortante",
+      name: "Comida Reconfortante (La Casa)",
+      type: "buff",
+      attr: "todo",
+      bonus: "+1",
+      duration: "permanent",
+      durationTurns: 0,
+      desc: "Beneficio de comer en la Cocina con Horno Encantado de La Casa. +1 a todas las tiradas.",
+      visible: true,
+      source: "house"
+    }
+  ];
+
+  var addedAny = false;
+  defaultHouseBuffs.forEach(function(hb){
+    var exists = state.buffCatalog.some(function(b){ return b.id === hb.id; });
+    if(!exists){
+      state.buffCatalog.push(hb);
+      addedAny = true;
+    }
+  });
+
+  if(addedAny && typeof saveState === "function"){
+    saveState(true);
+  }
+}
+
 // Carga remota desde Supabase
 async function fetchHouseRemoteData(){
   if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine){
@@ -205,34 +245,30 @@ async function fetchHouseRemoteData(){
     houseState.loading = true;
     var campaignId = "c0000000-0000-0000-0000-000000000001";
 
-    // 1. House
     var houseRes = await supabaseClient.from("house").select("*").eq("campaign_id", campaignId).maybeSingle();
     if(houseRes.error || !houseRes.data){
-      // Si la tabla no existe o no hay datos remotos, recurrimos a local
       loadHouseLocalData();
       houseState.loading = false;
       return;
     }
     houseState.house = houseRes.data;
 
-    // 2. Rooms
     var roomsRes = await supabaseClient.from("house_rooms").select("*").eq("house_id", houseState.house.id).order("created_at", { ascending: true });
     if(!roomsRes.error && roomsRes.data && roomsRes.data.length > 0){
       houseState.rooms = roomsRes.data;
     }
 
-    // 3. Upgrades
     var upgRes = await supabaseClient.from("house_upgrades").select("*").eq("house_id", houseState.house.id);
     if(!upgRes.error && upgRes.data){
       houseState.upgrades = upgRes.data;
     }
 
-    // 4. Events
-    var evRes = await supabaseClient.from("house_events").select("*").eq("house_id", houseState.house.id).order("created_at", { ascending: false }).limit(20);
+    var evRes = await supabaseClient.from("house_events").select("*").eq("house_id", houseState.house.id).order("created_at", { ascending: false }).limit(25);
     if(!evRes.error && evRes.data){
       houseState.events = evRes.data;
     }
 
+    ensureSeedBuffsRegistered();
     saveHouseLocalData();
   } catch(err){
     console.warn("Error cargando La Casa desde Supabase, usando local:", err);
@@ -242,7 +278,9 @@ async function fetchHouseRemoteData(){
   }
 }
 
-// Auxiliar para obtener datos del personaje asignado a una habitación
+// ============================================================================
+// 2. AUXILIARES Y PERMISOS
+// ============================================================================
 function getRoomOwnerInfo(ownerCharId){
   if(!ownerCharId) return null;
   var chars = (typeof state !== "undefined" && state.characters) ? state.characters : [];
@@ -251,8 +289,7 @@ function getRoomOwnerInfo(ownerCharId){
   });
   if(target) return target;
 
-  // Si no se encuentra en state.characters, buscar en los oficiales por nombre o ID común
-  if(ownerCharId.includes("cherk")) return { name: "Cherk", portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/cherk.jpg" };
+  if(ownerCharId.includes("cherk") || ownerCharId.includes("a803")) return { name: "Cherk", portrait: "https://raw.githubusercontent.com/rolillo55ac-svg/ficha-rol/main/images/personajes/cherk.jpg" };
   if(ownerCharId.includes("scarleth") || ownerCharId.includes("5e9c")) return { name: "Scarleth", portrait: null };
   if(ownerCharId.includes("derek") || ownerCharId.includes("d9de")) return { name: "Derek", portrait: null };
   if(ownerCharId.includes("bucky") || ownerCharId.includes("4d8d")) return { name: "Bucky", portrait: null };
@@ -261,18 +298,15 @@ function getRoomOwnerInfo(ownerCharId){
   return { name: "Personaje (" + ownerCharId.slice(0, 8) + ")", portrait: null };
 }
 
-// Permisos: ¿Puede el usuario actual editar la habitación?
 function canUserEditRoom(room){
   if(typeof isGM === "function" && isGM()) return true;
   if(!room || !room.owner_character_id) return false;
 
-  // Comprobar si el personaje activo del jugador es el dueño
   var curChar = (typeof activeChar === "function") ? activeChar() : null;
   if(curChar){
     if(curChar.id === room.owner_character_id || curChar.db_id === room.owner_character_id){
       return true;
     }
-    // Comparar por nombre seguro
     var cName = (curChar.name || "").toLowerCase();
     var rOwnerInfo = getRoomOwnerInfo(room.owner_character_id);
     if(rOwnerInfo && rOwnerInfo.name && cName.includes(rOwnerInfo.name.toLowerCase())){
@@ -282,7 +316,6 @@ function canUserEditRoom(room){
   return false;
 }
 
-// Icono según tipo de habitación
 function getRoomTypeIcon(type){
   switch(type){
     case "cocina": return "🍲";
@@ -293,7 +326,6 @@ function getRoomTypeIcon(type){
   }
 }
 
-// Etiqueta según tipo de habitación
 function getRoomTypeLabel(type){
   switch(type){
     case "cocina": return "Cocina";
@@ -305,7 +337,225 @@ function getRoomTypeLabel(type){
 }
 
 // ============================================================================
-// RENDERIZADO DE LA VISTA COMPLETA DE LA CASA
+// 3. PROGRESIÓN ATÓMICA Y SUBIDA DE NIVEL
+// ============================================================================
+async function addHouseProgress(amount, statName){
+  var gmMode = (typeof isGM === "function" && isGM());
+  if(!gmMode && currentUser){
+    if(typeof showToast === "function") showToast("Solo el Director de Juego puede otorgar progreso a la casa.", "warning");
+    return;
+  }
+
+  var h = houseState.house;
+  if(!h) return;
+
+  var actorId = (typeof currentUser !== "undefined" && currentUser) ? currentUser.id : null;
+  var isRemote = (typeof supabaseClient !== "undefined" && supabaseClient && h.id && navigator.onLine);
+
+  // A) Intento remoto atómico via RPC
+  if(isRemote){
+    try {
+      var rpcRes = await supabaseClient.rpc("add_house_progress", {
+        p_house_id: h.id,
+        p_amount: amount,
+        p_stat_name: (statName === "general" ? null : statName),
+        p_actor_id: actorId
+      });
+
+      if(rpcRes && !rpcRes.error && rpcRes.data && rpcRes.data.house){
+        houseState.house = rpcRes.data.house;
+        // Recargar eventos recientes
+        var evRes = await supabaseClient.from("house_events").select("*").eq("house_id", h.id).order("created_at", { ascending: false }).limit(25);
+        if(!evRes.error && evRes.data) houseState.events = evRes.data;
+
+        saveHouseLocalData();
+        renderHouseView();
+        if(typeof showToast === "function") showToast("Progreso de La Casa sincronizado en la nube.", "success");
+        return;
+      }
+    } catch(errRpc){
+      console.warn("Fallo RPC add_house_progress, aplicando cálculo local:", errRpc);
+    }
+  }
+
+  // B) Fallback atómico local
+  var didLevelUp = false;
+  var didStatUp = false;
+
+  if(!statName || statName === "general"){
+    var newProg = Math.max(0, (h.progress_current || 0) + amount);
+    var newMax = Math.max(10, h.progress_max || 100);
+    var newLvl = h.level || 1;
+
+    while(newProg >= newMax){
+      newLvl++;
+      newProg -= newMax;
+      newMax += 50;
+      didLevelUp = true;
+      houseState.events.unshift({
+        id: "e_" + Date.now() + "_" + Math.random(),
+        house_id: h.id,
+        event_type: "level_up",
+        payload: { message: "¡La Casa Andante ha alcanzado el Nivel " + newLvl + "!", level: newLvl },
+        created_at: new Date().toISOString()
+      });
+    }
+
+    if(!didLevelUp && amount !== 0){
+      houseState.events.unshift({
+        id: "e_" + Date.now() + "_" + Math.random(),
+        house_id: h.id,
+        event_type: "progress_gain",
+        payload: { message: "Progreso general incrementado en " + amount + " pts." },
+        created_at: new Date().toISOString()
+      });
+    }
+
+    h.level = newLvl;
+    h.progress_current = newProg;
+    h.progress_max = newMax;
+
+    if(didLevelUp && typeof showToast === "function"){
+      showToast("¡La Casa Andante ha subido al Nivel " + newLvl + "! 🎉", "success");
+    } else if(typeof showToast === "function"){
+      showToast("Progreso general: " + (amount > 0 ? "+" : "") + amount + " pts.", "info");
+    }
+  } else {
+    var pKey = statName + "_progress";
+    var mKey = statName + "_max";
+    var sProg = Math.max(0, (h[pKey] || 0) + amount);
+    var sMax = Math.max(5, h[mKey] || 10);
+    var sVal = h[statName] || 1;
+
+    while(sProg >= sMax){
+      sVal++;
+      sProg -= sMax;
+      sMax += 5;
+      didStatUp = true;
+      houseState.events.unshift({
+        id: "e_" + Date.now() + "_" + Math.random(),
+        house_id: h.id,
+        event_type: "stat_gain",
+        payload: { message: "¡" + statName.toUpperCase() + " ha subido a Nivel " + sVal + "!" },
+        created_at: new Date().toISOString()
+      });
+    }
+
+    h[statName] = sVal;
+    h[pKey] = sProg;
+    h[mKey] = sMax;
+
+    if(didStatUp && typeof showToast === "function"){
+      showToast("¡" + statName.toUpperCase() + " mejoró a Nivel " + sVal + "! ⭐", "success");
+    } else if(typeof showToast === "function"){
+      showToast(statName.toUpperCase() + ": +" + amount + " pts de progreso.", "info");
+    }
+  }
+
+  saveHouseLocalData();
+  renderHouseView();
+}
+
+// ============================================================================
+// 4. MEJORAS Y VINCULACIÓN CON CATÁLOGO DE BUFFS
+// ============================================================================
+async function toggleHouseUpgrade(upgradeId, newStatus){
+  var gmMode = (typeof isGM === "function" && isGM());
+  if(!gmMode && currentUser){
+    if(typeof showToast === "function") showToast("Solo el Director de Juego puede desbloquear mejoras.", "warning");
+    return;
+  }
+
+  var upg = (houseState.upgrades || []).find(function(x){ return x.id === upgradeId; });
+  if(!upg) return;
+
+  upg.unlocked = !!newStatus;
+  var actorId = (typeof currentUser !== "undefined" && currentUser) ? currentUser.id : null;
+
+  houseState.events.unshift({
+    id: "e_" + Date.now(),
+    house_id: houseState.house ? houseState.house.id : null,
+    event_type: upg.unlocked ? "unlock_upgrade" : "lock_upgrade",
+    payload: { message: (upg.unlocked ? "Mejora desbloqueada: " : "Mejora bloqueada: ") + upg.name },
+    created_at: new Date().toISOString()
+  });
+
+  saveHouseLocalData();
+  renderHouseView();
+
+  if(typeof showToast === "function"){
+    showToast(upg.unlocked ? "Mejora '" + upg.name + "' desbloqueada." : "Mejora bloqueada.", upg.unlocked ? "success" : "info");
+  }
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
+    try {
+      await supabaseClient.rpc("toggle_house_upgrade", {
+        p_upgrade_id: upgradeId,
+        p_unlocked: upg.unlocked,
+        p_actor_id: actorId
+      });
+    } catch(e){
+      console.warn("Fallo RPC toggle_house_upgrade, ejecutando update directo:", e);
+      try {
+        await supabaseClient.from("house_upgrades").update({ unlocked: upg.unlocked, updated_at: new Date().toISOString() }).eq("id", upgradeId);
+      } catch(e2){}
+    }
+  }
+}
+
+// Aplicar buff de una mejora de la casa al personaje activo
+function applyHouseBuffToActiveChar(buffId){
+  if(typeof activeChar !== "function"){
+    if(typeof showToast === "function") showToast("No hay personaje activo seleccionado.", "error");
+    return;
+  }
+
+  var c = activeChar();
+  if(!c){
+    if(typeof showToast === "function") showToast("Selecciona un personaje para recibir el buff.", "error");
+    return;
+  }
+
+  var bCatalog = (typeof state !== "undefined" && state.buffCatalog) ? state.buffCatalog : [];
+  var bDef = bCatalog.find(function(b){ return b.id === buffId; });
+
+  if(!bDef){
+    if(typeof showToast === "function") showToast("Buff no encontrado en el catálogo.", "error");
+    return;
+  }
+
+  if(!c.activeBuffs) c.activeBuffs = [];
+  var alreadyHas = c.activeBuffs.some(function(ab){ return ab.id === buffId; });
+
+  if(alreadyHas){
+    if(typeof showToast === "function") showToast(c.name + " ya tiene activo el buff '" + bDef.name + "'.", "info");
+    return;
+  }
+
+  var newBuff = {
+    id: bDef.id,
+    name: bDef.name,
+    type: bDef.type || "buff",
+    bonus: bDef.bonus || "+1",
+    attr: bDef.attr || "todo",
+    active: true,
+    shieldGranted: 0
+  };
+
+  c.activeBuffs.push(newBuff);
+  if(typeof manageListItemRPC === "function") manageListItemRPC(c, "activeBuffs", "add", newBuff);
+  if(typeof saveState === "function") saveState(true);
+
+  if(typeof showToast === "function"){
+    showToast("¡Buff '" + bDef.name + "' otorgado y activado en " + c.name + "! ✨", "success");
+  }
+
+  // Notificar al inspector
+  renderHouseView();
+}
+
+// ============================================================================
+// 5. RENDERIZADO DE LA VISTA DE LA CASA
 // ============================================================================
 function renderHouseView(){
   if(!CONFIG_ENABLE_HOUSE) return;
@@ -319,11 +569,11 @@ function renderHouseView(){
   }
 
   var gmMode = (typeof isGM === "function" && isGM());
-  var lvlPct = Math.min(100, Math.round((h.progress_current / Math.max(1, h.progress_max)) * 100));
+  var lvlPct = Math.min(100, Math.round(((h.progress_current || 0) / Math.max(1, h.progress_max || 100)) * 100));
 
   var html = '<div class="house-container">';
 
-  // 1. Cabecera y Volver
+  // Cabecera Principal
   html += '<div class="house-header">';
   html += '  <div class="house-header-top">';
   html += '    <div class="house-title-group">';
@@ -349,19 +599,31 @@ function renderHouseView(){
   html += '    <div class="house-level-track">';
   html += '      <div class="house-level-fill" style="width:' + lvlPct + '%;"></div>';
   html += '    </div>';
+
+  // Controles del GM para otorgar progreso de misiones
+  if(gmMode){
+    html += '    <div class="house-progress-controls">';
+    html += '      <span style="font-size:0.7rem;color:var(--ink-faint);font-weight:700;">Progreso de Misión (GM):</span>';
+    html += '      <button class="house-prog-btn" data-action="add-house-progress" data-amount="10" data-stat="general">+10 pts</button>';
+    html += '      <button class="house-prog-btn" data-action="add-house-progress" data-amount="25" data-stat="general">+25 pts</button>';
+    html += '      <button class="house-prog-btn" data-action="add-house-progress" data-amount="50" data-stat="general">+50 pts</button>';
+    html += '      <button class="house-prog-btn" data-action="prompt-house-progress" data-stat="general">🎯 Cantidad...</button>';
+    html += '    </div>';
+  }
+
   html += '  </div>';
   html += '</div>';
 
-  // 2. Estadísticas Propias de la Casa
+  // 5 Estadísticas Propias
   html += '<div class="house-stats-grid">';
-  html += renderHouseStatCard("🛋️ Confort", h.confort || 1, h.confort_progress || 0, h.confort_max || 10, "Calidad del reposo. Aumenta la recuperación de PV y Maná.");
-  html += renderHouseStatCard("📖 Arcana (Libro)", h.arcana || 1, h.arcana_progress || 0, h.arcana_max || 10, "Poder mágico y guía sapiente. Límite y potencia de mejoras.");
-  html += renderHouseStatCard("🍲 Provisiones", h.provisiones || 1, h.provisiones_progress || 0, h.provisiones_max || 10, "Calidad culinaria. Determina los buffs de la comida.");
-  html += renderHouseStatCard("🛡️ Custodia", h.custodia || 1, h.custodia_progress || 0, h.custodia_max || 10, "Sigilo y defensa del hogar durante los descansos.");
-  html += renderHouseStatCard("🔮 Vínculo", h.vinculo || 1, h.vinculo_progress || 0, h.vinculo_max || 10, "Conexión anímica con los moradores de la casa.");
+  html += renderHouseStatCard("🛋️ Confort", "confort", h.confort || 1, h.confort_progress || 0, h.confort_max || 10, "Calidad del reposo. Aumenta la recuperación de PV y Maná.", gmMode);
+  html += renderHouseStatCard("📖 Arcana (Libro)", "arcana", h.arcana || 1, h.arcana_progress || 0, h.arcana_max || 10, "Poder mágico y guía sapiente. Límite y potencia de mejoras.", gmMode);
+  html += renderHouseStatCard("🍲 Provisiones", "provisiones", h.provisiones || 1, h.provisiones_progress || 0, h.provisiones_max || 10, "Calidad culinaria. Determina los buffs de la comida.", gmMode);
+  html += renderHouseStatCard("🛡️ Custodia", "custodia", h.custodia || 1, h.custodia_progress || 0, h.custodia_max || 10, "Sigilo y defensa del hogar durante los descansos.", gmMode);
+  html += renderHouseStatCard("🔮 Vínculo", "vinculo", h.vinculo || 1, h.vinculo_progress || 0, h.vinculo_max || 10, "Conexión anímica con los moradores de la casa.", gmMode);
   html += '</div>';
 
-  // 3. Plano Funcional Interactivo (Cuadrícula)
+  // Plano Funcional Interactivo
   html += '<div class="house-blueprint-section">';
   html += '  <div class="house-blueprint-toolbar">';
   html += '    <h2 class="house-blueprint-title"><span>📐</span> Plano Mágico Interactivo</h2>';
@@ -378,35 +640,45 @@ function renderHouseView(){
   html += '    </div>';
   html += '  </div>';
 
-  // 4. Panel Inspector de Habitación (si hay una seleccionada)
+  // Panel Inspector de Habitación
   if(houseState.selectedRoomId){
     html += renderRoomInspector(houseState.selectedRoomId);
   } else {
-    html += '<div style="font-size:0.8rem;color:var(--ink-faint);text-align:center;padding:10px;font-style:italic;">💡 Haz clic en cualquier habitación del plano para inspeccionarla, ver sus detalles o decorarla.</div>';
+    html += '<div style="font-size:0.8rem;color:var(--ink-faint);text-align:center;padding:10px;font-style:italic;">💡 Toca cualquier estancia del plano para ver sus detalles, decorarla o activar sus mejoras.</div>';
   }
 
-  html += '</div>'; // fin blueprint section
-  html += '</div>'; // fin house-container
+  html += '</div>'; // Fin blueprint
 
+  // Historial / Crónicas Narrativas
+  html += renderHouseEventsSection();
+
+  html += '</div>'; // Fin house-container
   main.innerHTML = html;
 }
 
-// Renderizado de cada tarjeta de estadística
-function renderHouseStatCard(name, val, prog, max, desc){
+function renderHouseStatCard(label, statKey, val, prog, max, desc, gmMode){
   var pct = Math.min(100, Math.round((prog / Math.max(1, max)) * 100));
-  return '<div class="house-stat-card">' +
+  var html = '<div class="house-stat-card">' +
     '  <div class="house-stat-header">' +
-    '    <span class="house-stat-name">' + name + '</span>' +
+    '    <span class="house-stat-name">' + label + '</span>' +
     '    <span class="house-stat-val">Nv. ' + val + '</span>' +
     '  </div>' +
     '  <div class="house-stat-desc">' + desc + '</div>' +
     '  <div class="house-stat-track">' +
     '    <div class="house-stat-fill" style="width:' + pct + '%;"></div>' +
-    '  </div>' +
-    '</div>';
+    '  </div>';
+
+  if(gmMode){
+    html += '  <div class="house-stat-mod-row">' +
+      '    <button class="house-stat-mod-btn" data-action="add-house-progress" data-amount="5" data-stat="' + statKey + '" title="Sumar +5 progreso a esta stat">+5 prog</button>' +
+      '    <button class="house-stat-mod-btn" data-action="add-house-progress" data-amount="10" data-stat="' + statKey + '" title="Sumar +10 progreso a esta stat">+10 prog</button>' +
+      '  </div>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
-// Renderizado de las habitaciones en la cuadrícula
 function renderHouseGridRooms(){
   var rooms = houseState.rooms || [];
   if(rooms.length === 0){
@@ -418,7 +690,6 @@ function renderHouseGridRooms(){
     var owner = getRoomOwnerInfo(r.owner_character_id);
     var upgradesCount = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id; }).length;
 
-    // Coordenadas CSS Grid (1-indexed)
     var colStart = Math.max(1, (r.pos_x || 0) + 1);
     var colSpan = Math.max(1, r.width || 2);
     var rowStart = Math.max(1, (r.pos_y || 0) + 1);
@@ -449,7 +720,6 @@ function renderHouseGridRooms(){
   }).join('');
 }
 
-// Renderizado del Inspector de Habitación
 function renderRoomInspector(roomId){
   var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!r) return '';
@@ -458,6 +728,7 @@ function renderRoomInspector(roomId){
   var canEdit = canUserEditRoom(r);
   var isGm = (typeof isGM === "function" && isGM());
   var roomUpgrades = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id; });
+  var curChar = (typeof activeChar === "function") ? activeChar() : null;
 
   var html = '<div class="house-inspector-box" id="houseRoomInspector">';
   html += '  <div class="house-inspector-header">';
@@ -476,30 +747,65 @@ function renderRoomInspector(roomId){
 
   html += '  <div class="house-inspector-desc">' + (r.description ? esc(r.description) : '<i>Sin descripción ni detalles decorativos.</i>') + '</div>';
 
-  // Mejoras
+  // Mejoras instaladas
   html += '  <div>';
-  html += '    <div style="font-size:0.8rem;font-weight:700;color:var(--gold-light);margin-bottom:6px;">✨ Mejoras de esta habitación:</div>';
+  html += '    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+  html += '      <div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);">✨ Mejoras de esta habitación:</div>';
+  if(isGm){
+    html += '      <button class="btn-compact" data-action="open-add-upgrade-modal" data-room-id="' + r.id + '" style="font-size:0.7rem;padding:2px 6px;">➕ Nueva Mejora</button>';
+  }
+  html += '    </div>';
+
   if(roomUpgrades.length === 0){
     html += '    <div style="font-size:0.75rem;color:var(--ink-dim);font-style:italic;">Aún no se han instalado mejoras en esta estancia.</div>';
   } else {
     html += '    <div class="house-inspector-upgrades-list">';
     roomUpgrades.forEach(function(u){
-      html += '    <div class="house-upgrade-item' + (u.unlocked ? ' unlocked' : '') + '">';
+      var isUnlocked = !!u.unlocked;
+      var hasBuff = u.effect_type === "buff" && u.buff_id;
+      var buffItem = hasBuff && (typeof state !== "undefined" && state.buffCatalog)
+        ? state.buffCatalog.find(function(b){ return b.id === u.buff_id; })
+        : null;
+
+      html += '    <div class="house-upgrade-item' + (isUnlocked ? ' unlocked' : '') + '">';
       html += '      <div class="house-upgrade-info">';
-      html += '        <div class="house-upgrade-title">' + (u.unlocked ? '✅ ' : '🔒 ') + esc(u.name) + '</div>';
+      html += '        <div class="house-upgrade-title">' + (isUnlocked ? '✅ ' : '🔒 ') + esc(u.name) + '</div>';
       html += '        <div class="house-upgrade-desc">' + esc(u.description || '') + '</div>';
+
+      if(buffItem){
+        html += '        <div class="house-buff-tag">🎁 Otorga buff: <b>' + esc(buffItem.name) + '</b> (' + esc(buffItem.bonus || "+1") + ' a ' + esc(buffItem.attr || "todo") + ')</div>';
+      }
+
       html += '      </div>';
-      html += '      <span style="font-size:0.7rem;font-weight:700;color:' + (u.unlocked ? '#2ECC71' : 'var(--ink-dim)') + ';">' + (u.unlocked ? 'Desbloqueada' : 'Requiere Nv.' + u.required_house_level) + '</span>';
+
+      // Acciones de la mejora
+      html += '      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">';
+      if(isGm){
+        html += '        <button class="btn-compact" data-action="toggle-house-upgrade" data-upgrade-id="' + u.id + '" style="font-size:0.68rem;padding:2px 6px;">' + (isUnlocked ? '🔒 Bloquear' : '🔓 Desbloquear') + '</button>';
+      } else {
+        html += '        <span style="font-size:0.7rem;font-weight:700;color:' + (isUnlocked ? '#2ECC71' : 'var(--ink-dim)') + ';">' + (isUnlocked ? 'Desbloqueada' : 'Requiere Nv.' + u.required_house_level) + '</span>';
+      }
+
+      if(isUnlocked && buffItem && curChar){
+        var alreadyApplied = (curChar.activeBuffs || []).some(function(ab){ return ab.id === buffItem.id; });
+        if(alreadyApplied){
+          html += '        <span style="font-size:0.68rem;color:#2ECC71;font-weight:700;">✓ Activo en ' + esc(curChar.name) + '</span>';
+        } else {
+          html += '        <button class="house-apply-buff-btn" data-action="apply-house-buff" data-buff-id="' + buffItem.id + '" title="Aplicar este buff a tu personaje activo">✨ Aplicar a ' + esc(curChar.name) + '</button>';
+        }
+      }
+
+      html += '      </div>';
       html += '    </div>';
     });
     html += '    </div>';
   }
   html += '  </div>';
 
-  // Acciones disponibles
+  // Acciones generales de la sala
   html += '  <div class="house-inspector-actions">';
   if(canEdit){
-    html += '    <button class="btn-solid-gold" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Habitación' : 'Decorar / Editar mi habitación') + '</button>';
+    html += '    <button class="btn-solid-gold" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Habitación' : 'Decorar / Personalizar mi habitación') + '</button>';
   }
   if(isGm){
     html += '    <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);" title="Eliminar habitación del plano">🗑️ Eliminar</button>';
@@ -510,8 +816,38 @@ function renderRoomInspector(roomId){
   return html;
 }
 
+function renderHouseEventsSection(){
+  var events = houseState.events || [];
+  var html = '<div class="house-events-section">';
+  html += '  <h3 class="house-events-title"><span>📜</span> Crónicas del Hogar Viviente (Historial)</h3>';
+
+  if(events.length === 0){
+    html += '  <div style="font-size:0.75rem;color:var(--ink-dim);font-style:italic;">No hay eventos registrados todavía.</div>';
+  } else {
+    html += '  <div class="house-events-list">';
+    events.slice(0, 15).forEach(function(ev){
+      var evClass = ev.event_type || "default";
+      var msg = (ev.payload && ev.payload.message) ? ev.payload.message : "Evento registrado";
+      var timeStr = "";
+      try {
+        var d = new Date(ev.created_at);
+        timeStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch(e){}
+
+      html += '  <div class="house-event-item ' + evClass + '">';
+      html += '    <span class="house-event-text">' + esc(msg) + '</span>';
+      if(timeStr) html += '    <span class="house-event-time">' + timeStr + '</span>';
+      html += '  </div>';
+    });
+    html += '  </div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
 // ============================================================================
-// MODALES DE EDICIÓN Y CREACIÓN
+// 6. MODALES Y FORMULARIOS
 // ============================================================================
 function openEditHouseDescModal(){
   var h = houseState.house || {};
@@ -673,14 +1009,81 @@ function openCreateRoomModal(){
   document.body.appendChild(overlay);
 }
 
+// Modal para añadir una mejora a una habitación concreta
+function openAddUpgradeModal(roomId){
+  var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!r) return;
+
+  var bCatalog = (typeof state !== "undefined" && state.buffCatalog) ? state.buffCatalog : [];
+  var buffOptions = '<option value="">(Seleccionar Buff Existente...)</option>';
+  bCatalog.forEach(function(b){
+    buffOptions += '<option value="' + esc(b.id) + '">' + esc(b.name) + ' (' + esc(b.bonus || "") + ' ' + esc(b.attr || "") + ')</option>';
+  });
+
+  var overlay = document.createElement("div");
+  overlay.className = "house-modal-overlay";
+  overlay.id = "houseUpgradeModalOverlay";
+
+  var html = '<div class="house-modal-box">' +
+    '  <div class="house-modal-header">' +
+    '    <h3 class="house-modal-title">✨ Añadir Mejora a ' + esc(r.name) + '</h3>' +
+    '    <button class="btn-compact" data-action="close-house-modal">&times;</button>' +
+    '  </div>' +
+    '  <input type="hidden" id="newUpgRoomId" value="' + r.id + '">' +
+    '  <div class="field">' +
+    '    <label>Nombre de la Mejora</label>' +
+    '    <input type="text" id="newUpgName" placeholder="Ej: Horno Encantado, Alambique Mágico...">' +
+    '  </div>' +
+    '  <div class="field" style="margin-top:8px;">' +
+    '    <label>Descripción / Efecto Narrativo</label>' +
+    '    <textarea id="newUpgDesc" rows="3" style="width:100%;font-size:0.85rem;" placeholder="Qué hace esta mejora y cómo impacta en la partida..."></textarea>' +
+    '  </div>' +
+    '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">' +
+    '    <div class="field">' +
+    '      <label>Nivel Mínimo de Casa</label>' +
+    '      <input type="number" id="newUpgReqLvl" min="1" max="20" value="1">' +
+    '    </div>' +
+    '    <div class="field">' +
+    '      <label>Tipo de Efecto</label>' +
+    '      <select id="newUpgType">' +
+    '        <option value="narrativo">Solo Narrativo / Estético</option>' +
+    '        <option value="buff">Otorga Buff Mecánico</option>' +
+    '      </select>' +
+    '    </div>' +
+    '  </div>' +
+    '  <div id="newUpgBuffSelectorWrap" class="field" style="margin-top:8px;display:none;">' +
+    '    <label>Vincular Buff del Catálogo</label>' +
+    '    <select id="newUpgBuffId">' + buffOptions + '</select>' +
+    '    <div style="font-size:0.7rem;color:var(--ink-dim);margin-top:4px;">Si la mejora otorga un buff mecánico, selecciónalo aquí para que esté disponible en combate.</div>' +
+    '  </div>' +
+    '  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">' +
+    '    <button class="btn-compact" data-action="close-house-modal">Cancelar</button>' +
+    '    <button class="btn-solid-gold" data-action="confirm-create-upgrade">Instalar Mejora</button>' +
+    '  </div>' +
+    '</div>';
+
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+
+  // Escuchar cambio de tipo de efecto para mostrar el selector de buff
+  var selectType = overlay.querySelector("#newUpgType");
+  var buffWrap = overlay.querySelector("#newUpgBuffSelectorWrap");
+  if(selectType && buffWrap){
+    selectType.addEventListener("change", function(){
+      buffWrap.style.display = (this.value === "buff") ? "block" : "none";
+    });
+  }
+}
+
 function closeHouseModal(){
   var o1 = document.getElementById("houseDescModalOverlay");
   if(o1) o1.remove();
   var o2 = document.getElementById("houseRoomModalOverlay");
   if(o2) o2.remove();
+  var o3 = document.getElementById("houseUpgradeModalOverlay");
+  if(o3) o3.remove();
 }
 
-// Guardar descripción de la casa
 async function saveHouseDescAction(){
   var nameEl = document.getElementById("editHouseName");
   var descEl = document.getElementById("editHouseDesc");
@@ -702,14 +1105,13 @@ async function saveHouseDescAction(){
         description: newDesc,
         updated_at: new Date().toISOString()
       }).eq("id", houseState.house.id);
-      if(typeof showToast === "function") showToast("Descripción de la casa actualizada en la nube.", "success");
+      if(typeof showToast === "function") showToast("Descripción actualizada.", "success");
     } catch(e){
       console.warn("Error actualizando casa en Supabase:", e);
     }
   }
 }
 
-// Guardar datos de habitación editada
 async function saveRoomDataAction(){
   var idEl = document.getElementById("editRoomId");
   var nameEl = document.getElementById("editRoomName");
@@ -764,14 +1166,13 @@ async function saveRoomDataAction(){
   if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
     try {
       await supabaseClient.from("house_rooms").update(remoteUpdatePayload).eq("id", r.id);
-      if(typeof showToast === "function") showToast("Habitación guardada con éxito.", "success");
+      if(typeof showToast === "function") showToast("Habitación guardada.", "success");
     } catch(e){
       console.warn("Error guardando habitación en Supabase:", e);
     }
   }
 }
 
-// Crear nueva habitación
 async function confirmCreateRoomAction(){
   var nameEl = document.getElementById("newRoomName");
   var typeEl = document.getElementById("newRoomType");
@@ -813,7 +1214,6 @@ async function confirmCreateRoomAction(){
   if(typeof supabaseClient !== "undefined" && supabaseClient && houseState.house && houseState.house.id){
     try {
       var remotePayload = Object.assign({}, newRoom);
-      // Si la BD usa UUID, omitimos id para que autogenere si no es UUID
       if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(remotePayload.id)){
         delete remotePayload.id;
       }
@@ -829,7 +1229,59 @@ async function confirmCreateRoomAction(){
   }
 }
 
-// Eliminar habitación
+async function confirmCreateUpgradeAction(){
+  var rIdEl = document.getElementById("newUpgRoomId");
+  var nameEl = document.getElementById("newUpgName");
+  var descEl = document.getElementById("newUpgDesc");
+  var reqLvlEl = document.getElementById("newUpgReqLvl");
+  var typeEl = document.getElementById("newUpgType");
+  var buffIdEl = document.getElementById("newUpgBuffId");
+
+  if(!nameEl || !nameEl.value.trim()){
+    if(typeof showToast === "function") showToast("Indica un nombre para la mejora.", "warning");
+    return;
+  }
+
+  var effType = typeEl ? typeEl.value : "narrativo";
+  var buffId = (effType === "buff" && buffIdEl) ? (buffIdEl.value || null) : null;
+
+  var newUpg = {
+    id: "u_" + Date.now(),
+    house_id: houseState.house ? houseState.house.id : "h0000000-0000-0000-0000-000000000001",
+    room_id: rIdEl ? rIdEl.value : null,
+    name: nameEl.value.trim(),
+    description: descEl ? descEl.value.trim() : "",
+    unlocked: false,
+    effect_type: effType,
+    buff_id: buffId,
+    required_house_level: reqLvlEl ? Math.max(1, parseInt(reqLvlEl.value, 10) || 1) : 1,
+    created_at: new Date().toISOString()
+  };
+
+  houseState.upgrades.push(newUpg);
+  saveHouseLocalData();
+  closeHouseModal();
+  renderHouseView();
+
+  if(typeof showToast === "function") showToast("Mejora registrada en la estancia.", "success");
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient && houseState.house && houseState.house.id){
+    try {
+      var remotePayload = Object.assign({}, newUpg);
+      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(remotePayload.id)){
+        delete remotePayload.id;
+      }
+      var res = await supabaseClient.from("house_upgrades").insert(remotePayload).select().maybeSingle();
+      if(res && res.data && res.data.id){
+        newUpg.id = res.data.id;
+        saveHouseLocalData();
+      }
+    } catch(e){
+      console.warn("Error creando mejora en Supabase:", e);
+    }
+  }
+}
+
 async function deleteHouseRoomAction(roomId){
   if(!roomId) return;
   if(!confirm("¿Seguro que deseas eliminar esta habitación del plano de la casa?")) return;
@@ -851,13 +1303,14 @@ async function deleteHouseRoomAction(roomId){
   }
 }
 
-// Transición a la vista de la casa
+// ============================================================================
+// 7. TRANSICIONES Y NAVEGACIÓN
+// ============================================================================
 function openHouseView(){
   if(!CONFIG_ENABLE_HOUSE) return;
   houseState.active = true;
   houseState.previousTab = (typeof state !== "undefined" && state.activeTab) ? state.activeTab : "ficha";
 
-  // Cerrar cualquier modal abierto
   if(typeof closeModals === "function") closeModals();
 
   renderHouseView();
@@ -866,7 +1319,6 @@ function openHouseView(){
   });
 }
 
-// Volver a la ficha de personaje
 function backFromHouseView(){
   houseState.active = false;
   houseState.selectedRoomId = null;
@@ -875,7 +1327,7 @@ function backFromHouseView(){
 }
 
 // ============================================================================
-// GESTOR DE EVENTOS DELEGADOS PARA LA CASA
+// 8. GESTOR DE EVENTOS DELEGADOS PARA LA CASA
 // ============================================================================
 document.addEventListener("click", function(e){
   var btn = e.target.closest("[data-action]");
@@ -914,5 +1366,34 @@ document.addEventListener("click", function(e){
     deleteHouseRoomAction(delId);
   } else if(act === "close-house-modal"){
     closeHouseModal();
+  } else if(act === "add-house-progress"){
+    var amt = parseInt(btn.getAttribute("data-amount"), 10) || 0;
+    var stName = btn.getAttribute("data-stat") || "general";
+    addHouseProgress(amt, stName);
+  } else if(act === "prompt-house-progress"){
+    var stPrompt = btn.getAttribute("data-stat") || "general";
+    var customAmt = prompt("Indica la cantidad de progreso a otorgar (ej: 35):", "25");
+    if(customAmt !== null){
+      var parsedAmt = parseInt(customAmt, 10);
+      if(!isNaN(parsedAmt) && parsedAmt !== 0){
+        addHouseProgress(parsedAmt, stPrompt);
+      }
+    }
+  } else if(act === "open-add-upgrade-modal"){
+    var upgRoomId = btn.getAttribute("data-room-id") || houseState.selectedRoomId;
+    openAddUpgradeModal(upgRoomId);
+  } else if(act === "confirm-create-upgrade"){
+    confirmCreateUpgradeAction();
+  } else if(act === "toggle-house-upgrade"){
+    var toggleUpgId = btn.getAttribute("data-upgrade-id");
+    var upgToToggle = (houseState.upgrades || []).find(function(u){ return u.id === toggleUpgId; });
+    if(upgToToggle){
+      toggleHouseUpgrade(toggleUpgId, !upgToToggle.unlocked);
+    }
+  } else if(act === "apply-house-buff"){
+    var bToApplyId = btn.getAttribute("data-buff-id");
+    if(bToApplyId){
+      applyHouseBuffToActiveChar(bToApplyId);
+    }
   }
 });
