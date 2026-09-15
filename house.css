@@ -1,15 +1,15 @@
 /* ==========================================================================
    SISTEMA EXPERIMENTAL "LA CASA" (PROTOTIPO BETA)
-   house.css - Completamente desacoplado del resto de estilos
+   house.css - Rediseño UX: Plano por Plantas, Muebles y Buffs Evolutivos
    ========================================================================== */
 
 .house-container {
-  max-width: 1100px;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   animation: houseFadeIn 0.25s ease-out;
 }
 
@@ -18,14 +18,13 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Cabecera de la Casa */
+/* Cabecera Principal */
 .house-header {
-  background: linear-gradient(135deg, rgba(35, 25, 18, 0.95), rgba(20, 14, 10, 0.98));
-  border: 1px solid var(--gold);
+  background: linear-gradient(135deg, rgba(32, 23, 17, 0.96), rgba(18, 13, 9, 0.98));
+  border: 1px solid var(--gold, #C5A059);
   border-radius: 8px;
   padding: 16px 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 175, 55, 0.2);
-  position: relative;
 }
 
 .house-header-top {
@@ -45,7 +44,7 @@
 
 .house-title {
   font-family: var(--font-title, serif);
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   color: var(--gold-light, #E8C98B);
   margin: 0;
   display: flex;
@@ -58,12 +57,11 @@
   background: rgba(243, 156, 18, 0.2);
   border: 1px solid #F39C12;
   color: #F39C12;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
   letter-spacing: 1px;
-  text-transform: uppercase;
 }
 
 .house-back-btn {
@@ -130,6 +128,32 @@
   transition: width 0.3s ease;
 }
 
+.house-progress-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.house-prog-btn {
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: var(--gold-light);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.house-prog-btn:hover {
+  background: var(--gold);
+  color: #120D0A;
+  border-color: var(--gold-light);
+}
+
 /* Grid de Stats de la Casa */
 .house-stats-grid {
   display: grid;
@@ -194,15 +218,39 @@
   background: var(--gold);
 }
 
-/* Sección del Plano Interactivo */
+.house-stat-mod-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.house-stat-mod-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: var(--gold-light);
+  font-size: 0.65rem;
+  padding: 2px 5px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.house-stat-mod-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+}
+
+/* ==========================================================================
+   SECCIÓN DEL PLANO ARQUITECTÓNICO POR PLANTAS
+   ========================================================================== */
 .house-blueprint-section {
-  background: rgba(20, 14, 10, 0.95);
-  border: 1px solid var(--line, rgba(212, 175, 55, 0.25));
+  background: rgba(18, 13, 9, 0.98);
+  border: 1px solid var(--line, rgba(212, 175, 55, 0.3));
   border-radius: 8px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
 }
 
 .house-blueprint-toolbar {
@@ -225,37 +273,126 @@
   gap: 8px;
 }
 
-.house-blueprint-actions {
+/* Selector de Plantas (Pisos) */
+.house-floor-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  flex-wrap: wrap;
 }
 
-/* Cuadrícula del Plano */
+.house-floor-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.house-floor-tab:hover {
+  color: var(--gold-light);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.house-floor-tab.active {
+  background: var(--gold);
+  color: #120D0A;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Barra de Controles Rápidos D-Pad para GM (Mover y Redimensionar en pantalla) */
+.house-dpad-bar {
+  background: linear-gradient(90deg, rgba(35, 25, 18, 0.95), rgba(22, 15, 11, 0.95));
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: houseFadeIn 0.2s ease-out;
+}
+
+.house-dpad-title {
+  font-size: 0.78rem;
+  color: var(--gold-light);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.house-dpad-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.house-dpad-label {
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  margin-right: 2px;
+}
+
+.house-dpad-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: var(--gold-light);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.house-dpad-btn:hover {
+  background: var(--gold);
+  color: #120D0A;
+}
+
+/* Cuadrícula del Plano Arquitectónico */
 .house-grid-viewport {
   overflow-x: auto;
-  padding: 8px 4px;
+  padding: 10px;
   background: 
-    radial-gradient(circle, rgba(212, 175, 55, 0.08) 1px, transparent 1px) 0 0 / 24px 24px,
-    rgba(12, 8, 6, 0.9);
-  border: 1px solid rgba(212, 175, 55, 0.15);
+    linear-gradient(rgba(212, 175, 55, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 175, 55, 0.04) 1px, transparent 1px),
+    rgba(10, 7, 5, 0.95);
+  background-size: 20px 20px;
+  border: 1px solid rgba(212, 175, 55, 0.25);
   border-radius: 6px;
-  min-height: 420px;
+  min-height: 400px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.7);
 }
 
 .house-grid-canvas {
   display: grid;
-  grid-template-columns: repeat(6, minmax(130px, 1fr));
-  grid-auto-rows: 95px;
+  grid-template-columns: repeat(6, minmax(135px, 1fr));
+  grid-auto-rows: 105px;
   gap: 12px;
   position: relative;
-  min-width: 780px;
-  padding: 10px;
+  min-width: 810px;
+  padding: 6px;
 }
 
-/* Fichas de Habitación en la Cuadrícula */
+/* Fichas de Habitación en el Plano */
 .house-room-tile {
-  background: linear-gradient(135deg, rgba(38, 28, 22, 0.95), rgba(26, 18, 14, 0.98));
-  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: linear-gradient(135deg, rgba(38, 27, 21, 0.96), rgba(24, 16, 12, 0.98));
+  border: 2px solid rgba(212, 175, 55, 0.35);
   border-radius: 6px;
   padding: 10px;
   cursor: pointer;
@@ -264,7 +401,7 @@
   flex-direction: column;
   justify-content: space-between;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
 }
 
@@ -276,8 +413,29 @@
 
 .house-room-tile.active {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.4), 0 6px 18px rgba(0, 0, 0, 0.6);
-  background: linear-gradient(135deg, rgba(50, 36, 28, 0.95), rgba(35, 24, 18, 0.98));
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.4), 0 6px 20px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(135deg, rgba(52, 37, 28, 0.96), rgba(35, 24, 18, 0.98));
+}
+
+/* Habitación del jugador activo (Tú estás aquí) */
+.house-room-tile.my-room {
+  border-color: #F1C40F;
+  box-shadow: 0 0 14px rgba(241, 196, 15, 0.25);
+}
+
+.house-room-tile.my-room::before {
+  content: "⭐ Tu Habitación";
+  position: absolute;
+  top: -9px;
+  right: 8px;
+  background: #F1C40F;
+  color: #120D0A;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .house-room-tile-head {
@@ -337,31 +495,34 @@
   font-weight: 600;
 }
 
-.house-room-upgrades-count {
-  font-size: 0.68rem;
-  background: rgba(212, 175, 55, 0.15);
-  color: var(--gold-light);
-  padding: 1px 5px;
+.house-room-dims {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--ink-faint);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 4px;
   border-radius: 3px;
 }
 
-/* Inspector / Detalle de Habitación */
+/* ==========================================================================
+   INSPECTOR DE HABITÁCULO REDISEÑADO
+   ========================================================================== */
 .house-inspector-box {
-  background: rgba(28, 20, 15, 0.98);
+  background: rgba(26, 19, 14, 0.98);
   border: 1px solid var(--gold);
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .house-inspector-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
   padding-bottom: 10px;
 }
 
@@ -377,30 +538,140 @@
   gap: 8px;
   align-items: center;
   margin-top: 4px;
+  flex-wrap: wrap;
 }
 
+/* Pestañas de Navegación dentro del Inspector */
+.house-inspector-nav {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  padding-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.house-inspector-tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.house-inspector-tab-btn:hover {
+  color: var(--gold-light);
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.house-inspector-tab-btn.active {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: var(--gold);
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+/* Contenido de Cada Pestaña */
 .house-inspector-desc {
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   line-height: 1.5;
   color: var(--ink-light);
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
-  padding: 10px;
+  padding: 12px;
   white-space: pre-wrap;
 }
 
-.house-inspector-upgrades-list {
+/* Aviso de Muebles y Transferencia */
+.house-furniture-notice {
+  background: rgba(52, 152, 219, 0.12);
+  border: 1px solid rgba(52, 152, 219, 0.35);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.76rem;
+  color: #AED6F1;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Tarjetas de Mueble */
+.house-furniture-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.house-furniture-card {
+  background: rgba(18, 13, 9, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 6px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+.house-furniture-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed rgba(212, 175, 55, 0.15);
+  padding-bottom: 6px;
+}
+
+.house-furniture-card-title {
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: var(--gold-light);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.house-furniture-items-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.house-furniture-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.house-furniture-item-name {
+  color: #FFF;
+  font-weight: 500;
+}
+
+.house-furniture-item-qty {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--gold-light);
+  margin-right: 8px;
+}
+
+/* Mejoras y Buffs Evolutivos */
 .house-upgrade-item {
   background: rgba(20, 14, 10, 0.7);
   border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: 5px;
-  padding: 8px 12px;
+  border-radius: 6px;
+  padding: 10px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -415,33 +686,61 @@
 .house-upgrade-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .house-upgrade-title {
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   color: var(--gold-light);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .house-upgrade-desc {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: var(--ink-dim);
 }
 
-.house-inspector-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  border-top: 1px dashed rgba(212, 175, 55, 0.2);
-  padding-top: 10px;
+.house-buff-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(142, 68, 173, 0.25);
+  border: 1px solid rgba(155, 89, 182, 0.4);
+  color: #D7BDE2;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
 }
 
-/* Modales Propios de La Casa */
+.house-apply-buff-btn {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.3));
+  border: 1px solid #2ECC71;
+  color: #A9DFBF;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.house-apply-buff-btn:hover {
+  background: #2ECC71;
+  color: #120D0A;
+}
+
+/* Modales Propios */
 .house-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.78);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
@@ -480,55 +779,7 @@
   margin: 0;
 }
 
-/* Controles de Progreso y GM */
-.house-progress-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.house-prog-btn {
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  color: var(--gold-light);
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.house-prog-btn:hover {
-  background: var(--gold);
-  color: #120D0A;
-  border-color: var(--gold-light);
-}
-
-.house-stat-mod-row {
-  display: flex;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.house-stat-mod-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  color: var(--gold-light);
-  font-size: 0.65rem;
-  padding: 2px 5px;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.house-stat-mod-btn:hover {
-  background: rgba(212, 175, 55, 0.25);
-}
-
-/* Sección de Historial / Eventos */
+/* Historial de Eventos */
 .house-events-section {
   background: rgba(20, 14, 10, 0.9);
   border: 1px solid rgba(212, 175, 55, 0.2);
@@ -553,7 +804,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 220px;
+  max-height: 200px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -586,45 +837,11 @@
   white-space: nowrap;
 }
 
-/* Buffs vinculados y acciones */
-.house-buff-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(142, 68, 173, 0.25);
-  border: 1px solid rgba(155, 89, 182, 0.4);
-  color: #D7BDE2;
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-top: 4px;
-}
-
-.house-apply-buff-btn {
-  background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.3));
-  border: 1px solid #2ECC71;
-  color: #A9DFBF;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s ease;
-}
-
-.house-apply-buff-btn:hover {
-  background: #2ECC71;
-  color: #120D0A;
-}
-
 /* Responsive */
 @media (max-width: 600px) {
   .house-container {
-    padding: 10px;
-    gap: 14px;
+    padding: 8px;
+    gap: 12px;
   }
   .house-title {
     font-size: 1.25rem;
@@ -632,5 +849,8 @@
   .house-stats-grid {
     grid-template-columns: 1fr 1fr;
   }
+  .house-dpad-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
-

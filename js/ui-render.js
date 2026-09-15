@@ -98,18 +98,21 @@ function renderTopbar(){
 var PLAYER_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
-  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
+  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}, {id:"casa",label:"Casa"}
 ];
 
 var GM_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
-  {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
+  {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}, {id:"casa",label:"Casa"}
 ];
 
 function renderTabbar(){
   var tabs = isGM() ? GM_TABS : PLAYER_TABS;
+  if(typeof CONFIG_ENABLE_HOUSE !== "undefined" && !CONFIG_ENABLE_HOUSE){
+    tabs = tabs.filter(function(t){ return t.id !== "casa"; });
+  }
   document.getElementById("tabbar").innerHTML = tabs.map(function(t){
     var isActive = state.activeTab===t.id;
     return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+'"><span>'+t.label+'</span></button>';
@@ -117,6 +120,10 @@ function renderTabbar(){
 }
 
 function renderTab(){
+  if(state.activeTab==="casa"){
+    if(typeof renderHouseView === "function") renderHouseView();
+    return;
+  }
   if(typeof houseState !== "undefined" && houseState && houseState.active){
     if(typeof renderHouseView === "function") renderHouseView();
     return;
@@ -137,6 +144,9 @@ function renderTab(){
   else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
   else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
   else if(state.activeTab==="mundo") main.innerHTML = tplMundo(state);
+  else if(state.activeTab==="casa") {
+    if(typeof renderHouseView === "function") renderHouseView();
+  }
 
   if(typeof autoResizeAllTextareas === "function"){
     autoResizeAllTextareas();
