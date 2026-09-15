@@ -277,6 +277,20 @@ function openDataModal(){
     (isGM() ? '<button class="btn-compact btn-solid-gold data-modal-btn" style="width:100%;margin-top:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
     '<button class="btn-compact highlight data-modal-btn" style="width:100%;margin-top:8px;background:rgba(176,141,87,0.18);border:1px solid var(--gold);color:var(--gold-light);font-weight:700;" data-action="repair-compendium-data" title="Verifica y recupera todas las misiones oficiales, criaturas del bestiario, armas y lore sin borrar tus datos">🛡️ Reparar compendio oficial (Misiones y Bestiario)</button>'+
     '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;border-color:rgba(212,175,55,0.4);" data-action="open-feedback-modal"><span>📬</span> <span>Buzón de Reportes y Sugerencias</span></button>'+
+    ((typeof CONFIG_ENABLE_HOUSE !== "undefined" && CONFIG_ENABLE_HOUSE) ? (
+      '<div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'+
+          '<div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);">🔬 Mantenimiento / Propuestas</div>'+
+          '<span style="font-size:0.65rem;background:rgba(243,156,18,0.2);color:#F39C12;border:1px solid #F39C12;padding:1px 6px;border-radius:3px;font-weight:700;">BETA</span>'+
+        '</div>'+
+        '<button class="btn-solid-gold data-modal-btn" style="width:100%;padding:10px 12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg, rgba(212,175,55,0.25), rgba(40,28,20,0.9));border:1px solid var(--gold);" data-action="open-house-view">'+
+          '<span>🏠 Entrar a "La Casa"</span> <span style="font-size:0.7rem;opacity:0.85;">(Prototipo en pruebas)</span>'+
+        '</button>'+
+        '<div style="font-size:0.7rem;color:var(--ink-faint);margin-top:5px;line-height:1.3;">'+
+          'Hogar nómada viviente, habitaciones de personajes, plano interactivo y mejoras narrativas.'+
+        '</div>'+
+      '</div>'
+    ) : '')+
     '<div style="font-size:0.72rem;color:var(--ink-faint);margin-top:10px;line-height:1.4;">'+
       '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo al Administrador (rolillo55ac@gmail.com).</i>'+
     '</div>'+

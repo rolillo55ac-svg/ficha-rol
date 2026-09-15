@@ -117,6 +117,10 @@ function renderTabbar(){
 }
 
 function renderTab(){
+  if(typeof houseState !== "undefined" && houseState && houseState.active){
+    if(typeof renderHouseView === "function") renderHouseView();
+    return;
+  }
   var main = document.getElementById("main");
   var c = activeChar();
   
