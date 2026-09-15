@@ -450,6 +450,13 @@ function migrateState(s){
       if(!q.category) q.category = q.type;
       if(!q.status) q.status = q.completed ? "completada" : "activa";
       if(!Array.isArray(q.tasks)) q.tasks = [];
+      q.tasks.forEach(function(t){
+        t.target = (t.target !== undefined && t.target !== null) ? Math.max(1, parseInt(t.target, 10) || 1) : 1;
+        t.current = (t.current !== undefined && t.current !== null) ? Math.max(0, parseInt(t.current, 10) || 0) : (t.done ? t.target : 0);
+        if(t.target > 1){
+          t.done = (t.current >= t.target);
+        }
+      });
       if(q.location === undefined) q.location = "";
       if(q.reward === undefined) q.reward = "";
       if(!Array.isArray(q.markers)) q.markers = [];

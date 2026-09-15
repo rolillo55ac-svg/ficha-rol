@@ -6,9 +6,17 @@ function renderQuestCard(q, canEdit){
   var badgeLabel = st === "completada" ? "Completada" : (st === "fallida" ? "Fallida" : "En curso");
 
   var tasks = q.tasks || [];
-  var doneTasks = tasks.filter(function(t){ return t.done; }).length;
+  var doneTasks = tasks.filter(function(t){
+    var isTgt = typeof t.target === "number" && t.target > 1;
+    return Boolean(t.done || (isTgt && (t.current || 0) >= t.target));
+  }).length;
   var totalTasks = tasks.length;
-  var pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : (st === "completada" ? 100 : 0);
+  var taskProgressSum = tasks.reduce(function(acc, t){
+    var tgt = Math.max(1, parseInt(t.target, 10) || 1);
+    var cur = (t.current !== undefined && t.current !== null) ? Math.max(0, parseInt(t.current, 10) || 0) : (t.done ? tgt : 0);
+    return acc + Math.min(1, cur / tgt);
+  }, 0);
+  var pct = totalTasks > 0 ? Math.round((taskProgressSum / totalTasks) * 100) : (st === "completada" ? 100 : 0);
 
   var cardClass = "quest-card " + qType + " " + (st === "completada" ? "completed" : (st === "fallida" ? "failed" : "active"));
 
@@ -126,10 +134,45 @@ function renderQuestCard(q, canEdit){
     html += '<li class="quest-empty-tasks">Sin objetivos específicos registrados.</li>';
   } else {
     tasks.forEach(function(tk){
-      html += '<li class="quest-task-item'+(tk.done?' done':'')+'">'+
-        '<input type="checkbox" class="quest-task-cb" data-action="toggle-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" '+(tk.done?'checked':'')+(canEdit?'':' disabled title="Solo el Máster puede marcar objetivos"')+'>'+
-        '<span class="quest-task-text" style="flex:1;">'+esc(tk.text)+'</span>'+
-        (canEdit ? '<button class="row-del" data-action="del-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Eliminar objetivo">✕</button>' : '')+
+      var tgt = (tk.target !== undefined && tk.target !== null) ? Math.max(1, parseInt(tk.target, 10) || 1) : 1;
+      var cur = (tk.current !== undefined && tk.current !== null) ? Math.max(0, parseInt(tk.current, 10) || 0) : (tk.done ? tgt : 0);
+      var hasCounter = tgt > 1;
+      var isDone = Boolean(tk.done || (hasCounter && cur >= tgt));
+      var taskPct = hasCounter ? Math.min(100, Math.round((cur / tgt) * 100)) : (isDone ? 100 : 0);
+
+      html += '<li class="quest-task-item'+(isDone?' done':'')+(hasCounter?' with-counter':'')+'" id="quest-task-'+tk.id+'">'+
+        '<div class="quest-task-main-row">'+
+          '<input type="checkbox" class="quest-task-cb" data-action="toggle-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" '+(isDone?'checked':'')+(canEdit?'':' disabled title="Solo el Máster puede marcar objetivos"')+'>'+
+          (canEdit ?
+            '<span class="quest-task-text editable" data-action="edit-quest-task-text" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Clic para editar texto del objetivo">'+esc(tk.text)+'</span>' :
+            '<span class="quest-task-text">'+esc(tk.text)+'</span>'
+          )+
+          (hasCounter ?
+            (canEdit ?
+              '<div class="quest-task-counter-wrap" title="Progreso del objetivo">'+
+                '<button type="button" class="quest-step-btn dec" data-action="step-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" data-delta="-1" title="Restar 1 (Shift+clic: -5)">-</button>'+
+                '<input type="number" class="quest-task-num-input current" min="0" data-action="set-quest-task-current" data-qid="'+q.id+'" data-tid="'+tk.id+'" value="'+cur+'" title="Completado actual" inputmode="numeric">'+
+                '<span class="quest-task-num-sep">/</span>'+
+                '<input type="number" class="quest-task-num-input target" min="1" data-action="set-quest-task-target" data-qid="'+q.id+'" data-tid="'+tk.id+'" value="'+tgt+'" title="Meta total (Pon 1 para objetivo simple)" inputmode="numeric">'+
+                '<button type="button" class="quest-step-btn inc" data-action="step-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" data-delta="1" title="Sumar 1 (Shift+clic: +5)">+</button>'+
+              '</div>' :
+              '<div class="quest-task-counter-pill '+(isDone?'completed':'')+'" title="Progreso: '+cur+' de '+tgt+' ('+taskPct+'%)">'+
+                '<span class="quest-task-pill-cur">'+cur+'</span> / <span class="quest-task-pill-tgt">'+tgt+'</span>'+
+              '</div>'
+            ) :
+            (canEdit ?
+              '<button type="button" class="quest-task-btn-meta" data-action="prompt-quest-task-target" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Añadir meta numérica o contador (ej: 5 flores, 400 vidas)">🎯 +Meta</button>' : ''
+            )
+          )+
+          (canEdit ?
+            '<button class="row-del" data-action="del-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Eliminar objetivo">✕</button>' : ''
+          )+
+        '</div>'+
+        (hasCounter ?
+          '<div class="quest-task-mini-track" title="'+taskPct+'% completado">'+
+            '<div class="quest-task-mini-fill '+(isDone?'completed':'')+'" style="width:'+taskPct+'%;"></div>'+
+          '</div>' : ''
+        )+
       '</li>';
     });
   }

@@ -2110,8 +2110,17 @@ function handleClick(e){
     if(qObj){
       var tText = prompt("Nuevo objetivo o paso para esta misión:");
       if(tText && tText.trim()){
+        var tTargetStr = prompt("Cantidad o meta a alcanzar (ej: 5 flores, 400 vidas... Deja 1 para objetivo simple de sí/no):", "1");
+        var tTarget = parseInt(tTargetStr, 10);
+        if(isNaN(tTarget) || tTarget < 1) tTarget = 1;
         qObj.tasks = qObj.tasks || [];
-        qObj.tasks.push({ id: uid(), text: tText.trim(), done: false });
+        qObj.tasks.push({
+          id: uid(),
+          text: tText.trim(),
+          target: tTarget,
+          current: 0,
+          done: false
+        });
         saveState(true);
         pushSharedData({ quests: state.quests });
         renderTab();
@@ -2120,11 +2129,164 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="prompt-quest-task-target"){
+    if(!isGM() && currentUser) return;
+    var qid = btn.getAttribute("data-qid");
+    var tid = btn.getAttribute("data-tid");
+    var qObj = (state && state.quests ? state.quests : []).find(function(q){ return q.id === qid; });
+    if(qObj && qObj.tasks){
+      var task = qObj.tasks.find(function(t){ return t.id === tid; });
+      if(task){
+        var curTgt = (task.target !== undefined && task.target !== null) ? task.target : 1;
+        var pVal = prompt("Cantidad o meta numérica a alcanzar para este objetivo:\n(Introduce un número mayor a 1 para activar contador, o 1 para objetivo simple)", curTgt > 1 ? curTgt : 5);
+        if(pVal !== null){
+          var newTgt = parseInt(pVal, 10);
+          if(isNaN(newTgt) || newTgt < 1) newTgt = 1;
+          task.target = newTgt;
+          if(task.current === undefined || task.current === null){
+            task.current = task.done ? task.target : 0;
+          }
+          if(task.target > 1){
+            task.done = (task.current >= task.target);
+          }
+          saveState(true);
+          pushSharedData({ quests: state.quests });
+          renderTab();
+          showToast(newTgt > 1 ? "Meta fijada en " + newTgt : "Convertido a objetivo simple", "info");
+        }
+      }
+    }
+    return;
+  }
+  if(action==="edit-quest-task-text"){
+    if(!isGM() && currentUser) return;
+    var qid = btn.getAttribute("data-qid");
+    var tid = btn.getAttribute("data-tid");
+    var qObj = (state && state.quests ? state.quests : []).find(function(q){ return q.id === qid; });
+    if(qObj && qObj.tasks){
+      var task = qObj.tasks.find(function(t){ return t.id === tid; });
+      if(task){
+        var newText = prompt("Editar descripción del objetivo:", task.text);
+        if(newText !== null && newText.trim()){
+          task.text = newText.trim();
+          saveState(true);
+          pushSharedData({ quests: state.quests });
+          renderTab();
+          showToast("Objetivo actualizado", "info");
+        }
+      }
+    }
+    return;
+  }
+  if(action==="step-quest-task"){
+    if(!isGM() && currentUser){
+      showToast("Solo el Máster puede actualizar el progreso de los objetivos", "warning");
+      return;
+    }
+    var qid = btn.getAttribute("data-qid");
+    var tid = btn.getAttribute("data-tid");
+    var delta = parseInt(btn.getAttribute("data-delta"), 10) || 1;
+    if(e && e.shiftKey){
+      delta *= 5;
+    }
+    var qObj = (state && state.quests ? state.quests : []).find(function(q){ return q.id === qid; });
+    if(qObj && qObj.tasks){
+      var task = qObj.tasks.find(function(t){ return t.id === tid; });
+      if(task){
+        var tgt = Math.max(1, parseInt(task.target, 10) || 1);
+        var cur = Math.max(0, parseInt(task.current, 10) || 0);
+        var nextVal = Math.max(0, cur + delta);
+        task.current = nextVal;
+        var wasDone = task.done;
+        task.done = (task.current >= tgt);
+
+        var allDone = qObj.tasks.length > 0 && qObj.tasks.every(function(t){
+          var tTgt = typeof t.target === "number" && t.target > 1;
+          return Boolean(t.done || (tTgt && (t.current || 0) >= t.target));
+        });
+        if(allDone && qObj.status === "activa" && !wasDone && task.done){
+          qObj.status = "completada";
+          showToast("¡Misión completada: " + qObj.title + "!", "success");
+        }
+        saveState(true);
+        pushSharedData({ quests: state.quests });
+        renderTab();
+      }
+    }
+    return;
+  }
+  if(action==="set-quest-task-current" || action==="set-quest-task-target"){
+    if(e.type === "click") return;
+    if(!isGM() && currentUser){
+      showToast("Solo el Máster puede actualizar el estado de los objetivos", "warning");
+      return;
+    }
+    var qid = btn.getAttribute("data-qid");
+    var tid = btn.getAttribute("data-tid");
+    var qObj = (state && state.quests ? state.quests : []).find(function(q){ return q.id === qid; });
+    if(qObj && qObj.tasks){
+      var task = qObj.tasks.find(function(t){ return t.id === tid; });
+      if(task){
+        if(action==="set-quest-task-current"){
+          var val = Math.max(0, parseInt(btn.value, 10) || 0);
+          task.current = val;
+          task.done = (task.current >= (task.target || 1));
+          if(e.type === "input"){
+            var itemEl = document.getElementById("quest-task-" + task.id);
+            if(itemEl){
+              var cb = itemEl.querySelector(".quest-task-cb");
+              if(cb) cb.checked = task.done;
+              if(task.done) itemEl.classList.add("done");
+              else itemEl.classList.remove("done");
+              var fill = itemEl.querySelector(".quest-task-mini-fill");
+              if(fill){
+                var tgtVal = Math.max(1, parseInt(task.target, 10) || 1);
+                var p = Math.min(100, Math.round((task.current / tgtVal) * 100));
+                fill.style.width = p + "%";
+                if(task.done) fill.classList.add("completed");
+                else fill.classList.remove("completed");
+              }
+            }
+            return;
+          }
+        } else if(action==="set-quest-task-target"){
+          var tgtVal = Math.max(1, parseInt(btn.value, 10) || 1);
+          task.target = tgtVal;
+          task.done = (task.current >= tgtVal);
+          if(e.type === "input"){
+            var itemEl = document.getElementById("quest-task-" + task.id);
+            if(itemEl){
+              var fill = itemEl.querySelector(".quest-task-mini-fill");
+              if(fill){
+                var p = Math.min(100, Math.round((task.current / tgtVal) * 100));
+                fill.style.width = p + "%";
+                if(task.done) fill.classList.add("completed");
+                else fill.classList.remove("completed");
+              }
+            }
+            return;
+          }
+        }
+        var allDone = qObj.tasks.length > 0 && qObj.tasks.every(function(t){
+          var tTgt = typeof t.target === "number" && t.target > 1;
+          return Boolean(t.done || (tTgt && (t.current || 0) >= t.target));
+        });
+        if(allDone && qObj.status === "activa"){
+          qObj.status = "completada";
+          showToast("¡Misión completada: " + qObj.title + "!", "success");
+        }
+        saveState(true);
+        pushSharedData({ quests: state.quests });
+        renderTab();
+      }
+    }
+    return;
+  }
   if(action==="del-quest-task"){
     if(!isGM() && currentUser) return;
     var qid3 = btn.getAttribute("data-qid");
     var tid = btn.getAttribute("data-tid");
-    var qObj2 = (state.quests||[]).find(function(q){ return q.id === qid3; });
+    var qObj2 = (state && state.quests ? state.quests : []).find(function(q){ return q.id === qid3; });
     if(qObj2 && qObj2.tasks){
       qObj2.tasks = qObj2.tasks.filter(function(t){ return t.id !== tid; });
       saveState(true);
@@ -2140,12 +2302,28 @@ function handleClick(e){
     }
     var qid4 = btn.getAttribute("data-qid");
     var tid2 = btn.getAttribute("data-tid");
-    var qObj3 = (state.quests||[]).find(function(q){ return q.id === qid4; });
+    var qObj3 = (state && state.quests ? state.quests : []).find(function(q){ return q.id === qid4; });
     if(qObj3 && qObj3.tasks){
       var task = qObj3.tasks.find(function(t){ return t.id === tid2; });
       if(task){
-        task.done = !task.done;
-        var allDone = qObj3.tasks.length > 0 && qObj3.tasks.every(function(t){ return t.done; });
+        var tgt = Math.max(1, parseInt(task.target, 10) || 1);
+        if(tgt > 1){
+          if(task.done || (task.current >= tgt)){
+            task.done = false;
+            task.current = 0;
+          } else {
+            task.done = true;
+            task.current = tgt;
+          }
+        } else {
+          task.done = !task.done;
+          task.current = task.done ? 1 : 0;
+        }
+
+        var allDone = qObj3.tasks.length > 0 && qObj3.tasks.every(function(t){
+          var tTgt = typeof t.target === "number" && t.target > 1;
+          return Boolean(t.done || (tTgt && (t.current || 0) >= t.target));
+        });
         if(allDone && qObj3.status === "activa"){
           qObj3.status = "completada";
           showToast("¡Misión completada: " + qObj3.title + "!", "success");
