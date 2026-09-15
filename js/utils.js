@@ -579,11 +579,11 @@ async function executeUnifiedAppUpdate(isManual){
       }));
     }
 
-    // 2. Forzar actualización de todos los Service Workers registrados
+    // 2. Desregistrar y limpiar todos los Service Workers para que la recarga descargue código limpio
     if(typeof navigator !== "undefined" && "serviceWorker" in navigator){
       var registrations = await navigator.serviceWorker.getRegistrations();
       for(var reg of registrations){
-        await reg.update().catch(function(){});
+        await reg.unregister().catch(function(){});
       }
     }
   } catch(errCache){
@@ -621,23 +621,41 @@ async function checkForAppUpdates(isManual){
     var isOutdated = (data.version !== currentVer) || (data.build && currentBuild && data.build !== currentBuild);
 
     if(isOutdated){
+      var reloadAttemptKey = "krysalis_update_attempt_" + data.version + "_" + (data.build || "");
+      var alreadyAttempted = false;
+      try {
+        alreadyAttempted = !!sessionStorage.getItem(reloadAttemptKey);
+      } catch(e){}
+
       if(badgeEl){
         badgeEl.textContent = "v" + currentVer + " → v" + data.version;
         badgeEl.className = "storage-pill warning";
       }
       if(statusEl){
-        statusEl.innerHTML = '<span style="color:#FDE047;font-weight:700;">⚠️ Nueva versión v' + esc(data.version) + ' disponible. Pulsa "Actualizar" para aplicar.</span>';
+        statusEl.innerHTML = '<span style="color:#FDE047;font-weight:700;">⚠️ Nueva versión v' + esc(data.version) + ' disponible. ' + (alreadyAttempted ? 'Pulsa "Actualizar" para forzar recarga limpia.' : 'Actualizando automáticamente...') + '</span>';
       }
 
       if(isManual){
-        showToast("🚀 Nueva versión encontrada (v" + data.version + "). Aplicando actualización...", "info");
+        showToast("🚀 Aplicando actualización a v" + data.version + "...", "info");
         executeUnifiedAppUpdate(true);
-      } else if(!hasNotifiedUpdateAvailable){
-        hasNotifiedUpdateAvailable = true;
-        // En segundo plano: solo avisar discretamente una vez por sesión sin interrumpir ni recargar nunca
-        showToast("✨ Hay una actualización disponible (v" + data.version + "). Puedes aplicarla en Ajustes cuando quieras.", "info", 5000);
+      } else if(!alreadyAttempted){
+        try {
+          sessionStorage.setItem(reloadAttemptKey, "true");
+        } catch(e){}
+        showToast("✨ ¡Nueva versión detectada (v" + data.version + ")! Actualizando app...", "info");
+        setTimeout(function(){
+          executeUnifiedAppUpdate(false);
+        }, 1000);
+      } else {
+        if(!hasNotifiedUpdateAvailable){
+          hasNotifiedUpdateAvailable = true;
+          showToast("⚠️ Versión v" + data.version + " disponible. Pulsa Actualizar en Ajustes si no se aplicó.", "warning", 6000);
+        }
       }
     } else {
+      try {
+        sessionStorage.removeItem("krysalis_update_attempt_" + currentVer + "_" + (currentBuild || ""));
+      } catch(e){}
       if(badgeEl){
         badgeEl.textContent = "v" + currentVer;
         badgeEl.className = "storage-pill optimal";
@@ -651,7 +669,6 @@ async function checkForAppUpdates(isManual){
     }
   } catch(e){
     if(isManual){
-      // Si el usuario pulsó manualmente, forzar la purga y recarga limpia de todos modos
       executeUnifiedAppUpdate(true);
     }
   } finally {
@@ -674,7 +691,7 @@ async function broadcastForceAppUpdate(){
         type: "broadcast",
         event: "app_version_update",
         payload: {
-          version: (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.2"),
+          version: (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.3.9.6"),
           build: (typeof APP_BUILD !== "undefined" ? APP_BUILD : ""),
           timestamp: new Date().toISOString()
         }

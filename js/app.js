@@ -39,6 +39,8 @@ function init(){
     updateLoadingProgress(25, "Cargando fichas...");
     state = loadState();
     updateLoadingProgress(60, "Preparando compendio...");
+    var lv = document.querySelector(".loading-version");
+    if(lv && typeof APP_VERSION !== "undefined") lv.textContent = "v" + APP_VERSION;
     renderTopbar();
     renderTabbar();
     renderTab();
