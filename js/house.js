@@ -18,7 +18,12 @@ var houseState = {
   rooms: [],
   upgrades: [],
   events: [],
-  editMode: false
+  editMode: false,
+  zoom: 1.0,
+  studioRoomId: null,
+  studioCategory: "todas",
+  studioSearch: "",
+  selectedItemId: null
 };
 
 // ============================================================================
@@ -450,6 +455,50 @@ function getFurnitureIcon(type){
   }
 }
 
+// ============================================================================
+// BIBLIOTECA DE ELEMENTOS ARQUITECTÓNICOS TIPO CANVA (SVGs 2D Cenitales)
+// ============================================================================
+var CANVA_ASSET_LIBRARY = [
+  // 1. PUERTAS Y ACCESOS
+  { id: "puerta_batiente", name: "Puerta Batiente con Arco", category: "puertas", icon: "🚪", isDoor: true, defaultType: "puerta", desc: "Puerta clásica con arco de giro de 90° (blueprint)" },
+  { id: "arco_paso", name: "Arco de Paso Abierto", category: "puertas", icon: "⛩️", isDoor: true, defaultType: "arco", desc: "Vano libre de mampostería para comunicar estancias" },
+  { id: "puerta_doble", name: "Puerta Doble Señorial", category: "puertas", icon: "🚪🚪", isDoor: true, defaultType: "puerta", desc: "Doble hoja batiente para grandes salones" },
+  { id: "ventana", name: "Ventana con Vano de Luz", category: "puertas", icon: "🪟", isDoor: true, defaultType: "ventana", desc: "Apertura exterior con marco de madera" },
+
+  // 2. DESCANSO Y HABITACIÓN
+  { id: "cama_individual", name: "Cama Individual", category: "descanso", icon: "🛏️", isFurniture: true, defaultType: "cama", desc: "Cama de roble con sábana doblada y almohada" },
+  { id: "cama_matrimonio", name: "Cama de Matrimonio / Dosel", category: "descanso", icon: "🛌", isFurniture: true, defaultType: "cama", desc: "Cama noble espaciosa con almohadas dobles" },
+  { id: "sillon_lectura", name: "Sillón Orejero de Reposo", category: "descanso", icon: "🛋️", isFurniture: true, defaultType: "sillon", desc: "Sillón mullido tapizado para descanso" },
+
+  // 3. MESAS Y ASIENTOS
+  { id: "mesa_comedor", name: "Mesa de Roble con 4 Sillas", category: "mesas", icon: "🪵", isFurniture: true, defaultType: "mesa", desc: "Mesa central para banquetes y reuniones" },
+  { id: "escritorio", name: "Escritorio de Estudio y Pergaminos", category: "mesas", icon: "📜", isFurniture: true, defaultType: "escritorio", desc: "Mesa de trabajo con tintero, pluma y silla" },
+  { id: "mesa_alquimia", name: "Mesa de Alquimia y Matraces", category: "mesas", icon: "🧪", isFurniture: true, defaultType: "mesa", desc: "Superficie de laboratorio con matraces y alambiques" },
+
+  // 4. ALMACENAJE (CON INVENTARIO)
+  { id: "baul", name: "Baúl Reforzado de Viaje", category: "almacen", icon: "🧰", isFurniture: true, isStorage: true, defaultType: "baul", desc: "Cofre con herrajes metálicos para guardar pertenencias" },
+  { id: "alacena", name: "Alacena Despensa de Víveres", category: "almacen", icon: "🗄️", isFurniture: true, isStorage: true, defaultType: "alacena", desc: "Mueble de dos hojas para provisiones e ingredientes" },
+  { id: "armero", name: "Armero de Guardia y Panoplia", category: "almacen", icon: "⚔️", isFurniture: true, isStorage: true, defaultType: "armero", desc: "Soporte de armas, espadas y correajes" },
+  { id: "libreria", name: "Librería de Grimorios Sapientes", category: "almacen", icon: "📚", isFurniture: true, isStorage: true, defaultType: "libreria", desc: "Estantes repletos de tomos vivientes y crónicas" },
+
+  // 5. COCINA Y FUEGO
+  { id: "fogon_caldero", name: "Fogón con Caldero Errante", category: "cocina", icon: "🍳", isFurniture: true, defaultType: "cocina", desc: "Hogar de cocción con caldero de hierro y fuego vivo" },
+  { id: "chimenea", name: "Chimenea de Piedra con Leña", category: "cocina", icon: "🔥", isFurniture: true, defaultType: "chimenea", desc: "Chimenea cálida con tiro de piedra y ascuas" },
+  { id: "banco_trabajo", name: "Banco de Trabajo y Forja", category: "cocina", icon: "🔨", isFurniture: true, defaultType: "banco", desc: "Mesa pesada con herramientas de artesanía" },
+
+  // 6. DECORACIÓN Y ALFOMBRAS
+  { id: "alfombra_persa", name: "Alfombra Persa Ornamental", category: "decoracion", icon: "🧶", isDecor: true, defaultType: "alfombra", desc: "Tapete tejido con cenefas y flecos decorativos" },
+  { id: "planta_maceta", name: "Planta Frondosa en Maceta", category: "decoracion", icon: "🌿", isDecor: true, defaultType: "planta", desc: "Follaje verde en maceta de barro cocido" },
+  { id: "tapiz_pared", name: "Tapiz Bordado del Mapa", category: "decoracion", icon: "🖼️", isDecor: true, defaultType: "cuadro", desc: "Tapiz heráldico con la historia de Krysalis" },
+  { id: "trofeo_caza", name: "Trofeo de Caza y Cornamenta", category: "decoracion", icon: "💀", isDecor: true, defaultType: "trofeo", desc: "Cráneo grabado de bestia mítica" },
+  { id: "telarana", name: "Telaraña Ancestral", category: "decoracion", icon: "🕸️", isDecor: true, defaultType: "telarana", desc: "Sutil filamento de araña en esquina" },
+
+  // 7. ILUMINACIÓN
+  { id: "candelabro", name: "Candelabro de Pie con Velas", category: "luces", icon: "🕯️", isDecor: true, defaultType: "vela", desc: "Lámpara de forja con 4 velas aromáticas" },
+  { id: "farol_pared", name: "Farol de Aceite de Pared", category: "luces", icon: "🏮", isDecor: true, defaultType: "antorcha", desc: "Candil con cristal protector y luz tenue" },
+  { id: "brasero", name: "Brasero de Ascuas Arcanas", category: "luces", icon: "✨", isDecor: true, defaultType: "vela", desc: "Recipiente con ascuas mágicas de resplandor violeta" }
+];
+
 var HOUSE_DECOR_CATALOG = [
   { type: "alfombra", icon: "🧶", label: "Alfombra tejida" },
   { type: "planta", icon: "🌿", label: "Planta silvestre" },
@@ -460,6 +509,146 @@ var HOUSE_DECOR_CATALOG = [
   { type: "antorcha", icon: "🔥", label: "Antorcha de pared" },
   { type: "trofeo", icon: "💀", label: "Trofeo de caza" }
 ];
+
+function getCanvaSvg(typeOrId, rotation){
+  var rot = (typeof rotation === "number") ? rotation : 0;
+  var key = (typeOrId || "").toLowerCase();
+
+  var inner = '';
+
+  if(key.includes("puerta_doble")){
+    inner = '<rect x="2" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
+      '<rect x="32" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
+      '<path d="M 8 5 A 12 12 0 0 1 20 17" fill="none" stroke="#D97706" stroke-width="1.2" stroke-dasharray="2,2"/>' +
+      '<path d="M 32 5 A 12 12 0 0 0 20 17" fill="none" stroke="#D97706" stroke-width="1.2" stroke-dasharray="2,2"/>' +
+      '<line x1="8" y1="5" x2="8" y2="17" stroke="#B45309" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<line x1="32" y1="5" x2="32" y2="17" stroke="#B45309" stroke-width="2.5" stroke-linecap="round"/>';
+  } else if(key.includes("puerta") || key === "door"){
+    inner = '<rect x="2" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
+      '<rect x="32" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
+      '<path d="M 8 5 A 27 27 0 0 1 35 32" fill="none" stroke="#D97706" stroke-width="1.5" stroke-dasharray="3,3"/>' +
+      '<line x1="8" y1="5" x2="8" y2="32" stroke="#B45309" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle cx="9" cy="22" r="1.5" fill="#FCD34D"/>';
+  } else if(key.includes("arco")){
+    inner = '<rect x="2" y="10" width="8" height="20" rx="1" fill="#374151" stroke="#9CA3AF" stroke-width="1.5"/>' +
+      '<rect x="30" y="10" width="8" height="20" rx="1" fill="#374151" stroke="#9CA3AF" stroke-width="1.5"/>' +
+      '<line x1="10" y1="12" x2="30" y2="12" stroke="#60A5FA" stroke-width="1.5" stroke-dasharray="2,2"/>' +
+      '<line x1="10" y1="28" x2="30" y2="28" stroke="#60A5FA" stroke-width="1.5" stroke-dasharray="2,2"/>' +
+      '<path d="M 16 16 L 24 20 L 16 24" fill="none" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/>';
+  } else if(key.includes("ventana")){
+    inner = '<rect x="2" y="14" width="36" height="12" rx="1" fill="#1E293B" stroke="#60A5FA" stroke-width="1.5"/>' +
+      '<line x1="20" y1="14" x2="20" y2="26" stroke="#93C5FD" stroke-width="1.5"/>' +
+      '<line x1="2" y1="20" x2="38" y2="20" stroke="#93C5FD" stroke-width="1.5"/>' +
+      '<polygon points="6,26 14,36 26,36 34,26" fill="rgba(96,165,250,0.15)"/>';
+  } else if(key.includes("cama_matrimonio") || key.includes("dosel")){
+    inner = '<rect x="4" y="3" width="32" height="34" rx="3" fill="#1E293B" stroke="#C5A059" stroke-width="1.5"/>' +
+      '<rect x="4" y="3" width="32" height="5" rx="1" fill="#92400E"/>' +
+      '<rect x="7" y="9" width="11" height="7" rx="2" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>' +
+      '<rect x="22" y="9" width="11" height="7" rx="2" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>' +
+      '<path d="M 6 18 L 34 18 L 34 35 L 6 35 Z" fill="#7C2D12" rx="2"/>' +
+      '<line x1="6" y1="18" x2="34" y2="18" stroke="#FDE68A" stroke-width="2"/>' +
+      '<circle cx="20" cy="27" r="3" fill="#B45309"/>';
+  } else if(key.includes("cama")){
+    inner = '<rect x="6" y="3" width="28" height="34" rx="3" fill="#1E293B" stroke="#94A3B8" stroke-width="1.5"/>' +
+      '<rect x="6" y="3" width="28" height="4" rx="1" fill="#78350F"/>' +
+      '<rect x="10" y="9" width="20" height="7" rx="2" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>' +
+      '<path d="M 8 18 L 32 18 L 32 35 L 8 35 Z" fill="#2563EB" rx="2"/>' +
+      '<line x1="8" y1="18" x2="32" y2="18" stroke="#DBEAFE" stroke-width="2"/>';
+  } else if(key.includes("sillon")){
+    inner = '<rect x="8" y="8" width="24" height="24" rx="4" fill="#3B0764" stroke="#A855F7" stroke-width="1.5"/>' +
+      '<rect x="4" y="12" width="6" height="18" rx="2" fill="#581C87"/>' +
+      '<rect x="30" y="12" width="6" height="18" rx="2" fill="#581C87"/>' +
+      '<rect x="8" y="26" width="24" height="8" rx="2" fill="#2E1065"/>' +
+      '<circle cx="20" cy="18" r="3" fill="#C084FC"/>';
+  } else if(key.includes("mesa_comedor") || key.includes("mesa")){
+    inner = '<rect x="13" y="2" width="14" height="5" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
+      '<rect x="13" y="33" width="14" height="5" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
+      '<rect x="2" y="13" width="5" height="14" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
+      '<rect x="33" y="13" width="5" height="14" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
+      '<rect x="9" y="9" width="22" height="22" rx="3" fill="#78350F" stroke="#D97706" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="20" r="3" fill="#B45309"/>';
+  } else if(key.includes("escritorio")){
+    inner = '<rect x="5" y="6" width="30" height="18" rx="2" fill="#451A03" stroke="#B45309" stroke-width="1.5"/>' +
+      '<rect x="13" y="27" width="14" height="8" rx="2" fill="#334155" stroke="#94A3B8" stroke-width="1"/>' +
+      '<rect x="9" y="9" width="10" height="12" rx="1" fill="#FEF3C7"/>' +
+      '<circle cx="28" cy="14" r="2.5" fill="#1E293B"/>' +
+      '<line x1="28" y1="14" x2="32" y2="9" stroke="#E2E8F0" stroke-width="1.5"/>';
+  } else if(key.includes("baul") || key.includes("cofre")){
+    inner = '<rect x="5" y="9" width="30" height="22" rx="3" fill="#78350F" stroke="#F59E0B" stroke-width="1.5"/>' +
+      '<line x1="5" y1="16" x2="35" y2="16" stroke="#F59E0B" stroke-width="2"/>' +
+      '<line x1="13" y1="9" x2="13" y2="31" stroke="#94A3B8" stroke-width="2.5"/>' +
+      '<line x1="27" y1="9" x2="27" y2="31" stroke="#94A3B8" stroke-width="2.5"/>' +
+      '<rect x="18" y="15" width="4" height="6" rx="1" fill="#FCD34D" stroke="#B45309" stroke-width="1"/>';
+  } else if(key.includes("alacena")){
+    inner = '<rect x="4" y="6" width="32" height="28" rx="2" fill="#3E2723" stroke="#A1887F" stroke-width="1.5"/>' +
+      '<line x1="20" y1="6" x2="20" y2="34" stroke="#D7CCC8" stroke-width="1.5"/>' +
+      '<line x1="4" y1="20" x2="36" y2="20" stroke="#8D6E63" stroke-width="1" stroke-dasharray="2,2"/>' +
+      '<circle cx="16" cy="20" r="1.8" fill="#F59E0B"/>' +
+      '<circle cx="24" cy="20" r="1.8" fill="#F59E0B"/>';
+  } else if(key.includes("libreria") || key.includes("estanteria")){
+    inner = '<rect x="4" y="6" width="32" height="28" rx="2" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>' +
+      '<rect x="7" y="8" width="4" height="10" fill="#DC2626" rx="1"/>' +
+      '<rect x="12" y="7" width="5" height="11" fill="#2563EB" rx="1"/>' +
+      '<rect x="18" y="8" width="4" height="10" fill="#D97706" rx="1"/>' +
+      '<rect x="23" y="7" width="6" height="11" fill="#16A34A" rx="1"/>' +
+      '<rect x="30" y="8" width="3" height="10" fill="#9333EA" rx="1"/>' +
+      '<line x1="4" y1="20" x2="36" y2="20" stroke="#475569" stroke-width="2"/>' +
+      '<rect x="7" y="22" width="6" height="10" fill="#0284C7" rx="1"/>' +
+      '<rect x="14" y="23" width="5" height="9" fill="#EA580C" rx="1"/>' +
+      '<rect x="20" y="22" width="7" height="10" fill="#4B5563" rx="1"/>';
+  } else if(key.includes("fogon") || key.includes("cocina")){
+    inner = '<rect x="5" y="5" width="30" height="30" rx="3" fill="#18181B" stroke="#71717A" stroke-width="1.5"/>' +
+      '<circle cx="13" cy="13" r="5" fill="#27272A" stroke="#EF4444" stroke-width="1.5"/>' +
+      '<circle cx="27" cy="13" r="4" fill="#27272A" stroke="#F97316" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="26" r="7" fill="#09090B" stroke="#F59E0B" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="26" r="4" fill="#B45309"/>' +
+      '<circle cx="18" cy="24" r="1.5" fill="#FEF3C7"/>';
+  } else if(key.includes("chimenea")){
+    inner = '<path d="M 4 8 L 36 8 L 36 32 L 28 32 L 28 16 L 12 16 L 12 32 L 4 32 Z" fill="#334155" stroke="#94A3B8" stroke-width="1.5"/>' +
+      '<ellipse cx="20" cy="24" rx="7" ry="5" fill="#EA580C"/>' +
+      '<polygon points="20,18 16,26 24,26" fill="#FACC15"/>' +
+      '<line x1="14" y1="26" x2="26" y2="26" stroke="#451A03" stroke-width="2"/>';
+  } else if(key.includes("armero")){
+    inner = '<rect x="4" y="8" width="32" height="24" rx="2" fill="#262626" stroke="#A3A3A3" stroke-width="1.5"/>' +
+      '<line x1="10" y1="10" x2="10" y2="30" stroke="#E5E5E5" stroke-width="2"/>' +
+      '<line x1="20" y1="10" x2="20" y2="30" stroke="#E5E5E5" stroke-width="2"/>' +
+      '<line x1="30" y1="10" x2="30" y2="30" stroke="#E5E5E5" stroke-width="2"/>' +
+      '<circle cx="10" cy="12" r="2" fill="#F59E0B"/>' +
+      '<circle cx="20" cy="12" r="2" fill="#F59E0B"/>' +
+      '<circle cx="30" cy="12" r="2" fill="#F59E0B"/>';
+  } else if(key.includes("alfombra")){
+    inner = '<rect x="4" y="5" width="32" height="30" rx="2" fill="#831843" stroke="#F59E0B" stroke-width="1.5"/>' +
+      '<rect x="8" y="9" width="24" height="22" rx="1" fill="none" stroke="#FDE68A" stroke-width="1" stroke-dasharray="2,2"/>' +
+      '<polygon points="20,14 26,20 20,26 14,20" fill="#9D174D" stroke="#F59E0B" stroke-width="1"/>' +
+      '<line x1="2" y1="7" x2="2" y2="33" stroke="#FEF3C7" stroke-width="1.5" stroke-dasharray="2,1"/>' +
+      '<line x1="38" y1="7" x2="38" y2="33" stroke="#FEF3C7" stroke-width="1.5" stroke-dasharray="2,1"/>';
+  } else if(key.includes("planta")){
+    inner = '<circle cx="20" cy="20" r="8" fill="#78350F" stroke="#B45309" stroke-width="1.5"/>' +
+      '<ellipse cx="20" cy="11" rx="4.5" ry="8" fill="#15803D"/>' +
+      '<ellipse cx="20" cy="29" rx="4.5" ry="8" fill="#16A34A"/>' +
+      '<ellipse cx="11" cy="20" rx="8" ry="4.5" fill="#22C55E"/>' +
+      '<ellipse cx="29" cy="20" rx="8" ry="4.5" fill="#4ADE80"/>' +
+      '<circle cx="20" cy="20" r="3.5" fill="#14532D"/>';
+  } else if(key.includes("candelabro") || key.includes("vela")){
+    inner = '<circle cx="20" cy="20" r="14" fill="none" stroke="#F59E0B" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="3,3"/>' +
+      '<circle cx="20" cy="20" r="5" fill="#D97706" stroke="#FDE68A" stroke-width="1.5"/>' +
+      '<line x1="20" y1="7" x2="20" y2="33" stroke="#B45309" stroke-width="2"/>' +
+      '<line x1="7" y1="20" x2="33" y2="20" stroke="#B45309" stroke-width="2"/>' +
+      '<circle cx="20" cy="7" r="3" fill="#FEF08A"/>' +
+      '<circle cx="20" cy="33" r="3" fill="#FEF08A"/>' +
+      '<circle cx="7" cy="20" r="3" fill="#FEF08A"/>' +
+      '<circle cx="33" cy="20" r="3" fill="#FEF08A"/>';
+  } else {
+    // Genérico / Caja de almacenamiento
+    inner = '<rect x="6" y="6" width="28" height="28" rx="3" fill="#374151" stroke="#9CA3AF" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="20" r="6" fill="#4B5563"/>' +
+      '<text x="20" y="24" text-anchor="middle" font-size="12" fill="#E5E7EB">' + (getFurnitureIcon(key) || '📦') + '</text>';
+  }
+
+  return '<svg viewBox="0 0 40 40" class="canva-svg canva-svg-' + esc(key) + '" xmlns="http://www.w3.org/2000/svg">' +
+    '<g transform="rotate(' + rot + ' 20 20)">' + inner + '</g>' +
+    '</svg>';
+}
 
 // ============================================================================
 // 3. PROGRESIÓN ATÓMICA
@@ -876,7 +1065,7 @@ function removeAlignmentGuides(){
   }
 }
 
-// FASE 2: Detección Dinámica de Muros Exteriores y Paredes Interiores
+// Detección Dinámica de Muros Exteriores y Paredes Interiores
 function getRoomWallClasses(r, floorRooms){
   var x = r.pos_x || 0;
   var y = r.pos_y || 0;
@@ -912,6 +1101,35 @@ function getRoomWallClasses(r, floorRooms){
   classes.push(hasLeft ? "wall-shared-left" : "wall-outer-left");
 
   return classes.join(" ");
+}
+
+// Detección de aperturas de puertas y conexiones arquitectónicas (Canva style)
+function getRoomDoorCutouts(r, floorRooms){
+  var x = r.pos_x || 0;
+  var y = r.pos_y || 0;
+  var w = r.width || 2;
+  var h = r.height || 2;
+
+  var cutouts = { top: false, right: false, bottom: false, left: false };
+
+  for(var i = 0; i < floorRooms.length; i++){
+    var o = floorRooms[i];
+    if(o.id === r.id) continue;
+    var ox = o.pos_x || 0;
+    var oy = o.pos_y || 0;
+    var ow = o.width || 2;
+    var oh = o.height || 2;
+
+    var overlapX = (x < ox + ow) && (x + w > ox);
+    var overlapY = (y < oy + oh) && (y + h > oy);
+
+    if(overlapX && (oy + oh === y)) cutouts.top = { isCorridor: (o.room_type === "pasillo"), other: o };
+    if(overlapX && (y + h === oy)) cutouts.bottom = { isCorridor: (o.room_type === "pasillo"), other: o };
+    if(overlapY && (ox + ow === x)) cutouts.left = { isCorridor: (o.room_type === "pasillo"), other: o };
+    if(overlapY && (x + w === ox)) cutouts.right = { isCorridor: (o.room_type === "pasillo"), other: o };
+  }
+
+  return cutouts;
 }
 
 // FASE 2: Creación Rápida de Pasillo
@@ -1075,6 +1293,435 @@ function deleteRoomDecor(roomId, decorId){
       .then(function(){});
   }
 }
+
+// ============================================================================
+// FUNCIONES DEL ESTUDIO CANVA (Diseño y Decoración Visual)
+// ============================================================================
+function renderRoomMiniLayout(r){
+  var fur = Array.isArray(r.furniture) ? r.furniture : [];
+  var dec = Array.isArray(r.decor) ? r.decor : [];
+  if(fur.length === 0 && dec.length === 0) return '';
+
+  var items = [];
+  fur.forEach(function(f, idx){
+    var fx = (typeof f.pos_x === "number") ? f.pos_x : (idx % 6);
+    var fy = (typeof f.pos_y === "number") ? f.pos_y : Math.floor(idx / 6);
+    var leftPct = Math.min(88, Math.max(4, (fx / 6) * 100 + 4));
+    var topPct = Math.min(82, Math.max(12, (fy / 4) * 100 + 6));
+    items.push(
+      '<div class="house-mini-item item-furniture" style="left:' + leftPct + '%;top:' + topPct + '%;" title="' + esc(f.name) + '">' +
+        getCanvaSvg(f.type || f.id, f.rotation || 0) +
+      '</div>'
+    );
+  });
+
+  dec.forEach(function(d){
+    var dx = (typeof d.pos_x === "number") ? d.pos_x : 0;
+    var dy = (typeof d.pos_y === "number") ? d.pos_y : 0;
+    var leftPct = Math.min(88, Math.max(4, (dx / 6) * 100 + 4));
+    var topPct = Math.min(82, Math.max(12, (dy / 4) * 100 + 6));
+    items.push(
+      '<div class="house-mini-item item-decor" style="left:' + leftPct + '%;top:' + topPct + '%;" title="' + esc(d.label || d.type) + '">' +
+        getCanvaSvg(d.type || d.id, d.rotation || 0) +
+      '</div>'
+    );
+  });
+
+  return items.join('');
+}
+
+function canvaInsertAsset(roomId, assetId){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room) return;
+
+  var asset = CANVA_ASSET_LIBRARY.find(function(a){ return a.id === assetId; });
+  if(!asset) return;
+
+  room.furniture = room.furniture || [];
+  room.decor = room.decor || [];
+
+  // Buscar celda libre en la cuadrícula 6x4
+  var occupied = {};
+  room.furniture.forEach(function(f){ occupied[(f.pos_x || 0) + "_" + (f.pos_y || 0)] = true; });
+  room.decor.forEach(function(d){ occupied[(d.pos_x || 0) + "_" + (d.pos_y || 0)] = true; });
+
+  var targetX = 0;
+  var targetY = 0;
+  var found = false;
+  for(var y = 0; y < 4; y++){
+    for(var x = 0; x < 6; x++){
+      if(!occupied[x + "_" + y]){
+        targetX = x;
+        targetY = y;
+        found = true;
+        break;
+      }
+    }
+    if(found) break;
+  }
+
+  var isStorage = !!asset.isStorage;
+  var isFurn = !!asset.isFurniture;
+  var newItem = null;
+
+  if(isStorage || isFurn){
+    newItem = {
+      id: "fur_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      name: asset.name,
+      type: asset.defaultType || asset.id,
+      icon: asset.icon,
+      pos_x: targetX,
+      pos_y: targetY,
+      rotation: 0,
+      items: []
+    };
+    room.furniture.push(newItem);
+
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+  } else {
+    newItem = {
+      id: "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      type: asset.defaultType || asset.id,
+      label: asset.name,
+      icon: asset.icon,
+      pos_x: targetX,
+      pos_y: targetY,
+      rotation: 0
+    };
+    room.decor.push(newItem);
+
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ decor: room.decor, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+  }
+
+  houseState.selectedItemId = newItem.id;
+  saveHouseLocalData();
+  renderHouseView();
+
+  if(typeof showToast === "function"){
+    showToast(asset.icon + " " + asset.name + " colocado en la estancia.", "success");
+  }
+}
+
+function canvaRotateItem(roomId, itemId){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room) return;
+
+  var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
+  if(f){
+    f.rotation = ((f.rotation || 0) + 90) % 360;
+    saveHouseLocalData();
+    renderHouseView();
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+    return;
+  }
+
+  var d = (room.decor || []).find(function(x){ return x.id === itemId; });
+  if(d){
+    d.rotation = ((d.rotation || 0) + 90) % 360;
+    saveHouseLocalData();
+    renderHouseView();
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ decor: room.decor, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+  }
+}
+
+function canvaDuplicateItem(roomId, itemId){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room) return;
+
+  var occupied = {};
+  (room.furniture || []).forEach(function(x){ occupied[(x.pos_x || 0) + "_" + (x.pos_y || 0)] = true; });
+  (room.decor || []).forEach(function(x){ occupied[(x.pos_x || 0) + "_" + (x.pos_y || 0)] = true; });
+
+  var targetX = 0;
+  var targetY = 0;
+  var found = false;
+  for(var y = 0; y < 4; y++){
+    for(var x = 0; x < 6; x++){
+      if(!occupied[x + "_" + y]){
+        targetX = x; targetY = y; found = true; break;
+      }
+    }
+    if(found) break;
+  }
+
+  var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
+  if(f){
+    var cloneF = JSON.parse(JSON.stringify(f));
+    cloneF.id = "fur_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    cloneF.pos_x = targetX;
+    cloneF.pos_y = targetY;
+    cloneF.items = []; // Duplicados empiezan vacíos
+    room.furniture.push(cloneF);
+    houseState.selectedItemId = cloneF.id;
+
+    saveHouseLocalData();
+    renderHouseView();
+    if(typeof showToast === "function") showToast("Mueble duplicado.", "info");
+
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+    return;
+  }
+
+  var d = (room.decor || []).find(function(x){ return x.id === itemId; });
+  if(d){
+    var cloneD = JSON.parse(JSON.stringify(d));
+    cloneD.id = "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    cloneD.pos_x = targetX;
+    cloneD.pos_y = targetY;
+    room.decor.push(cloneD);
+    houseState.selectedItemId = cloneD.id;
+
+    saveHouseLocalData();
+    renderHouseView();
+    if(typeof showToast === "function") showToast("Adorno duplicado.", "info");
+
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ decor: room.decor, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+  }
+}
+
+function canvaDeleteItem(roomId, itemId){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room) return;
+
+  var initFurLen = (room.furniture || []).length;
+  room.furniture = (room.furniture || []).filter(function(x){ return x.id !== itemId; });
+  if(room.furniture.length !== initFurLen){
+    houseState.selectedItemId = null;
+    saveHouseLocalData();
+    renderHouseView();
+    if(typeof showToast === "function") showToast("Mueble retirado.", "info");
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+    return;
+  }
+
+  var initDecLen = (room.decor || []).length;
+  room.decor = (room.decor || []).filter(function(x){ return x.id !== itemId; });
+  if(room.decor.length !== initDecLen){
+    houseState.selectedItemId = null;
+    saveHouseLocalData();
+    renderHouseView();
+    if(typeof showToast === "function") showToast("Elemento decorativo retirado.", "info");
+    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+      supabaseClient.from("house_rooms")
+        .update({ decor: room.decor, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .then(function(){});
+    }
+  }
+}
+
+function renderCanvaStudio(roomId){
+  var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!r){
+    houseState.studioRoomId = null;
+    return '<div class="alert warning">Habitación no encontrada. <button class="btn-compact" data-action="close-canva-studio">Volver al Plano</button></div>';
+  }
+
+  var isGm = (typeof isGM === "function" && isGM());
+  var canEdit = canUserEditRoom(r);
+  var curCategory = houseState.studioCategory || "todas";
+  var search = (houseState.studioSearch || "").toLowerCase().trim();
+  var owner = getRoomOwnerInfo(r.owner_character_id);
+
+  var furnitureList = Array.isArray(r.furniture) ? r.furniture : [];
+  var decorList = Array.isArray(r.decor) ? r.decor : [];
+
+  var filteredAssets = CANVA_ASSET_LIBRARY.filter(function(a){
+    if(curCategory !== "todas" && a.category !== curCategory) return false;
+    if(search){
+      var matchName = a.name.toLowerCase().includes(search);
+      var matchDesc = a.desc && a.desc.toLowerCase().includes(search);
+      return matchName || matchDesc;
+    }
+    return true;
+  });
+
+  var categories = [
+    { id: "todas", label: "✨ Todo" },
+    { id: "puertas", label: "🚪 Puertas" },
+    { id: "descanso", label: "🛏️ Camas" },
+    { id: "mesas", label: "🪑 Mesas" },
+    { id: "almacen", label: "📦 Almacén" },
+    { id: "cocina", label: "🍳 Cocina" },
+    { id: "decoracion", label: "🌿 Adornos" },
+    { id: "luces", label: "🕯️ Luces" }
+  ];
+
+  var html = '<div class="canva-studio-container">';
+
+  // 1. Barra Superior del Estudio Canva
+  html += '<div class="canva-studio-topbar">';
+  html += '  <div class="canva-studio-topbar-left">';
+  html += '    <button class="house-back-btn" data-action="close-canva-studio" title="Volver al plano principal de la casa">';
+  html += '      <span>← Volver al Plano General</span>';
+  html += '    </button>';
+  html += '    <div class="canva-studio-title-group">';
+  html += '      <h2 class="canva-studio-title"><span>🎨 Estudio Canva:</span> ' + esc(r.name) + '</h2>';
+  html += '      <span class="house-room-type-tag ' + (r.room_type || 'salon') + '">' + getRoomTypeIcon(r.room_type) + ' ' + getRoomTypeLabel(r.room_type) + '</span>';
+  html += '      <span class="house-room-level-pill">Nv. ' + (r.level || 1) + '</span>';
+  if(owner) html += '      <span class="house-room-owner-tag">👤 ' + esc(owner.name) + '</span>';
+  html += '    </div>';
+  html += '  </div>';
+
+  html += '  <div class="canva-studio-topbar-right">';
+  html += '    <span class="canva-studio-dim-tag">📐 ' + (r.width || 2) + 'x' + (r.height || 2) + ' (P.' + (r.floor || 1) + ')</span>';
+  if(canEdit && isGm){
+    html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ Datos de Sala</button>';
+  }
+  html += '  </div>';
+  html += '</div>';
+
+  // Banner informativo estilo Canva
+  html += '<div class="canva-studio-hint-banner">';
+  html += '  <span>💡 <b>Diseño Visual:</b> Toca cualquier elemento de la biblioteca para colocarlo en la habitación. Pulsa cualquier mueble para ver su <b>caja de control morada</b>: rótalo (🔄), abre su inventario (📦) o duplícalo (📋).</span>';
+  html += '</div>';
+
+  // 2. Layout Principal de Dos Columnas
+  html += '<div class="canva-studio-layout">';
+
+  // Columna Izquierda: Biblioteca de Elementos Canva
+  html += '<div class="canva-library-sidebar">';
+  html += '  <div class="canva-library-header">';
+  html += '    <div class="canva-library-title">📦 Elementos y Mobiliario</div>';
+  html += '    <input type="text" class="canva-search-input" id="canvaSearchInput" placeholder="🔍 Buscar camas, mesas, puertas..." value="' + esc(houseState.studioSearch || '') + '">';
+  html += '  </div>';
+
+  // Pestañas de categorías
+  html += '  <div class="canva-category-pills">';
+  categories.forEach(function(cat){
+    var isActive = (curCategory === cat.id);
+    html += '<button class="canva-category-pill' + (isActive ? ' active' : '') + '" data-action="canva-select-category" data-category="' + cat.id + '">' + cat.label + '</button>';
+  });
+  html += '  </div>';
+
+  // Grid de tarjetas de elementos
+  html += '  <div class="canva-assets-grid">';
+  if(filteredAssets.length === 0){
+    html += '<div style="font-size:0.78rem;color:var(--ink-faint);text-align:center;padding:24px;">No se encontraron elementos para esa búsqueda.</div>';
+  } else {
+    filteredAssets.forEach(function(asset){
+      var badge = asset.isStorage ? '📦 Inventario' : (asset.isDoor ? '🚪 Acceso' : (asset.isDecor ? '🌿 Adorno' : '🪑 Mueble'));
+      html += '<div class="canva-asset-card" data-action="canva-insert-asset" data-room-id="' + r.id + '" data-asset-id="' + asset.id + '" title="' + esc(asset.desc) + ' (Toca para colocar en la habitación)">';
+      html += '  <div class="canva-asset-card-preview">' + getCanvaSvg(asset.id, 0) + '</div>';
+      html += '  <div class="canva-asset-card-info">';
+      html += '    <div class="canva-asset-card-name">' + esc(asset.name) + '</div>';
+      html += '    <span class="canva-asset-card-badge">' + badge + '</span>';
+      html += '  </div>';
+      html += '  <div class="canva-asset-card-add">➕</div>';
+      html += '</div>';
+    });
+  }
+  html += '  </div>'; // fin canva-assets-grid
+  html += '</div>'; // fin canva-library-sidebar
+
+  // Columna Central: Lienzo de la Habitación (Stage)
+  html += '<div class="canva-stage-wrap">';
+  html += '  <div class="canva-stage-toolbar">';
+  html += '    <div class="canva-stage-toolbar-title">Lienzo Arquitectónico Cenital (6x4 Celdas)</div>';
+  html += '    <div class="canva-stage-toolbar-stats">' + (furnitureList.length + decorList.length) + ' elementos instalados</div>';
+  html += '  </div>';
+
+  var texClass = "tex-" + (r.room_type || "salon");
+  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage">';
+
+  // Celdas de guía de fondo
+  html += '    <div class="canva-stage-grid-lines">';
+  for(var cellIdx = 0; cellIdx < 24; cellIdx++){
+    html += '<div class="canva-stage-grid-cell"></div>';
+  }
+  html += '    </div>';
+
+  // Renderizar muebles con soporte de selección morada Canva
+  furnitureList.forEach(function(f){
+    var isSel = (houseState.selectedItemId === f.id);
+    var colStart = (f.pos_x || 0) + 1;
+    var rowStart = (f.pos_y || 0) + 1;
+    var rot = f.rotation || 0;
+    var itemCount = Array.isArray(f.items) ? f.items.length : 0;
+
+    html += '<div class="canva-stage-item item-furniture' + (isSel ? ' canva-selected' : '') + '" style="grid-column:' + colStart + ';grid-row:' + rowStart + ';" data-action="canva-select-item" data-item-id="' + f.id + '" data-room-id="' + r.id + '">';
+
+    if(isSel && canEdit && isGm){
+      html += '<div class="canva-floating-toolbar">';
+      html += '  <button class="canva-float-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" title="Girar 90°">🔄 90°</button>';
+      html += '  <button class="canva-float-btn highlight" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Abrir inventario de este mueble">📦 Inv (' + itemCount + ')</button>';
+      html += '  <button class="canva-float-btn" data-action="canva-duplicate-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" title="Duplicar elemento">📋 Copiar</button>';
+      html += '  <button class="canva-float-btn danger" data-action="canva-delete-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" title="Eliminar mueble">&times; Borrar</button>';
+      html += '</div>';
+      html += '<div class="canva-item-nametag">' + esc(f.name) + '</div>';
+    } else if(!isSel && itemCount > 0){
+      html += '<div class="canva-item-mini-badge">📦 ' + itemCount + '</div>';
+    }
+
+    html += '  <div class="canva-stage-item-svg">' + getCanvaSvg(f.type || f.id, rot) + '</div>';
+    html += '</div>';
+  });
+
+  // Renderizar decoración con soporte de selección morada Canva
+  decorList.forEach(function(d){
+    var isSel = (houseState.selectedItemId === d.id);
+    var colStart = (d.pos_x || 0) + 1;
+    var rowStart = (d.pos_y || 0) + 1;
+    var rot = d.rotation || 0;
+
+    html += '<div class="canva-stage-item item-decor' + (isSel ? ' canva-selected' : '') + '" style="grid-column:' + colStart + ';grid-row:' + rowStart + ';" data-action="canva-select-item" data-item-id="' + d.id + '" data-room-id="' + r.id + '">';
+
+    if(isSel && canEdit && isGm){
+      html += '<div class="canva-floating-toolbar">';
+      html += '  <button class="canva-float-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" title="Girar 90°">🔄 90°</button>';
+      html += '  <button class="canva-float-btn" data-action="canva-duplicate-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" title="Duplicar adorno">📋 Copiar</button>';
+      html += '  <button class="canva-float-btn danger" data-action="canva-delete-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" title="Quitar adorno">&times; Borrar</button>';
+      html += '</div>';
+      html += '<div class="canva-item-nametag">' + esc(d.label || d.type) + '</div>';
+    }
+
+    html += '  <div class="canva-stage-item-svg">' + getCanvaSvg(d.type || d.id, rot) + '</div>';
+    html += '</div>';
+  });
+
+  html += '  </div>'; // fin canva-room-stage
+  html += '</div>'; // fin canva-stage-wrap
+
+  html += '</div>'; // fin canva-studio-layout
+  html += '</div>'; // fin canva-studio-container
+  return html;
+}
+
 
 // Estado del arrastre activo
 var houseActiveDrag = null;
@@ -1549,20 +2196,25 @@ function renderHouseView(){
     }
   }
 
-  // Lienzo de cuadrícula de la planta activa con soporte de Zoom
-  var canvasEditClass = (gmMode && houseState.editMode) ? ' edit-mode' : '';
-  var zoomStyle = (curZoom !== 1.0) ? 'style="transform:scale(' + curZoom + ');transform-origin:top left;"' : '';
-  html += '  <div class="house-grid-viewport">';
-  html += '    <div class="house-grid-canvas' + canvasEditClass + '" id="houseGridCanvas" ' + zoomStyle + '>';
-  html += renderHouseGridRooms(curFloor);
-  html += '    </div>';
-  html += '  </div>';
-
-  // Inspector de la Habitación seleccionada
-  if(houseState.selectedRoomId){
-    html += renderRoomInspector(houseState.selectedRoomId);
+  // Si el usuario está dentro del Estudio Canva de una habitación, renderizar el estudio enfocado
+  if(houseState.studioRoomId){
+    html += renderCanvaStudio(houseState.studioRoomId);
   } else {
-    html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:12px;font-style:italic;">💡 Toca cualquier habitación del plano para ver sus detalles, muebles o activar sus buffs.</div>';
+    // Lienzo de cuadrícula de la planta activa con soporte de Zoom
+    var canvasEditClass = (gmMode && houseState.editMode) ? ' edit-mode' : '';
+    var zoomStyle = (curZoom !== 1.0) ? 'style="transform:scale(' + curZoom + ');transform-origin:top left;"' : '';
+    html += '  <div class="house-grid-viewport">';
+    html += '    <div class="house-grid-canvas' + canvasEditClass + '" id="houseGridCanvas" ' + zoomStyle + '>';
+    html += renderHouseGridRooms(curFloor);
+    html += '    </div>';
+    html += '  </div>';
+
+    // Inspector de la Habitación seleccionada
+    if(houseState.selectedRoomId){
+      html += renderRoomInspector(houseState.selectedRoomId);
+    } else {
+      html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:12px;font-style:italic;">💡 Toca cualquier habitación del plano para ver sus detalles, muebles o activar sus buffs.</div>';
+    }
   }
 
   html += '</div>'; // Fin blueprint
@@ -1646,20 +2298,45 @@ function renderHouseGridRooms(floorNumber){
       resizeHandleHtml = '<div class="house-room-resize-handle" data-room-id="' + r.id + '" title="Arrastra para redimensionar"></div>';
     }
 
-    // FASE 2: Renderizado específico para Pasillos
+    var doorCutouts = getRoomDoorCutouts(r, rooms);
+
+    // Renderizado arquitectónico para Pasillos (Canva style con arcos y continuidad)
     if(r.room_type === "pasillo"){
-      return '<div class="house-room-tile type-pasillo ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 1) + '" data-height="' + (r.height || 1) + '" role="button" tabindex="0" title="Pasillo (Zona de paso)">' +
+      var archHtml = '<div class="corridor-floor-runner"></div>';
+      if(doorCutouts.left) archHtml += '<div class="corridor-door-arch arch-left" title="Paso abierto hacia estancia"></div>';
+      if(doorCutouts.right) archHtml += '<div class="corridor-door-arch arch-right" title="Paso abierto hacia estancia"></div>';
+      if(doorCutouts.top) archHtml += '<div class="corridor-door-arch arch-top" title="Paso abierto hacia estancia"></div>';
+      if(doorCutouts.bottom) archHtml += '<div class="corridor-door-arch arch-bottom" title="Paso abierto hacia estancia"></div>';
+
+      return '<div class="house-room-tile type-pasillo ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 1) + '" data-height="' + (r.height || 1) + '" role="button" tabindex="0" title="Pasillo (Galería conectora)">' +
+        archHtml +
         '  <div class="house-room-name">🬸 ' + esc(r.name || "Pasillo") + '</div>' +
         '  <div class="house-room-tile-foot"><span class="house-room-dims">' + (r.width || 1) + 'x' + (r.height || 1) + '</span></div>' +
         resizeHandleHtml +
         '</div>';
     }
 
-    // Renderizado para Estancias normales
+    // Renderizado arquitectónico para Estancias (Canva style con puertas batientes y mini-mobiliario)
+    var doorHtml = '';
+    if(doorCutouts.left) doorHtml += '<div class="room-door-swing swing-left" title="Puerta de acceso">' + getCanvaSvg('puerta_batiente', 270) + '</div>';
+    if(doorCutouts.right) doorHtml += '<div class="room-door-swing swing-right" title="Puerta de acceso">' + getCanvaSvg('puerta_batiente', 90) + '</div>';
+    if(doorCutouts.top) doorHtml += '<div class="room-door-swing swing-top" title="Puerta de acceso">' + getCanvaSvg('puerta_batiente', 0) + '</div>';
+    if(doorCutouts.bottom) doorHtml += '<div class="room-door-swing swing-bottom" title="Puerta de acceso">' + getCanvaSvg('puerta_batiente', 180) + '</div>';
+
+    var miniLayoutHtml = '<div class="house-room-mini-layout">' + renderRoomMiniLayout(r) + '</div>';
+    var studioBtnHtml = isEditMode
+      ? '<button class="btn-canva-studio-mini" data-action="open-canva-studio" data-room-id="' + r.id + '" title="Diseñar y decorar en Estudio Canva">🎨</button>'
+      : '';
+
     return '<div class="house-room-tile ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isMyRoom ? ' my-room' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0">' +
+      doorHtml +
+      miniLayoutHtml +
       '  <div class="house-room-tile-head">' +
       '    <span class="house-room-type-tag ' + (r.room_type || 'otro') + '">' + getRoomTypeIcon(r.room_type) + ' ' + getRoomTypeLabel(r.room_type) + '</span>' +
-      '    <span class="house-room-level-pill">Nv. ' + (r.level || 1) + '</span>' +
+      '    <div style="display:flex;align-items:center;gap:4px;">' +
+      studioBtnHtml +
+      '      <span class="house-room-level-pill">Nv. ' + (r.level || 1) + '</span>' +
+      '    </div>' +
       '  </div>' +
       '  <div class="house-room-name">' + esc(r.name) + '</div>' +
       '  <div class="house-room-tile-foot">' +
@@ -1848,9 +2525,10 @@ function renderRoomInspector(roomId){
   if(currentTab === "estancia"){
     html += '  <div class="house-inspector-desc">' + (r.description ? esc(r.description) : '<i>Sin descripción ni detalles decorativos.</i>') + '</div>';
 
-    html += '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:4px;">';
+    html += '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px;">';
+    html += '    <button class="btn-solid-gold" data-action="open-canva-studio" data-room-id="' + r.id + '" style="font-size:0.8rem;padding:5px 12px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-color:#a78bfa;box-shadow:0 2px 10px rgba(139,92,246,0.35);">🎨 Diseñar en Estudio Canva</button>';
     if(canEdit){
-      html += '    <button class="btn-solid-gold" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
+      html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
     }
     if(isGm){
       html += '    <button class="btn-compact" data-action="grant-room-level" data-room-id="' + r.id + '" style="color:#F1C40F;border-color:rgba(241,196,15,0.4);" title="Subir nivel de esta sala">+ 1 Nivel de Sala</button>';
@@ -2850,5 +3528,82 @@ document.addEventListener("click", function(e){
     var ddRId = btn.getAttribute("data-room-id");
     var ddDId = btn.getAttribute("data-decor-id");
     deleteRoomDecor(ddRId, ddDId);
+  } else if(act === "open-canva-studio"){
+    var csRoomId = btn.getAttribute("data-room-id") || houseState.selectedRoomId;
+    if(csRoomId){
+      houseState.studioRoomId = csRoomId;
+      houseState.selectedItemId = null;
+      renderHouseView();
+    }
+  } else if(act === "close-canva-studio"){
+    houseState.studioRoomId = null;
+    houseState.selectedItemId = null;
+    renderHouseView();
+  } else if(act === "canva-select-category"){
+    houseState.studioCategory = btn.getAttribute("data-category") || "todas";
+    renderHouseView();
+  } else if(act === "canva-insert-asset"){
+    var insRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
+    var insAssetId = btn.getAttribute("data-asset-id");
+    canvaInsertAsset(insRoomId, insAssetId);
+  } else if(act === "canva-select-item"){
+    e.stopPropagation();
+    var itmId = btn.getAttribute("data-item-id");
+    houseState.selectedItemId = (houseState.selectedItemId === itmId) ? null : itmId;
+    renderHouseView();
+  } else if(act === "canva-rotate-item"){
+    e.stopPropagation();
+    var rotRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
+    var rotItemId = btn.getAttribute("data-item-id") || houseState.selectedItemId;
+    canvaRotateItem(rotRoomId, rotItemId);
+  } else if(act === "canva-duplicate-item"){
+    e.stopPropagation();
+    var dupRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
+    var dupItemId = btn.getAttribute("data-item-id") || houseState.selectedItemId;
+    canvaDuplicateItem(dupRoomId, dupItemId);
+  } else if(act === "canva-delete-item"){
+    e.stopPropagation();
+    var delRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
+    var delItemId = btn.getAttribute("data-item-id") || houseState.selectedItemId;
+    canvaDeleteItem(delRoomId, delItemId);
+  }
+});
+
+// Listener de búsqueda en tiempo real para la biblioteca Canva
+document.addEventListener("input", function(e){
+  if(e.target && e.target.id === "canvaSearchInput"){
+    houseState.studioSearch = e.target.value || "";
+    var assetsGrid = document.querySelector(".canva-assets-grid");
+    if(assetsGrid && houseState.studioRoomId){
+      var r = (houseState.rooms || []).find(function(x){ return x.id === houseState.studioRoomId; });
+      if(r){
+        var curCategory = houseState.studioCategory || "todas";
+        var search = houseState.studioSearch.toLowerCase().trim();
+        var filtered = CANVA_ASSET_LIBRARY.filter(function(a){
+          if(curCategory !== "todas" && a.category !== curCategory) return false;
+          if(search){
+            return a.name.toLowerCase().includes(search) || (a.desc && a.desc.toLowerCase().includes(search));
+          }
+          return true;
+        });
+        var gHtml = '';
+        if(filtered.length === 0){
+          gHtml = '<div style="font-size:0.78rem;color:var(--ink-faint);text-align:center;padding:24px;">No se encontraron elementos para esa búsqueda.</div>';
+        } else {
+          filtered.forEach(function(asset){
+            var badge = asset.isStorage ? '📦 Inventario' : (asset.isDoor ? '🚪 Acceso' : (asset.isDecor ? '🌿 Adorno' : '🪑 Mueble'));
+            gHtml += '<div class="canva-asset-card" data-action="canva-insert-asset" data-room-id="' + r.id + '" data-asset-id="' + asset.id + '" title="' + esc(asset.desc) + '">';
+            gHtml += '  <div class="canva-asset-card-preview">' + getCanvaSvg(asset.id, 0) + '</div>';
+            gHtml += '  <div class="canva-asset-card-info">';
+            gHtml += '    <div class="canva-asset-card-name">' + esc(asset.name) + '</div>';
+            gHtml += '    <span class="canva-asset-card-badge">' + badge + '</span>';
+            gHtml += '  </div>';
+            gHtml += '  <div class="canva-asset-card-add">➕</div>';
+            gHtml += '</div>';
+          });
+        }
+        assetsGrid.innerHTML = gHtml;
+      }
+    }
   }
 });
