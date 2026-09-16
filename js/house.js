@@ -17,7 +17,8 @@ var houseState = {
   house: null,
   rooms: [],
   upgrades: [],
-  events: []
+  events: [],
+  editMode: false
 };
 
 // ============================================================================
@@ -410,6 +411,10 @@ function getRoomTypeIcon(type){
     case "salon": return "🔥";
     case "habitacion_personal": return "🛏️";
     case "habitacion_comun": return "🏛️";
+    case "pasillo": return "🬸";
+    case "bodega": return "🍷";
+    case "taller": return "⚙️";
+    case "biblioteca": return "📚";
     default: return "🚪";
   }
 }
@@ -420,9 +425,41 @@ function getRoomTypeLabel(type){
     case "salon": return "Salón";
     case "habitacion_personal": return "Personal";
     case "habitacion_comun": return "Común";
+    case "pasillo": return "Pasillo";
+    case "bodega": return "Bodega";
+    case "taller": return "Taller";
+    case "biblioteca": return "Biblioteca";
     default: return "Especial";
   }
 }
+
+function getFurnitureIcon(type){
+  switch(type){
+    case "libreria": return "📚";
+    case "alacena": return "🍯";
+    case "estanteria": return "🧪";
+    case "baul": return "🧰";
+    case "escritorio": return "📜";
+    case "armero": return "⚔️";
+    case "banco": return "🔨";
+    case "cama": return "🛏️";
+    case "mesa": return "🪵";
+    case "sillon": return "🛋️";
+    case "cofre": return "📦";
+    default: return "📦";
+  }
+}
+
+var HOUSE_DECOR_CATALOG = [
+  { type: "alfombra", icon: "🧶", label: "Alfombra tejida" },
+  { type: "planta", icon: "🌿", label: "Planta silvestre" },
+  { type: "vela", icon: "🕯️", label: "Vela encantada" },
+  { type: "cuadro", icon: "🖼️", label: "Tapiz del mapa" },
+  { type: "cofre", icon: "📦", label: "Cofre ornamental" },
+  { type: "telarana", icon: "🕸️", label: "Telaraña misteriosa" },
+  { type: "antorcha", icon: "🔥", label: "Antorcha de pared" },
+  { type: "trofeo", icon: "💀", label: "Trofeo de caza" }
+];
 
 // ============================================================================
 // 3. PROGRESIÓN ATÓMICA
@@ -709,16 +746,601 @@ function applyHouseBuffToActiveChar(buffId){
 }
 
 // ============================================================================
-// 5. MOVIMIENTO RÁPIDO Y REDIMENSIONADO EN PANTALLA (D-PAD PARA GM)
+// 5. MOVIMIENTO RÁPIDO, REDIMENSIONADO Y DRAG & DROP PARA GM
 // ============================================================================
+var HOUSE_GRID_COLS = 6;
+var HOUSE_GRID_ROW_HEIGHT = 105;
+var HOUSE_GRID_GAP = 12;
+
+// Comprobación de colisiones AABB 2D y límites de la planta
+function checkRoomCollision(floor, excludeRoomId, targetX, targetY, targetW, targetH){
+  // 1. Límites horizontales y verticales
+  if(targetX < 0 || (targetX + targetW) > HOUSE_GRID_COLS || targetY < 0){
+    return true; // Fuera de límites
+  }
+  if(targetW < 1 || targetH < 1){
+    return true;
+  }
+
+  // 2. Colisión con otras estancias de la misma planta
+  var sameFloorRooms = (houseState.rooms || []).filter(function(r){
+    return (r.floor || 1) === floor && r.id !== excludeRoomId;
+  });
+
+  for(var i = 0; i < sameFloorRooms.length; i++){
+    var o = sameFloorRooms[i];
+    var ox = o.pos_x || 0;
+    var oy = o.pos_y || 0;
+    var ow = o.width || 2;
+    var oh = o.height || 2;
+
+    var overlapX = (targetX < ox + ow) && (targetX + targetW > ox);
+    var overlapY = (targetY < oy + oh) && (targetY + targetH > oy);
+
+    if(overlapX && overlapY){
+      return true; // Colisión detectada
+    }
+  }
+
+  return false;
+}
+
+// Previsualización fantasma en la cuadrícula durante el arrastre/redimensionado
+function updateGhostPreview(roomId, targetX, targetY, targetW, targetH, isValid){
+  var canvas = document.getElementById("houseGridCanvas");
+  if(!canvas) return;
+
+  var ghost = document.getElementById("houseGridGhost");
+  if(!ghost){
+    ghost = document.createElement("div");
+    ghost.id = "houseGridGhost";
+    ghost.className = "house-grid-ghost";
+    canvas.appendChild(ghost);
+  }
+
+  var colStart = Math.max(1, targetX + 1);
+  var colSpan = Math.max(1, targetW);
+  var rowStart = Math.max(1, targetY + 1);
+  var rowSpan = Math.max(1, targetH);
+
+  ghost.style.gridColumn = colStart + " / span " + colSpan;
+  ghost.style.gridRow = rowStart + " / span " + rowSpan;
+
+  if(!isValid){
+    ghost.classList.add("collision");
+    ghost.innerHTML = "<span>⚠️ Ocupado (" + targetW + "x" + targetH + ")</span>";
+  } else {
+    ghost.classList.remove("collision");
+    ghost.innerHTML = "<span>(" + targetX + ", " + targetY + " · " + targetW + "x" + targetH + ")</span>";
+  }
+}
+
+function removeGhostPreview(){
+  var ghost = document.getElementById("houseGridGhost");
+  if(ghost && ghost.parentNode){
+    ghost.parentNode.removeChild(ghost);
+  }
+}
+
+// FASE 5: Guías de alineación visual (Snapping Visual Figma-like)
+function updateAlignmentGuides(currentX, currentY, width, height, floor, excludeRoomId){
+  var canvas = document.getElementById("houseGridCanvas");
+  if(!canvas) return;
+
+  removeAlignmentGuides();
+
+  var floorRooms = (houseState.rooms || []).filter(function(r){
+    return (r.floor || 1) === floor && r.id !== excludeRoomId;
+  });
+
+  var alignX = false;
+  var alignY = false;
+
+  for(var i = 0; i < floorRooms.length; i++){
+    var o = floorRooms[i];
+    var ox = o.pos_x || 0;
+    var oy = o.pos_y || 0;
+    var ow = o.width || 2;
+    var oh = o.height || 2;
+
+    if(currentX === ox || (currentX + width) === (ox + ow) || currentX === (ox + ow) || (currentX + width) === ox){
+      alignX = true;
+    }
+    if(currentY === oy || (currentY + height) === (oy + oh) || currentY === (oy + oh) || (currentY + height) === oy){
+      alignY = true;
+    }
+  }
+
+  if(alignX){
+    var gY = document.createElement("div");
+    gY.className = "house-align-guide-y";
+    var effectiveCanvasWidth = canvas.clientWidth - 12;
+    if(effectiveCanvasWidth <= 0) effectiveCanvasWidth = canvas.scrollWidth - 12;
+    var stepX = (effectiveCanvasWidth + HOUSE_GRID_GAP) / HOUSE_GRID_COLS;
+    gY.style.left = (currentX * stepX + 6) + "px";
+    canvas.appendChild(gY);
+  }
+  if(alignY){
+    var gX = document.createElement("div");
+    gX.className = "house-align-guide-x";
+    var stepY = HOUSE_GRID_ROW_HEIGHT + HOUSE_GRID_GAP;
+    gX.style.top = (currentY * stepY + 6) + "px";
+    canvas.appendChild(gX);
+  }
+}
+
+function removeAlignmentGuides(){
+  var guides = document.querySelectorAll(".house-align-guide-x, .house-align-guide-y");
+  for(var i = 0; i < guides.length; i++){
+    if(guides[i].parentNode) guides[i].parentNode.removeChild(guides[i]);
+  }
+}
+
+// FASE 2: Detección Dinámica de Muros Exteriores y Paredes Interiores
+function getRoomWallClasses(r, floorRooms){
+  var x = r.pos_x || 0;
+  var y = r.pos_y || 0;
+  var w = r.width || 2;
+  var h = r.height || 2;
+
+  var hasTop = false;
+  var hasRight = false;
+  var hasBottom = false;
+  var hasLeft = false;
+
+  for(var i = 0; i < floorRooms.length; i++){
+    var o = floorRooms[i];
+    if(o.id === r.id) continue;
+    var ox = o.pos_x || 0;
+    var oy = o.pos_y || 0;
+    var ow = o.width || 2;
+    var oh = o.height || 2;
+
+    var overlapX = (x < ox + ow) && (x + w > ox);
+    var overlapY = (y < oy + oh) && (y + h > oy);
+
+    if(overlapX && (oy + oh === y)) hasTop = true;
+    if(overlapX && (y + h === oy)) hasBottom = true;
+    if(overlapY && (ox + ow === x)) hasLeft = true;
+    if(overlapY && (x + w === ox)) hasRight = true;
+  }
+
+  var classes = [];
+  classes.push(hasTop ? "wall-shared-top" : "wall-outer-top");
+  classes.push(hasRight ? "wall-shared-right" : "wall-outer-right");
+  classes.push(hasBottom ? "wall-shared-bottom" : "wall-outer-bottom");
+  classes.push(hasLeft ? "wall-shared-left" : "wall-outer-left");
+
+  return classes.join(" ");
+}
+
+// FASE 2: Creación Rápida de Pasillo
+function createHouseCorridorAction(){
+  if(!(typeof isGM === "function" && isGM())) return;
+
+  var curFloor = houseState.activeFloor || 1;
+  var targetX = 0;
+  var targetY = 0;
+  var found = false;
+
+  for(var y = 0; y < 10; y++){
+    for(var x = 0; x < HOUSE_GRID_COLS; x++){
+      if(!checkRoomCollision(curFloor, null, x, y, 1, 1)){
+        targetX = x;
+        targetY = y;
+        found = true;
+        break;
+      }
+    }
+    if(found) break;
+  }
+
+  var newCorridor = {
+    id: "r_corr_" + Date.now(),
+    house_id: houseState.house ? houseState.house.id : "h0000000-0000-0000-0000-000000000001",
+    room_type: "pasillo",
+    name: "Pasillo",
+    owner_character_id: null,
+    level: 1,
+    description: "Zona de paso y conexión entre estancias.",
+    pos_x: targetX,
+    pos_y: targetY,
+    width: 1,
+    height: 1,
+    floor: curFloor,
+    furniture: [],
+    decor: []
+  };
+
+  houseState.rooms = houseState.rooms || [];
+  houseState.rooms.push(newCorridor);
+  houseState.selectedRoomId = newCorridor.id;
+
+  saveHouseLocalData();
+  renderHouseView();
+
+  if(typeof showToast === "function") showToast("🬸 Pasillo añadido a la Planta " + curFloor + ".", "success");
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient){
+    supabaseClient.from("house_rooms").insert([newCorridor]).then(function(){});
+  }
+}
+
+// FASE 3: Rotación de Muebles en Sub-rejilla
+function rotateRoomFurniture(roomId, furnitureId){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room || !Array.isArray(room.furniture)) return;
+  var fur = room.furniture.find(function(f){ return f.id === furnitureId; });
+  if(!fur) return;
+
+  fur.rotation = ((fur.rotation || 0) + 90) % 360;
+
+  saveHouseLocalData();
+  renderHouseView();
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+    supabaseClient.from("house_rooms")
+      .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
+      .eq("id", room.id)
+      .then(function(){});
+  }
+}
+
+// FASE 4: Capa de Decoración Rápida
+function rotateRoomDecor(roomId, decorId){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room || !Array.isArray(room.decor)) return;
+  var dec = room.decor.find(function(d){ return d.id === decorId; });
+  if(!dec) return;
+
+  dec.rotation = ((dec.rotation || 0) + 90) % 360;
+
+  saveHouseLocalData();
+  renderHouseView();
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+    supabaseClient.from("house_rooms")
+      .update({ decor: room.decor, updated_at: new Date().toISOString() })
+      .eq("id", room.id)
+      .then(function(){});
+  }
+}
+
+function addRoomDecor(roomId, decorType){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room) return;
+  room.decor = room.decor || [];
+
+  var cat = HOUSE_DECOR_CATALOG.find(function(c){ return c.type === decorType; });
+  if(!cat) return;
+
+  // Buscar celda libre en sub-rejilla 6x4
+  var occupied = {};
+  (room.furniture || []).forEach(function(f){ occupied[(f.pos_x || 0) + "_" + (f.pos_y || 0)] = true; });
+  room.decor.forEach(function(d){ occupied[(d.pos_x || 0) + "_" + (d.pos_y || 0)] = true; });
+
+  var targetX = 0;
+  var targetY = 0;
+  var found = false;
+  for(var y = 0; y < 4; y++){
+    for(var x = 0; x < 6; x++){
+      if(!occupied[x + "_" + y]){
+        targetX = x;
+        targetY = y;
+        found = true;
+        break;
+      }
+    }
+    if(found) break;
+  }
+
+  var newDec = {
+    id: "dec_" + Date.now(),
+    type: cat.type,
+    icon: cat.icon,
+    label: cat.label,
+    pos_x: targetX,
+    pos_y: targetY,
+    rotation: 0
+  };
+
+  room.decor.push(newDec);
+  saveHouseLocalData();
+  renderHouseView();
+
+  if(typeof showToast === "function") showToast(cat.icon + " " + cat.label + " añadida a la estancia.", "info");
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+    supabaseClient.from("house_rooms")
+      .update({ decor: room.decor, updated_at: new Date().toISOString() })
+      .eq("id", room.id)
+      .then(function(){});
+  }
+}
+
+function deleteRoomDecor(roomId, decorId){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room || !Array.isArray(room.decor)) return;
+
+  room.decor = room.decor.filter(function(d){ return d.id !== decorId; });
+  saveHouseLocalData();
+  renderHouseView();
+
+  if(typeof showToast === "function") showToast("Elemento decorativo retirado.", "info");
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+    supabaseClient.from("house_rooms")
+      .update({ decor: room.decor, updated_at: new Date().toISOString() })
+      .eq("id", room.id)
+      .then(function(){});
+  }
+}
+
+// Estado del arrastre activo
+var houseActiveDrag = null;
+var houseSuppressNextClick = false;
+
+function handleHousePointerDown(e){
+  // Solo en modo edición y si el usuario es GM
+  if(!houseState.editMode || !(typeof isGM === "function" && isGM())) return;
+  // Solo botón principal
+  if(e.button !== undefined && e.button !== 0) return;
+
+  var handle = e.target.closest(".house-room-resize-handle");
+  var tile = e.target.closest(".house-room-tile");
+  if(!handle && !tile) return;
+
+  var canvas = document.getElementById("houseGridCanvas");
+  if(!canvas) return;
+
+  var roomId = handle ? handle.getAttribute("data-room-id") : tile.getAttribute("data-room-id");
+  if(!roomId) return;
+
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room) return;
+
+  var targetTile = tile || canvas.querySelector('.house-room-tile[data-room-id="' + roomId + '"]');
+  if(!targetTile) return;
+
+  var isResize = !!handle;
+
+  // Medir paso horizontal y vertical de la cuadrícula dinámicamente
+  var effectiveCanvasWidth = canvas.clientWidth - 12; // 6px padding por lado
+  if(effectiveCanvasWidth <= 0) effectiveCanvasWidth = canvas.scrollWidth - 12;
+  var stepX = (effectiveCanvasWidth + HOUSE_GRID_GAP) / HOUSE_GRID_COLS;
+  var stepY = HOUSE_GRID_ROW_HEIGHT + HOUSE_GRID_GAP;
+
+  houseActiveDrag = {
+    pointerId: e.pointerId,
+    roomId: roomId,
+    isResize: isResize,
+    tileEl: targetTile,
+    handleEl: handle,
+    startX: e.clientX,
+    startY: e.clientY,
+    origPosX: room.pos_x || 0,
+    origPosY: room.pos_y || 0,
+    origWidth: room.width || 2,
+    origHeight: room.height || 2,
+    currentPosX: room.pos_x || 0,
+    currentPosY: room.pos_y || 0,
+    currentWidth: room.width || 2,
+    currentHeight: room.height || 2,
+    stepX: stepX,
+    stepY: stepY,
+    hasMoved: false,
+    isValid: true
+  };
+
+  try {
+    (handle || targetTile).setPointerCapture(e.pointerId);
+  } catch(err){}
+}
+
+function handleHousePointerMove(e){
+  if(!houseActiveDrag || houseActiveDrag.pointerId !== e.pointerId) return;
+
+  var dx = e.clientX - houseActiveDrag.startX;
+  var dy = e.clientY - houseActiveDrag.startY;
+
+  // Distinguir tap de arrastre sostenido
+  if(!houseActiveDrag.hasMoved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)){
+    houseActiveDrag.hasMoved = true;
+    houseActiveDrag.tileEl.classList.add("is-dragging");
+    if(houseActiveDrag.isResize){
+      houseActiveDrag.tileEl.classList.add("is-resizing");
+    }
+  }
+
+  if(!houseActiveDrag.hasMoved) return;
+
+  e.preventDefault();
+
+  var deltaCols = Math.round(dx / houseActiveDrag.stepX);
+  var deltaRows = Math.round(dy / houseActiveDrag.stepY);
+
+  if(!houseActiveDrag.isResize){
+    // Arrastre de posición
+    var newX = Math.max(0, Math.min(HOUSE_GRID_COLS - houseActiveDrag.origWidth, houseActiveDrag.origPosX + deltaCols));
+    var newY = Math.max(0, houseActiveDrag.origPosY + deltaRows);
+
+    houseActiveDrag.currentPosX = newX;
+    houseActiveDrag.currentPosY = newY;
+
+    // Transformación fluida a 60fps sin re-renderizar todo el DOM
+    houseActiveDrag.tileEl.style.transform = "translate3d(" + dx + "px, " + dy + "px, 0)";
+
+    // Comprobación de colisión
+    var collides = checkRoomCollision(
+      houseState.activeFloor || 1,
+      houseActiveDrag.roomId,
+      newX,
+      newY,
+      houseActiveDrag.origWidth,
+      houseActiveDrag.origHeight
+    );
+
+    houseActiveDrag.isValid = !collides;
+    if(collides){
+      houseActiveDrag.tileEl.classList.add("is-collision");
+      houseActiveDrag.tileEl.classList.remove("is-valid-snap");
+    } else {
+      houseActiveDrag.tileEl.classList.remove("is-collision");
+      houseActiveDrag.tileEl.classList.add("is-valid-snap");
+    }
+
+    updateGhostPreview(houseActiveDrag.roomId, newX, newY, houseActiveDrag.origWidth, houseActiveDrag.origHeight, !collides);
+    updateAlignmentGuides(newX, newY, houseActiveDrag.origWidth, houseActiveDrag.origHeight, houseState.activeFloor || 1, houseActiveDrag.roomId);
+  } else {
+    // Redimensionamiento por asa
+    var maxW = HOUSE_GRID_COLS - houseActiveDrag.origPosX;
+    var newW = Math.max(1, Math.min(maxW, houseActiveDrag.origWidth + deltaCols));
+    var newH = Math.max(1, Math.min(10, houseActiveDrag.origHeight + deltaRows));
+
+    houseActiveDrag.currentWidth = newW;
+    houseActiveDrag.currentHeight = newH;
+
+    var collidesResize = checkRoomCollision(
+      houseState.activeFloor || 1,
+      houseActiveDrag.roomId,
+      houseActiveDrag.origPosX,
+      houseActiveDrag.origPosY,
+      newW,
+      newH
+    );
+
+    houseActiveDrag.isValid = !collidesResize;
+    if(collidesResize){
+      houseActiveDrag.tileEl.classList.add("is-collision");
+      houseActiveDrag.tileEl.classList.remove("is-valid-snap");
+    } else {
+      houseActiveDrag.tileEl.classList.remove("is-collision");
+      houseActiveDrag.tileEl.classList.add("is-valid-snap");
+    }
+
+    updateGhostPreview(houseActiveDrag.roomId, houseActiveDrag.origPosX, houseActiveDrag.origPosY, newW, newH, !collidesResize);
+    updateAlignmentGuides(houseActiveDrag.origPosX, houseActiveDrag.origPosY, newW, newH, houseState.activeFloor || 1, houseActiveDrag.roomId);
+  }
+}
+
+function handleHousePointerUp(e){
+  if(!houseActiveDrag || houseActiveDrag.pointerId !== e.pointerId) return;
+
+  var drag = houseActiveDrag;
+  houseActiveDrag = null;
+
+  // Limpiar estilos y clases
+  drag.tileEl.classList.remove("is-dragging", "is-resizing", "is-collision", "is-valid-snap");
+  drag.tileEl.style.transform = "";
+  removeGhostPreview();
+  removeAlignmentGuides();
+
+  try {
+    if(drag.handleEl) drag.handleEl.releasePointerCapture(e.pointerId);
+    drag.tileEl.releasePointerCapture(e.pointerId);
+  } catch(err){}
+
+  // Si fue un click/tap simple sin desplazamiento
+  if(!drag.hasMoved){
+    if(drag.isResize) return;
+    return;
+  }
+
+  // Suprimir el click subsiguiente disparado por el navegador tras el arrastre
+  houseSuppressNextClick = true;
+  setTimeout(function(){ houseSuppressNextClick = false; }, 200);
+
+  var room = (houseState.rooms || []).find(function(x){ return x.id === drag.roomId; });
+  if(!room) return;
+
+  if(!drag.isValid){
+    if(typeof showToast === "function"){
+      showToast("⚠️ Posición ocupada o no permitida. Movimiento cancelado.", "warning");
+    }
+    renderHouseView();
+    return;
+  }
+
+  if(!drag.isResize){
+    var changedPos = (room.pos_x !== drag.currentPosX || room.pos_y !== drag.currentPosY);
+    if(changedPos){
+      room.pos_x = drag.currentPosX;
+      room.pos_y = drag.currentPosY;
+      saveHouseLocalData();
+      renderHouseView();
+
+      if(typeof showToast === "function"){
+        showToast("Estancia reubicada en (" + room.pos_x + ", " + room.pos_y + ")", "info");
+      }
+
+      // Guardado atómico en Supabase: solo pos_x y pos_y
+      if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+        supabaseClient.from("house_rooms")
+          .update({ pos_x: room.pos_x, pos_y: room.pos_y, updated_at: new Date().toISOString() })
+          .eq("id", room.id)
+          .then(function(){});
+      }
+    } else {
+      renderHouseView();
+    }
+  } else {
+    var changedDim = (room.width !== drag.currentWidth || room.height !== drag.currentHeight);
+    if(changedDim){
+      room.width = drag.currentWidth;
+      room.height = drag.currentHeight;
+      saveHouseLocalData();
+      renderHouseView();
+
+      if(typeof showToast === "function"){
+        showToast("Dimensiones actualizadas a " + room.width + "x" + room.height, "info");
+      }
+
+      // Guardado atómico en Supabase: solo width y height
+      if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
+        supabaseClient.from("house_rooms")
+          .update({ width: room.width, height: room.height, updated_at: new Date().toISOString() })
+          .eq("id", room.id)
+          .then(function(){});
+      }
+    } else {
+      renderHouseView();
+    }
+  }
+}
+
+function handleHousePointerCancel(e){
+  if(houseActiveDrag && houseActiveDrag.pointerId === e.pointerId){
+    houseActiveDrag.tileEl.classList.remove("is-dragging", "is-resizing", "is-collision", "is-valid-snap");
+    houseActiveDrag.tileEl.style.transform = "";
+    removeGhostPreview();
+    removeAlignmentGuides();
+    houseActiveDrag = null;
+    renderHouseView();
+  }
+}
+
+// Inicializar listeners de puntero a nivel documento con soporte táctil
+document.addEventListener("pointerdown", handleHousePointerDown, { passive: false });
+document.addEventListener("pointermove", handleHousePointerMove, { passive: false });
+document.addEventListener("pointerup", handleHousePointerUp, { passive: false });
+document.addEventListener("pointercancel", handleHousePointerCancel, { passive: false });
+
 function nudgeSelectedRoom(dx, dy){
   var rId = houseState.selectedRoomId;
   if(!rId) return;
   var r = (houseState.rooms || []).find(function(x){ return x.id === rId; });
   if(!r) return;
 
-  r.pos_x = Math.max(0, Math.min(10, (r.pos_x || 0) + dx));
-  r.pos_y = Math.max(0, Math.min(10, (r.pos_y || 0) + dy));
+  var targetX = Math.max(0, Math.min(HOUSE_GRID_COLS - (r.width || 2), (r.pos_x || 0) + dx));
+  var targetY = Math.max(0, Math.min(12, (r.pos_y || 0) + dy));
+
+  if(checkRoomCollision(r.floor || 1, r.id, targetX, targetY, r.width || 2, r.height || 2)){
+    if(typeof showToast === "function") showToast("⚠️ Posición ocupada por otra habitación.", "warning");
+    return;
+  }
+
+  r.pos_x = targetX;
+  r.pos_y = targetY;
 
   saveHouseLocalData();
   renderHouseView();
@@ -734,8 +1356,16 @@ function resizeSelectedRoom(dw, dh){
   var r = (houseState.rooms || []).find(function(x){ return x.id === rId; });
   if(!r) return;
 
-  r.width = Math.max(1, Math.min(6, (r.width || 2) + dw));
-  r.height = Math.max(1, Math.min(6, (r.height || 2) + dh));
+  var targetW = Math.max(1, Math.min(HOUSE_GRID_COLS - (r.pos_x || 0), (r.width || 2) + dw));
+  var targetH = Math.max(1, Math.min(6, (r.height || 2) + dh));
+
+  if(checkRoomCollision(r.floor || 1, r.id, r.pos_x || 0, r.pos_y || 0, targetW, targetH)){
+    if(typeof showToast === "function") showToast("⚠️ Tamaño no permitido (colisiona con otra estancia).", "warning");
+    return;
+  }
+
+  r.width = targetW;
+  r.height = targetH;
 
   saveHouseLocalData();
   renderHouseView();
@@ -832,53 +1462,98 @@ function renderHouseView(){
   // 3. Sección del Plano Arquitectónico
   html += '<div class="house-blueprint-section">';
   html += '  <div class="house-blueprint-toolbar">';
-  html += '    <h2 class="house-blueprint-title"><span>📐</span> Plano Arquitectónico</h2>';
+  html += '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+  html += '      <h2 class="house-blueprint-title"><span>📐</span> Plano Arquitectónico</h2>';
 
   // Selector de Plantas
-  html += '    <div class="house-floor-tabs">';
-  html += '      <button class="house-floor-tab' + (curFloor === 1 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="1">🏢 Planta 1 (Principal)</button>';
-  html += '      <button class="house-floor-tab' + (curFloor === 2 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="2">🌲 Planta 2 (Aposentos)</button>';
-  html += '      <button class="house-floor-tab' + (curFloor === 3 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="3">🕯️ Sótano / Bodega</button>';
+  html += '      <div class="house-floor-tabs">';
+  html += '        <button class="house-floor-tab' + (curFloor === 1 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="1">🏢 Planta 1 (Principal)</button>';
+  html += '        <button class="house-floor-tab' + (curFloor === 2 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="2">🌲 Planta 2 (Aposentos)</button>';
+  html += '        <button class="house-floor-tab' + (curFloor === 3 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="3">🕯️ Sótano / Bodega</button>';
+  html += '      </div>';
+
+  // FASE 5: Controles de Zoom del Plano
+  var curZoom = houseState.zoom || 1.0;
+  html += '      <div class="house-zoom-controls">';
+  html += '        <button class="house-zoom-btn" data-action="zoom-house-out" title="Alejar plano (Zoom -)">−</button>';
+  html += '        <button class="house-zoom-btn house-zoom-reset" data-action="zoom-house-reset" title="Restablecer zoom (100%)">' + Math.round(curZoom * 100) + '%</button>';
+  html += '        <button class="house-zoom-btn" data-action="zoom-house-in" title="Acercar plano (Zoom +)">+</button>';
+  html += '      </div>';
   html += '    </div>';
 
   if(gmMode){
-    html += '    <button class="btn-solid-gold" data-action="open-create-room-modal" style="font-size:0.78rem;padding:5px 10px;">➕ Añadir Habitación</button>';
+    html += '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+    html += '      <button class="house-edit-mode-btn' + (houseState.editMode ? ' active' : '') + '" data-action="toggle-house-edit-mode" title="Alternar Modo Edición para arrastrar y redimensionar estancias">';
+    html += '        <span>' + (houseState.editMode ? '✏️ Modo Edición: ACTIVO' : '👁️ Modo Edición: OFF') + '</span>';
+    html += '      </button>';
+    if(houseState.editMode){
+      html += '      <button class="btn-compact highlight" data-action="create-house-corridor" style="font-size:0.78rem;padding:5px 10px;background:rgba(180,150,90,0.22);border-color:var(--gold);color:var(--gold-light);" title="Pintar o añadir un pasillo entre estancias">🬸 Añadir Pasillo</button>';
+    }
+    html += '      <button class="btn-solid-gold" data-action="open-create-room-modal" style="font-size:0.78rem;padding:5px 10px;">➕ Añadir Habitación</button>';
+    html += '    </div>';
   }
   html += '  </div>';
 
-  // Controles D-Pad para GM si hay una habitación seleccionada
+  // Banner informativo en Modo Edición
+  if(gmMode && houseState.editMode){
+    html += '<div class="house-edit-mode-banner">';
+    html += '  <span>🛠️ <b>Modo Edición Activo:</b> Arrastra cualquier estancia directamente con el dedo o ratón. Snapping automático y prevención de solapes. Selecciona una estancia y arrastra la esquina <b>↘</b> para redimensionar.</span>';
+    html += '</div>';
+  }
+
+  // Barra para la habitación seleccionada en Modo Edición o D-Pad clásico de respaldo
   if(gmMode && houseState.selectedRoomId){
     var selRoom = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
     if(selRoom){
-      html += '<div class="house-dpad-bar">';
-      html += '  <div class="house-dpad-title">🎮 Mover <b>' + esc(selRoom.name) + '</b>:</div>';
-      html += '  <div class="house-dpad-group">';
-      html += '    <span class="house-dpad-label">Posición:</span>';
-      html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="-1" data-dy="0" title="Mover Izquierda">⬅️</button>';
-      html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="1" data-dy="0" title="Mover Derecha">➡️</button>';
-      html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="0" data-dy="-1" title="Mover Arriba">⬆️</button>';
-      html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="0" data-dy="1" title="Mover Abajo">⬇️</button>';
-      html += '  </div>';
-      html += '  <div class="house-dpad-group">';
-      html += '    <span class="house-dpad-label">Tamaño:</span>';
-      html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="-1" data-dh="0" title="Reducir Ancho">Ancho -</button>';
-      html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="1" data-dh="0" title="Aumentar Ancho">Ancho +</button>';
-      html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="0" data-dh="-1" title="Reducir Alto">Alto -</button>';
-      html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="0" data-dh="1" title="Aumentar Alto">Alto +</button>';
-      html += '  </div>';
-      html += '  <div class="house-dpad-group">';
-      html += '    <span class="house-dpad-label">Planta:</span>';
-      html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===1?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="1">P.1</button>';
-      html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===2?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="2">P.2</button>';
-      html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===3?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="3">Sót.</button>';
-      html += '  </div>';
-      html += '</div>';
+      if(houseState.editMode){
+        html += '<div class="house-edit-selected-bar">';
+        html += '  <div class="house-edit-sel-info">';
+        html += '    <span>🎯 Habitación seleccionada: <b>' + esc(selRoom.name) + '</b></span>';
+        html += '    <span class="house-edit-coords">(' + (selRoom.pos_x || 0) + ', ' + (selRoom.pos_y || 0) + ') · ' + (selRoom.width || 2) + 'x' + (selRoom.height || 2) + '</span>';
+        html += '  </div>';
+        html += '  <div class="house-edit-sel-actions">';
+        html += '    <div class="house-floor-mini-group">';
+        html += '      <span style="font-size:0.7rem;color:var(--ink-faint);font-weight:700;">Planta:</span>';
+        html += '      <button class="house-dpad-btn' + ((selRoom.floor||1)===1?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="1">P.1</button>';
+        html += '      <button class="house-dpad-btn' + ((selRoom.floor||1)===2?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="2">P.2</button>';
+        html += '      <button class="house-dpad-btn' + ((selRoom.floor||1)===3?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="3">Sót.</button>';
+        html += '    </div>';
+        html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + selRoom.id + '" style="font-size:0.72rem;padding:3px 8px;">✏️ Ajustar Coordenadas / Datos</button>';
+        html += '  </div>';
+        html += '</div>';
+      } else {
+        html += '<div class="house-dpad-bar">';
+        html += '  <div class="house-dpad-title">🎮 Mover <b>' + esc(selRoom.name) + '</b>:</div>';
+        html += '  <div class="house-dpad-group">';
+        html += '    <span class="house-dpad-label">Posición:</span>';
+        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="-1" data-dy="0" title="Mover Izquierda">⬅️</button>';
+        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="1" data-dy="0" title="Mover Derecha">➡️</button>';
+        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="0" data-dy="-1" title="Mover Arriba">⬆️</button>';
+        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="0" data-dy="1" title="Mover Abajo">⬇️</button>';
+        html += '  </div>';
+        html += '  <div class="house-dpad-group">';
+        html += '    <span class="house-dpad-label">Tamaño:</span>';
+        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="-1" data-dh="0" title="Reducir Ancho">Ancho -</button>';
+        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="1" data-dh="0" title="Aumentar Ancho">Ancho +</button>';
+        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="0" data-dh="-1" title="Reducir Alto">Alto -</button>';
+        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="0" data-dh="1" title="Aumentar Alto">Alto +</button>';
+        html += '  </div>';
+        html += '  <div class="house-dpad-group">';
+        html += '    <span class="house-dpad-label">Planta:</span>';
+        html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===1?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="1">P.1</button>';
+        html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===2?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="2">P.2</button>';
+        html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===3?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="3">Sót.</button>';
+        html += '  </div>';
+        html += '</div>';
+      }
     }
   }
 
-  // Lienzo de cuadrícula de la planta activa
+  // Lienzo de cuadrícula de la planta activa con soporte de Zoom
+  var canvasEditClass = (gmMode && houseState.editMode) ? ' edit-mode' : '';
+  var zoomStyle = (curZoom !== 1.0) ? 'style="transform:scale(' + curZoom + ');transform-origin:top left;"' : '';
   html += '  <div class="house-grid-viewport">';
-  html += '    <div class="house-grid-canvas" id="houseGridCanvas">';
+  html += '    <div class="house-grid-canvas' + canvasEditClass + '" id="houseGridCanvas" ' + zoomStyle + '>';
   html += renderHouseGridRooms(curFloor);
   html += '    </div>';
   html += '  </div>';
@@ -931,6 +1606,7 @@ function renderHouseGridRooms(floorNumber){
   }
 
   var curChar = (typeof activeChar === "function") ? activeChar() : null;
+  var isEditMode = (typeof isGM === "function" && isGM() && houseState.editMode);
 
   return rooms.map(function(r){
     var isSelected = houseState.selectedRoomId === r.id;
@@ -962,7 +1638,25 @@ function renderHouseGridRooms(floorNumber){
       ? '<span style="font-size:0.68rem;background:rgba(52,152,219,0.2);color:#85C1E9;padding:1px 5px;border-radius:3px;" title="' + furnitureCount + ' muebles instalados">📦 ' + furnitureCount + '</span>'
       : '';
 
-    return '<div class="house-room-tile' + (isSelected ? ' active' : '') + (isMyRoom ? ' my-room' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" role="button" tabindex="0">' +
+    var wallClasses = getRoomWallClasses(r, rooms);
+    var textureClass = "tex-" + (r.room_type || "salon");
+
+    var resizeHandleHtml = '';
+    if(isEditMode && isSelected){
+      resizeHandleHtml = '<div class="house-room-resize-handle" data-room-id="' + r.id + '" title="Arrastra para redimensionar"></div>';
+    }
+
+    // FASE 2: Renderizado específico para Pasillos
+    if(r.room_type === "pasillo"){
+      return '<div class="house-room-tile type-pasillo ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 1) + '" data-height="' + (r.height || 1) + '" role="button" tabindex="0" title="Pasillo (Zona de paso)">' +
+        '  <div class="house-room-name">🬸 ' + esc(r.name || "Pasillo") + '</div>' +
+        '  <div class="house-room-tile-foot"><span class="house-room-dims">' + (r.width || 1) + 'x' + (r.height || 1) + '</span></div>' +
+        resizeHandleHtml +
+        '</div>';
+    }
+
+    // Renderizado para Estancias normales
+    return '<div class="house-room-tile ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isMyRoom ? ' my-room' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0">' +
       '  <div class="house-room-tile-head">' +
       '    <span class="house-room-type-tag ' + (r.room_type || 'otro') + '">' + getRoomTypeIcon(r.room_type) + ' ' + getRoomTypeLabel(r.room_type) + '</span>' +
       '    <span class="house-room-level-pill">Nv. ' + (r.level || 1) + '</span>' +
@@ -975,8 +1669,116 @@ function renderHouseGridRooms(floorNumber){
       '      <span class="house-room-dims">' + (r.width || 2) + 'x' + (r.height || 2) + '</span>' +
       '    </div>' +
       '  </div>' +
+      resizeHandleHtml +
       '</div>';
   }).join('');
+}
+
+// ============================================================================
+// FASE 3 & 4: SUB-REJILLA CENITAL DE HABITACIÓN (Muebles y Decoración)
+// ============================================================================
+function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
+  var furnitureList = Array.isArray(r.furniture) ? r.furniture : [];
+  var decorList = Array.isArray(r.decor) ? r.decor : [];
+
+  var occupied = {};
+  furnitureList.forEach(function(f, idx){
+    if(typeof f.pos_x !== "number") f.pos_x = idx % 6;
+    if(typeof f.pos_y !== "number") f.pos_y = Math.min(3, Math.floor(idx / 6));
+    if(typeof f.rotation !== "number") f.rotation = 0;
+    occupied[f.pos_x + "_" + f.pos_y] = true;
+  });
+
+  decorList.forEach(function(d){
+    if(typeof d.pos_x !== "number"){
+      for(var y = 3; y >= 0; y--){
+        for(var x = 5; x >= 0; x--){
+          if(!occupied[x + "_" + y]){
+            d.pos_x = x;
+            d.pos_y = y;
+            occupied[x + "_" + y] = true;
+            break;
+          }
+        }
+        if(d.pos_x !== undefined) break;
+      }
+      if(d.pos_x === undefined){ d.pos_x = 0; d.pos_y = 0; }
+    }
+    if(typeof d.rotation !== "number") d.rotation = 0;
+    occupied[d.pos_x + "_" + d.pos_y] = true;
+  });
+
+  var html = '<div class="house-room-subgrid-wrap">';
+  html += '  <div class="house-room-subgrid-toolbar">';
+  html += '    <div class="house-room-subgrid-title"><span>📐</span> Mini-Plano Cenital de la Estancia</div>';
+  if(canEdit && isEditMode){
+    html += '    <div style="display:flex;gap:6px;">';
+    html += '      <button class="btn-compact highlight" data-action="open-add-furniture-modal" data-room-id="' + r.id + '" style="font-size:0.7rem;padding:3px 8px;">➕ Mueble</button>';
+    html += '      <button class="btn-compact highlight" data-action="toggle-decor-palette" data-room-id="' + r.id + '" style="font-size:0.7rem;padding:3px 8px;background:rgba(46,204,113,0.2);border-color:#2ECC71;color:#A9DFBF;">🌿 + Decoración</button>';
+    html += '    </div>';
+  }
+  html += '  </div>';
+
+  html += '  <div class="house-room-subgrid tex-' + (r.room_type || 'salon') + '" id="houseRoomSubgrid">';
+
+  // Renderizar muebles posicionados
+  furnitureList.forEach(function(f){
+    var colStart = (f.pos_x || 0) + 1;
+    var rowStart = (f.pos_y || 0) + 1;
+    var style = 'grid-column:' + colStart + '; grid-row:' + rowStart + ';';
+    var icon = f.icon || getFurnitureIcon(f.type);
+    var rot = f.rotation || 0;
+
+    html += '<div class="house-subtile-item house-subtile-furniture" style="' + style + '" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="' + esc(f.name) + ' (Toca para ver inventario)">';
+    if(canEdit && isEditMode){
+      html += '  <div class="house-subtile-controls">';
+      html += '    <button class="house-subtile-btn" data-action="rotate-room-furniture" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Girar 90°">⟳</button>';
+      html += '    <button class="house-subtile-btn" data-action="delete-furniture" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Eliminar">&times;</button>';
+      html += '  </div>';
+    }
+    html += '  <span class="house-subtile-icon" style="transform:rotate(' + rot + 'deg);">' + icon + '</span>';
+    html += '  <span class="house-subtile-name">' + esc(f.name) + '</span>';
+    html += '</div>';
+  });
+
+  // Renderizar elementos decorativos (sin inventario)
+  decorList.forEach(function(d){
+    var colStart = (d.pos_x || 0) + 1;
+    var rowStart = (d.pos_y || 0) + 1;
+    var style = 'grid-column:' + colStart + '; grid-row:' + rowStart + ';';
+    var rot = d.rotation || 0;
+
+    html += '<div class="house-subtile-item house-subtile-decor" style="' + style + '" title="' + esc(d.label || 'Decoración') + '">';
+    if(canEdit && isEditMode){
+      html += '  <div class="house-subtile-controls">';
+      html += '    <button class="house-subtile-btn" data-action="rotate-room-decor" data-room-id="' + r.id + '" data-decor-id="' + d.id + '" title="Girar 90°">⟳</button>';
+      html += '    <button class="house-subtile-btn" data-action="delete-room-decor" data-room-id="' + r.id + '" data-decor-id="' + d.id + '" title="Quitar">&times;</button>';
+      html += '  </div>';
+    }
+    html += '  <span class="house-subtile-icon" style="transform:rotate(' + rot + 'deg);">' + (d.icon || '🌿') + '</span>';
+    html += '  <span class="house-subtile-name">' + esc(d.label || d.type) + '</span>';
+    html += '</div>';
+  });
+
+  html += '  </div>'; // fin house-room-subgrid
+
+  // Paleta de Decoración Rápida
+  if(canEdit && isEditMode){
+    html += '<div id="houseDecorPalette" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(212,175,55,0.25);">';
+    html += '  <div style="font-size:0.75rem;color:var(--gold-light);font-weight:700;margin-bottom:6px;">Toca un elemento decorativo para añadirlo a la estancia:</div>';
+    html += '  <div class="house-decor-palette">';
+    HOUSE_DECOR_CATALOG.forEach(function(dec){
+      html += '    <div class="house-decor-card" data-action="add-room-decor" data-room-id="' + r.id + '" data-decor-type="' + dec.type + '">';
+      html += '      <div class="house-decor-card-icon">' + dec.icon + '</div>';
+      html += '      <div class="house-decor-card-label">' + esc(dec.label) + '</div>';
+      html += '    </div>';
+    });
+    html += '  </div>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
 // ============================================================================
@@ -989,9 +1791,33 @@ function renderRoomInspector(roomId){
   var owner = getRoomOwnerInfo(r.owner_character_id);
   var canEdit = canUserEditRoom(r);
   var isGm = (typeof isGM === "function" && isGM());
+  var isEditMode = (isGm && houseState.editMode);
   var roomUpgrades = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id; });
   var curChar = (typeof activeChar === "function") ? activeChar() : null;
   var currentTab = houseState.inspectorTab || "estancia";
+
+  // FASE 2: Inspector Ligero para Pasillos
+  if(r.room_type === "pasillo"){
+    var pHtml = '<div class="house-inspector-box" id="houseRoomInspector">';
+    pHtml += '  <div class="house-inspector-header">';
+    pHtml += '    <div>';
+    pHtml += '      <h3 class="house-inspector-title">🬸 ' + esc(r.name || "Pasillo") + '</h3>';
+    pHtml += '      <div class="house-inspector-meta">';
+    pHtml += '        <span class="house-room-type-tag pasillo">Zona de paso</span>';
+    pHtml += '        <span style="font-size:0.72rem;color:var(--ink-faint);">Planta ' + (r.floor || 1) + ' (' + (r.width||1) + 'x' + (r.height||1) + ')</span>';
+    pHtml += '      </div>';
+    pHtml += '    </div>';
+    pHtml += '    <button class="btn-compact" data-action="close-room-inspector" style="padding:2px 8px;" title="Cerrar">&times;</button>';
+    pHtml += '  </div>';
+    pHtml += '  <div style="padding:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">';
+    pHtml += '    <span style="font-size:0.8rem;color:var(--ink-dim);">Los pasillos comunican estancias. En Modo Edición puedes arrastrarlo libremente o redimensionarlo con su tirador <b>↘</b>.</span>';
+    if(isGm){
+      pHtml += '    <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);">🗑️ Eliminar Pasillo</button>';
+    }
+    pHtml += '  </div>';
+    pHtml += '</div>';
+    return pHtml;
+  }
 
   var html = '<div class="house-inspector-box" id="houseRoomInspector">';
 
@@ -1033,17 +1859,15 @@ function renderRoomInspector(roomId){
     html += '  </div>';
   }
 
-  // CONTENIDO PESTAÑA 2: MUEBLES Y ALMACENAMIENTO
+  // CONTENIDO PESTAÑA 2: MUEBLES Y ALMACENAMIENTO (con Sub-rejilla Cenital)
   else if(currentTab === "muebles"){
-    html += '  <div class="house-furniture-notice">';
-    html += '    <span>💡</span>';
-    html += '    <div><b>Almacén de Habitación:</b> En una futura actualización podrás transferir objetos directamente entre tu inventario personal y estos muebles con un solo clic.</div>';
-    html += '  </div>';
+    // Sub-rejilla cenital visual
+    html += renderRoomSubgrid(r, canEdit, isGm, isEditMode);
 
     var furnitureList = Array.isArray(r.furniture) ? r.furniture : [];
 
-    html += '  <div style="display:flex;justify-content:space-between;align-items:center;">';
-    html += '    <div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);">Muebles Instalados:</div>';
+    html += '  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">';
+    html += '    <div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);">Inventario de Almacenamiento:</div>';
     if(canEdit){
       html += '    <button class="btn-compact highlight" data-action="open-add-furniture-modal" data-room-id="' + r.id + '" style="font-size:0.72rem;padding:3px 8px;">➕ Añadir Mueble</button>';
     }
@@ -1890,7 +2714,16 @@ document.addEventListener("click", function(e){
     var inspTab = btn.getAttribute("data-tab") || "estancia";
     houseState.inspectorTab = inspTab;
     renderHouseView();
+  } else if(act === "toggle-house-edit-mode"){
+    if(typeof isGM === "function" && isGM()){
+      houseState.editMode = !houseState.editMode;
+      renderHouseView();
+    }
   } else if(act === "select-house-room"){
+    if(houseSuppressNextClick){
+      e.preventDefault();
+      return;
+    }
     var rId = btn.getAttribute("data-room-id");
     houseState.selectedRoomId = (houseState.selectedRoomId === rId) ? null : rId;
     renderHouseView();
@@ -1982,5 +2815,40 @@ document.addEventListener("click", function(e){
     var dfiFId = btn.getAttribute("data-furniture-id");
     var dfiIdx = parseInt(btn.getAttribute("data-item-idx"), 10);
     deleteFurnitureItemAction(dfiRId, dfiFId, dfiIdx);
+  } else if(act === "create-house-corridor"){
+    createHouseCorridorAction();
+  } else if(act === "zoom-house-in"){
+    houseState.zoom = Math.min(1.7, (houseState.zoom || 1.0) + 0.15);
+    renderHouseView();
+  } else if(act === "zoom-house-out"){
+    houseState.zoom = Math.max(0.65, (houseState.zoom || 1.0) - 0.15);
+    renderHouseView();
+  } else if(act === "zoom-house-reset"){
+    houseState.zoom = 1.0;
+    renderHouseView();
+  } else if(act === "toggle-decor-palette"){
+    var pal = document.getElementById("houseDecorPalette");
+    if(pal){
+      pal.style.display = (pal.style.display === "none") ? "block" : "none";
+    }
+  } else if(act === "add-room-decor"){
+    var decRId = btn.getAttribute("data-room-id");
+    var decType = btn.getAttribute("data-decor-type");
+    addRoomDecor(decRId, decType);
+  } else if(act === "rotate-room-furniture"){
+    e.stopPropagation();
+    var rfRId = btn.getAttribute("data-room-id");
+    var rfFId = btn.getAttribute("data-furniture-id");
+    rotateRoomFurniture(rfRId, rfFId);
+  } else if(act === "rotate-room-decor"){
+    e.stopPropagation();
+    var rdRId = btn.getAttribute("data-room-id");
+    var rdDId = btn.getAttribute("data-decor-id");
+    rotateRoomDecor(rdRId, rdDId);
+  } else if(act === "delete-room-decor"){
+    e.stopPropagation();
+    var ddRId = btn.getAttribute("data-room-id");
+    var ddDId = btn.getAttribute("data-decor-id");
+    deleteRoomDecor(ddRId, ddDId);
   }
 });
