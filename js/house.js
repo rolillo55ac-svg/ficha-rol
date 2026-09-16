@@ -1509,16 +1509,24 @@ function renderRoomMiniLayout(r){
   var dec = Array.isArray(r.decor) ? r.decor : [];
   if(fur.length === 0 && dec.length === 0) return '';
 
+  var colW = 100 / 6; // ~16.666% por celda horizontal
+  var rowH = 100 / 4; // 25% por celda vertical
+
   var items = [];
   fur.forEach(function(f, idx){
     var fx = (typeof f.pos_x === "number") ? f.pos_x : (idx % 6);
     var fy = (typeof f.pos_y === "number") ? f.pos_y : Math.floor(idx / 6);
-    var fw = Math.max(1, f.w || 1);
-    var fh = Math.max(1, f.h || 1);
-    var leftPct = Math.min(88, Math.max(2, (fx / 6) * 100));
-    var topPct = Math.min(84, Math.max(8, (fy / 4) * 100 + 4));
-    var widthPct = Math.min(90, Math.max(16, (fw / 6) * 100));
-    var heightPct = Math.min(80, Math.max(16, (fh / 4) * 100));
+    var fw = Math.max(1, Math.min(6, f.w || 1));
+    var fh = Math.max(1, Math.min(4, f.h || 1));
+
+    // Clamp para asegurar que el elemento esté 100% contenido en la habitación
+    fx = Math.max(0, Math.min(6 - fw, fx));
+    fy = Math.max(0, Math.min(4 - fh, fy));
+
+    var leftPct = (fx * colW).toFixed(2);
+    var topPct = (fy * rowH).toFixed(2);
+    var widthPct = (fw * colW).toFixed(2);
+    var heightPct = (fh * rowH).toFixed(2);
 
     items.push(
       '<div class="house-mini-item item-furniture" style="left:' + leftPct + '%;top:' + topPct + '%;width:' + widthPct + '%;height:' + heightPct + '%;" title="' + esc(f.name) + '">' +
@@ -1530,12 +1538,16 @@ function renderRoomMiniLayout(r){
   dec.forEach(function(d){
     var dx = (typeof d.pos_x === "number") ? d.pos_x : 0;
     var dy = (typeof d.pos_y === "number") ? d.pos_y : 0;
-    var dw = Math.max(1, d.w || 1);
-    var dh = Math.max(1, d.h || 1);
-    var leftPct = Math.min(88, Math.max(2, (dx / 6) * 100));
-    var topPct = Math.min(84, Math.max(8, (dy / 4) * 100 + 4));
-    var widthPct = Math.min(90, Math.max(16, (dw / 6) * 100));
-    var heightPct = Math.min(80, Math.max(16, (dh / 4) * 100));
+    var dw = Math.max(1, Math.min(6, d.w || 1));
+    var dh = Math.max(1, Math.min(4, d.h || 1));
+
+    dx = Math.max(0, Math.min(6 - dw, dx));
+    dy = Math.max(0, Math.min(4 - dh, dy));
+
+    var leftPct = (dx * colW).toFixed(2);
+    var topPct = (dy * rowH).toFixed(2);
+    var widthPct = (dw * colW).toFixed(2);
+    var heightPct = (dh * rowH).toFixed(2);
 
     items.push(
       '<div class="house-mini-item item-decor" style="left:' + leftPct + '%;top:' + topPct + '%;width:' + widthPct + '%;height:' + heightPct + '%;" title="' + esc(d.label || d.type) + '">' +
@@ -2050,6 +2062,66 @@ function renderCanvaStudio(roomId){
   });
 
   html += '  </div>'; // fin canva-room-stage
+
+  // Panel de control táctil de elemento seleccionado (Dock interactivo para móviles y ratón)
+  if(houseState.selectedItemId && canEdit && isGm){
+    var selFurn = furnitureList.find(function(f){ return f.id === houseState.selectedItemId; });
+    var selDec = decorList.find(function(d){ return d.id === houseState.selectedItemId; });
+    var selItem = selFurn || selDec;
+    var isFurn = !!selFurn;
+
+    if(selItem){
+      var sW = Math.max(1, selItem.w || 1);
+      var sH = Math.max(1, selItem.h || 1);
+      var sX = selItem.pos_x || 0;
+      var sY = selItem.pos_y || 0;
+      var sName = isFurn ? selItem.name : (selItem.label || selItem.type);
+      var sItemCount = (isFurn && Array.isArray(selItem.items)) ? selItem.items.length : 0;
+
+      html += '<div class="canva-selected-dock" id="canvaSelectedDock">';
+      html += '  <div class="canva-dock-header">';
+      html += '    <div class="canva-dock-item-info">';
+      html += '      <span class="canva-dock-icon">' + (isFurn ? '🪑' : '🌿') + '</span>';
+      html += '      <strong class="canva-dock-name">' + esc(sName) + '</strong>';
+      html += '      <span class="canva-dock-coords">[' + sW + 'x' + sH + ' en celda (' + sX + ', ' + sY + ')]</span>';
+      html += '    </div>';
+      html += '    <button class="canva-dock-close-btn" data-action="canva-deselect-item" title="Cerrar selección">&times;</button>';
+      html += '  </div>';
+      html += '  <div class="canva-dock-body">';
+      html += '    <div class="canva-dock-actions-row">';
+      html += '      <button class="canva-dock-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" title="Rotar 90 grados">🔄 Girar</button>';
+      if(isFurn){
+        html += '      <button class="canva-dock-btn highlight" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + selItem.id + '" title="Abrir inventario">📦 Almacén (' + sItemCount + ')</button>';
+      }
+      html += '      <button class="canva-dock-btn" data-action="canva-duplicate-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" title="Duplicar">📋 Copiar</button>';
+      html += '      <button class="canva-dock-btn danger" data-action="canva-delete-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" title="Eliminar elemento">🗑️ Quitar</button>';
+      html += '    </div>';
+      html += '    <div class="canva-dock-adjust-row">';
+      html += '      <div class="canva-dock-size-pill">';
+      html += '        <span class="canva-dock-lbl">Ancho:</span>';
+      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="-1" title="Menos ancho">➖</button>';
+      html += '        <span class="canva-dock-val">' + sW + '</span>';
+      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="1" title="Más ancho">➕</button>';
+      html += '      </div>';
+      html += '      <div class="canva-dock-size-pill">';
+      html += '        <span class="canva-dock-lbl">Alto:</span>';
+      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="-1" title="Menos alto">➖</button>';
+      html += '        <span class="canva-dock-val">' + sH + '</span>';
+      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="1" title="Más alto">➕</button>';
+      html += '      </div>';
+      html += '      <div class="canva-dock-dpad">';
+      html += '        <span class="canva-dock-lbl">Mover:</span>';
+      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="-1" data-dy="0" title="Izquierda">◀</button>';
+      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="0" data-dy="-1" title="Arriba">▲</button>';
+      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="0" data-dy="1" title="Abajo">▼</button>';
+      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="1" data-dy="0" title="Derecha">▶</button>';
+      html += '      </div>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+    }
+  }
+
   html += '</div>'; // fin canva-stage-wrap
 
   html += '</div>'; // fin canva-studio-layout
@@ -2451,6 +2523,7 @@ document.addEventListener("pointerup", function(e){
 }, { passive: false });
 
 document.addEventListener("pointercancel", function(e){
+  handleCanvaStagePointerUp(e);
   handleHousePointerCancel(e);
 }, { passive: false });
 
@@ -2601,11 +2674,12 @@ function renderHouseView(){
   html += '        <button class="house-floor-tab' + (curFloor === 3 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="3">🕯️ Sótano / Bodega</button>';
   html += '      </div>';
 
-  // FASE 5: Controles de Zoom del Plano
+  // FASE 5: Controles de Zoom del Plano (Con ajuste rápido a móvil)
   var curZoom = houseState.zoom || 1.0;
   html += '      <div class="house-zoom-controls">';
   html += '        <button class="house-zoom-btn" data-action="zoom-house-out" title="Alejar plano (Zoom -)">−</button>';
-  html += '        <button class="house-zoom-btn house-zoom-reset" data-action="zoom-house-reset" title="Restablecer zoom (100%)">' + Math.round(curZoom * 100) + '%</button>';
+  html += '        <button class="house-zoom-btn house-zoom-fit" data-action="zoom-house-fit" title="Ajustar al móvil o pantalla completa">📱 Ajustar</button>';
+  html += '        <button class="house-zoom-btn house-zoom-reset" data-action="zoom-house-reset" title="Restablecer zoom (100%)">🔍 ' + Math.round(curZoom * 100) + '%</button>';
   html += '        <button class="house-zoom-btn" data-action="zoom-house-in" title="Acercar plano (Zoom +)">+</button>';
   html += '      </div>';
   html += '    </div>';
@@ -4022,13 +4096,25 @@ document.addEventListener("click", function(e){
   } else if(act === "create-house-corridor"){
     createHouseCorridorAction();
   } else if(act === "zoom-house-in"){
-    houseState.zoom = Math.min(1.7, (houseState.zoom || 1.0) + 0.15);
+    houseState.zoom = Math.min(1.8, Math.round(((houseState.zoom || 1.0) + 0.15) * 100) / 100);
     renderHouseView();
   } else if(act === "zoom-house-out"){
-    houseState.zoom = Math.max(0.65, (houseState.zoom || 1.0) - 0.15);
+    houseState.zoom = Math.max(0.35, Math.round(((houseState.zoom || 1.0) - 0.15) * 100) / 100);
     renderHouseView();
   } else if(act === "zoom-house-reset"){
     houseState.zoom = 1.0;
+    renderHouseView();
+  } else if(act === "zoom-house-fit"){
+    var isMobile = (window.innerWidth <= 768);
+    var targetW = isMobile ? 680 : 980;
+    var vp = document.querySelector(".house-grid-viewport");
+    var vpW = vp ? vp.clientWidth : window.innerWidth;
+    var fitZoom = Math.max(0.35, Math.min(1.0, Math.round(((vpW - 16) / targetW) * 100) / 100));
+    if(Math.abs((houseState.zoom || 1.0) - fitZoom) < 0.04){
+      houseState.zoom = 1.0;
+    } else {
+      houseState.zoom = fitZoom;
+    }
     renderHouseView();
   } else if(act === "toggle-decor-palette"){
     var pal = document.getElementById("houseDecorPalette");
@@ -4076,6 +4162,10 @@ document.addEventListener("click", function(e){
     e.stopPropagation();
     var itmId = btn.getAttribute("data-item-id");
     houseState.selectedItemId = (houseState.selectedItemId === itmId) ? null : itmId;
+    renderHouseView();
+  } else if(act === "canva-deselect-item"){
+    e.stopPropagation();
+    houseState.selectedItemId = null;
     renderHouseView();
   } else if(act === "canva-rotate-item"){
     e.stopPropagation();
