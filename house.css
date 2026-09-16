@@ -480,12 +480,12 @@
 
 .house-grid-canvas {
   display: grid;
-  grid-template-columns: repeat(6, minmax(135px, 1fr));
-  grid-auto-rows: 105px;
-  gap: 12px;
+  grid-template-columns: repeat(16, minmax(48px, 1fr));
+  grid-auto-rows: 65px;
+  gap: 8px;
   position: relative;
-  min-width: 810px;
-  padding: 6px;
+  min-width: 960px;
+  padding: 8px;
   transition: outline 0.2s ease;
 }
 
@@ -661,36 +661,138 @@
 .house-room-type-tag.habitacion_personal { background: rgba(155, 89, 182, 0.2); color: #9B59B6; }
 .house-room-type-tag.habitacion_comun { background: rgba(52, 152, 219, 0.2); color: #3498DB; }
 .house-room-type-tag.pasillo { background: rgba(180, 150, 90, 0.2); color: #D4AF37; }
+.house-room-type-tag.entrada { background: rgba(46, 204, 113, 0.22); color: #2ECC71; border: 1px solid rgba(46, 204, 113, 0.4); }
+.house-room-type-tag.escaleras { background: rgba(241, 196, 15, 0.22); color: #F1C40F; border: 1px solid rgba(241, 196, 15, 0.4); }
 .house-room-type-tag.bodega { background: rgba(80, 110, 140, 0.22); color: #85C1E9; }
 .house-room-type-tag.taller { background: rgba(190, 115, 45, 0.22); color: #E59866; }
 .house-room-type-tag.biblioteca { background: rgba(135, 90, 170, 0.22); color: #BB8FCE; }
 
-/* FASE 2: Estilos específicos para Pasillos */
+/* Estilos específicos para Pasillos continuos */
 .house-room-tile.type-pasillo {
-  background: linear-gradient(135deg, rgba(28, 22, 18, 0.94), rgba(20, 15, 12, 0.96));
+  background: linear-gradient(135deg, rgba(28, 22, 18, 0.96), rgba(20, 15, 12, 0.98));
   border-color: rgba(212, 175, 55, 0.25);
-  padding: 6px 10px;
+  padding: 4px 6px;
   justify-content: center;
+  align-items: center;
 }
 
 .house-room-tile.type-pasillo .house-room-tile-head {
   display: none;
 }
 
-.house-room-tile.type-pasillo .house-room-name {
-  font-size: 0.78rem;
-  color: var(--ink-dim, #B5A895);
+.house-room-tile.type-pasillo .house-room-name.corridor-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(212, 175, 55, 0.65);
   text-align: center;
   margin: 0;
   letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 5;
 }
 
 .house-room-tile.type-pasillo .house-room-tile-foot {
+  display: none;
+}
+
+.house-grid-canvas.edit-mode .house-room-tile.type-pasillo .house-room-tile-foot {
+  display: flex;
   margin-top: 2px;
   justify-content: center;
 }
 
-/* FASE 2: Paredes y Muros Inteligentes */
+/* ENTRADA PRINCIPAL */
+.house-room-tile.type-entrada {
+  background: linear-gradient(135deg, rgba(20, 35, 24, 0.97), rgba(12, 22, 15, 0.99));
+  border: 2px solid rgba(46, 204, 113, 0.55);
+  box-shadow: 0 0 15px rgba(46, 204, 113, 0.15), inset 0 0 12px rgba(46, 204, 113, 0.08);
+  padding: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.entrada-threshold-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+
+.entrada-doormat {
+  background: linear-gradient(135deg, #78350F, #92400E);
+  border: 1px dashed #F59E0B;
+  border-radius: 4px;
+  padding: 3px 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.entrada-doormat span {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #FEF3C7;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.entrada-sub {
+  font-size: 0.62rem;
+  color: #86EFAC;
+  font-style: italic;
+}
+
+/* ESCALERAS INTERACTIVAS */
+.house-room-tile.type-escaleras {
+  background: linear-gradient(135deg, rgba(38, 30, 16, 0.97), rgba(24, 18, 10, 0.99));
+  border: 2px solid rgba(241, 196, 15, 0.55);
+  box-shadow: 0 0 15px rgba(241, 196, 15, 0.15), inset 0 0 12px rgba(241, 196, 15, 0.08);
+  padding: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.house-stairs-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+}
+
+.stairs-treads {
+  width: 70%;
+  height: 14px;
+  background: repeating-linear-gradient(0deg, #78716C 0, #78716C 2px, transparent 2px, transparent 4px);
+  border-radius: 2px;
+  opacity: 0.75;
+}
+
+.house-stairs-action-btn {
+  background: linear-gradient(135deg, #D97706, #B45309);
+  border: 1px solid #FCD34D;
+  color: #FFF;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.house-stairs-action-btn:hover {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.4);
+}
+
+/* Paredes y Muros Inteligentes */
 .house-room-tile.wall-outer-top { border-top: 3px solid rgba(212, 175, 55, 0.7) !important; }
 .house-room-tile.wall-outer-right { border-right: 3px solid rgba(212, 175, 55, 0.7) !important; }
 .house-room-tile.wall-outer-bottom { border-bottom: 3px solid rgba(212, 175, 55, 0.7) !important; }
@@ -701,43 +803,57 @@
 .house-room-tile.wall-shared-bottom { border-bottom-style: dashed; border-bottom-color: rgba(212, 175, 55, 0.25); }
 .house-room-tile.wall-shared-left { border-left-style: dashed; border-left-color: rgba(212, 175, 55, 0.25); }
 
-/* FASE 5: Texturas de Suelo CSS Sutiles por Tipo de Estancia */
+/* Muros fusionados para pasillos y galerías contiguas (Continuidad sin tabiques) */
+.house-room-tile.wall-merged-top { border-top: none !important; border-top-left-radius: 0 !important; border-top-right-radius: 0 !important; }
+.house-room-tile.wall-merged-right { border-right: none !important; border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+.house-room-tile.wall-merged-bottom { border-bottom: none !important; border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+.house-room-tile.wall-merged-left { border-left: none !important; border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
+
+/* Texturas de Suelo CSS Sutiles por Tipo de Estancia */
 .house-room-tile.tex-cocina {
   background-image: 
-    radial-gradient(rgba(230, 126, 34, 0.06) 1px, transparent 1px),
+    radial-gradient(rgba(230, 126, 34, 0.08) 1px, transparent 1px),
     linear-gradient(rgba(0, 0, 0, 0.25) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
 .house-room-tile.tex-salon {
-  background-image: repeating-linear-gradient(45deg, rgba(231, 76, 60, 0.035) 0, rgba(231, 76, 60, 0.035) 1px, transparent 0, transparent 12px);
+  background-image: repeating-linear-gradient(45deg, rgba(231, 76, 60, 0.04) 0, rgba(231, 76, 60, 0.04) 1px, transparent 0, transparent 12px);
 }
 
 .house-room-tile.tex-habitacion_personal {
-  background-image: repeating-linear-gradient(0deg, rgba(155, 89, 182, 0.04) 0, rgba(155, 89, 182, 0.04) 1px, transparent 0, transparent 10px);
+  background-image: repeating-linear-gradient(0deg, rgba(155, 89, 182, 0.05) 0, rgba(155, 89, 182, 0.05) 1px, transparent 0, transparent 10px);
 }
 
 .house-room-tile.tex-habitacion_comun {
-  background-image: linear-gradient(90deg, rgba(52, 152, 219, 0.03) 1px, transparent 1px), linear-gradient(rgba(52, 152, 219, 0.03) 1px, transparent 1px);
+  background-image: linear-gradient(90deg, rgba(52, 152, 219, 0.04) 1px, transparent 1px), linear-gradient(rgba(52, 152, 219, 0.04) 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
 .house-room-tile.tex-pasillo {
-  background-image: linear-gradient(90deg, rgba(212, 175, 55, 0.025) 1px, transparent 1px), linear-gradient(rgba(212, 175, 55, 0.025) 1px, transparent 1px);
-  background-size: 12px 12px;
+  background-image: linear-gradient(90deg, rgba(212, 175, 55, 0.04) 1px, transparent 1px), linear-gradient(rgba(212, 175, 55, 0.04) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+.house-room-tile.tex-entrada {
+  background-image: repeating-linear-gradient(0deg, rgba(46, 204, 113, 0.05) 0, rgba(46, 204, 113, 0.05) 2px, transparent 0, transparent 8px);
+}
+
+.house-room-tile.tex-escaleras {
+  background-image: repeating-linear-gradient(0deg, rgba(241, 196, 15, 0.06) 0, rgba(241, 196, 15, 0.06) 4px, transparent 0, transparent 10px);
 }
 
 .house-room-tile.tex-bodega {
-  background-image: radial-gradient(rgba(133, 193, 233, 0.04) 15%, transparent 16%);
+  background-image: radial-gradient(rgba(133, 193, 233, 0.05) 15%, transparent 16%);
   background-size: 14px 14px;
 }
 
 .house-room-tile.tex-taller {
-  background-image: repeating-linear-gradient(135deg, rgba(229, 152, 102, 0.04) 0, rgba(229, 152, 102, 0.04) 2px, transparent 0, transparent 8px);
+  background-image: repeating-linear-gradient(135deg, rgba(229, 152, 102, 0.05) 0, rgba(229, 152, 102, 0.05) 2px, transparent 0, transparent 8px);
 }
 
 .house-room-tile.tex-biblioteca {
-  background-image: radial-gradient(circle at center, rgba(187, 143, 206, 0.06) 0, transparent 70%);
+  background-image: radial-gradient(circle at center, rgba(187, 143, 206, 0.08) 0, transparent 70%);
 }
 
 /* FASE 5: Controles de Zoom y Pan */
@@ -1890,4 +2006,87 @@
   border-radius: 3px;
   pointer-events: none;
 }
+
+/* Micro-barras de ajuste de tamaño (W/H) en la barra flotante de Canva */
+.canva-size-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.canva-size-lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #C4B5FD;
+  margin-right: 2px;
+}
+
+.canva-size-val {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #FFF;
+  min-width: 12px;
+  text-align: center;
+}
+
+.canva-size-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFF;
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.12s ease;
+}
+
+.canva-size-btn:hover {
+  background: #8B5CF6;
+  border-color: #A78BFA;
+  transform: scale(1.1);
+}
+
+/* Micro-barra de desplazamiento por celdas (Nudge) */
+.canva-nudge-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.canva-nudge-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #DDD6FE;
+  font-size: 0.65rem;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.12s ease;
+}
+
+.canva-nudge-btn:hover {
+  background: #6366F1;
+  color: #FFF;
+  transform: scale(1.15);
+}
+
+/* Estado de arrastre fluido dentro del Lienzo Canva */
+.canva-stage-item.canva-dragging {
+  opacity: 0.85;
+  z-index: 40 !important;
+  cursor: grabbing !important;
+  transition: none !important;
+  filter: drop-shadow(0 8px 16px rgba(139, 92, 246, 0.6));
+}
+
 
