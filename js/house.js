@@ -529,6 +529,182 @@ async function fetchHouseRemoteData(){
 }
 
 // ============================================================================
+// 1.5. SINCRONIZACIÓN EN TIEMPO REAL Y COLORES DE ESTANCIAS
+// ============================================================================
+var HOUSE_COLOR_PALETTES = [
+  { id: "default", name: "Por Defecto", hex: "", desc: "Fondo arquitectónico original del tipo de sala" },
+  { id: "wood", name: "Madera Noble", hex: "#2a1e16", desc: "Suelo de roble y madera cálida" },
+  { id: "stone", name: "Piedra y Granito", hex: "#1c2127", desc: "Cantería robusta y losas templadas" },
+  { id: "corridor_gold", name: "Galería Ámbar", hex: "#262015", desc: "Tono dorado para pasillos y circulación" },
+  { id: "velvet_wine", name: "Terciopelo Burdeos", hex: "#2c1117", desc: "Elegancia imperial y calidez" },
+  { id: "emerald_moss", name: "Musgo Esmeralda", hex: "#12251a", desc: "Toque natural y botánico" },
+  { id: "arcane_indigo", name: "Índigo Arcano", hex: "#14172e", desc: "Misterio y magia nocturna" },
+  { id: "amethyst", name: "Amatista Mística", hex: "#22132d", desc: "Ambiente encantado y ritos" },
+  { id: "terracotta", name: "Terracota Cálido", hex: "#321b12", desc: "Horno, barro cocido y fogón" },
+  { id: "obsidian", name: "Obsidiana Carbón", hex: "#131416", desc: "Profundidad sobria y minimalista" },
+  { id: "parchment", name: "Pergamino Antiguo", hex: "#292620", desc: "Estudio, libros y cartografía" }
+];
+
+function getRoomCustomBackground(hex){
+  if(!hex) return "";
+  return "linear-gradient(135deg, " + hex + "FA, " + hex + "D8)";
+}
+
+function renderColorPaletteBar(roomId, currentColor){
+  var html = '<div class="house-color-palette-bar">';
+  HOUSE_COLOR_PALETTES.forEach(function(p){
+    var isSel = (currentColor === p.hex || (!currentColor && !p.hex));
+    html += '<button class="house-color-chip' + (isSel ? ' is-active' : '') + '" style="background:' + (p.hex || '#1a1816') + ';" data-action="set-room-color" data-room-id="' + roomId + '" data-color="' + p.hex + '" title="' + p.name + ' - ' + p.desc + '"></button>';
+  });
+  html += '<input type="color" class="house-custom-color-input" value="' + (currentColor || '#2a1e16') + '" data-action="canva-custom-color-input" data-room-id="' + roomId + '" title="Color personalizado">';
+  html += '</div>';
+  return html;
+}
+
+function saveRoomChangesToRemoteAndBroadcast(room, fieldName){
+  if(!room) return;
+
+  // 1. Persistencia local inmediata en este dispositivo
+  saveHouseLocalData();
+
+  // 2. Broadcast en tiempo real para todos los clientes (móvil, PC, tablets)
+  if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+    try {
+      realtimeChannel.send({
+        type: "broadcast",
+        event: "house_room_update",
+        payload: {
+          roomId: room.id,
+          furniture: room.furniture || [],
+          decor: room.decor || [],
+          color: room.color || null,
+          name: room.name,
+          room_type: room.room_type,
+          pos_x: room.pos_x,
+          pos_y: room.pos_y,
+          width: room.width,
+          height: room.height,
+          floor: room.floor,
+          level: room.level,
+          description: room.description,
+          updated_at: new Date().toISOString()
+        }
+      }).catch(function(err){
+        console.warn("Aviso enviando broadcast de estancia:", err);
+      });
+    } catch(e){}
+  }
+
+  // 3. Persistencia atómica en Supabase con UPSERT (Garantiza inserción o actualización)
+  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id && navigator.onLine){
+    var payload = {
+      id: room.id,
+      house_id: room.house_id || (houseState.house ? houseState.house.id : "h0000000-0000-0000-0000-000000000001"),
+      room_type: room.room_type || "otro",
+      name: room.name,
+      owner_character_id: room.owner_character_id || null,
+      level: room.level || 1,
+      description: room.description || "",
+      pos_x: (typeof room.pos_x === "number") ? room.pos_x : 0,
+      pos_y: (typeof room.pos_y === "number") ? room.pos_y : 0,
+      width: Math.max(1, room.width || 2),
+      height: Math.max(1, room.height || 2),
+      floor: room.floor || 1,
+      furniture: Array.isArray(room.furniture) ? room.furniture : [],
+      decor: Array.isArray(room.decor) ? room.decor : [],
+      color: room.color || null,
+      updated_at: new Date().toISOString()
+    };
+
+    supabaseClient.from("house_rooms")
+      .upsert(payload, { onConflict: "id" })
+      .select()
+      .then(function(res){
+        if(res.error){
+          console.warn("Aviso al guardar habitacion en Supabase:", res.error.message || res.error);
+          supabaseClient.from("house_rooms")
+            .update(payload)
+            .eq("id", room.id)
+            .then(function(){});
+        }
+      })
+      .catch(function(err){
+        console.warn("Error de conexión al persistir estancia:", err);
+      });
+  }
+}
+
+function handleRemoteHouseRoomUpdate(payload){
+  if(!payload) return;
+  var rId = payload.id || payload.roomId;
+  if(!rId) return;
+
+  var room = (houseState.rooms || []).find(function(x){ return x.id === rId; });
+  if(!room) return;
+
+  if(payload.furniture !== undefined) room.furniture = payload.furniture;
+  if(payload.decor !== undefined) room.decor = payload.decor;
+  if(payload.color !== undefined) room.color = payload.color;
+  if(payload.name !== undefined) room.name = payload.name;
+  if(payload.pos_x !== undefined) room.pos_x = payload.pos_x;
+  if(payload.pos_y !== undefined) room.pos_y = payload.pos_y;
+  if(payload.width !== undefined) room.width = payload.width;
+  if(payload.height !== undefined) room.height = payload.height;
+  if(payload.floor !== undefined) room.floor = payload.floor;
+  if(payload.level !== undefined) room.level = payload.level;
+  if(payload.room_type !== undefined) room.room_type = payload.room_type;
+
+  saveHouseLocalData();
+  if(houseState.active){
+    renderHouseView();
+  }
+}
+
+function initHouseRealtimeSync(){
+  if(typeof realtimeChannel !== "undefined" && realtimeChannel){
+    try {
+      realtimeChannel.on("broadcast", { event: "house_room_update" }, function(msg){
+        if(msg && msg.payload){
+          handleRemoteHouseRoomUpdate(msg.payload);
+        }
+      });
+      realtimeChannel.on("broadcast", { event: "house_general_update" }, function(msg){
+        fetchHouseRemoteData().then(function(){
+          if(houseState.active) renderHouseView();
+        });
+      });
+    } catch(err){
+      console.warn("Error vinculando broadcast de La Casa:", err);
+    }
+  }
+
+  // Suscripción directa de Postgres Realtime para house_rooms si Supabase está activo
+  if(typeof supabaseClient !== "undefined" && supabaseClient && !houseState._subscribedRealtime){
+    try {
+      houseState._subscribedRealtime = true;
+      supabaseClient.channel("realtime_house_rooms")
+        .on("postgres_changes", { event: "*", schema: "public", table: "house_rooms" }, function(payload){
+          if(payload && payload.new && payload.new.id){
+            handleRemoteHouseRoomUpdate(payload.new);
+          }
+        })
+        .subscribe();
+    } catch(err){
+      console.warn("Error suscribiendo a postgres_changes de house_rooms:", err);
+    }
+  }
+}
+
+function setRoomColor(roomId, colorHex){
+  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!room) return;
+  room.color = colorHex || null;
+  saveRoomChangesToRemoteAndBroadcast(room, "color");
+  renderHouseView();
+  if(typeof showToast === "function") showToast("Color de estancia actualizado.", "info");
+}
+
+// ============================================================================
 // 2. AUXILIARES Y PERMISOS
 // ============================================================================
 function getRoomOwnerInfo(ownerCharId){
@@ -572,7 +748,7 @@ function getRoomTypeIcon(type){
     case "salon": return "🔥";
     case "habitacion_personal": return "🛏️";
     case "habitacion_comun": return "🏛️";
-    case "pasillo": return "🬸";
+    case "pasillo": return "✦";
     case "entrada": return "🚪";
     case "escaleras": return "🪜";
     case "bodega": return "🍷";
@@ -958,16 +1134,10 @@ async function grantRoomLevel(roomId){
   if(!r) return;
 
   r.level = (r.level || 1) + 1;
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "level");
   renderHouseView();
 
   if(typeof showToast === "function") showToast("¡" + r.name + " subió a Nivel " + r.level + "! 🌟", "success");
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    try {
-      await supabaseClient.from("house_rooms").update({ level: r.level, updated_at: new Date().toISOString() }).eq("id", r.id);
-    } catch(e){}
-  }
 }
 
 // ============================================================================
@@ -1384,7 +1554,7 @@ function createHouseCorridorAction(){
   saveHouseLocalData();
   renderHouseView();
 
-  if(typeof showToast === "function") showToast("🬸 Pasillo añadido a la Planta " + curFloor + ".", "success");
+  if(typeof showToast === "function") showToast("✦ Pasillo añadido a la Planta " + curFloor + ".", "success");
 
   if(typeof supabaseClient !== "undefined" && supabaseClient){
     supabaseClient.from("house_rooms").insert([newCorridor]).then(function(){});
@@ -1399,16 +1569,8 @@ function rotateRoomFurniture(roomId, furnitureId){
   if(!fur) return;
 
   fur.rotation = ((fur.rotation || 0) + 90) % 360;
-
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(room, "furniture");
   renderHouseView();
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-    supabaseClient.from("house_rooms")
-      .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
-      .eq("id", room.id)
-      .then(function(){});
-  }
 }
 
 // FASE 4: Capa de Decoración Rápida
@@ -1419,16 +1581,8 @@ function rotateRoomDecor(roomId, decorId){
   if(!dec) return;
 
   dec.rotation = ((dec.rotation || 0) + 90) % 360;
-
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(room, "decor");
   renderHouseView();
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-    supabaseClient.from("house_rooms")
-      .update({ decor: room.decor, updated_at: new Date().toISOString() })
-      .eq("id", room.id)
-      .then(function(){});
-  }
 }
 
 function addRoomDecor(roomId, decorType){
@@ -1470,17 +1624,10 @@ function addRoomDecor(roomId, decorType){
   };
 
   room.decor.push(newDec);
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(room, "decor");
   renderHouseView();
 
   if(typeof showToast === "function") showToast(cat.icon + " " + cat.label + " añadida a la estancia.", "info");
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-    supabaseClient.from("house_rooms")
-      .update({ decor: room.decor, updated_at: new Date().toISOString() })
-      .eq("id", room.id)
-      .then(function(){});
-  }
 }
 
 function deleteRoomDecor(roomId, decorId){
@@ -1488,17 +1635,10 @@ function deleteRoomDecor(roomId, decorId){
   if(!room || !Array.isArray(room.decor)) return;
 
   room.decor = room.decor.filter(function(d){ return d.id !== decorId; });
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(room, "decor");
   renderHouseView();
 
   if(typeof showToast === "function") showToast("Elemento decorativo retirado.", "info");
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-    supabaseClient.from("house_rooms")
-      .update({ decor: room.decor, updated_at: new Date().toISOString() })
-      .eq("id", room.id)
-      .then(function(){});
-  }
 }
 
 // ============================================================================
@@ -1605,13 +1745,7 @@ function canvaInsertAsset(roomId, assetId){
       items: []
     };
     room.furniture.push(newItem);
-
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
+    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
   } else {
     newItem = {
       id: "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
@@ -1623,17 +1757,10 @@ function canvaInsertAsset(roomId, assetId){
       rotation: 0
     };
     room.decor.push(newItem);
-
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ decor: room.decor, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
+    saveRoomChangesToRemoteAndBroadcast(room, "decor");
   }
 
   houseState.selectedItemId = newItem.id;
-  saveHouseLocalData();
   renderHouseView();
 
   if(typeof showToast === "function"){
@@ -1648,28 +1775,16 @@ function canvaRotateItem(roomId, itemId){
   var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
   if(f){
     f.rotation = ((f.rotation || 0) + 90) % 360;
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
     renderHouseView();
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
     return;
   }
 
   var d = (room.decor || []).find(function(x){ return x.id === itemId; });
   if(d){
     d.rotation = ((d.rotation || 0) + 90) % 360;
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "decor");
     renderHouseView();
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ decor: room.decor, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
   }
 }
 
@@ -1703,16 +1818,9 @@ function canvaDuplicateItem(roomId, itemId){
     room.furniture.push(cloneF);
     houseState.selectedItemId = cloneF.id;
 
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
     renderHouseView();
     if(typeof showToast === "function") showToast("Mueble duplicado.", "info");
-
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
     return;
   }
 
@@ -1725,16 +1833,9 @@ function canvaDuplicateItem(roomId, itemId){
     room.decor.push(cloneD);
     houseState.selectedItemId = cloneD.id;
 
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "decor");
     renderHouseView();
     if(typeof showToast === "function") showToast("Adorno duplicado.", "info");
-
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ decor: room.decor, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
   }
 }
 
@@ -1746,15 +1847,9 @@ function canvaDeleteItem(roomId, itemId){
   room.furniture = (room.furniture || []).filter(function(x){ return x.id !== itemId; });
   if(room.furniture.length !== initFurLen){
     houseState.selectedItemId = null;
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
     renderHouseView();
     if(typeof showToast === "function") showToast("Mueble retirado.", "info");
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
     return;
   }
 
@@ -1762,15 +1857,9 @@ function canvaDeleteItem(roomId, itemId){
   room.decor = (room.decor || []).filter(function(x){ return x.id !== itemId; });
   if(room.decor.length !== initDecLen){
     houseState.selectedItemId = null;
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "decor");
     renderHouseView();
     if(typeof showToast === "function") showToast("Elemento decorativo retirado.", "info");
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ decor: room.decor, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
   }
 }
 
@@ -1784,14 +1873,8 @@ function canvaResizeItem(roomId, itemId, dw, dh){
     var curH = Math.max(1, f.h || 1);
     if(dw !== 0) f.w = Math.max(1, Math.min(6 - (f.pos_x || 0), curW + dw));
     if(dh !== 0) f.h = Math.max(1, Math.min(4 - (f.pos_y || 0), curH + dh));
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
     renderHouseView();
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
     return;
   }
 
@@ -1801,14 +1884,8 @@ function canvaResizeItem(roomId, itemId, dw, dh){
     var curDH = Math.max(1, d.h || 1);
     if(dw !== 0) d.w = Math.max(1, Math.min(6 - (d.pos_x || 0), curDW + dw));
     if(dh !== 0) d.h = Math.max(1, Math.min(4 - (d.pos_y || 0), curDH + dh));
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "decor");
     renderHouseView();
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ decor: room.decor, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
   }
 }
 
@@ -1822,14 +1899,8 @@ function canvaNudgeItem(roomId, itemId, dx, dy){
     var curH = Math.max(1, f.h || 1);
     f.pos_x = Math.max(0, Math.min(6 - curW, (f.pos_x || 0) + dx));
     f.pos_y = Math.max(0, Math.min(4 - curH, (f.pos_y || 0) + dy));
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
     renderHouseView();
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ furniture: room.furniture, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
     return;
   }
 
@@ -1839,14 +1910,8 @@ function canvaNudgeItem(roomId, itemId, dx, dy){
     var curDH = Math.max(1, d.h || 1);
     d.pos_x = Math.max(0, Math.min(6 - curDW, (d.pos_x || 0) + dx));
     d.pos_y = Math.max(0, Math.min(4 - curDH, (d.pos_y || 0) + dy));
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, "decor");
     renderHouseView();
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      supabaseClient.from("house_rooms")
-        .update({ decor: room.decor, updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .then(function(){});
-    }
   }
 }
 
@@ -1958,11 +2023,20 @@ function renderCanvaStudio(roomId){
   html += '<div class="canva-stage-wrap">';
   html += '  <div class="canva-stage-toolbar">';
   html += '    <div class="canva-stage-toolbar-title">Lienzo Arquitectónico Cenital (6x4 Celdas)</div>';
-  html += '    <div class="canva-stage-toolbar-stats">' + (furnitureList.length + decorList.length) + ' elementos instalados</div>';
+  html += '    <div class="canva-stage-color-bar" title="Cambiar color o suelo de la estancia">';
+  html += '      <span class="canva-stage-color-lbl">🎨 Suelo:</span>';
+  HOUSE_COLOR_PALETTES.forEach(function(p){
+    var isSel = (r.color === p.hex || (!r.color && !p.hex));
+    html += '<button class="canva-color-chip' + (isSel ? ' is-active' : '') + '" style="background:' + (p.hex || '#1a1816') + ';" data-action="set-room-color" data-room-id="' + r.id + '" data-color="' + p.hex + '" title="' + p.name + ' - ' + p.desc + '"></button>';
+  });
+  html += '      <input type="color" class="canva-custom-color-input" value="' + (r.color || '#2a1e16') + '" data-action="canva-custom-color-input" data-room-id="' + r.id + '" title="Color personalizado">';
+  html += '    </div>';
+  html += '    <div class="canva-stage-toolbar-stats">' + (furnitureList.length + decorList.length) + ' elementos</div>';
   html += '  </div>';
 
   var texClass = "tex-" + (r.room_type || "salon");
-  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage">';
+  var stageCustomBg = r.color ? ('background: ' + getRoomCustomBackground(r.color) + ' !important;') : '';
+  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage" style="' + stageCustomBg + '">';
 
   // Celdas de guía de fondo
   html += '    <div class="canva-stage-grid-lines">';
@@ -2245,18 +2319,8 @@ function handleCanvaStagePointerUp(e){
     targetItem.pos_x = drag.currentPosX;
     targetItem.pos_y = drag.currentPosY;
     houseState.selectedItemId = drag.itemId;
-    saveHouseLocalData();
+    saveRoomChangesToRemoteAndBroadcast(room, drag.isFurn ? "furniture" : "decor");
     renderHouseView();
-
-    if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-      var col = drag.isFurn ? "furniture" : "decor";
-      var payload = { updated_at: new Date().toISOString() };
-      payload[col] = drag.isFurn ? room.furniture : room.decor;
-      supabaseClient.from("house_rooms")
-        .update(payload)
-        .eq("id", room.id)
-        .then(function(){});
-    }
   } else {
     renderHouseView();
   }
@@ -2453,19 +2517,11 @@ function handleHousePointerUp(e){
     if(changedPos){
       room.pos_x = drag.currentPosX;
       room.pos_y = drag.currentPosY;
-      saveHouseLocalData();
+      saveRoomChangesToRemoteAndBroadcast(room, "pos");
       renderHouseView();
 
       if(typeof showToast === "function"){
         showToast("Estancia reubicada en (" + room.pos_x + ", " + room.pos_y + ")", "info");
-      }
-
-      // Guardado atómico en Supabase: solo pos_x y pos_y
-      if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-        supabaseClient.from("house_rooms")
-          .update({ pos_x: room.pos_x, pos_y: room.pos_y, updated_at: new Date().toISOString() })
-          .eq("id", room.id)
-          .then(function(){});
       }
     } else {
       renderHouseView();
@@ -2475,19 +2531,11 @@ function handleHousePointerUp(e){
     if(changedDim){
       room.width = drag.currentWidth;
       room.height = drag.currentHeight;
-      saveHouseLocalData();
+      saveRoomChangesToRemoteAndBroadcast(room, "dimensions");
       renderHouseView();
 
       if(typeof showToast === "function"){
         showToast("Dimensiones actualizadas a " + room.width + "x" + room.height, "info");
-      }
-
-      // Guardado atómico en Supabase: solo width y height
-      if(typeof supabaseClient !== "undefined" && supabaseClient && room.id){
-        supabaseClient.from("house_rooms")
-          .update({ width: room.width, height: room.height, updated_at: new Date().toISOString() })
-          .eq("id", room.id)
-          .then(function(){});
       }
     } else {
       renderHouseView();
@@ -2544,12 +2592,8 @@ function nudgeSelectedRoom(dx, dy){
   r.pos_x = targetX;
   r.pos_y = targetY;
 
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "pos");
   renderHouseView();
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    supabaseClient.from("house_rooms").update({ pos_x: r.pos_x, pos_y: r.pos_y, updated_at: new Date().toISOString() }).eq("id", r.id).then(function(){});
-  }
 }
 
 function resizeSelectedRoom(dw, dh){
@@ -2569,12 +2613,8 @@ function resizeSelectedRoom(dw, dh){
   r.width = targetW;
   r.height = targetH;
 
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "dimensions");
   renderHouseView();
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    supabaseClient.from("house_rooms").update({ width: r.width, height: r.height, updated_at: new Date().toISOString() }).eq("id", r.id).then(function(){});
-  }
 }
 
 function setRoomFloor(roomId, newFloor){
@@ -2582,14 +2622,10 @@ function setRoomFloor(roomId, newFloor){
   if(!r) return;
 
   r.floor = parseInt(newFloor, 10) || 1;
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "floor");
   renderHouseView();
 
   if(typeof showToast === "function") showToast("Habitación trasladada a Planta " + r.floor + ".", "info");
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    supabaseClient.from("house_rooms").update({ floor: r.floor, updated_at: new Date().toISOString() }).eq("id", r.id).then(function(){});
-  }
 }
 
 // ============================================================================
@@ -2848,6 +2884,7 @@ function renderHouseGridRooms(floorNumber){
 
     var wallClasses = getRoomWallClasses(r, rooms);
     var textureClass = "tex-" + (r.room_type || "salon");
+    var customBgStyle = r.color ? ('background: ' + getRoomCustomBackground(r.color) + ' !important;') : '';
 
     var resizeHandleHtml = '';
     if(isEditMode && isSelected){
@@ -2862,7 +2899,7 @@ function renderHouseGridRooms(floorNumber){
         ? '<div class="house-room-tile-foot"><span class="house-room-dims">' + (r.width || 2) + 'x' + (r.height || 2) + '</span></div>'
         : '';
 
-      return '<div class="house-room-tile type-entrada ' + wallClasses + ' tex-entrada' + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0" title="Entrada Principal de La Casa Andante">' +
+      return '<div class="house-room-tile type-entrada ' + wallClasses + ' tex-entrada' + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + ' ' + customBgStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0" title="Entrada Principal de La Casa Andante">' +
         '  <div class="entrada-threshold-wrap">' +
         '    <div class="entrada-doormat"><span>🚪 ENTRADA PRINCIPAL</span></div>' +
         '    <div class="entrada-sub">Umbral Exterior</div>' +
@@ -2880,7 +2917,7 @@ function renderHouseGridRooms(floorNumber){
         ? '<div class="house-room-tile-foot"><span class="house-room-dims">' + (r.width || 2) + 'x' + (r.height || 2) + '</span></div>'
         : '';
 
-      return '<div class="house-room-tile type-escaleras ' + wallClasses + ' tex-escaleras' + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0" title="Escaleras conectores de plantas">' +
+      return '<div class="house-room-tile type-escaleras ' + wallClasses + ' tex-escaleras' + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + ' ' + customBgStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0" title="Escaleras conectores de plantas">' +
         '  <div class="house-stairs-visual">' +
         '    <div class="stairs-treads"></div>' +
         '    <button class="house-stairs-action-btn" data-action="switch-house-floor" data-floor="' + targetFloor + '" title="Ir a la Planta ' + targetFloor + '">🪜 ' + dirLabel + '</button>' +
@@ -2902,9 +2939,13 @@ function renderHouseGridRooms(floorNumber){
         ? '<div class="house-room-tile-foot"><span class="house-room-dims">' + (r.width || 1) + 'x' + (r.height || 1) + '</span></div>'
         : '';
 
-      return '<div class="house-room-tile type-pasillo ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 1) + '" data-height="' + (r.height || 1) + '" role="button" tabindex="0" title="Pasillo (Galería conectora)">' +
+      return '<div class="house-room-tile type-pasillo ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + ' ' + customBgStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 1) + '" data-height="' + (r.height || 1) + '" role="button" tabindex="0" title="Pasillo (Galería conectora)">' +
         archHtml +
-        '  <div class="house-room-name corridor-title">🬸 ' + esc(r.name || "Galería") + '</div>' +
+        '  <div class="corridor-title-plaque" title="' + esc(r.name || "Galería") + '">' +
+        '    <span class="corridor-glyph">✦</span>' +
+        '    <span class="corridor-text house-room-name corridor-title">' + esc(r.name || "Galería") + '</span>' +
+        '    <span class="corridor-glyph">✦</span>' +
+        '  </div>' +
         dimsFoot +
         resizeHandleHtml +
         '</div>';
@@ -2928,17 +2969,14 @@ function renderHouseGridRooms(floorNumber){
       ? '<span class="house-room-dims">' + (r.width || 2) + 'x' + (r.height || 2) + '</span>'
       : '';
 
-    return '<div class="house-room-tile ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isMyRoom ? ' my-room' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0">' +
+    return '<div class="house-room-tile ' + wallClasses + ' ' + textureClass + (isSelected ? ' active' : '') + (isMyRoom ? ' my-room' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + ' ' + customBgStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0">' +
       doorHtml +
       miniLayoutHtml +
-      '  <div class="house-room-tile-head">' +
-      '    <span class="house-room-type-tag ' + (r.room_type || 'otro') + '">' + getRoomTypeIcon(r.room_type) + ' ' + getRoomTypeLabel(r.room_type) + '</span>' +
-      '    <div style="display:flex;align-items:center;gap:4px;">' +
-      studioBtnHtml +
-      levelPillHtml +
-      '    </div>' +
+      '  <div class="house-room-title-plaque" title="' + esc(r.name) + ' (' + getRoomTypeLabel(r.room_type) + ')">' +
+      '    <span class="house-room-plaque-icon">' + getRoomTypeIcon(r.room_type) + '</span>' +
+      '    <span class="house-room-plaque-name house-room-name">' + esc(r.name) + '</span>' +
+      (isEditMode ? ('    <div class="house-room-plaque-actions">' + studioBtnHtml + levelPillHtml + '</div>') : '') +
       '  </div>' +
-      '  <div class="house-room-name">' + esc(r.name) + '</div>' +
       '  <div class="house-room-tile-foot">' +
       '    ' + ownerTag +
       '    <div style="display:flex;gap:4px;align-items:center;">' +
@@ -3078,19 +3116,28 @@ function renderRoomInspector(roomId){
     var pHtml = '<div class="house-inspector-box" id="houseRoomInspector">';
     pHtml += '  <div class="house-inspector-header">';
     pHtml += '    <div>';
-    pHtml += '      <h3 class="house-inspector-title">🬸 ' + esc(r.name || "Pasillo") + '</h3>';
+    pHtml += '      <h3 class="house-inspector-title">✦ ' + esc(r.name || "Galería") + '</h3>';
     pHtml += '      <div class="house-inspector-meta">';
-    pHtml += '        <span class="house-room-type-tag pasillo">Zona de paso</span>';
+    pHtml += '        <span class="house-room-type-tag pasillo">Galería / Pasillo</span>';
     pHtml += '        <span style="font-size:0.72rem;color:var(--ink-faint);">Planta ' + (r.floor || 1) + ' (' + (r.width||1) + 'x' + (r.height||1) + ')</span>';
     pHtml += '      </div>';
     pHtml += '    </div>';
     pHtml += '    <button class="btn-compact" data-action="close-room-inspector" style="padding:2px 8px;" title="Cerrar">&times;</button>';
     pHtml += '  </div>';
-    pHtml += '  <div style="padding:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">';
-    pHtml += '    <span style="font-size:0.8rem;color:var(--ink-dim);">Los pasillos comunican estancias. En Modo Edición puedes arrastrarlo libremente o redimensionarlo con su tirador <b>↘</b>.</span>';
+    pHtml += '  <div style="padding:14px;display:flex;flex-direction:column;gap:12px;">';
+    pHtml += '    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">';
+    pHtml += '      <span style="font-size:0.8rem;color:var(--ink-dim);">Los pasillos comunican estancias. Puedes cambiar su nombre, tono arquitectónico o redimensionarlo.</span>';
+    pHtml += '      <div style="display:flex;gap:6px;">';
+    pHtml += '        <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ Editar</button>';
     if(isGm){
-      pHtml += '    <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);">🗑️ Eliminar Pasillo</button>';
+      pHtml += '        <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);">🗑️ Eliminar</button>';
     }
+    pHtml += '      </div>';
+    pHtml += '    </div>';
+    pHtml += '    <div class="house-inspector-color-row">';
+    pHtml += '      <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Tono de la Galería:</span>';
+    pHtml += '      ' + renderColorPaletteBar(r.id, r.color);
+    pHtml += '    </div>';
     pHtml += '  </div>';
     pHtml += '</div>';
     return pHtml;
@@ -3125,7 +3172,12 @@ function renderRoomInspector(roomId){
   if(currentTab === "estancia"){
     html += '  <div class="house-inspector-desc">' + (r.description ? esc(r.description) : '<i>Sin descripción ni detalles decorativos.</i>') + '</div>';
 
-    html += '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:8px;">';
+    html += '  <div class="house-inspector-color-row" style="margin-top:10px;">';
+    html += '    <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Color de la Estancia:</span>';
+    html += '    ' + renderColorPaletteBar(r.id, r.color);
+    html += '  </div>';
+
+    html += '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;">';
     html += '    <button class="btn-solid-gold" data-action="open-canva-studio" data-room-id="' + r.id + '" style="font-size:0.8rem;padding:5px 12px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-color:#a78bfa;box-shadow:0 2px 10px rgba(139,92,246,0.35);">🎨 Diseñar en Estudio Canva</button>';
     if(canEdit){
       html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
@@ -3387,15 +3439,11 @@ function confirmAddFurnitureAction(){
   };
 
   r.furniture.push(newFur);
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "furniture");
   closeHouseModal();
   renderHouseView();
 
   if(typeof showToast === "function") showToast("Mueble '" + newFur.name + "' instalado.", "success");
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    supabaseClient.from("house_rooms").update({ furniture: r.furniture, updated_at: new Date().toISOString() }).eq("id", r.id).then(function(){});
-  }
 }
 
 function confirmAddFurnitureItemAction(){
@@ -3421,15 +3469,11 @@ function confirmAddFurnitureItemAction(){
 
   fur.items.push({ name: itName, qty: itQty, notes: itNotes });
 
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "furniture");
   closeHouseModal();
   renderHouseView();
 
   if(typeof showToast === "function") showToast("Objeto guardado en " + fur.name + ".", "success");
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    supabaseClient.from("house_rooms").update({ furniture: r.furniture, updated_at: new Date().toISOString() }).eq("id", r.id).then(function(){});
-  }
 }
 
 function deleteFurnitureAction(roomId, furnitureId){
@@ -3439,12 +3483,8 @@ function deleteFurnitureAction(roomId, furnitureId){
   if(!confirm("¿Quitar este mueble y su contenido de la habitación?")) return;
 
   r.furniture = r.furniture.filter(function(f){ return f.id !== furnitureId; });
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "furniture");
   renderHouseView();
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    supabaseClient.from("house_rooms").update({ furniture: r.furniture, updated_at: new Date().toISOString() }).eq("id", r.id).then(function(){});
-  }
 }
 
 function deleteFurnitureItemAction(roomId, furnitureId, itemIdx){
@@ -3455,12 +3495,8 @@ function deleteFurnitureItemAction(roomId, furnitureId, itemIdx){
   if(!fur || !Array.isArray(fur.items)) return;
 
   fur.items.splice(itemIdx, 1);
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(r, "furniture");
   renderHouseView();
-
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    supabaseClient.from("house_rooms").update({ furniture: r.furniture, updated_at: new Date().toISOString() }).eq("id", r.id).then(function(){});
-  }
 }
 
 // ============================================================================
@@ -3528,10 +3564,18 @@ function openEditRoomModal(roomId){
     html += '  <div class="field" style="margin-top:8px;">' +
       '    <label>Tipo de Habitación</label>' +
       '    <select id="editRoomType">' +
-      '      <option value="habitacion_comun"' + (r.room_type === "habitacion_comun" ? " selected" : "") + '>Habitación Común</option>' +
+      '      <option value="salon"' + (r.room_type === "salon" ? " selected" : "") + '>Salón y Hogar</option>' +
+      '      <option value="cocina"' + (r.room_type === "cocina" ? " selected" : "") + '>Cocina y Horno</option>' +
       '      <option value="habitacion_personal"' + (r.room_type === "habitacion_personal" ? " selected" : "") + '>Habitación Personal</option>' +
-      '      <option value="cocina"' + (r.room_type === "cocina" ? " selected" : "") + '>Cocina</option>' +
-      '      <option value="salon"' + (r.room_type === "salon" ? " selected" : "") + '>Salón</option>' +
+      '      <option value="habitacion_comun"' + (r.room_type === "habitacion_comun" ? " selected" : "") + '>Habitación Común</option>' +
+      '      <option value="pasillo"' + (r.room_type === "pasillo" ? " selected" : "") + '>Pasillo / Galería</option>' +
+      '      <option value="entrada"' + (r.room_type === "entrada" ? " selected" : "") + '>Entrada Principal</option>' +
+      '      <option value="escaleras"' + (r.room_type === "escaleras" ? " selected" : "") + '>Escaleras</option>' +
+      '      <option value="bodega"' + (r.room_type === "bodega" ? " selected" : "") + '>Bodega / Despensa</option>' +
+      '      <option value="taller"' + (r.room_type === "taller" ? " selected" : "") + '>Taller / Forja</option>' +
+      '      <option value="biblioteca"' + (r.room_type === "biblioteca" ? " selected" : "") + '>Biblioteca / Estudio</option>' +
+      '      <option value="invernadero"' + (r.room_type === "invernadero" ? " selected" : "") + '>Invernadero</option>' +
+      '      <option value="banos"' + (r.room_type === "banos" ? " selected" : "") + '>Baños</option>' +
       '      <option value="otro"' + (r.room_type === "otro" ? " selected" : "") + '>Otro / Especial</option>' +
       '    </select>' +
       '  </div>' +
@@ -3548,9 +3592,9 @@ function openEditRoomModal(roomId){
       '    </select>' +
       '  </div>' +
       '  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px;">' +
-      '    <div class="field"><label>Pos X</label><input type="number" id="editRoomPosX" min="0" max="10" value="' + (r.pos_x || 0) + '"></div>' +
-      '    <div class="field"><label>Pos Y</label><input type="number" id="editRoomPosY" min="0" max="10" value="' + (r.pos_y || 0) + '"></div>' +
-      '    <div class="field"><label>Ancho</label><input type="number" id="editRoomWidth" min="1" max="6" value="' + (r.width || 2) + '"></div>' +
+      '    <div class="field"><label>Pos X</label><input type="number" id="editRoomPosX" min="0" max="15" value="' + (r.pos_x || 0) + '"></div>' +
+      '    <div class="field"><label>Pos Y</label><input type="number" id="editRoomPosY" min="0" max="12" value="' + (r.pos_y || 0) + '"></div>' +
+      '    <div class="field"><label>Ancho</label><input type="number" id="editRoomWidth" min="1" max="16" value="' + (r.width || 2) + '"></div>' +
       '    <div class="field"><label>Alto</label><input type="number" id="editRoomHeight" min="1" max="6" value="' + (r.height || 2) + '"></div>' +
       '  </div>' +
       '  <div class="field" style="margin-top:8px;">' +
@@ -3558,6 +3602,19 @@ function openEditRoomModal(roomId){
       '    <input type="number" id="editRoomLevel" min="1" max="20" value="' + (r.level || 1) + '">' +
       '  </div>';
   }
+
+  // Selector de Color y Suelo de la Estancia
+  html += '  <div class="field" style="margin-top:8px;">' +
+    '    <label>🎨 Fondo y Suelo de la Estancia / Pasillo</label>' +
+    '    <div class="house-color-palette-bar" style="margin-top:4px;">';
+  HOUSE_COLOR_PALETTES.forEach(function(p){
+    var isSel = (r.color === p.hex || (!r.color && !p.hex));
+    html += '<button type="button" class="house-color-chip' + (isSel ? ' is-active' : '') + '" style="background:' + (p.hex || '#1a1816') + ';" data-action="modal-select-color" data-color="' + p.hex + '" title="' + p.name + ' - ' + p.desc + '"></button>';
+  });
+  html += '      <input type="color" id="editRoomCustomColor" value="' + (r.color || '#2a1e16') + '" data-action="modal-custom-color" title="Color personalizado">';
+  html += '    </div>' +
+    '    <input type="hidden" id="editRoomColorValue" value="' + esc(r.color || '') + '">' +
+    '  </div>';
 
   html += '  <div class="field" style="margin-top:8px;">' +
     '    <label>Descripción / Decoración Personal</label>' +
@@ -3604,10 +3661,18 @@ function openCreateRoomModal(){
     '  <div class="field" style="margin-top:8px;">' +
     '    <label>Tipo de Habitación</label>' +
     '    <select id="newRoomType">' +
-    '      <option value="habitacion_comun">Habitación Común</option>' +
+    '      <option value="salon">Salón y Hogar</option>' +
+    '      <option value="cocina">Cocina y Horno</option>' +
     '      <option value="habitacion_personal">Habitación Personal</option>' +
-    '      <option value="cocina">Cocina</option>' +
-    '      <option value="salon">Salón</option>' +
+    '      <option value="habitacion_comun" selected>Habitación Común</option>' +
+    '      <option value="pasillo">Pasillo / Galería</option>' +
+    '      <option value="entrada">Entrada Principal</option>' +
+    '      <option value="escaleras">Escaleras</option>' +
+    '      <option value="bodega">Bodega / Despensa</option>' +
+    '      <option value="taller">Taller / Forja</option>' +
+    '      <option value="biblioteca">Biblioteca / Estudio</option>' +
+    '      <option value="invernadero">Invernadero</option>' +
+    '      <option value="banos">Baños</option>' +
     '      <option value="otro">Otro / Especial</option>' +
     '    </select>' +
     '  </div>' +
@@ -3624,10 +3689,20 @@ function openCreateRoomModal(){
     '    </select>' +
     '  </div>' +
     '  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px;">' +
-    '    <div class="field"><label>Pos X</label><input type="number" id="newRoomPosX" min="0" max="10" value="0"></div>' +
-    '    <div class="field"><label>Pos Y</label><input type="number" id="newRoomPosY" min="0" max="10" value="0"></div>' +
-    '    <div class="field"><label>Ancho</label><input type="number" id="newRoomWidth" min="1" max="6" value="3"></div>' +
+    '    <div class="field"><label>Pos X</label><input type="number" id="newRoomPosX" min="0" max="15" value="0"></div>' +
+    '    <div class="field"><label>Pos Y</label><input type="number" id="newRoomPosY" min="0" max="12" value="0"></div>' +
+    '    <div class="field"><label>Ancho</label><input type="number" id="newRoomWidth" min="1" max="16" value="3"></div>' +
     '    <div class="field"><label>Alto</label><input type="number" id="newRoomHeight" min="1" max="6" value="2"></div>' +
+    '  </div>' +
+    '  <div class="field" style="margin-top:8px;">' +
+    '    <label>🎨 Fondo y Suelo de la Estancia</label>' +
+    '    <div class="house-color-palette-bar" style="margin-top:4px;">';
+  HOUSE_COLOR_PALETTES.forEach(function(p){
+    html += '<button type="button" class="house-color-chip' + (p.id === "default" ? ' is-active' : '') + '" style="background:' + (p.hex || '#1a1816') + ';" data-action="modal-select-color" data-color="' + p.hex + '" title="' + p.name + ' - ' + p.desc + '"></button>';
+  });
+  html += '      <input type="color" id="newRoomCustomColor" value="#2a1e16" data-action="modal-custom-color" title="Color personalizado">';
+  html += '    </div>' +
+    '    <input type="hidden" id="editRoomColorValue" value="">' +
     '  </div>' +
     '  <div class="field" style="margin-top:8px;">' +
     '    <label>Descripción / Decoración</label>' +
@@ -3796,16 +3871,16 @@ async function saveRoomDataAction(){
     remoteUpdatePayload.level = r.level;
   }
 
-  saveHouseLocalData();
+  var colorEl = document.getElementById("editRoomColorValue");
+  if(colorEl){
+    r.color = colorEl.value || null;
+  }
+
+  saveRoomChangesToRemoteAndBroadcast(r, "general");
   closeHouseModal();
   renderHouseView();
 
-  if(typeof supabaseClient !== "undefined" && supabaseClient && r.id){
-    try {
-      await supabaseClient.from("house_rooms").update(remoteUpdatePayload).eq("id", r.id);
-      if(typeof showToast === "function") showToast("Habitación guardada.", "success");
-    } catch(e){}
-  }
+  if(typeof showToast === "function") showToast("Habitación guardada.", "success");
 }
 
 async function confirmCreateRoomAction(){
@@ -3824,6 +3899,7 @@ async function confirmCreateRoomAction(){
     return;
   }
 
+  var colorEl = document.getElementById("editRoomColorValue");
   var newId = "r_" + Date.now();
   var newRoom = {
     id: newId,
@@ -3839,30 +3915,19 @@ async function confirmCreateRoomAction(){
     width: widthEl ? Math.max(1, parseInt(widthEl.value, 10) || 2) : 3,
     height: heightEl ? Math.max(1, parseInt(heightEl.value, 10) || 2) : 2,
     furniture: [],
+    decor: [],
+    color: (colorEl && colorEl.value) ? colorEl.value : null,
     created_at: new Date().toISOString()
   };
 
   houseState.rooms.push(newRoom);
   houseState.selectedRoomId = newRoom.id;
   houseState.activeFloor = newRoom.floor;
-  saveHouseLocalData();
+  saveRoomChangesToRemoteAndBroadcast(newRoom, "create");
   closeHouseModal();
   renderHouseView();
 
-  if(typeof supabaseClient !== "undefined" && supabaseClient && houseState.house && houseState.house.id){
-    try {
-      var remotePayload = Object.assign({}, newRoom);
-      if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(remotePayload.id)){
-        delete remotePayload.id;
-      }
-      var res = await supabaseClient.from("house_rooms").insert(remotePayload).select().maybeSingle();
-      if(res && res.data && res.data.id){
-        newRoom.id = res.data.id;
-        saveHouseLocalData();
-      }
-      if(typeof showToast === "function") showToast("Habitación creada en el plano.", "success");
-    } catch(e){}
-  }
+  if(typeof showToast === "function") showToast("Habitación creada en el plano.", "success");
 }
 
 async function confirmCreateUpgradeAction(){
@@ -3943,6 +4008,7 @@ async function deleteHouseRoomAction(roomId){
 function openHouseView(){
   if(!CONFIG_ENABLE_HOUSE) return;
   houseState.active = true;
+  initHouseRealtimeSync();
   if(typeof state !== "undefined"){
     state.activeTab = "casa";
     if(typeof saveState === "function") saveState(true);
@@ -4201,11 +4267,37 @@ document.addEventListener("click", function(e){
     var nDx = parseInt(btn.getAttribute("data-dx"), 10) || 0;
     var nDy = parseInt(btn.getAttribute("data-dy"), 10) || 0;
     canvaNudgeItem(nRoomId, nItemId, nDx, nDy);
+  } else if(act === "set-room-color"){
+    var scrRId = btn.getAttribute("data-room-id");
+    var scrCol = btn.getAttribute("data-color");
+    setRoomColor(scrRId, scrCol);
+  } else if(act === "modal-select-color"){
+    e.preventDefault();
+    var mColor = btn.getAttribute("data-color");
+    var hiddenInp = document.getElementById("editRoomColorValue");
+    if(hiddenInp) hiddenInp.value = mColor || "";
+    var bar = btn.closest(".house-color-palette-bar");
+    if(bar){
+      bar.querySelectorAll(".house-color-chip").forEach(function(c){ c.classList.remove("is-active"); });
+      btn.classList.add("is-active");
+    }
   }
 });
 
-// Listener de búsqueda en tiempo real para la biblioteca Canva
+// Listener de eventos input (búsqueda Canva y selector de color personalizado)
 document.addEventListener("input", function(e){
+  if(e.target && e.target.getAttribute("data-action") === "canva-custom-color-input"){
+    var cciRId = e.target.getAttribute("data-room-id");
+    setRoomColor(cciRId, e.target.value);
+  } else if(e.target && e.target.getAttribute("data-action") === "modal-custom-color"){
+    var hiddenInp2 = document.getElementById("editRoomColorValue");
+    if(hiddenInp2) hiddenInp2.value = e.target.value;
+    var bar2 = e.target.closest(".house-color-palette-bar");
+    if(bar2){
+      bar2.querySelectorAll(".house-color-chip").forEach(function(c){ c.classList.remove("is-active"); });
+    }
+  }
+
   if(e.target && e.target.id === "canvaSearchInput"){
     houseState.studioSearch = e.target.value || "";
     var assetsGrid = document.querySelector(".canva-assets-grid");
@@ -4242,3 +4334,25 @@ document.addEventListener("input", function(e){
     }
   }
 });
+
+// Sincronización automática entre dispositivos cuando la ventana recupera foco o visibilidad
+if(typeof document !== "undefined" && typeof document.addEventListener === "function"){
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible" && houseState.active){
+      fetchHouseRemoteData().then(function(){ renderHouseView(); });
+    }
+  });
+}
+
+if(typeof window !== "undefined" && typeof window.addEventListener === "function"){
+  window.addEventListener("focus", function(){
+    if(houseState.active){
+      fetchHouseRemoteData().then(function(){ renderHouseView(); });
+    }
+  });
+}
+
+// Inicializar listener de tiempo real al arrancar el cliente
+try {
+  initHouseRealtimeSync();
+} catch(e){}
