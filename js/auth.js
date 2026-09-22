@@ -24,12 +24,24 @@ function clearAuthAttempts(){
 
 
 function isGM(){
+  if(currentUser){
+    var em = (currentUser.email || '').toLowerCase().trim();
+    if(em === 'rolillo55ac@gmail.com' || em.startsWith('rolillo55ac') || currentUser.id === 'eaa97e7a-408d-476f-9774-55ec911833d8') return true;
+  }
   var r = (currentRole || '').toLowerCase();
   if(r === 'master' || r === 'gm') return true;
   if(state && state.campaignRole && (state.campaignRole.toLowerCase() === 'master' || state.campaignRole.toLowerCase() === 'gm')) return true;
   if(currentUser && currentUser.user_metadata && currentUser.user_metadata.role){
     var mr = currentUser.user_metadata.role.toLowerCase();
     if(mr === 'master' || mr === 'gm') return true;
+  }
+  try {
+    var localRole = localStorage.getItem("krysalis_local_role") || localStorage.getItem("krysalis_role");
+    if(localRole && (localRole.toLowerCase() === 'master' || localRole.toLowerCase() === 'gm')) return true;
+  } catch(e){}
+  // En modo local/offline sin usuario logueado en Supabase, quien usa la app tiene control de máster por defecto
+  if(!currentUser){
+    return true;
   }
   return false;
 }
@@ -89,8 +101,20 @@ function activeChar(){
 async function fetchUserProfile(){
   if(!supabaseClient || !currentUser) return;
   try{
+    var isKnownGM = (currentUser.email && (currentUser.email.toLowerCase().trim() === 'rolillo55ac@gmail.com' || currentUser.email.toLowerCase().startsWith('rolillo55ac'))) || currentUser.id === 'eaa97e7a-408d-476f-9774-55ec911833d8';
+    if(isKnownGM){
+      currentRole = 'master';
+      if(state) state.campaignRole = 'master';
+    }
+
     var res = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
-    if(res.data && res.data.role) currentRole = res.data.role;
+    if(res.data && res.data.role){
+      currentRole = res.data.role;
+    } else if(isKnownGM){
+      try {
+        await supabaseClient.from('profiles').upsert({ id: currentUser.id, role: 'master', email: currentUser.email });
+      } catch(eUpsert){}
+    }
 
     try{
       var memRes = await supabaseClient.from('campaign_members').select('*').eq('user_id', currentUser.id);

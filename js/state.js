@@ -327,7 +327,7 @@ function defaultState(){
     activeTab: "ficha",
     rollLog: [],
     characters: officialChars,
-    officialDataVersion: 5,
+    officialDataVersion: 6,
     weaponsCatalog: getSeedWeaponsCatalog(),
     buffCatalog: getSeedBuffCatalog(),
     lore: getSeedLore(),
@@ -530,6 +530,25 @@ function migrateState(s){
     if(!s.characters.some(function(c){ return c.id === s.activeId; })){
       s.activeId = s.characters[0] ? s.characters[0].id : "";
     }
+  }
+
+  // 10. Migración v6: Tickets #TK-JHEC y #TK-BA7F (Cherk nivel 1 y +1 en Piedras Mágicas)
+  if(!s.officialDataVersion || s.officialDataVersion < 6){
+    (s.characters || []).forEach(function(c){
+      var n = (c.name || "").trim().toLowerCase();
+      if(n === "cherk" || n.includes("cherk") || c.id === "char_cherk" || c.db_id === "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3"){
+        c.nivel = "1";
+        if(!c.skillBonus) c.skillBonus = {};
+        c.skillBonus.piedras = Math.max(num(c.skillBonus.piedras, 0), 1);
+        if(!c.combat) c.combat = {};
+        c.combat.pvMax = 20;
+        if(num(c.combat.pvActual, 20) > 20) c.combat.pvActual = 20;
+        c.combat.manaMax = 10;
+        if(num(c.combat.manaActual, 10) > 10) c.combat.manaActual = 10;
+        c.officialDataVersion = 6;
+      }
+    });
+    s.officialDataVersion = 6;
   }
 
   (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });

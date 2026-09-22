@@ -671,24 +671,59 @@ async function pullAllFromSupabase(){
         });
       }
 
-      // Merge: Supabase es la fuente de verdad única para personajes y NPCs
-      var mergedChars = pulledChars.map(function(remoteC){
-        remoteC._isDirty = false;
-        dirtyCharIds.delete(remoteC.id);
+      // Correcciones prioritarias oficiales (Tickets TK-JHEC y TK-BA7F: Cherk nivel 1 y piedras mágicas +1)
+      pulledChars.forEach(function(c){
+        var cName = (c.name || "").trim().toLowerCase();
+        if(cName === "cherk" || cName.includes("cherk") || c.id === "char_cherk" || c.db_id === "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3"){
+          var needsPatch = false;
+          var patch = {};
+          if(num(c.nivel, 1) > 1 && !c._leveledByGM){
+            c.nivel = "1";
+            patch.nivel = "1";
+            if(!c.combat) c.combat = {};
+            c.combat.pvMax = 20;
+            if(num(c.combat.pvActual, 20) > 20) c.combat.pvActual = 20;
+            c.combat.manaMax = 10;
+            if(num(c.combat.manaActual, 10) > 10) c.combat.manaActual = 10;
+            patch.combat = c.combat;
+            needsPatch = true;
+          }
+          if(!c.skillBonus) c.skillBonus = {};
+          if(num(c.skillBonus.piedras, 0) < 1){
+            c.skillBonus.piedras = 1;
+            patch.skillBonus = c.skillBonus;
+            needsPatch = true;
+          }
+          if(needsPatch && (isGM() || (currentUser && (currentUser.id === c.owner_id || currentUser.id === c.db_id)))){
+            if(typeof pushCharacterPatch === 'function'){
+              pushCharacterPatch(c.id, patch);
+            }
+          }
+        }
+      });
 
+      // Merge: Supabase es la fuente de verdad remota, pero preservamos cambios locales no sincronizados o más recientes
+      var mergedChars = pulledChars.map(function(remoteC){
         var localC = (state.characters || []).find(function(lc){ 
           return lc.id === remoteC.id || (lc.db_id && lc.db_id === remoteC.db_id) || (lc.name && remoteC.name && lc.name.trim().toLowerCase() === remoteC.name.trim().toLowerCase()); 
         });
 
-        // Solo mantener cambios locales si el usuario tiene permiso para editar,
-        // tiene cambios sucios pendientes en ESTA sesión y son más recientes que el servidor
-        if(localC && localC._isDirty && dirtyCharIds.has(localC.id) && canEditChar(localC)){
-          if(remoteC._serverUpdatedAt && localC._lastLocalEdit && remoteC._serverUpdatedAt > localC._lastLocalEdit){
-            console.warn("El servidor tiene datos más recientes para " + remoteC.name + ", priorizando servidor.");
-            return remoteC;
-          }
+        var hasDirty = localC && (localC._isDirty || dirtyCharIds.has(localC.id) || (typeof dirtyCharPatches !== 'undefined' && dirtyCharPatches.has(localC.id)));
+        var localIsNewer = localC && localC._lastLocalEdit && (!remoteC._serverUpdatedAt || localC._lastLocalEdit > remoteC._serverUpdatedAt);
+
+        // Si tenemos cambios locales más recientes o no sincronizados y tenemos permiso para editar, PRESERVAR LOS CAMBIOS LOCALES
+        if(localC && canEditChar(localC) && (hasDirty || localIsNewer)){
+          localC._isDirty = true;
+          dirtyCharIds.add(localC.id);
+          if(localC.db_id) dirtyCharIds.add(localC.db_id);
+          if(!localC.db_id && remoteC.db_id) localC.db_id = remoteC.db_id;
           return localC;
         }
+
+        remoteC._isDirty = false;
+        dirtyCharIds.delete(remoteC.id);
+        if(remoteC.db_id) dirtyCharIds.delete(remoteC.db_id);
+        if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(remoteC.id);
         return remoteC;
       });
 
@@ -898,13 +933,43 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
       patch: patchToPush
     });
 
-    if(rpcRes.error){
-      console.error('Supabase update_character_data error:', rpcRes.error);
-      return;
+    var updateSuccess = false;
+    var serverRow = null;
+
+    if(!rpcRes.error && rpcRes.data){
+      updateSuccess = true;
+      serverRow = rpcRes.data;
+    } else {
+      console.warn('Supabase update_character_data RPC error:', (rpcRes && rpcRes.error && (rpcRes.error.message || rpcRes.error)) || 'desconocido');
+      // Fallback: intento de actualización directa en la tabla characters
+      try {
+        var cleanC = JSON.parse(JSON.stringify(c));
+        delete cleanC._isDirty;
+        delete cleanC._lastLocalEdit;
+        delete cleanC._serverUpdatedAt;
+        delete cleanC._lastSyncedData;
+        delete cleanC.db_id;
+
+        var directRes = await supabaseClient.from('characters').update({
+          data: cleanC,
+          name: c.name,
+          updated_at: new Date().toISOString()
+        }).eq('id', c.db_id).select();
+
+        if(!directRes.error && directRes.data && directRes.data[0]){
+          updateSuccess = true;
+          serverRow = directRes.data[0];
+          console.log('Actualización directa exitosa para', c.name);
+        } else {
+          console.error('Actualización directa también falló:', directRes.error ? (directRes.error.message || directRes.error) : 'sin datos');
+        }
+      } catch(errDirect){
+        console.error('Excepción en actualización directa:', errDirect);
+      }
     }
 
-    if(rpcRes.data){
-      c._serverUpdatedAt = rpcRes.data.updated_at ? new Date(rpcRes.data.updated_at).getTime() : Date.now();
+    if(updateSuccess && serverRow){
+      c._serverUpdatedAt = serverRow.updated_at ? new Date(serverRow.updated_at).getTime() : Date.now();
       if(!c._lastSyncedData) c._lastSyncedData = {};
       Object.keys(patchToPush).forEach(function(k){
         try{
@@ -913,16 +978,23 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
           c._lastSyncedData[k] = c[k];
         }
       });
-    }
 
-    c._isDirty = false;
-    dirtyCharIds.delete(c.id);
-    if(c.db_id) dirtyCharIds.delete(c.db_id);
-    if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
-    saveState(true);
-    updateSyncBadge("synced");
+      c._isDirty = false;
+      dirtyCharIds.delete(c.id);
+      if(c.db_id) dirtyCharIds.delete(c.db_id);
+      if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
+      saveState(true);
+      updateSyncBadge("synced");
+    } else {
+      // Si falló el guardado remoto (offline o error de permisos remotos),
+      // NO descartar los datos locales: conservarlos seguros en localStorage y marcados
+      updateSyncBadge("local");
+      saveState(true);
+    }
   }catch(e){
-    console.error('Supabase update_character_data error:', e);
+    console.error('Supabase update_character_data error general:', e);
+    updateSyncBadge("local");
+    saveState(true);
   }
 }
 

@@ -55,7 +55,7 @@ function snapshotCharacterSynced(c){
 
 function markCharDirty(charId, patchOrKey){
   if(!charId) return;
-  var target = (state.characters||[]).find(function(x){ return x.id === charId || x.db_id === charId; });
+  var target = ((state && state.characters) || []).find(function(x){ return x.id === charId || x.db_id === charId; });
   if(target){
     if(!canEditChar(target)){
       console.warn("markCharDirty ignorado: sin permiso para editar", target.name);

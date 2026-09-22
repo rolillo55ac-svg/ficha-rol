@@ -336,8 +336,27 @@ function handleClick(e){
   if(action==="gm-add-skill-point"){
     if(!isGM()) return;
     c.skillPoints = num(c.skillPoints, 0) + 1;
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { skillPoints: c.skillPoints });
     saveState(); renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { skillPoints: c.skillPoints });
+    }
     showToast("+1 punto de habilidad concedido por el GM", "gm");
+    return;
+  }
+  if(action==="gm-sub-skill-point"){
+    if(!isGM()) return;
+    if(num(c.skillPoints, 0) > 0){
+      c.skillPoints = num(c.skillPoints, 0) - 1;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { skillPoints: c.skillPoints });
+      saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { skillPoints: c.skillPoints });
+      }
+      showToast("-1 punto de habilidad ajustado por el GM", "gm");
+    }
     return;
   }
   if(action==="gm-skill-add"){
@@ -345,7 +364,12 @@ function handleClick(e){
     var sid = btn.getAttribute("data-id");
     if(!c.skillBonus) c.skillBonus = {};
     c.skillBonus[sid] = num(c.skillBonus[sid], 0) + 1;
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { skillBonus: c.skillBonus });
     saveState(); renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { skillBonus: c.skillBonus });
+    }
     var sdef = SKILL_DEFS.find(function(x){ return x.id === sid; });
     showToast("GM otorgó nivel " + c.skillBonus[sid] + " a " + (sdef ? sdef.name : sid), "gm");
     return;
@@ -356,7 +380,12 @@ function handleClick(e){
     if(!c.skillBonus) c.skillBonus = {};
     if(num(c.skillBonus[sid2], 0) > 0){
       c.skillBonus[sid2] = num(c.skillBonus[sid2], 0) - 1;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { skillBonus: c.skillBonus });
       saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { skillBonus: c.skillBonus });
+      }
     }
     return;
   }
@@ -366,7 +395,12 @@ function handleClick(e){
     var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
     if(csk){
       csk.bonus = num(csk.bonus, 0) + 1;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { customSkills: c.customSkills });
       saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { customSkills: c.customSkills });
+      }
       showToast("GM otorgó nivel " + csk.bonus + " a " + csk.name, "gm");
     }
     return;
@@ -377,7 +411,12 @@ function handleClick(e){
     var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
     if(csk2 && num(csk2.bonus, 0) > 0){
       csk2.bonus = num(csk2.bonus, 0) - 1;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { customSkills: c.customSkills });
       saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { customSkills: c.customSkills });
+      }
     }
     return;
   }
@@ -387,15 +426,17 @@ function handleClick(e){
     var curNv = num(c.nivel, 1);
     var nextNv = curNv + 1;
     c.nivel = String(nextNv);
+    c._leveledByGM = true;
     
     var ptsToAdd = 4;
     if(nextNv > 20) ptsToAdd = 8;
     else if(nextNv > 10) ptsToAdd = 6;
     c.skillPoints = num(c.skillPoints, 0) + ptsToAdd;
 
-    var fisicoVal = num(c.attrs.fisico, 0);
+    var fisicoVal = num(c.attrs ? c.attrs.fisico : 0, 0);
     var hpGain = Math.ceil(fisicoVal / 2);
     if(hpGain < 1) hpGain = 1;
+    if(!c.combat) c.combat = {};
     c.combat.pvMax = num(c.combat.pvMax, 10) + hpGain;
     c.combat.pvActual = num(c.combat.pvMax, 10);
 
@@ -407,33 +448,125 @@ function handleClick(e){
       c.skillPointsUnlocked = true;
     }
 
+    var lvlPatch = { nivel: c.nivel, skillPoints: c.skillPoints, combat: c.combat, skillPointsUnlocked: c.skillPointsUnlocked };
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, lvlPatch);
     saveState(); renderTopbar(); renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, lvlPatch);
+    }
     showToast("¡Nivel " + nextNv + " alcanzado! +" + ptsToAdd + " puntos de habilidad", "success");
+    return;
+  }
+
+  if(action==="revoke-level"){
+    if(!isGM()) return;
+    var curNv = num(c.nivel, 1);
+    if(curNv <= 1){
+      showToast("El personaje ya está en nivel 1 (mínimo).", "warning");
+      return;
+    }
+    var prevNv = curNv - 1;
+    c.nivel = String(prevNv);
+    c._leveledByGM = true;
+
+    var ptsToSub = 4;
+    if(curNv > 20) ptsToSub = 8;
+    else if(curNv > 10) ptsToSub = 6;
+    c.skillPoints = Math.max(0, num(c.skillPoints, 0) - ptsToSub);
+
+    var fisicoVal = num(c.attrs ? c.attrs.fisico : 0, 0);
+    var hpGain = Math.ceil(fisicoVal / 2);
+    if(hpGain < 1) hpGain = 1;
+    if(!c.combat) c.combat = {};
+    c.combat.pvMax = Math.max(1, num(c.combat.pvMax, 10) - hpGain);
+    if(num(c.combat.pvActual, 10) > c.combat.pvMax){
+      c.combat.pvActual = c.combat.pvMax;
+    }
+
+    if(curNv % 4 === 0){
+      c.combat.manaMax = Math.max(0, num(c.combat.manaMax, 10) - 5);
+      if(num(c.combat.manaActual, 10) > c.combat.manaMax){
+        c.combat.manaActual = c.combat.manaMax;
+      }
+    }
+
+    var revPatch = { nivel: c.nivel, skillPoints: c.skillPoints, combat: c.combat };
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, revPatch);
+    saveState(); renderTopbar(); renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, revPatch);
+    }
+    showToast("Nivel reducido a " + prevNv + " (-" + ptsToSub + " pts habilidad)", "info");
+    return;
+  }
+
+  if(action==="grant-training-reward"){
+    if(!isGM()) return;
+    var trId = btn.getAttribute("data-id");
+    var trObj = (c.trainings || []).find(function(t){ return t.id === trId; });
+    if(!trObj){ showToast("Entrenamiento no encontrado.", "error"); return; }
+    var targetSkillId = "";
+    if(trObj.linkedId){
+      targetSkillId = trObj.linkedId.startsWith("skill:") ? trObj.linkedId.replace("skill:", "") : trObj.linkedId;
+    }
+    if(!targetSkillId){
+      var matchSk = SKILL_DEFS.find(function(s){ return s.name.toLowerCase() === (trObj.name||'').trim().toLowerCase(); });
+      if(matchSk) targetSkillId = matchSk.id;
+    }
+    if(targetSkillId){
+      if(!c.skillBonus) c.skillBonus = {};
+      c.skillBonus[targetSkillId] = num(c.skillBonus[targetSkillId], 0) + 1;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { skillBonus: c.skillBonus });
+      saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { skillBonus: c.skillBonus });
+      }
+      var sdef = SKILL_DEFS.find(function(x){ return x.id === targetSkillId; });
+      showToast("🏆 ¡Recompensa otorgada! +1 a " + (sdef ? sdef.name : targetSkillId), "success");
+    } else {
+      c.skillPoints = num(c.skillPoints, 0) + 1;
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { skillPoints: c.skillPoints });
+      saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { skillPoints: c.skillPoints });
+      }
+      showToast("🏆 Recompensa otorgada: +1 punto de habilidad", "success");
+    }
     return;
   }
 
   if(action==="toggle-skill-lock"){
     if(!isGM()) return;
     c.skillPointsUnlocked = !c.skillPointsUnlocked;
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { skillPointsUnlocked: c.skillPointsUnlocked });
     saveState(); renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, { skillPointsUnlocked: c.skillPointsUnlocked });
+    }
     showToast(c.skillPointsUnlocked ? "Asignación de habilidades desbloqueada" : "Asignación de habilidades bloqueada", "info");
     return;
   }
-    if(action==="skill-add"){
-    if(!c.skillPointsUnlocked && !c.isNPC) return;
+  if(action==="skill-add"){
+    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
     var sId = btn.getAttribute("data-id");
-    var curBonus = num(c.skillBonus[sId], 0);
-    if(curBonus === 0 && !c.isNPC) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
+    var curBonus = num(c.skillBonus ? c.skillBonus[sId] : 0, 0);
+    if(curBonus === 0 && !c.isNPC && !isGM()) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
     if(curBonus >= 8) { showToast("La habilidad ha alcanzado el nivel máximo (8).", "warning"); return; }
-    if(!c.isNPC && num(c.skillPoints, 0) < 1) { showToast("No tienes puntos disponibles.", "error"); return; }
+    if(!c.isNPC && !isGM() && num(c.skillPoints, 0) < 1) { showToast("No tienes puntos disponibles.", "error"); return; }
     if(c.isNPC && num(c.skillPoints, 0) < 1) { showToast("El NPC no tiene puntos. Sube su nivel primero.", "error"); return; }
 
+    if(!c.skillBonus) c.skillBonus = {};
     if(!c.skillProgress) c.skillProgress = {};
     var prog = num(c.skillProgress[sId], 0);
     var targetLevel = curBonus + 1;
     var costNeeded = targetLevel;
 
-    c.skillPoints--;
+    if(num(c.skillPoints, 0) > 0) c.skillPoints--;
     prog++;
 
     if(prog >= costNeeded){
@@ -442,10 +575,17 @@ function handleClick(e){
       showToast("¡Habilidad subida a nivel " + targetLevel + "!", "success");
     }
     c.skillProgress[sId] = prog;
-    saveState(); renderTab(); return;
+    var skPatch = { skillBonus: c.skillBonus, skillProgress: c.skillProgress, skillPoints: c.skillPoints };
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, skPatch);
+    saveState(); renderTab();
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(c.id, skPatch);
+    }
+    return;
   }
   if(action==="skill-sub"){
-    if(!c.skillPointsUnlocked && !c.isNPC) return;
+    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
     var sId2 = btn.getAttribute("data-id");
     if(!c.skillProgress) c.skillProgress = {};
     var prog2 = num(c.skillProgress[sId2], 0);
@@ -454,15 +594,28 @@ function handleClick(e){
       prog2--;
       c.skillProgress[sId2] = prog2;
       c.skillPoints++;
+      var subPatch = { skillProgress: c.skillProgress, skillPoints: c.skillPoints };
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, subPatch);
       saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, subPatch);
+      }
     } else {
-      if(c.isNPC){
-        var curBonus2 = num(c.skillBonus[sId2], 0);
+      if(c.isNPC || isGM()){
+        var curBonus2 = num(c.skillBonus ? c.skillBonus[sId2] : 0, 0);
         if(curBonus2 > 0){
+          if(!c.skillBonus) c.skillBonus = {};
           c.skillBonus[sId2] = curBonus2 - 1;
           c.skillProgress[sId2] = 0;
           c.skillPoints++;
+          var subLvlPatch = { skillBonus: c.skillBonus, skillProgress: c.skillProgress, skillPoints: c.skillPoints };
+          c._lastLocalEdit = Date.now();
+          markCharDirty(c.id, subLvlPatch);
           saveState(); renderTab();
+          if(typeof pushCharacterPatch === 'function'){
+            pushCharacterPatch(c.id, subLvlPatch);
+          }
         } else {
           showToast("La habilidad ya está en nivel 0.", "warning");
         }
@@ -473,14 +626,14 @@ function handleClick(e){
     return;
   }
   if(action==="skill-add-custom"){
-    if(!c.skillPointsUnlocked && !c.isNPC) return;
+    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
     var csId = btn.getAttribute("data-id");
     var csk = (c.customSkills||[]).find(function(x){return x.id===csId;});
     if(csk){
       var curBonus = num(csk.bonus, 0);
-      if(curBonus === 0 && !c.isNPC) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
+      if(curBonus === 0 && !c.isNPC && !isGM()) { showToast("No se puede subir una habilidad en nivel 0.", "error"); return; }
       if(curBonus >= 8) { showToast("Máximo nivel 8.", "warning"); return; }
-      if(!c.isNPC && num(c.skillPoints, 0) < 1) { showToast("Puntos insuficientes.", "error"); return; }
+      if(!c.isNPC && !isGM() && num(c.skillPoints, 0) < 1) { showToast("Puntos insuficientes.", "error"); return; }
       if(c.isNPC && num(c.skillPoints, 0) < 1) { showToast("El NPC no tiene puntos. Sube su nivel primero.", "error"); return; }
 
       if(!c.skillProgress) c.skillProgress = {};
@@ -488,7 +641,7 @@ function handleClick(e){
       var targetLevel = curBonus + 1;
       var costNeeded = targetLevel;
 
-      c.skillPoints--;
+      if(num(c.skillPoints, 0) > 0) c.skillPoints--;
       prog++;
       if(prog >= costNeeded){
         prog = 0;
@@ -496,12 +649,18 @@ function handleClick(e){
         showToast("¡Habilidad subida a nivel " + targetLevel + "!", "success");
       }
       c.skillProgress[csId] = prog;
+      var cskPatch = { customSkills: c.customSkills, skillProgress: c.skillProgress, skillPoints: c.skillPoints };
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, cskPatch);
       saveState(); renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, cskPatch);
+      }
     }
     return;
   }
   if(action==="skill-sub-custom"){
-    if(!c.skillPointsUnlocked && !c.isNPC) return;
+    if(!c.skillPointsUnlocked && !c.isNPC && !isGM()) return;
     var csId2 = btn.getAttribute("data-id");
     var csk2 = (c.customSkills||[]).find(function(x){return x.id===csId2;});
     if(csk2){
@@ -511,15 +670,27 @@ function handleClick(e){
         prog2--;
         c.skillProgress[csId2] = prog2;
         c.skillPoints++;
+        var subCskPatch = { customSkills: c.customSkills, skillProgress: c.skillProgress, skillPoints: c.skillPoints };
+        c._lastLocalEdit = Date.now();
+        markCharDirty(c.id, subCskPatch);
         saveState(); renderTab();
+        if(typeof pushCharacterPatch === 'function'){
+          pushCharacterPatch(c.id, subCskPatch);
+        }
       } else {
-        if(c.isNPC){
+        if(c.isNPC || isGM()){
           var curBonus2 = num(csk2.bonus, 0);
           if(curBonus2 > 0){
             csk2.bonus = curBonus2 - 1;
             c.skillProgress[csId2] = 0;
             c.skillPoints++;
+            var subCskLvlPatch = { customSkills: c.customSkills, skillProgress: c.skillProgress, skillPoints: c.skillPoints };
+            c._lastLocalEdit = Date.now();
+            markCharDirty(c.id, subCskLvlPatch);
             saveState(); renderTab();
+            if(typeof pushCharacterPatch === 'function'){
+              pushCharacterPatch(c.id, subCskLvlPatch);
+            }
           } else {
             showToast("La habilidad ya está en nivel 0.", "warning");
           }

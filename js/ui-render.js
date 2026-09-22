@@ -171,7 +171,8 @@ function tplFicha(c){
 
   var levelControl = '';
   if(isGM()){
-    levelControl = '<button class="btn-solid-gold" data-action="grant-level">+ Nivel</button>';
+    levelControl = '<button type="button" class="btn-compact" data-action="revoke-level" title="Bajar 1 nivel (GM)" style="padding:4px 8px;font-weight:700;">-</button>' +
+                   '<button type="button" class="btn-solid-gold" data-action="grant-level" title="Subir 1 nivel (GM)">+ Nivel</button>';
   }
 
   var canEdit = canEditChar(c);
@@ -229,7 +230,7 @@ function tplFicha(c){
         '<div class="field-grid">'+
           field("Nombre", "name", c.name, "text", ro)+
           (isGM() && !c.isNPC ? '<div class="field"><label>👤 Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
-          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(c.isNPC && isGM() ? '' : 'readonly')+'>'+levelControl+'</div></div>'+
+          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(isGM() ? '' : 'readonly')+'>'+levelControl+'</div></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text", ro)+
           field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text", ro)+
           field("Altura","altura",c.altura,"text", ro)+
@@ -280,6 +281,7 @@ function tplHabilidades(c){
     banner = '<div class="skill-pool-banner">'+
       '<span>Puntos de mejora disponibles: <b>'+num(c.skillPoints,0)+'</b></span>'+
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
+        '<button class="btn-solid-gold" data-action="gm-sub-skill-point" title="Quitar 1 punto de habilidad al personaje">-1 Pto (GM)</button>'+
         '<button class="btn-solid-gold" data-action="gm-add-skill-point" title="Dar 1 punto de habilidad al personaje">+1 Pto (GM)</button>'+
         '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>'+
       '</div>'+
@@ -287,7 +289,10 @@ function tplHabilidades(c){
   } else if(c.isNPC && isGM()){
     banner = '<div class="skill-pool-banner">'+
       '<span>NPC - Puntos disponibles: <b>'+num(c.skillPoints,0)+'</b>. Habilidades editables.</span>'+
-      '<button class="btn-solid-gold" data-action="gm-add-skill-point">+1 Pto (GM)</button>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
+        '<button class="btn-solid-gold" data-action="gm-sub-skill-point" title="Quitar 1 punto de habilidad">-1 Pto (GM)</button>'+
+        '<button class="btn-solid-gold" data-action="gm-add-skill-point" title="Dar 1 punto de habilidad">+1 Pto (GM)</button>'+
+      '</div>'+
     '</div>';
   }
 
@@ -333,11 +338,11 @@ function tplHabilidades(c){
         var costNeeded = bonusVal + 1;
         var canSub = canEdit && prog > 0;
         var canAdd = false;
-        if(canEdit && bonusVal > 0 && bonusVal < 8){
+        if(canEdit && (bonusVal > 0 || isGM()) && bonusVal < 8){
           if(c.isNPC){
             canAdd = num(c.skillPoints,0) >= 1;
           } else {
-            canAdd = unlocked && num(c.skillPoints,0) >= 1;
+            canAdd = (unlocked || isGM()) && num(c.skillPoints,0) >= 1;
           }
         }
 
@@ -450,11 +455,11 @@ function skillRowHtml(s, c, unlocked, canEdit){
 
   var canSub = canEdit && prog > 0;
   var canAdd = false;
-  if(canEdit && bonusVal > 0 && bonusVal < 8){
+  if(canEdit && (bonusVal > 0 || isGM()) && bonusVal < 8){
     if(c.isNPC){
       canAdd = num(c.skillPoints,0) >= 1;
     } else {
-      canAdd = unlocked && num(c.skillPoints,0) >= 1;
+      canAdd = (unlocked || isGM()) && num(c.skillPoints,0) >= 1;
     }
   }
 
@@ -503,11 +508,11 @@ function skillRowExcelHtml(s, c, unlocked, canEdit){
 
   var canSub = canEdit && prog > 0;
   var canAdd = false;
-  if(canEdit && bonusVal > 0 && bonusVal < 8){
+  if(canEdit && (bonusVal > 0 || isGM()) && bonusVal < 8){
     if(c.isNPC){
       canAdd = num(c.skillPoints,0) >= 1;
     } else {
-      canAdd = unlocked && num(c.skillPoints,0) >= 1;
+      canAdd = (unlocked || isGM()) && num(c.skillPoints,0) >= 1;
     }
   }
 
@@ -550,11 +555,11 @@ function customSkillRowExcelHtml(cs, c, unlocked, canEdit){
 
   var canSub = canEdit && prog > 0;
   var canAdd = false;
-  if(canEdit && bonusVal > 0 && bonusVal < 8){
+  if(canEdit && (bonusVal > 0 || isGM()) && bonusVal < 8){
     if(c.isNPC){
       canAdd = num(c.skillPoints,0) >= 1;
     } else {
-      canAdd = unlocked && num(c.skillPoints,0) >= 1;
+      canAdd = (unlocked || isGM()) && num(c.skillPoints,0) >= 1;
     }
   }
 
@@ -714,8 +719,11 @@ function tplEntrenamiento(c){
             '<div class="tr-progress-track" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;height:8px;overflow:hidden;position:relative;" title="Progreso hacia la meta del Máster">' +
               '<div class="tr-progress-fill" style="background:linear-gradient(90deg, var(--gold), var(--teal-light));height:100%;border-radius:5px;width:' + progressPct + '%;"></div>' +
             '</div>' +
-            '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;">' +
-              '<span>' + (isCompleted ? '🏆 ¡Hito completado! Listo para otorgar recompensa.' : 'Progreso hacia el hito del Máster...') + '</span>' +
+            '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;flex-wrap:wrap;gap:4px;">' +
+              '<div style="display:flex;align-items:center;gap:6px;">' +
+                (isCompleted ? '<button type="button" class="btn-solid-gold btn-compact" data-action="grant-training-reward" data-id="' + t.id + '" title="Otorgar +1 a la habilidad entrenada (GM)" style="padding:2px 7px;font-size:0.68rem;cursor:pointer;">🏆 Otorgar Recompensa (+1)</button>' : '') +
+                '<span>' + (isCompleted ? '¡Hito completado!' : 'Progreso hacia el hito del Máster...') + '</span>' +
+              '</div>' +
               '<span style="color:var(--gold-light);font-weight:600;"><b>' + points + ' / ' + targetGoal + ' pts</b> (' + progressPct + '%)</span>' +
             '</div>' +
           '</div>';

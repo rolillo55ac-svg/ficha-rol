@@ -189,7 +189,7 @@ function openDataModal(){
     html += '<div class="data-modal-user-box">'+
       '<div class="data-modal-user-info">'+
         '<div class="data-modal-user-label">Conectado como</div>'+
-        '<div class="data-modal-user-email">'+esc(currentUser.email)+' <span class="data-modal-user-role">('+ (currentRole === 'gm' ? 'Máster' : 'Jugador') +')</span></div>'+
+        '<div class="data-modal-user-email">'+esc(currentUser.email)+' <span class="data-modal-user-role">('+ (isGM() ? 'Máster' : 'Jugador') +')</span></div>'+
       '</div>'+
       '<button class="btn-compact data-modal-logout-btn" data-action="auth-logout">Cerrar sesión</button>'+
     '</div>';
