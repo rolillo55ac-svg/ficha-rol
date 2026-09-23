@@ -775,7 +775,12 @@ var houseKonvaStageStart = { x: 0, y: 0 };
 
 function initOrRenderHouseKonvaStage(){
   if(typeof Konva === "undefined"){
-    console.warn("Konva.js aún no está disponible.");
+    console.warn("Konva.js aún no está disponible. Reintentando...");
+    setTimeout(function(){
+      if(typeof Konva !== "undefined"){
+        initOrRenderHouseKonvaStage();
+      }
+    }, 200);
     return;
   }
   var wrap = document.getElementById("canvasWrap");
