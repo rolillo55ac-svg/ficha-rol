@@ -18,7 +18,7 @@ var houseState = {
   rooms: [],
   upgrades: [],
   events: [],
-  editMode: false,
+  editMode: true,
   zoom: 1.0,
   studioRoomId: null,
   studioCategory: "todas",
@@ -816,10 +816,17 @@ function initOrRenderHouseKonvaStage(){
 
   houseKonvaTransformer = new Konva.Transformer({
     rotateEnabled: false,
-    enabledAnchors: ["bottom-right"],
-    anchorStroke: "#B08D57",
-    anchorFill: "#1A120D",
-    anchorSize: 14,
+    enabledAnchors: ["top-left", "top-right", "bottom-left", "bottom-right", "top-center", "bottom-center", "middle-left", "middle-right"],
+    boundBoxFunc: function(oldBox, newBox) {
+      if (Math.abs(newBox.width) < 40 || Math.abs(newBox.height) < 40) {
+        return oldBox;
+      }
+      return newBox;
+    },
+    anchorStroke: "#E5C07B",
+    anchorFill: "#1F1610",
+    anchorSize: 12,
+    anchorCornerRadius: 3,
     borderStroke: "#DEC392",
     borderDash: [4, 4]
   });
@@ -963,7 +970,43 @@ function renderKonvaRooms(){
       fill: "#8F7D65"
     });
 
-    // 5. Tirador de redimensionado visible en modo edición
+    // 5. Renderizado visual de mobiliario y decoración en el plano cenital
+    var allItems = (r.furniture || []).concat(r.decor || []);
+    var roomCols = Math.max(2, r.width || Math.round(r.w / 40) || 6);
+    var roomRows = Math.max(2, r.height || Math.round(r.h / 40) || 4);
+    var cellW = r.w / roomCols;
+    var cellH = Math.max(14, (r.h - 36) / roomRows);
+
+    allItems.forEach(function(item){
+      var iw = Math.max(1, item.w || 1);
+      var ih = Math.max(1, item.h || 1);
+      var px = Math.min(r.w - 18, (item.pos_x || 0) * cellW + 3);
+      var py = Math.min(r.h - 18, 22 + (item.pos_y || 0) * cellH);
+      var pw = Math.max(16, Math.min(r.w - px - 3, iw * cellW - 5));
+      var ph = Math.max(14, Math.min(r.h - py - 18, ih * cellH - 3));
+
+      var itemBox = new Konva.Rect({
+        x: px, y: py,
+        width: pw, height: ph,
+        cornerRadius: 3,
+        fill: item.items ? "rgba(42, 30, 20, 0.72)" : "rgba(22, 28, 36, 0.65)",
+        stroke: item.items ? "rgba(212, 175, 55, 0.55)" : "rgba(148, 163, 184, 0.4)",
+        strokeWidth: 1
+      });
+
+      var itemIcon = item.icon || getFurnitureIcon(item.type) || "📦";
+      var itemLabel = new Konva.Text({
+        text: itemIcon,
+        x: px, y: py + Math.max(0, (ph - 13) / 2),
+        width: pw,
+        align: "center",
+        fontSize: Math.min(15, Math.max(10, ph - 3))
+      });
+
+      group.add(itemBox, itemLabel);
+    });
+
+    // 6. Tirador de redimensionado visible en modo edición
     var resizeHint = new Konva.Rect({
       x: r.w - 16,
       y: r.h - 16,
@@ -990,6 +1033,7 @@ function renderKonvaRooms(){
       r.pos_x = Math.round((r.x - 40) / 40);
       r.pos_y = Math.round((r.y - 40) / 40);
       saveRoomChangesToRemoteAndBroadcast(r, "geometry");
+      updateQuickRoomBar(r);
     });
 
     // Clic / Tap
@@ -1004,28 +1048,27 @@ function renderKonvaRooms(){
       startKonvaRename(group, r);
     });
 
-    // Transformación de tamaño con Transformer
+    // Transformación de tamaño libre y fluido con Transformer
     group.on("transformend", function(){
-      var rawW = bgRect.width() * group.scaleX();
-      var rawH = bgRect.height() * group.scaleY();
-      var newW = houseKonvaGridSnap > 0 ? Math.max(120, Math.round(rawW / houseKonvaGridSnap) * houseKonvaGridSnap) : Math.max(120, Math.round(rawW));
-      var newH = houseKonvaGridSnap > 0 ? Math.max(80, Math.round(rawH / houseKonvaGridSnap) * houseKonvaGridSnap) : Math.max(80, Math.round(rawH));
+      var rawW = Math.abs(bgRect.width() * group.scaleX());
+      var rawH = Math.abs(bgRect.height() * group.scaleY());
+      var newW = houseKonvaGridSnap > 0 ? Math.max(40, Math.round(rawW / houseKonvaGridSnap) * houseKonvaGridSnap) : Math.max(40, Math.round(rawW));
+      var newH = houseKonvaGridSnap > 0 ? Math.max(40, Math.round(rawH / houseKonvaGridSnap) * houseKonvaGridSnap) : Math.max(40, Math.round(rawH));
+      var newX = houseKonvaGridSnap > 0 ? Math.round(group.x() / houseKonvaGridSnap) * houseKonvaGridSnap : Math.round(group.x());
+      var newY = houseKonvaGridSnap > 0 ? Math.round(group.y() / houseKonvaGridSnap) * houseKonvaGridSnap : Math.round(group.y());
 
       group.scaleX(1); group.scaleY(1);
-      bgRect.width(newW); bgRect.height(newH);
-      veil.width(newW); veil.height(newH);
-      label.width(newW - 24);
-      badge.y(newH - 24);
-      resizeHint.x(newW - 16); resizeHint.y(newH - 16);
+      group.x(newX); group.y(newY);
 
-      r.w = newW; r.h = newH; r.x = group.x(); r.y = group.y();
-      r.width = Math.round(newW / 40);
-      r.height = Math.round(newH / 40);
+      r.w = newW; r.h = newH; r.x = newX; r.y = newY;
+      r.width = Math.max(1, Math.round(newW / 40));
+      r.height = Math.max(1, Math.round(newH / 40));
       r.pos_x = Math.round((r.x - 40) / 40);
       r.pos_y = Math.round((r.y - 40) / 40);
 
       saveRoomChangesToRemoteAndBroadcast(r, "geometry");
-      houseKonvaLayer.draw();
+      updateQuickRoomBar(r);
+      renderKonvaRooms();
     });
 
     houseKonvaLayer.add(group);
@@ -1097,6 +1140,31 @@ function updateQuickRoomBar(r){
   var texObj = HOUSE_TEXTURES.find(function(t){ return t.id === (r.texture || inferRoomTexture(r)); });
   var texLbl = document.getElementById("rqTexLabel");
   if(texLbl) texLbl.textContent = texObj ? texObj.name : "Madera";
+  var wLbl = document.getElementById("rqWidthLabel");
+  if(wLbl) wLbl.textContent = Math.max(1, r.width || Math.round((r.w || 160) / 40));
+  var hLbl = document.getElementById("rqHeightLabel");
+  if(hLbl) hLbl.textContent = Math.max(1, r.height || Math.round((r.h || 120) / 40));
+}
+
+function quickStepRoomSize(axis, delta){
+  var r = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+  if(!r) return;
+
+  if(axis === "w"){
+    var curW = r.w || (r.width ? r.width * 40 : 160);
+    var newW = Math.max(40, curW + delta);
+    r.w = newW;
+    r.width = Math.max(1, Math.round(newW / 40));
+  } else if(axis === "h"){
+    var curH = r.h || (r.height ? r.height * 40 : 120);
+    var newH = Math.max(40, curH + delta);
+    r.h = newH;
+    r.height = Math.max(1, Math.round(newH / 40));
+  }
+
+  saveRoomChangesToRemoteAndBroadcast(r, "geometry");
+  renderKonvaRooms();
+  updateQuickRoomBar(r);
 }
 
 function startKonvaRename(group, r){
@@ -1433,14 +1501,25 @@ function toggleFloorPopover(btn){
 }
 
 function positionHousePopover(pop, btn){
+  if(!pop || !btn) return;
   var rect = btn.getBoundingClientRect();
-  pop.style.top = (rect.bottom + 6) + "px";
-  pop.style.left = Math.min(window.innerWidth - 240, Math.max(10, rect.left)) + "px";
+  var popW = 280;
+  var left = Math.min(window.innerWidth - popW - 12, Math.max(12, rect.left));
+  var top = rect.bottom + 8;
+  if(top + 280 > window.innerHeight){
+    top = Math.max(10, rect.top - 280);
+  }
+  pop.style.top = top + "px";
+  pop.style.left = left + "px";
+  pop.style.display = "flex";
   pop.classList.add("visible");
 }
 
 function closeAllHousePopovers(){
-  document.querySelectorAll(".popover-menu").forEach(function(m){ m.classList.remove("visible"); });
+  document.querySelectorAll(".popover-menu, .house-popover-menu").forEach(function(m){
+    m.classList.remove("visible");
+    m.style.display = "none";
+  });
 }
 
 function openHousePresetModal(){
@@ -1739,27 +1818,50 @@ var CANVA_ASSET_LIBRARY = [
   { id: "banco_trabajo", name: "Banco de Trabajo y Forja", category: "cocina", icon: "🔨", isFurniture: true, defaultType: "banco", desc: "Mesa pesada con herramientas de artesanía" },
 
   // 6. DECORACIÓN Y ALFOMBRAS
-  { id: "alfombra_persa", name: "Alfombra Persa Ornamental", category: "decoracion", icon: "🧶", isDecor: true, defaultType: "alfombra", desc: "Tapete tejido con cenefas y flecos decorativos" },
-  { id: "planta_maceta", name: "Planta Frondosa en Maceta", category: "decoracion", icon: "🌿", isDecor: true, defaultType: "planta", desc: "Follaje verde en maceta de barro cocido" },
-  { id: "tapiz_pared", name: "Tapiz Bordado del Mapa", category: "decoracion", icon: "🖼️", isDecor: true, defaultType: "cuadro", desc: "Tapiz heráldico con la historia de Krysalis" },
-  { id: "trofeo_caza", name: "Trofeo de Caza y Cornamenta", category: "decoracion", icon: "💀", isDecor: true, defaultType: "trofeo", desc: "Cráneo grabado de bestia mítica" },
-  { id: "telarana", name: "Telaraña Ancestral", category: "decoracion", icon: "🕸️", isDecor: true, defaultType: "telarana", desc: "Sutil filamento de araña en esquina" },
+  { id: "alfombra_persa", name: "Alfombra Persa Granate", category: "decoracion", icon: "🧶", defaultW: 2, defaultH: 2, isDecor: true, defaultType: "alfombra_persa", desc: "Tapete noble con cenefas doradas y flecos" },
+  { id: "alfombra_runica", name: "Alfombra Rúnica Celestial", category: "decoracion", icon: "🔮", defaultW: 2, defaultH: 2, isDecor: true, defaultType: "alfombra_runica", desc: "Círculo místico de invocación bordado" },
+  { id: "piel_oso", name: "Piel de Oso Nórdico", category: "decoracion", icon: "🐻", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "piel_oso", desc: "Alfombra rústica de pelo grueso" },
+  { id: "tapiz_pared", name: "Tapiz Bordado del Mapa", category: "decoracion", icon: "🖼️", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "cuadro", desc: "Tapiz heráldico con las tierras de Krysalis" },
+  { id: "trofeo_caza", name: "Trofeo de Cráneo de Bestia", category: "decoracion", icon: "💀", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "trofeo", desc: "Cráneo grabado con runas de victoria" },
+  { id: "diana_tiro", name: "Diana con Flechas", category: "decoracion", icon: "🎯", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "diana", desc: "Diana de paja y madera para entrenamiento" },
+  { id: "barriles_reserva", name: "Barriles de Hidromiel Enana", category: "decoracion", icon: "🍺", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "barriles", desc: "Lote de barriles de roble con espita" },
+  { id: "planta_maceta", name: "Planta Frondosa en Maceta", category: "decoracion", icon: "🌿", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "planta", desc: "Follaje verde en maceta de barro cocido" },
+  { id: "setas_luminosas", name: "Setas Bioluminiscentes", category: "decoracion", icon: "🍄", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "setas", desc: "Hongos fosforescentes de caverna" },
+  { id: "bonsai_mistico", name: "Bonsái Arcano Viviente", category: "decoracion", icon: "🪴", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "bonsai", desc: "Árbol miniatura imbuido de éter" },
+  { id: "estante_pociones", name: "Anaquel de Pociones y Viales", category: "decoracion", icon: "🧪", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "pociones", desc: "Estante con reactivos y elixires brillantes" },
+  { id: "mesa_mapas", name: "Mesa Táctica de Cartografía", category: "decoracion", icon: "🗺️", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "mapas", desc: "Mesa con planos, compás y catalejo" },
+  { id: "reliquia_arcana", name: "Pedestal de Gema Radiante", category: "decoracion", icon: "💎", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "reliquia", desc: "Columna de piedra con cristal que levita" },
+  { id: "telarana", name: "Telaraña Ancestral de Rincón", category: "decoracion", icon: "🕸️", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "telarana", desc: "Sutil filamento de araña en esquina" },
 
   // 7. ILUMINACIÓN
-  { id: "candelabro", name: "Candelabro de Pie con Velas", category: "luces", icon: "🕯️", isDecor: true, defaultType: "vela", desc: "Lámpara de forja con 4 velas aromáticas" },
-  { id: "farol_pared", name: "Farol de Aceite de Pared", category: "luces", icon: "🏮", isDecor: true, defaultType: "antorcha", desc: "Candil con cristal protector y luz tenue" },
-  { id: "brasero", name: "Brasero de Ascuas Arcanas", category: "luces", icon: "✨", isDecor: true, defaultType: "vela", desc: "Recipiente con ascuas mágicas de resplandor violeta" }
+  { id: "candelabro", name: "Candelabro Alto de Forja", category: "luces", icon: "🕯️", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "candelabro", desc: "Lámpara de forja con 4 velas aromáticas" },
+  { id: "farol_pared", name: "Farol de Aceite de Pared", category: "luces", icon: "🏮", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "antorcha", desc: "Candil con cristal protector y luz tenue" },
+  { id: "brasero", name: "Brasero de Fuego Violeta", category: "luces", icon: "✨", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "brasero", desc: "Recipiente con ascuas mágicas de resplandor arcano" },
+  { id: "chimenea_decor", name: "Gran Chimenea de Piedra", category: "luces", icon: "🪵", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "chimenea", desc: "Hogar de leña con tiro de sillería y brasas" }
 ];
 
 var HOUSE_DECOR_CATALOG = [
-  { type: "alfombra", icon: "🧶", label: "Alfombra tejida" },
-  { type: "planta", icon: "🌿", label: "Planta silvestre" },
-  { type: "vela", icon: "🕯️", label: "Vela encantada" },
-  { type: "cuadro", icon: "🖼️", label: "Tapiz del mapa" },
-  { type: "cofre", icon: "📦", label: "Cofre ornamental" },
-  { type: "telarana", icon: "🕸️", label: "Telaraña misteriosa" },
-  { type: "antorcha", icon: "🔥", label: "Antorcha de pared" },
-  { type: "trofeo", icon: "💀", label: "Trofeo de caza" }
+  { type: "alfombra", icon: "🧶", label: "Alfombra tejida", defaultW: 2, defaultH: 2 },
+  { type: "alfombra_persa", icon: "🧶", label: "Alfombra persa", defaultW: 2, defaultH: 2 },
+  { type: "alfombra_runica", icon: "🔮", label: "Alfombra arcana", defaultW: 2, defaultH: 2 },
+  { type: "piel_oso", icon: "🐻", label: "Piel de oso", defaultW: 2, defaultH: 1 },
+  { type: "planta", icon: "🌿", label: "Planta silvestre", defaultW: 1, defaultH: 1 },
+  { type: "setas", icon: "🍄", label: "Setas mágicas", defaultW: 1, defaultH: 1 },
+  { type: "bonsai", icon: "🪴", label: "Bonsái arcano", defaultW: 1, defaultH: 1 },
+  { type: "vela", icon: "🕯️", label: "Vela encantada", defaultW: 1, defaultH: 1 },
+  { type: "candelabro", icon: "🕯️", label: "Candelabro alto", defaultW: 1, defaultH: 1 },
+  { type: "antorcha", icon: "🔥", label: "Antorcha mural", defaultW: 1, defaultH: 1 },
+  { type: "brasero", icon: "✨", label: "Brasero místico", defaultW: 1, defaultH: 1 },
+  { type: "chimenea", icon: "🪵", label: "Chimenea piedra", defaultW: 2, defaultH: 1 },
+  { type: "cuadro", icon: "🖼️", label: "Tapiz del mapa", defaultW: 2, defaultH: 1 },
+  { type: "trofeo", icon: "💀", label: "Trofeo bestia", defaultW: 1, defaultH: 1 },
+  { type: "diana", icon: "🎯", label: "Diana flechas", defaultW: 1, defaultH: 1 },
+  { type: "barriles", icon: "🍺", label: "Barriles licor", defaultW: 2, defaultH: 1 },
+  { type: "pociones", icon: "🧪", label: "Anaquel pociones", defaultW: 2, defaultH: 1 },
+  { type: "mapas", icon: "🗺️", label: "Mesa táctica", defaultW: 2, defaultH: 1 },
+  { type: "reliquia", icon: "💎", label: "Gema rúnica", defaultW: 1, defaultH: 1 },
+  { type: "telarana", icon: "🕸️", label: "Telaraña rincón", defaultW: 1, defaultH: 1 },
+  { type: "cofre", icon: "📦", label: "Cofre decorativo", defaultW: 1, defaultH: 1 }
 ];
 
 function getCanvaSvg(typeOrId, rotation){
@@ -1911,6 +2013,50 @@ function getCanvaSvg(typeOrId, rotation){
       '<circle cx="20" cy="33" r="3" fill="#FEF08A"/>' +
       '<circle cx="7" cy="20" r="3" fill="#FEF08A"/>' +
       '<circle cx="33" cy="20" r="3" fill="#FEF08A"/>';
+  } else if(key.includes("diana")){
+    inner = '<circle cx="20" cy="20" r="15" fill="#DC2626" stroke="#FEF08A" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="20" r="10" fill="#F8FAFC" stroke="#DC2626" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="20" r="5" fill="#DC2626"/>' +
+      '<line x1="12" y1="12" x2="28" y2="28" stroke="#FDE047" stroke-width="1.5"/>';
+  } else if(key.includes("barril")){
+    inner = '<ellipse cx="14" cy="20" rx="9" ry="12" fill="#78350F" stroke="#D97706" stroke-width="1.5"/>' +
+      '<ellipse cx="26" cy="20" rx="9" ry="12" fill="#92400E" stroke="#D97706" stroke-width="1.5"/>' +
+      '<circle cx="26" cy="20" r="2" fill="#FCD34D"/>';
+  } else if(key.includes("setas")){
+    inner = '<ellipse cx="16" cy="22" rx="7" ry="5" fill="#9333EA" stroke="#C084FC" stroke-width="1.5"/>' +
+      '<ellipse cx="26" cy="18" rx="8" ry="6" fill="#A855F7" stroke="#E9D5FF" stroke-width="1.5"/>' +
+      '<circle cx="24" cy="16" r="1.5" fill="#FFFFFF"/>' +
+      '<circle cx="28" cy="20" r="1.2" fill="#FFFFFF"/>';
+  } else if(key.includes("brasero")){
+    inner = '<circle cx="20" cy="20" r="13" fill="#18181B" stroke="#7C3AED" stroke-width="2"/>' +
+      '<circle cx="20" cy="20" r="8" fill="#581C87"/>' +
+      '<polygon points="20,13 16,23 24,23" fill="#C084FC"/>';
+  } else if(key.includes("pocion")){
+    inner = '<rect x="4" y="10" width="32" height="20" rx="2" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>' +
+      '<circle cx="10" cy="20" r="3.5" fill="#22C55E"/>' +
+      '<circle cx="20" cy="20" r="3.5" fill="#3B82F6"/>' +
+      '<circle cx="30" cy="20" r="3.5" fill="#EC4899"/>';
+  } else if(key.includes("mapa")){
+    inner = '<rect x="4" y="6" width="32" height="28" rx="2" fill="#78350F" stroke="#D97706" stroke-width="1.5"/>' +
+      '<rect x="8" y="10" width="24" height="20" rx="1" fill="#FEF3C7" stroke="#B45309" stroke-width="1"/>' +
+      '<line x1="12" y1="18" x2="28" y2="18" stroke="#D97706" stroke-width="1" stroke-dasharray="2,2"/>' +
+      '<circle cx="20" cy="20" r="2" fill="#DC2626"/>';
+  } else if(key.includes("reliquia") || key.includes("gema")){
+    inner = '<polygon points="20,6 30,20 20,34 10,20" fill="#0284C7" stroke="#38BDF8" stroke-width="2"/>' +
+      '<circle cx="20" cy="20" r="4" fill="#E0F2FE"/>';
+  } else if(key.includes("oso")){
+    inner = '<path d="M 6 12 Q 10 20 6 28 Q 20 24 34 28 Q 30 20 34 12 Q 20 16 6 12 Z" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="20" r="4" fill="#CBD5E1"/>';
+  } else if(key.includes("runic")){
+    inner = '<circle cx="20" cy="20" r="14" fill="#312E81" stroke="#818CF8" stroke-width="1.5"/>' +
+      '<circle cx="20" cy="20" r="9" fill="none" stroke="#C7D2FE" stroke-width="1" stroke-dasharray="2,2"/>' +
+      '<polygon points="20,12 27,24 13,24" fill="none" stroke="#FDE047" stroke-width="1"/>';
+  } else if(key.includes("trofeo")){
+    inner = '<circle cx="20" cy="20" r="8" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5"/>' +
+      '<circle cx="17" cy="18" r="2" fill="#0F172A"/>' +
+      '<circle cx="23" cy="18" r="2" fill="#0F172A"/>' +
+      '<path d="M 12 12 Q 8 6 4 10" fill="none" stroke="#CBD5E1" stroke-width="2"/>' +
+      '<path d="M 28 12 Q 32 6 36 10" fill="none" stroke="#CBD5E1" stroke-width="2"/>';
   } else {
     // Genérico / Caja de almacenamiento
     inner = '<rect x="6" y="6" width="28" height="28" rx="3" fill="#374151" stroke="#9CA3AF" stroke-width="1.5"/>' +
@@ -2506,7 +2652,10 @@ function addRoomDecor(roomId, decorType){
   var cat = HOUSE_DECOR_CATALOG.find(function(c){ return c.type === decorType; });
   if(!cat) return;
 
-  // Buscar celda libre en sub-rejilla 6x4
+  var roomCols = Math.max(4, room.width || Math.round((room.w || 240) / 40) || 6);
+  var roomRows = Math.max(3, room.height || Math.round((room.h || 160) / 40) || 4);
+
+  // Buscar celda libre en sub-rejilla
   var occupied = {};
   (room.furniture || []).forEach(function(f){ occupied[(f.pos_x || 0) + "_" + (f.pos_y || 0)] = true; });
   room.decor.forEach(function(d){ occupied[(d.pos_x || 0) + "_" + (d.pos_y || 0)] = true; });
@@ -2514,8 +2663,8 @@ function addRoomDecor(roomId, decorType){
   var targetX = 0;
   var targetY = 0;
   var found = false;
-  for(var y = 0; y < 4; y++){
-    for(var x = 0; x < 6; x++){
+  for(var y = 0; y < roomRows; y++){
+    for(var x = 0; x < roomCols; x++){
       if(!occupied[x + "_" + y]){
         targetX = x;
         targetY = y;
@@ -2527,10 +2676,12 @@ function addRoomDecor(roomId, decorType){
   }
 
   var newDec = {
-    id: "dec_" + Date.now(),
+    id: "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
     type: cat.type,
     icon: cat.icon,
     label: cat.label,
+    w: cat.defaultW || 1,
+    h: cat.defaultH || 1,
     pos_x: targetX,
     pos_y: targetY,
     rotation: 0
@@ -2780,12 +2931,26 @@ function canvaResizeItem(roomId, itemId, dw, dh){
   var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!room) return;
 
+  var maxCols = Math.max(4, room.width || Math.round((room.w || 240) / 40) || 6);
+  var maxRows = Math.max(3, room.height || Math.round((room.h || 160) / 40) || 4);
+
   var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
   if(f){
     var curW = Math.max(1, f.w || 1);
     var curH = Math.max(1, f.h || 1);
-    if(dw !== 0) f.w = Math.max(1, Math.min(6 - (f.pos_x || 0), curW + dw));
-    if(dh !== 0) f.h = Math.max(1, Math.min(4 - (f.pos_y || 0), curH + dh));
+    var targetW = curW + dw;
+    var targetH = curH + dh;
+
+    if(dw > 0 && (f.pos_x || 0) + targetW > maxCols && (f.pos_x || 0) > 0){
+      f.pos_x = Math.max(0, (f.pos_x || 0) - dw);
+    }
+    if(dh > 0 && (f.pos_y || 0) + targetH > maxRows && (f.pos_y || 0) > 0){
+      f.pos_y = Math.max(0, (f.pos_y || 0) - dh);
+    }
+
+    f.w = Math.max(1, Math.min(maxCols - (f.pos_x || 0), targetW));
+    f.h = Math.max(1, Math.min(maxRows - (f.pos_y || 0), targetH));
+
     saveRoomChangesToRemoteAndBroadcast(room, "furniture");
     renderHouseView();
     return;
@@ -2795,8 +2960,19 @@ function canvaResizeItem(roomId, itemId, dw, dh){
   if(d){
     var curDW = Math.max(1, d.w || 1);
     var curDH = Math.max(1, d.h || 1);
-    if(dw !== 0) d.w = Math.max(1, Math.min(6 - (d.pos_x || 0), curDW + dw));
-    if(dh !== 0) d.h = Math.max(1, Math.min(4 - (d.pos_y || 0), curDH + dh));
+    var targetDW = curDW + dw;
+    var targetDH = curDH + dh;
+
+    if(dw > 0 && (d.pos_x || 0) + targetDW > maxCols && (d.pos_x || 0) > 0){
+      d.pos_x = Math.max(0, (d.pos_x || 0) - dw);
+    }
+    if(dh > 0 && (d.pos_y || 0) + targetDH > maxRows && (d.pos_y || 0) > 0){
+      d.pos_y = Math.max(0, (d.pos_y || 0) - dh);
+    }
+
+    d.w = Math.max(1, Math.min(maxCols - (d.pos_x || 0), targetDW));
+    d.h = Math.max(1, Math.min(maxRows - (d.pos_y || 0), targetDH));
+
     saveRoomChangesToRemoteAndBroadcast(room, "decor");
     renderHouseView();
   }
@@ -2806,12 +2982,15 @@ function canvaNudgeItem(roomId, itemId, dx, dy){
   var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!room) return;
 
+  var maxCols = Math.max(4, room.width || Math.round((room.w || 240) / 40) || 6);
+  var maxRows = Math.max(3, room.height || Math.round((room.h || 160) / 40) || 4);
+
   var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
   if(f){
     var curW = Math.max(1, f.w || 1);
     var curH = Math.max(1, f.h || 1);
-    f.pos_x = Math.max(0, Math.min(6 - curW, (f.pos_x || 0) + dx));
-    f.pos_y = Math.max(0, Math.min(4 - curH, (f.pos_y || 0) + dy));
+    f.pos_x = Math.max(0, Math.min(maxCols - curW, (f.pos_x || 0) + dx));
+    f.pos_y = Math.max(0, Math.min(maxRows - curH, (f.pos_y || 0) + dy));
     saveRoomChangesToRemoteAndBroadcast(room, "furniture");
     renderHouseView();
     return;
@@ -2821,8 +3000,8 @@ function canvaNudgeItem(roomId, itemId, dx, dy){
   if(d){
     var curDW = Math.max(1, d.w || 1);
     var curDH = Math.max(1, d.h || 1);
-    d.pos_x = Math.max(0, Math.min(6 - curDW, (d.pos_x || 0) + dx));
-    d.pos_y = Math.max(0, Math.min(4 - curDH, (d.pos_y || 0) + dy));
+    d.pos_x = Math.max(0, Math.min(maxCols - curDW, (d.pos_x || 0) + dx));
+    d.pos_y = Math.max(0, Math.min(maxRows - curDH, (d.pos_y || 0) + dy));
     saveRoomChangesToRemoteAndBroadcast(room, "decor");
     renderHouseView();
   }
@@ -2932,10 +3111,13 @@ function renderCanvaStudio(roomId){
   html += '  </div>'; // fin canva-assets-grid
   html += '</div>'; // fin canva-library-sidebar
 
+  var maxCols = Math.max(4, r.width || Math.round((r.w || 240) / 40) || 6);
+  var maxRows = Math.max(3, r.height || Math.round((r.h || 160) / 40) || 4);
+
   // Columna Central: Lienzo de la Habitación (Stage)
   html += '<div class="canva-stage-wrap">';
   html += '  <div class="canva-stage-toolbar">';
-  html += '    <div class="canva-stage-toolbar-title">Lienzo Arquitectónico Cenital (6x4 Celdas)</div>';
+  html += '    <div class="canva-stage-toolbar-title">Lienzo Arquitectónico Cenital (' + maxCols + 'x' + maxRows + ' Celdas)</div>';
   html += '    <div class="canva-stage-color-bar" title="Cambiar color o suelo de la estancia">';
   html += '      <span class="canva-stage-color-lbl">🎨 Suelo:</span>';
   HOUSE_COLOR_PALETTES.forEach(function(p){
@@ -2949,11 +3131,11 @@ function renderCanvaStudio(roomId){
 
   var texClass = "tex-" + (r.room_type || "salon");
   var stageCustomBg = r.color ? ('background: ' + getRoomCustomBackground(r.color) + ' !important;') : '';
-  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage" style="' + stageCustomBg + '">';
+  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage" style="grid-template-columns:repeat(' + maxCols + ', 1fr);grid-template-rows:repeat(' + maxRows + ', minmax(70px, 95px));' + stageCustomBg + '">';
 
   // Celdas de guía de fondo
-  html += '    <div class="canva-stage-grid-lines">';
-  for(var cellIdx = 0; cellIdx < 24; cellIdx++){
+  html += '    <div class="canva-stage-grid-lines" style="grid-template-columns:repeat(' + maxCols + ', 1fr);grid-template-rows:repeat(' + maxRows + ', 1fr);">';
+  for(var cellIdx = 0; cellIdx < (maxCols * maxRows); cellIdx++){
     html += '<div class="canva-stage-grid-cell"></div>';
   }
   html += '    </div>';
@@ -2971,7 +3153,7 @@ function renderCanvaStudio(roomId){
 
     html += '<div class="canva-stage-item item-furniture' + (isSel ? ' canva-selected' : '') + '" style="' + gridSpan + '" data-action="canva-select-item" data-item-id="' + f.id + '" data-room-id="' + r.id + '">';
 
-    if(isSel && canEdit && isGm){
+    if(isSel && canEdit){
       html += '<div class="canva-floating-toolbar">';
       html += '  <button class="canva-float-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" title="Girar 90°">🔄 90°</button>';
       html += '  <button class="canva-float-btn highlight" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Abrir inventario de este mueble">📦 Inv (' + itemCount + ')</button>';
@@ -3017,7 +3199,7 @@ function renderCanvaStudio(roomId){
 
     html += '<div class="canva-stage-item item-decor' + (isSel ? ' canva-selected' : '') + '" style="' + gridSpan + '" data-action="canva-select-item" data-item-id="' + d.id + '" data-room-id="' + r.id + '">';
 
-    if(isSel && canEdit && isGm){
+    if(isSel && canEdit){
       html += '<div class="canva-floating-toolbar">';
       html += '  <button class="canva-float-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" title="Girar 90°">🔄 90°</button>';
       html += '  <div class="canva-size-bar" title="Ajustar ancho">';
@@ -3051,7 +3233,7 @@ function renderCanvaStudio(roomId){
   html += '  </div>'; // fin canva-room-stage
 
   // Panel de control táctil de elemento seleccionado (Dock interactivo para móviles y ratón)
-  if(houseState.selectedItemId && canEdit && isGm){
+  if(houseState.selectedItemId && canEdit){
     var selFurn = furnitureList.find(function(f){ return f.id === houseState.selectedItemId; });
     var selDec = decorList.find(function(d){ return d.id === houseState.selectedItemId; });
     var selItem = selFurn || selDec;
@@ -3666,9 +3848,22 @@ function renderHouseView(){
   html += '    <div class="house-quick-tools-title">🎯 <b id="rqRoomName">' + esc(selIconName) + '</b></div>';
   html += '    <div class="house-quick-tools-group">';
   html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">✏️ Renombrar</button>';
+  html += '      <div class="house-tool-stepper" title="Ancho de la habitación">';
+  html += '        <span>↔️</span>';
+  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="-40" title="Reducir ancho">➖</button>';
+  html += '        <span id="rqWidthLabel">' + (selRoom ? Math.max(1, selRoom.width || Math.round((selRoom.w || 160)/40)) : 4) + '</span>';
+  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="40" title="Aumentar ancho">➕</button>';
+  html += '      </div>';
+  html += '      <div class="house-tool-stepper" title="Alto de la habitación">';
+  html += '        <span>↕️</span>';
+  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="-40" title="Reducir alto">➖</button>';
+  html += '        <span id="rqHeightLabel">' + (selRoom ? Math.max(1, selRoom.height || Math.round((selRoom.h || 120)/40)) : 3) + '</span>';
+  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="40" title="Aumentar alto">➕</button>';
+  html += '      </div>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
+  html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">🎨 Decorar Interior</button>';
   html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
   html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">🗑️</button>';
@@ -3688,26 +3883,26 @@ function renderHouseView(){
 
     // Barra de consejos interactiva
     html += '<div class="house-hint-bar">';
-    html += '  Con <b>Edición: ON</b> — Arrastra una habitación para moverla (se ajusta sola a la rejilla de 20px), tira de la esquina inferior derecha para redimensionarla, y haz <b>doble clic / doble toque</b> sobre el nombre para renombrarla. Arrastra el fondo para hacer paneo o usa la rueda/pellizco para zoom.';
+    html += '  Con <b>Edición: ON</b> — Arrastra una habitación para moverla (ajuste a 20px), tira de cualquiera de sus 8 esquinas y bordes o usa ➖/➕ en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
     html += '</div>';
 
     // Popovers de texturas, color, icono, plantas
-    html += '<div class="popover-menu" id="popoverTexture">';
+    html += '<div class="popover-menu house-popover-menu" id="popoverTexture" style="display:none;">';
     html += '  <div class="pop-header">Textura de Suelo de la Habitación</div>';
     html += '  <div class="house-texture-grid" id="textureGrid"></div>';
     html += '</div>';
 
-    html += '<div class="popover-menu" id="popoverColor">';
+    html += '<div class="popover-menu house-popover-menu" id="popoverColor" style="display:none;">';
     html += '  <div class="pop-header">Color del Borde y Tema</div>';
     html += '  <div class="color-grid" id="colorGrid"></div>';
     html += '</div>';
 
-    html += '<div class="popover-menu" id="popoverIcon">';
+    html += '<div class="popover-menu house-popover-menu" id="popoverIcon" style="display:none;">';
     html += '  <div class="pop-header">Icono Temático</div>';
     html += '  <div class="icon-grid" id="iconGrid"></div>';
     html += '</div>';
 
-    html += '<div class="popover-menu" id="popoverFloor">';
+    html += '<div class="popover-menu house-popover-menu" id="popoverFloor" style="display:none;">';
     html += '  <div class="pop-header">Mover a Otra Planta</div>';
     html += '  <div id="floorMoveList" style="display:flex;flex-direction:column;gap:5px;"></div>';
     html += '</div>';
@@ -3915,18 +4110,21 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
   var furnitureList = Array.isArray(r.furniture) ? r.furniture : [];
   var decorList = Array.isArray(r.decor) ? r.decor : [];
 
+  var maxCols = Math.max(4, r.width || Math.round((r.w || 240) / 40) || 6);
+  var maxRows = Math.max(3, r.height || Math.round((r.h || 160) / 40) || 4);
+
   var occupied = {};
   furnitureList.forEach(function(f, idx){
-    if(typeof f.pos_x !== "number") f.pos_x = idx % 6;
-    if(typeof f.pos_y !== "number") f.pos_y = Math.min(3, Math.floor(idx / 6));
+    if(typeof f.pos_x !== "number") f.pos_x = idx % maxCols;
+    if(typeof f.pos_y !== "number") f.pos_y = Math.min(maxRows - 1, Math.floor(idx / maxCols));
     if(typeof f.rotation !== "number") f.rotation = 0;
     occupied[f.pos_x + "_" + f.pos_y] = true;
   });
 
   decorList.forEach(function(d){
     if(typeof d.pos_x !== "number"){
-      for(var y = 3; y >= 0; y--){
-        for(var x = 5; x >= 0; x--){
+      for(var y = maxRows - 1; y >= 0; y--){
+        for(var x = maxCols - 1; x >= 0; x--){
           if(!occupied[x + "_" + y]){
             d.pos_x = x;
             d.pos_y = y;
@@ -3944,8 +4142,8 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
 
   var html = '<div class="house-room-subgrid-wrap">';
   html += '  <div class="house-room-subgrid-toolbar">';
-  html += '    <div class="house-room-subgrid-title"><span>📐</span> Mini-Plano Cenital de la Estancia</div>';
-  if(canEdit && isEditMode){
+  html += '    <div class="house-room-subgrid-title"><span>📐</span> Plano Interior de ' + esc(r.name) + ' (' + maxCols + 'x' + maxRows + ')</div>';
+  if(canEdit){
     html += '    <div style="display:flex;gap:6px;">';
     html += '      <button class="btn-compact highlight" data-action="open-add-furniture-modal" data-room-id="' + r.id + '" style="font-size:0.7rem;padding:3px 8px;">➕ Mueble</button>';
     html += '      <button class="btn-compact highlight" data-action="toggle-decor-palette" data-room-id="' + r.id + '" style="font-size:0.7rem;padding:3px 8px;background:rgba(46,204,113,0.2);border-color:#2ECC71;color:#A9DFBF;">🌿 + Decoración</button>';
@@ -3953,25 +4151,31 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
   }
   html += '  </div>';
 
-  html += '  <div class="house-room-subgrid tex-' + (r.room_type || 'salon') + '" id="houseRoomSubgrid">';
+  html += '  <div class="house-room-subgrid tex-' + (r.room_type || 'salon') + '" id="houseRoomSubgrid" style="grid-template-columns:repeat(' + maxCols + ', 1fr);grid-template-rows:repeat(' + maxRows + ', 72px);">';
 
   // Renderizar muebles posicionados
   furnitureList.forEach(function(f){
     var colStart = (f.pos_x || 0) + 1;
     var rowStart = (f.pos_y || 0) + 1;
-    var style = 'grid-column:' + colStart + '; grid-row:' + rowStart + ';';
+    var itemW = Math.max(1, f.w || 1);
+    var itemH = Math.max(1, f.h || 1);
+    var style = 'grid-column:' + colStart + ' / span ' + itemW + '; grid-row:' + rowStart + ' / span ' + itemH + ';';
     var icon = f.icon || getFurnitureIcon(f.type);
     var rot = f.rotation || 0;
 
-    html += '<div class="house-subtile-item house-subtile-furniture" style="' + style + '" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="' + esc(f.name) + ' (Toca para ver inventario)">';
-    if(canEdit && isEditMode){
+    html += '<div class="house-subtile-item house-subtile-furniture" style="' + style + '" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="' + esc(f.name) + ' (' + itemW + 'x' + itemH + ')">';
+    if(canEdit){
       html += '  <div class="house-subtile-controls">';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="1" title="Más ancho">↔+</button>';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="-1" title="Menos ancho">↔-</button>';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="1" title="Más alto">↕+</button>';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="-1" title="Menos alto">↕-</button>';
       html += '    <button class="house-subtile-btn" data-action="rotate-room-furniture" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Girar 90°">⟳</button>';
-      html += '    <button class="house-subtile-btn" data-action="delete-furniture" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Eliminar">&times;</button>';
+      html += '    <button class="house-subtile-btn danger" data-action="delete-furniture" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Eliminar">&times;</button>';
       html += '  </div>';
     }
     html += '  <span class="house-subtile-icon" style="transform:rotate(' + rot + 'deg);">' + icon + '</span>';
-    html += '  <span class="house-subtile-name">' + esc(f.name) + '</span>';
+    html += '  <span class="house-subtile-name">' + esc(f.name) + ' (' + itemW + 'x' + itemH + ')</span>';
     html += '</div>';
   });
 
@@ -3979,39 +4183,45 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
   decorList.forEach(function(d){
     var colStart = (d.pos_x || 0) + 1;
     var rowStart = (d.pos_y || 0) + 1;
-    var style = 'grid-column:' + colStart + '; grid-row:' + rowStart + ';';
+    var itemW = Math.max(1, d.w || 1);
+    var itemH = Math.max(1, d.h || 1);
+    var style = 'grid-column:' + colStart + ' / span ' + itemW + '; grid-row:' + rowStart + ' / span ' + itemH + ';';
     var rot = d.rotation || 0;
 
-    html += '<div class="house-subtile-item house-subtile-decor" style="' + style + '" title="' + esc(d.label || 'Decoración') + '">';
-    if(canEdit && isEditMode){
+    html += '<div class="house-subtile-item house-subtile-decor" style="' + style + '" title="' + esc(d.label || d.type) + ' (' + itemW + 'x' + itemH + ')">';
+    if(canEdit){
       html += '  <div class="house-subtile-controls">';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="1" title="Más ancho">↔+</button>';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="-1" title="Menos ancho">↔-</button>';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="1" title="Más alto">↕+</button>';
+      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="-1" title="Menos alto">↕-</button>';
       html += '    <button class="house-subtile-btn" data-action="rotate-room-decor" data-room-id="' + r.id + '" data-decor-id="' + d.id + '" title="Girar 90°">⟳</button>';
-      html += '    <button class="house-subtile-btn" data-action="delete-room-decor" data-room-id="' + r.id + '" data-decor-id="' + d.id + '" title="Quitar">&times;</button>';
+      html += '    <button class="house-subtile-btn danger" data-action="delete-room-decor" data-room-id="' + r.id + '" data-decor-id="' + d.id + '" title="Quitar">&times;</button>';
       html += '  </div>';
     }
     html += '  <span class="house-subtile-icon" style="transform:rotate(' + rot + 'deg);">' + (d.icon || '🌿') + '</span>';
-    html += '  <span class="house-subtile-name">' + esc(d.label || d.type) + '</span>';
+    html += '  <span class="house-subtile-name">' + esc(d.label || d.type) + ' (' + itemW + 'x' + itemH + ')</span>';
     html += '</div>';
   });
 
   html += '  </div>'; // fin house-room-subgrid
 
   // Paleta de Decoración Rápida
-  if(canEdit && isEditMode){
+  if(canEdit){
     html += '<div id="houseDecorPalette" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(212,175,55,0.25);">';
     html += '  <div style="font-size:0.75rem;color:var(--gold-light);font-weight:700;margin-bottom:6px;">Toca un elemento decorativo para añadirlo a la estancia:</div>';
     html += '  <div class="house-decor-palette">';
     HOUSE_DECOR_CATALOG.forEach(function(dec){
       html += '    <div class="house-decor-card" data-action="add-room-decor" data-room-id="' + r.id + '" data-decor-type="' + dec.type + '">';
       html += '      <div class="house-decor-card-icon">' + dec.icon + '</div>';
-      html += '      <div class="house-decor-card-label">' + esc(dec.label) + '</div>';
+      html += '      <div class="house-decor-card-label">' + esc(dec.label) + ' (' + (dec.defaultW || 1) + 'x' + (dec.defaultH || 1) + ')</div>';
       html += '    </div>';
     });
     html += '  </div>';
     html += '</div>';
   }
 
-  html += '</div>';
+  html += '</div>'; // fin house-room-subgrid-wrap
   return html;
 }
 
@@ -5005,6 +5215,11 @@ document.addEventListener("click", function(e){
   } else if(act === "quick-rename-selected-room"){
     var qR = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
     if(qR && houseKonvaSelectedGroup) startKonvaRename(houseKonvaSelectedGroup, qR);
+  } else if(act === "quick-step-room-size"){
+    e.stopPropagation();
+    var qAxis = btn.getAttribute("data-axis");
+    var qDelta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
+    quickStepRoomSize(qAxis, qDelta);
   } else if(act === "quick-toggle-texture-menu"){
     e.stopPropagation();
     toggleTexturePopover(btn);
@@ -5179,6 +5394,18 @@ document.addEventListener("click", function(e){
     var ddRId = btn.getAttribute("data-room-id");
     var ddDId = btn.getAttribute("data-decor-id");
     deleteRoomDecor(ddRId, ddDId);
+  } else if(act === "subgrid-change-w"){
+    e.stopPropagation();
+    var sgRId = btn.getAttribute("data-room-id");
+    var sgItmId = btn.getAttribute("data-item-id");
+    var sgDelta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
+    canvaResizeItem(sgRId, sgItmId, sgDelta, 0);
+  } else if(act === "subgrid-change-h"){
+    e.stopPropagation();
+    var sghRId = btn.getAttribute("data-room-id");
+    var sghItmId = btn.getAttribute("data-item-id");
+    var sghDelta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
+    canvaResizeItem(sghRId, sghItmId, 0, sghDelta);
   } else if(act === "open-canva-studio"){
     var csRoomId = btn.getAttribute("data-room-id") || houseState.selectedRoomId;
     if(csRoomId){
