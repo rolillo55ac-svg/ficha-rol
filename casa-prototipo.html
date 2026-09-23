@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casa · Krysalis — Plano Cenital 2D</title>
+<script src="js/konva.min.js"></script>
+<script>
+if(typeof Konva === 'undefined'){
+  document.write('<script src="https://cdn.jsdelivr.net/npm/konva@10.2.5/konva.min.js"><\/script>');
+}
+</script>
+<style>
+:root {
+  --bg: #120D0A; --bg-elev: #1A120D; --bg-card: #231812;
+  --line: rgba(176,141,87,0.25); --line-strong: rgba(176,141,87,0.52);
+  --ink: #F3EADB; --ink-dim: #C2B196; --ink-faint: #8F7D65;
+  --blood: #8C252F; --blood-light: #C84B57; --accent-rgb: 140,37,47;
+  --gold: #B08D57; --gold-light: #DEC392;
+  --teal: #3D6E60; --teal-light: #76AC9D;
+  --gm-color: #8B4513; --gm-light: #D2691E;
+  --danger: #C0392B;
+  --radius: 10px; --radius-sm: 6px;
+  --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+body {
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(var(--accent-rgb),0.20), transparent 65%),
+    radial-gradient(ellipse 700px 400px at 90% 110%, rgba(61,110,96,0.12), transparent 60%),
+    var(--bg);
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+button, input, select { font-family: inherit; color: var(--ink); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 5px; }
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) var(--bg-elev); }
+
+/* ---- TOPBAR ---- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(180deg, var(--bg-elev) 85%, rgba(26,18,13,0.97));
+  border-bottom: 1px solid var(--line); padding: 10px 14px;
+}
+.topbar-row { display: flex; align-items: center; gap: 12px; }
+.crest {
+  width: 40px; height: 40px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 32% 28%, var(--blood-light), var(--blood) 78%);
+  border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem; box-shadow: 0 0 12px rgba(140, 37, 47, 0.45);
+}
+.topbar-title { flex: 1; min-width: 0; }
+.topbar-title .t1 { font-family: var(--font-display); font-size: 1.12rem; color: var(--gold-light); font-weight: 700; }
+.topbar-title .t2 { font-size: .68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .05em; }
+
+.edit-toggle {
+  border: 1px solid var(--line-strong); border-radius: 20px; padding: 7px 15px; background: var(--bg-card);
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-dim); display: flex; align-items: center; gap: 7px;
+  cursor: pointer; transition: all .2s ease; user-select: none;
+}
+.edit-toggle:hover { border-color: var(--gold); color: var(--gold-light); }
+.edit-toggle .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); transition: all .2s ease; }
+.edit-toggle.on { border-color: var(--teal-light); color: var(--teal-light); background: rgba(61,110,96,0.20); }
+.edit-toggle.on .dot { background: var(--teal-light); box-shadow: 0 0 8px var(--teal-light); }
+
+.toolbar { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 2px; align-items: center; }
+.floor-tab {
+  flex: none; background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 6px 12px; font-size: .78rem; color: var(--ink-dim); white-space: nowrap; cursor: pointer; transition: all .15s ease; text-align: left;
+}
+.floor-tab .fmain { font-family: var(--font-display); font-weight: 600; }
+.floor-tab .fsub { font-size: .62rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .03em; }
+.floor-tab:hover { border-color: var(--gold); color: var(--gold-light); }
+.floor-tab.active { border-color: var(--gold); color: var(--gold-light); background: rgba(176,141,87,0.16); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+.add-floor-btn {
+  background: transparent; border: 1px dashed var(--line); border-radius: var(--radius-sm);
+  padding: 6px 10px; font-size: .74rem; color: var(--ink-faint); cursor: pointer; transition: all .15s ease; white-space: nowrap;
+}
+.add-floor-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+
+.toolbar-spacer { flex: 1; min-width: 8px; }
+
+.zoom-controls { flex: none; display: flex; gap: 4px; align-items: center; background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 6px; border: 1px solid var(--line); }
+.zoom-controls button { width: 30px; height: 30px; border-radius: 4px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink-dim); font-size: .85rem; cursor: pointer; }
+.zoom-controls button:hover { border-color: var(--gold); color: var(--gold-light); }
+.zoom-controls .zlabel { font-family: var(--font-mono); font-size: .7rem; color: var(--ink-faint); min-width: 42px; text-align: center; }
+
+.action-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.action-btn {
+  border-radius: var(--radius-sm); padding: 8px 12px; font-size: .74rem; text-transform: uppercase; letter-spacing: .03em;
+  border: 1px solid var(--line-strong); background: var(--bg-card); color: var(--ink-dim); cursor: pointer; transition: all .15s ease;
+  display: flex; align-items: center; gap: 6px; font-weight: 600;
+}
+.action-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+.action-btn.primary { background: linear-gradient(180deg, var(--blood-light), var(--blood)); color: #fff; border-color: var(--blood); box-shadow: 0 2px 8px rgba(140,37,47,0.35); }
+.action-btn.danger { color: #E88178; border-color: var(--danger); }
+.action-btn.danger:hover { background: rgba(192, 57, 43, 0.2); }
+.action-btn:disabled { opacity: .35; pointer-events: none; }
+
+.grid-toggle-btn {
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 8px 10px; font-size: .74rem; color: var(--ink-dim); cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.grid-toggle-btn.active { border-color: var(--gold); color: var(--gold-light); }
+
+/* Quick room tools bar */
+.room-quick-bar {
+  display: none; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; padding: 8px 12px;
+  background: rgba(35, 24, 18, 0.95); border: 1px solid var(--gold); border-radius: var(--radius-sm); box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+}
+.room-quick-bar.visible { display: flex; animation: fadeIn .2s ease; }
+.rq-title { font-size: .78rem; color: var(--gold-light); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.rq-title b { color: #FFF; }
+.rq-group { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.rq-btn {
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; font-size: .74rem; color: var(--ink-dim); cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.rq-btn:hover { border-color: var(--gold); color: var(--gold-light); }
+
+/* ---- CANVAS AREA ---- */
+.canvas-wrap {
+  flex: 1; position: relative; overflow: hidden; margin: 10px 12px; border-radius: var(--radius);
+  border: 1px solid var(--line); box-shadow: inset 0 0 50px rgba(0,0,0,0.65);
+  background-color: #0E0A08;
+  background-image: radial-gradient(rgba(176,141,87,0.18) 1px, transparent 1.5px);
+  background-size: 20px 20px;
+  touch-action: none;
+  min-height: 540px;
+}
+#stage-container { width: 100%; height: 100%; min-height: 540px; }
+
+.room-rename-input {
+  position: absolute; z-index: 200; font-family: var(--font-display); font-size: 15px;
+  background: var(--bg-elev); color: var(--gold-light); border: 2px solid var(--gold);
+  border-radius: 6px; padding: 5px 10px; outline: none; box-shadow: 0 6px 20px rgba(0,0,0,0.85);
+}
+
+.hint-bar { font-size: .72rem; color: var(--ink-faint); padding: 0 14px 10px; line-height: 1.5; }
+.hint-bar b { color: var(--ink-dim); }
+
+/* Popover menus */
+.popover-menu {
+  position: fixed; z-index: 300; background: var(--bg-elev); border: 1px solid var(--gold); border-radius: 6px;
+  padding: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.85); display: none; flex-direction: column; gap: 8px;
+}
+.popover-menu.visible { display: flex; animation: fadeIn .15s ease; }
+.pop-header { font-size: .75rem; color: var(--gold-light); font-weight: 700; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.texture-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.texture-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 6px;
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: 6px; font-size: .72rem; color: var(--ink-dim);
+  cursor: pointer; gap: 4px; transition: all .15s ease;
+}
+.texture-btn:hover { border-color: var(--gold); color: var(--gold-light); background: rgba(176,141,87,0.15); }
+.texture-btn.active { border-color: var(--gold-light); color: #fff; background: rgba(176,141,87,0.25); }
+
+.icon-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; max-height: 220px; overflow-y: auto; }
+.icon-chip { width: 34px; height: 34px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; }
+.icon-chip:hover { border-color: var(--gold); transform: scale(1.1); }
+
+.color-grid { display: flex; gap: 8px; }
+.color-circle { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform .15s ease; }
+.color-circle:hover { transform: scale(1.15); border-color: #fff; }
+.color-circle.active { border-color: #fff; box-shadow: 0 0 0 2px var(--gold); }
+
+/* Modal Presets */
+.preset-modal-backdrop {
+  position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; padding: 14px;
+}
+.preset-modal-backdrop.visible { display: flex; }
+.preset-modal {
+  background: var(--bg-elev); border: 1px solid var(--gold); border-radius: var(--radius); padding: 18px; width: 100%; max-width: 540px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+}
+.preset-modal-title { font-family: var(--font-display); font-size: 1.1rem; color: var(--gold-light); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px; }
+.preset-card {
+  display: flex; align-items: center; gap: 8px; padding: 10px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; transition: all .15s ease;
+}
+.preset-card:hover { border-color: var(--gold); background: rgba(176,141,87,0.15); transform: translateY(-2px); }
+.preset-card .pi { font-size: 1.4rem; }
+.preset-card .pname { font-size: .82rem; color: var(--gold-light); font-weight: 600; }
+.preset-card .psub { font-size: .65rem; color: var(--ink-faint); }
+
+/* Decorative faux bottom nav */
+.fauxnav { position: sticky; bottom: 0; background: var(--bg-elev); border-top: 1px solid var(--line); display: flex; overflow-x: auto; padding: 6px 4px; }
+.fauxnav button { flex: none; padding: 7px 12px; font-size: .62rem; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-faint); border-radius: 8px; background: none; border: none; }
+.fauxnav button.active { color: var(--gold-light); background: rgba(176,141,87,0.12); font-weight: 600; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <div class="crest">🏠</div>
+    <div class="topbar-title">
+      <div class="t1">Casa · Krysalis</div>
+      <div class="t2">Plano cenital 2D · Interactivo con Texturas de Suelo</div>
+    </div>
+    <button class="edit-toggle" id="editToggle"><span class="dot"></span><span id="editLabel">Edición: OFF</span></button>
+  </div>
+
+  <div class="toolbar">
+    <div id="floorTabsWrap" style="display:flex;gap:6px;"></div>
+    <button class="add-floor-btn" id="addFloorBtn">+ Nueva Planta</button>
+    <div class="toolbar-spacer"></div>
+    <div class="zoom-controls">
+      <button id="zoomOut" title="Alejar plano">−</button>
+      <span class="zlabel" id="zoomLabel">100%</span>
+      <button id="zoomIn" title="Acercar plano">+</button>
+      <button id="zoomFit" title="Ajustar todas las habitaciones a la pantalla">📱 Ajustar</button>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <button class="action-btn primary" id="addRoomBtn">+ Añadir habitación</button>
+    <button class="action-btn danger" id="delRoomBtn" disabled>✕ Eliminar seleccionada</button>
+    <button class="grid-toggle-btn active" id="gridSnapBtn" title="Alternar ajuste magnético a rejilla">🧲 Rejilla: 20px</button>
+  </div>
+
+  <!-- Barra contextual de habitación seleccionada -->
+  <div class="room-quick-bar" id="roomQuickBar">
+    <div class="rq-title">🎯 <b id="rqRoomName">Habitación</b></div>
+    <div class="rq-group">
+      <button class="rq-btn" id="rqRenameBtn">✏️ Renombrar</button>
+      <button class="rq-btn" id="rqTextureBtn">🪵 Suelo: <span id="rqTexLabel">Madera</span></button>
+      <button class="rq-btn" id="rqColorBtn">🎨 Color</button>
+      <button class="rq-btn" id="rqIconBtn">🏷️ Icono</button>
+      <button class="rq-btn" id="rqDuplicateBtn">📋 Duplicar</button>
+      <button class="rq-btn" id="rqFloorBtn">🏢 Planta</button>
+      <button class="rq-btn" id="rqDelBtn" style="color:#E88178;">🗑️</button>
+    </div>
+  </div>
+</header>
+
+<div class="canvas-wrap" id="canvasWrap">
+  <div id="stage-container"></div>
+</div>
+
+<div class="hint-bar">
+  Con <b>Edición: ON</b> — Arrastra una habitación para moverla (se ajusta sola a la rejilla), tira de la esquina inferior derecha para redimensionarla, y haz <b>doble clic / doble toque</b> sobre el nombre para renombrarla. Arrastra el fondo para hacer paneo (pan) o usa la rueda del ratón/pellizco para zoom.
+</div>
+
+<nav class="fauxnav">
+  <button>Ficha</button><button>Misión</button><button>Habilidades</button><button>Entrenamiento</button>
+  <button>Combate</button><button>Estados</button><button>Inventario</button><button>Magia</button>
+  <button>Alquimia</button><button>Invocaciones</button><button>Bestiario</button><button>Extra</button>
+  <button>Mundo</button><button class="active">Casa</button>
+</nav>
+
+<!-- Popovers -->
+<div class="popover-menu" id="popoverTexture">
+  <div class="pop-header">Textura de Suelo</div>
+  <div class="texture-grid" id="textureGrid"></div>
+</div>
+
+<div class="popover-menu" id="popoverColor">
+  <div class="pop-header">Color del Borde y Acento</div>
+  <div class="color-grid" id="colorGrid"></div>
+</div>
+
+<div class="popover-menu" id="popoverIcon">
+  <div class="pop-header">Icono Temático</div>
+  <div class="icon-grid" id="iconGrid"></div>
+</div>
+
+<div class="popover-menu" id="popoverFloor">
+  <div class="pop-header">Mover a Otra Planta</div>
+  <div id="floorMoveList" style="display:flex;flex-direction:column;gap:5px;"></div>
+</div>
+
+<!-- Modal Presets -->
+<div class="preset-modal-backdrop" id="presetModal">
+  <div class="preset-modal">
+    <div class="preset-modal-title">
+      <span>Elige una Estancia para Añadir</span>
+      <button style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:1.2rem;" id="closePresetModal">&times;</button>
+    </div>
+    <div class="preset-grid" id="presetGrid"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var STORAGE_KEY = "krysalisCasaKonvaV2";
+var GRID = 20;
+
+var ROOM_COLORS = {
+  blood: "#C84B57",
+  gold: "#DEC392",
+  teal: "#76AC9D",
+  gm: "#D2691E",
+  purple: "#A569BD",
+  blue: "#5DADE2",
+  emerald: "#52BE80"
+};
+
+var TEXTURES = [
+  { id: "madera", name: "Madera / Parquet", icon: "🪵" },
+  { id: "piedra", name: "Piedra / Losas", icon: "🪨" },
+  { id: "baldosas", name: "Baldosas", icon: "🟩" },
+  { id: "musgo", name: "Musgo / Tierra", icon: "🌿" },
+  { id: "alfombra", name: "Alfombra / Tapiz", icon: "🧶" },
+  { id: "arcano", name: "Arcano / Runas", icon: "🔮" },
+  { id: "liso", name: "Liso / Pizarra", icon: "⬛" }
+];
+
+var ICONS = ["🔥","🍲","🌿","🩸","🔮","🌙","🧪","🛡️","🗡️","🚪","🪜","🛋️","📚","🗝️","🪑","🍺","🎨","🏹","💤","🪙","🧭","🕯️","🪵","🦴","⚓","💍","📜","💎","⏳","⛺","🏰","💀"];
+
+var PRESETS = [
+  { name: "Salón del Hogar Caliente", icon: "🔥", color: "blood", texture: "madera", w: 280, h: 200, items: 2 },
+  { name: "Cocina del Caldero Errante", icon: "🍲", color: "gold", texture: "baldosas", w: 280, h: 200, items: 2 },
+  { name: "Rincón Botánico", icon: "🌿", color: "teal", texture: "musgo", w: 280, h: 220, items: 3 },
+  { name: "Aposentos Personales", icon: "🛏️", color: "blood", texture: "alfombra", w: 260, h: 200, items: 2 },
+  { name: "Biblioteca de Piedras Mágicas", icon: "🔮", color: "gold", texture: "arcano", w: 300, h: 200, items: 5 },
+  { name: "Bodega de Venenos", icon: "🧪", color: "gm", texture: "piedra", w: 320, h: 220, items: 8 },
+  { name: "Taller de Forja y Armería", icon: "⚙️", color: "gm", texture: "piedra", w: 280, h: 200, items: 4 },
+  { name: "Escaleras Principales", icon: "🪜", color: "gold", texture: "piedra", w: 140, h: 140, items: 0 },
+  { name: "Galería Conectora", icon: "✦", color: "gold", texture: "madera", w: 240, h: 80, items: 0 },
+  { name: "Habitación Vacía", icon: "🚪", color: "teal", texture: "madera", w: 220, h: 160, items: 0 }
+];
+
+function uid(){ return "r" + Math.random().toString(36).slice(2,9); }
+
+function defaultState(){
+  return {
+    activeFloor: "p1",
+    editMode: false,
+    snapToGrid: true,
+    floors: [
+      { id: "p1", name: "Planta 1", sub: "Principal" },
+      { id: "p2", name: "Planta 2", sub: "Aposentos" },
+      { id: "sotano", name: "Sótano", sub: "Bodega" }
+    ],
+    rooms: {
+      p1: [
+        { id: uid(), name: "Salón del Hogar Caliente", icon: "🔥", color: "blood", texture: "madera", x: 40, y: 40, w: 280, h: 200, items: 2 },
+        { id: uid(), name: "Cocina del Caldero Errante", icon: "🍲", color: "gold", texture: "baldosas", x: 380, y: 40, w: 280, h: 200, items: 2 },
+        { id: uid(), name: "Rincón Botánico de Cherk", icon: "🌿", color: "teal", texture: "musgo", x: 40, y: 280, w: 280, h: 220, items: 3 },
+        { id: uid(), name: "Aposentos de Scarleth", icon: "🩸", color: "blood", texture: "alfombra", x: 380, y: 280, w: 280, h: 220, items: 2 }
+      ],
+      p2: [
+        { id: uid(), name: "Biblioteca de Piedras Mágicas", icon: "🔮", color: "gold", texture: "arcano", x: 60, y: 60, w: 300, h: 200, items: 5 },
+        { id: uid(), name: "Aposentos de Derek", icon: "🌙", color: "teal", texture: "alfombra", x: 400, y: 60, w: 260, h: 200, items: 1 }
+      ],
+      sotano: [
+        { id: uid(), name: "Bodega de Venenos", icon: "🧪", color: "gm", texture: "piedra", x: 60, y: 60, w: 320, h: 220, items: 8 }
+      ]
+    }
+  };
+}
+
+function loadState(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    var p = JSON.parse(raw);
+    if(!p.rooms || !p.floors) return defaultState();
+    return p;
+  } catch(e){ return defaultState(); }
+}
+function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+
+var state = loadState();
+
+/* ---- GENERADOR DE TEXTURAS PROCEDURALES EN CANVAS ---- */
+var textureCache = {};
+function getTextureCanvas(texId, colorKey){
+  texId = texId || "madera";
+  var key = texId + "_" + (colorKey || "def");
+  if(textureCache[key]) return textureCache[key];
+
+  var cv = document.createElement("canvas");
+  var ctx = cv.getContext("2d");
+
+  if(texId === "madera"){
+    cv.width = 64; cv.height = 64;
+    ctx.fillStyle = "#271B12"; ctx.fillRect(0, 0, 64, 64);
+    ctx.fillStyle = "rgba(176,141,87,0.12)"; ctx.fillRect(0, 0, 64, 64);
+    for(var y=0; y<64; y+=16){
+      ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(64, y); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, y+1); ctx.lineTo(64, y+1); ctx.stroke();
+      ctx.strokeStyle = "rgba(0,0,0,0.15)";
+      ctx.beginPath(); ctx.moveTo(0, y+8); ctx.lineTo(64, y+8); ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(0,0,0,0.45)"; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(32, 0); ctx.lineTo(32, 16);
+    ctx.moveTo(16, 16); ctx.lineTo(16, 32);
+    ctx.moveTo(48, 16); ctx.lineTo(48, 32);
+    ctx.moveTo(32, 32); ctx.lineTo(32, 48);
+    ctx.moveTo(16, 48); ctx.lineTo(16, 64);
+    ctx.moveTo(48, 48); ctx.lineTo(48, 64);
+    ctx.stroke();
+
+  } else if(texId === "piedra"){
+    cv.width = 64; cv.height = 64;
+    ctx.fillStyle = "#1B1F24"; ctx.fillRect(0, 0, 64, 64);
+    for(var py=0; py<64; py+=16){
+      ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(64, py); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, py+1); ctx.lineTo(64, py+1); ctx.stroke();
+    }
+    var offset = 0;
+    for(var py=0; py<64; py+=16){
+      ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(offset, py); ctx.lineTo(offset, py+16);
+      ctx.moveTo(offset+32, py); ctx.lineTo(offset+32, py+16);
+      ctx.stroke();
+      offset = (offset === 0 ? 16 : 0);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    for(var i=0; i<30; i++) ctx.fillRect((i*17)%64, (i*23)%64, 2, 2);
+
+  } else if(texId === "baldosas"){
+    cv.width = 40; cv.height = 40;
+    ctx.fillStyle = "#221711"; ctx.fillRect(0, 0, 40, 40);
+    ctx.fillStyle = "#19110B";
+    ctx.fillRect(0, 0, 20, 20); ctx.fillRect(20, 20, 20, 20);
+    ctx.strokeStyle = "rgba(176,141,87,0.22)"; ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, 40, 40); ctx.strokeRect(0, 0, 20, 20); ctx.strokeRect(20, 20, 20, 20);
+    ctx.fillStyle = "rgba(176,141,87,0.4)"; ctx.fillRect(19, 19, 2, 2);
+
+  } else if(texId === "musgo"){
+    cv.width = 48; cv.height = 48;
+    ctx.fillStyle = "#122216"; ctx.fillRect(0, 0, 48, 48);
+    var greens = ["#1A3622", "#275033", "#0E1A11", "#376E46", "#172E1E"];
+    for(var m=0; m<45; m++){
+      ctx.fillStyle = greens[m % greens.length];
+      var rx = (m * 13) % 48, ry = (m * 29) % 48;
+      ctx.fillRect(rx, ry, 2 + (m % 3), 2 + ((m + 1) % 3));
+    }
+
+  } else if(texId === "alfombra"){
+    cv.width = 32; cv.height = 32;
+    ctx.fillStyle = "#2D1017"; ctx.fillRect(0, 0, 32, 32);
+    ctx.strokeStyle = "rgba(176,141,87,0.18)"; ctx.lineWidth = 1;
+    for(var d=-32; d<64; d+=8){ ctx.beginPath(); ctx.moveTo(d, 0); ctx.lineTo(d+32, 32); ctx.stroke(); }
+    ctx.strokeStyle = "rgba(200,75,87,0.2)";
+    for(var d2=0; d2<64; d2+=8){ ctx.beginPath(); ctx.moveTo(d2, 0); ctx.lineTo(d2-32, 32); ctx.stroke(); }
+
+  } else if(texId === "arcano"){
+    cv.width = 64; cv.height = 64;
+    ctx.fillStyle = "#141124"; ctx.fillRect(0, 0, 64, 64);
+    ctx.strokeStyle = "rgba(167,139,250,0.18)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(32, 32, 24, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(32, 32, 14, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(32, 4); ctx.lineTo(32, 60); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(4, 32); ctx.lineTo(60, 32); ctx.stroke();
+
+  } else {
+    cv.width = 32; cv.height = 32;
+    ctx.fillStyle = "#231812"; ctx.fillRect(0, 0, 32, 32);
+  }
+
+  textureCache[key] = cv;
+  return cv;
+}
+
+/* ---- KONVA STAGE & LAYER SETUP ---- */
+var canvasWrap = document.getElementById("canvasWrap");
+var stage = new Konva.Stage({
+  container: "stage-container",
+  width: canvasWrap.clientWidth || 1100,
+  height: Math.max(540, canvasWrap.clientHeight || 640),
+  draggable: false
+});
+
+var layer = new Konva.Layer();
+stage.add(layer);
+
+var tr = new Konva.Transformer({
+  rotateEnabled: false,
+  enabledAnchors: ["bottom-right"],
+  anchorStroke: "#B08D57",
+  anchorFill: "#1A120D",
+  anchorSize: 14,
+  borderStroke: "#DEC392",
+  borderDash: [4, 4]
+});
+layer.add(tr);
+
+var selectedRoom = null;
+var selectedGroup = null;
+
+function currentRooms(){
+  if(!state.rooms[state.activeFloor]) state.rooms[state.activeFloor] = [];
+  return state.rooms[state.activeFloor];
+}
+
+/* ---- RENDERIZADO DE HABITACIONES ---- */
+function renderRooms(){
+  layer.destroyChildren();
+  layer.add(tr);
+
+  var rooms = currentRooms();
+  var isEdit = state.editMode;
+
+  rooms.forEach(function(r){
+    var group = new Konva.Group({
+      x: r.x || 60,
+      y: r.y || 60,
+      draggable: isEdit
+    });
+
+    var texCanvas = getTextureCanvas(r.texture, r.color);
+
+    // Fondo texturizado
+    var bgRect = new Konva.Rect({
+      width: r.w || 220,
+      height: r.h || 160,
+      cornerRadius: 10,
+      fillPatternImage: texCanvas,
+      fillPatternRepeat: "repeat",
+      stroke: ROOM_COLORS[r.color] || "#DEC392",
+      strokeWidth: (selectedRoom && selectedRoom.id === r.id) ? 3 : 2,
+      shadowColor: "black",
+      shadowBlur: 16,
+      shadowOpacity: 0.5,
+      shadowOffsetY: 6
+    });
+
+    // Velo para contraste
+    var veil = new Konva.Rect({
+      width: r.w || 220,
+      height: r.h || 160,
+      cornerRadius: 10,
+      fill: "rgba(20, 14, 10, 0.42)"
+    });
+
+    // Título con Icono
+    var label = new Konva.Text({
+      text: (r.icon ? r.icon + "  " : "") + r.name,
+      x: 12, y: 10,
+      width: (r.w || 220) - 24,
+      fontFamily: "Georgia, serif",
+      fontSize: 15,
+      fontStyle: "bold",
+      fill: "#DEC392"
+    });
+
+    // Insignia de muebles / almacén
+    var badge = new Konva.Text({
+      text: "📦 " + (r.items || 0) + (r.texture ? " · " + r.texture.toUpperCase() : ""),
+      x: 12,
+      y: (r.h || 160) - 24,
+      fontFamily: "ui-monospace, monospace",
+      fontSize: 11,
+      fill: "#8F7D65"
+    });
+
+    // Tirador visible en modo edición
+    var resizeHint = new Konva.Rect({
+      x: (r.w || 220) - 16,
+      y: (r.h || 160) - 16,
+      width: 12, height: 12,
+      cornerRadius: 2,
+      stroke: "rgba(176,141,87,0.6)",
+      strokeWidth: 1.5,
+      visible: isEdit
+    });
+
+    group.add(bgRect, veil, label, badge, resizeHint);
+
+    // Arrastre con snap
+    group.on("dragmove", function(){
+      if(state.snapToGrid){
+        group.x(Math.round(group.x() / GRID) * GRID);
+        group.y(Math.round(group.y() / GRID) * GRID);
+      }
+    });
+
+    group.on("dragend", function(){
+      r.x = group.x();
+      r.y = group.y();
+      saveState();
+    });
+
+    // Clic / Tap de selección
+    group.on("click tap", function(e){
+      e.cancelBubble = true;
+      selectRoom(group, r);
+    });
+
+    // Doble clic / toque para renombrar
+    group.on("dblclick dbltap", function(e){
+      e.cancelBubble = true;
+      startRename(group, r);
+    });
+
+    // Redimensionado con Transformer
+    group.on("transformend", function(){
+      var rawW = bgRect.width() * group.scaleX();
+      var rawH = bgRect.height() * group.scaleY();
+      var newW = state.snapToGrid ? Math.max(120, Math.round(rawW / GRID) * GRID) : Math.max(120, Math.round(rawW));
+      var newH = state.snapToGrid ? Math.max(80, Math.round(rawH / GRID) * GRID) : Math.max(80, Math.round(rawH));
+
+      group.scaleX(1); group.scaleY(1);
+      bgRect.width(newW); bgRect.height(newH);
+      veil.width(newW); veil.height(newH);
+      label.width(newW - 24);
+      badge.y(newH - 24);
+      resizeHint.x(newW - 16); resizeHint.y(newH - 16);
+
+      r.w = newW; r.h = newH; r.x = group.x(); r.y = group.y();
+      saveState();
+      layer.draw();
+    });
+
+    layer.add(group);
+  });
+
+  // Re-adjuntar transformador si había selección
+  if(selectedRoom){
+    var found = layer.getChildren().find(function(n){
+      return n.getClassName() === "Group" && n.x() === (selectedRoom.x || 60) && n.y() === (selectedRoom.y || 60);
+    });
+    if(found) selectRoom(found, selectedRoom);
+    else deselect();
+  } else {
+    deselect();
+  }
+
+  layer.draw();
+}
+
+/* ---- SELECCIÓN Y DESELECCIÓN ---- */
+function selectRoom(group, r){
+  selectedGroup = group; selectedRoom = r;
+  tr.nodes([group]);
+  document.getElementById("delRoomBtn").disabled = false;
+
+  var bar = document.getElementById("roomQuickBar");
+  bar.classList.add("visible");
+  document.getElementById("rqRoomName").textContent = (r.icon ? r.icon + " " : "") + r.name;
+  var texObj = TEXTURES.find(function(t){ return t.id === (r.texture || "madera"); });
+  document.getElementById("rqTexLabel").textContent = texObj ? texObj.name : "Madera";
+
+  layer.draw();
+}
+
+function deselect(){
+  selectedGroup = null; selectedRoom = null;
+  tr.nodes([]);
+  document.getElementById("delRoomBtn").disabled = true;
+  document.getElementById("roomQuickBar").classList.remove("visible");
+  closeAllPopovers();
+  layer.draw();
+}
+
+/* ---- RENOMBRADO INLINE ---- */
+function startRename(group, r){
+  var stageBox = stage.container().getBoundingClientRect();
+  var scale = stage.scaleX();
+  var stageX = stage.x();
+  var stageY = stage.y();
+
+  var input = document.createElement("input");
+  input.className = "room-rename-input";
+  input.value = r.name;
+
+  var left = stageBox.left + stageX + (group.x() + 10) * scale;
+  var top = stageBox.top + stageY + (group.y() + 8) * scale;
+  var width = Math.max(140, ((r.w || 220) - 20) * scale);
+
+  input.style.left = left + "px";
+  input.style.top = top + "px";
+  input.style.width = width + "px";
+
+  document.body.appendChild(input);
+  input.focus(); input.select();
+
+  function commit(){
+    var val = input.value.trim();
+    if(val) r.name = val;
+    if(document.body.contains(input)) document.body.removeChild(input);
+    saveState();
+    renderRooms();
+    if(selectedRoom && selectedRoom.id === r.id){
+      document.getElementById("rqRoomName").textContent = (r.icon ? r.icon + " " : "") + r.name;
+    }
+  }
+
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", function(e){
+    if(e.key === "Enter") input.blur();
+    if(e.key === "Escape"){
+      if(document.body.contains(input)) document.body.removeChild(input);
+    }
+  });
+}
+
+/* ---- RESPONSIVE RESIZE DEL LIENZO ---- */
+function resizeCanvas(){
+  var w = canvasWrap.clientWidth;
+  var h = canvasWrap.clientHeight || 640;
+  if(w > 0 && h > 0){
+    stage.width(w);
+    stage.height(h);
+    layer.draw();
+  }
+}
+window.addEventListener("resize", resizeCanvas);
+if(window.ResizeObserver){
+  new ResizeObserver(resizeCanvas).observe(canvasWrap);
+}
+
+/* ---- PANNING DEL LIENZO (Arrastrar fondo) ---- */
+var isPanning = false;
+var panStart = { x: 0, y: 0 };
+var stageStart = { x: 0, y: 0 };
+
+stage.on("mousedown touchstart", function(e){
+  if(e.target === stage){
+    isPanning = true;
+    var pos = stage.getPointerPosition();
+    panStart = { x: pos.x, y: pos.y };
+    stageStart = { x: stage.x(), y: stage.y() };
+    deselect();
+  }
+});
+
+stage.on("mousemove touchmove", function(){
+  if(!isPanning) return;
+  var pos = stage.getPointerPosition();
+  var dx = pos.x - panStart.x;
+  var dy = pos.y - panStart.y;
+  stage.position({ x: stageStart.x + dx, y: stageStart.y + dy });
+  stage.batchDraw();
+});
+
+stage.on("mouseup touchend", function(){
+  isPanning = false;
+});
+
+/* ---- ZOOM CONTROLS & WHEEL ZOOM ---- */
+var zoom = 1;
+function applyZoom(newZoom, centerPos){
+  newZoom = Math.max(0.3, Math.min(2.5, newZoom));
+  var oldZoom = stage.scaleX();
+
+  var mousePos = centerPos || { x: stage.width() / 2, y: stage.height() / 2 };
+  var worldPos = {
+    x: (mousePos.x - stage.x()) / oldZoom,
+    y: (mousePos.y - stage.y()) / oldZoom
+  };
+
+  stage.scale({ x: newZoom, y: newZoom });
+  var newStageX = mousePos.x - worldPos.x * newZoom;
+  var newStageY = mousePos.y - worldPos.y * newZoom;
+  stage.position({ x: newStageX, y: newStageY });
+
+  zoom = newZoom;
+  document.getElementById("zoomLabel").textContent = Math.round(zoom * 100) + "%";
+  stage.batchDraw();
+}
+
+stage.on("wheel", function(e){
+  e.evt.preventDefault();
+  var scaleBy = 1.08;
+  var oldScale = stage.scaleX();
+  var ptr = stage.getPointerPosition();
+  var newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+  applyZoom(newScale, ptr);
+});
+
+document.getElementById("zoomIn").addEventListener("click", function(){ applyZoom(zoom + 0.15); });
+document.getElementById("zoomOut").addEventListener("click", function(){ applyZoom(zoom - 0.15); });
+
+document.getElementById("zoomFit").addEventListener("click", function(){
+  var rooms = currentRooms();
+  if(!rooms || rooms.length === 0){
+    stage.position({ x: 0, y: 0 });
+    applyZoom(1);
+    return;
+  }
+  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  rooms.forEach(function(r){
+    minX = Math.min(minX, r.x || 40);
+    minY = Math.min(minY, r.y || 40);
+    maxX = Math.max(maxX, (r.x || 40) + (r.w || 220));
+    maxY = Math.max(maxY, (r.y || 40) + (r.h || 160));
+  });
+
+  var boundW = maxX - minX + 80;
+  var boundH = maxY - minY + 80;
+  var stageW = stage.width();
+  var stageH = stage.height();
+
+  var fitZoom = Math.min(1.5, Math.min(stageW / boundW, stageH / boundH));
+  fitZoom = Math.max(0.4, fitZoom);
+
+  var centerX = (minX + maxX) / 2;
+  var centerY = (minY + maxY) / 2;
+
+  stage.scale({ x: fitZoom, y: fitZoom });
+  stage.position({
+    x: stageW / 2 - centerX * fitZoom,
+    y: stageH / 2 - centerY * fitZoom
+  });
+  zoom = fitZoom;
+  document.getElementById("zoomLabel").textContent = Math.round(zoom * 100) + "%";
+  stage.batchDraw();
+});
+
+/* ---- PESTAÑAS DE PLANTAS ---- */
+function renderFloorTabs(){
+  var wrap = document.getElementById("floorTabsWrap");
+  wrap.innerHTML = "";
+  state.floors.forEach(function(f){
+    var btn = document.createElement("button");
+    btn.className = "floor-tab" + (state.activeFloor === f.id ? " active" : "");
+    btn.setAttribute("data-floor", f.id);
+    btn.innerHTML = '<div class="fmain">' + f.name + '</div><div class="fsub">' + (f.sub || "") + '</div>';
+    btn.addEventListener("click", function(){
+      state.activeFloor = f.id;
+      deselect();
+      saveState();
+      renderFloorTabs();
+      renderRooms();
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+document.getElementById("addFloorBtn").addEventListener("click", function(){
+  var name = prompt("Nombre de la nueva planta (ej: Buhardilla, Ático, Cripta):", "Ático");
+  if(!name) return;
+  var id = "p_" + Date.now();
+  state.floors.push({ id: id, name: name, sub: "Ampliación" });
+  state.rooms[id] = [];
+  state.activeFloor = id;
+  saveState();
+  renderFloorTabs();
+  renderRooms();
+});
+
+/* ---- MODO EDICIÓN Y REJILLA MAGNÉTICA ---- */
+document.getElementById("editToggle").addEventListener("click", function(){
+  state.editMode = !state.editMode;
+  this.classList.toggle("on", state.editMode);
+  document.getElementById("editLabel").textContent = "Edición: " + (state.editMode ? "ON" : "OFF");
+  if(!state.editMode) deselect();
+  saveState();
+  renderRooms();
+});
+
+document.getElementById("gridSnapBtn").addEventListener("click", function(){
+  state.snapToGrid = !state.snapToGrid;
+  this.classList.toggle("active", state.snapToGrid);
+  this.textContent = state.snapToGrid ? "🧲 Rejilla: 20px" : "🖐️ Rejilla: Libre";
+  saveState();
+});
+
+/* ---- AÑADIR HABITACIÓN CON MODAL DE PLANTILLAS ---- */
+var presetModal = document.getElementById("presetModal");
+document.getElementById("addRoomBtn").addEventListener("click", function(){
+  openPresetModal();
+});
+document.getElementById("closePresetModal").addEventListener("click", function(){
+  presetModal.classList.remove("visible");
+});
+
+function openPresetModal(){
+  var grid = document.getElementById("presetGrid");
+  grid.innerHTML = "";
+  PRESETS.forEach(function(pr){
+    var card = document.createElement("div");
+    card.className = "preset-card";
+    card.innerHTML = '<div class="pi">' + pr.icon + '</div><div><div class="pname">' + pr.name + '</div><div class="psub">' + pr.texture.toUpperCase() + ' · ' + pr.w + 'x' + pr.h + '</div></div>';
+    card.addEventListener("click", function(){
+      addRoomFromPreset(pr);
+      presetModal.classList.remove("visible");
+    });
+    grid.appendChild(card);
+  });
+  presetModal.classList.add("visible");
+}
+
+function addRoomFromPreset(pr){
+  var rooms = currentRooms();
+  var nextX = 60;
+  var nextY = 60;
+  if(rooms.length > 0){
+    var last = rooms[rooms.length - 1];
+    nextX = (last.x || 40) + 40;
+    nextY = (last.y || 40) + 40;
+  }
+  var r = {
+    id: uid(),
+    name: pr.name,
+    icon: pr.icon,
+    color: pr.color,
+    texture: pr.texture,
+    x: nextX,
+    y: nextY,
+    w: pr.w,
+    h: pr.h,
+    items: pr.items || 0
+  };
+  rooms.push(r);
+  saveState();
+  renderRooms();
+  // Seleccionar la nueva habitación
+  var groups = layer.getChildren().filter(function(n){ return n.getClassName() === "Group"; });
+  var lastGroup = groups[groups.length - 1];
+  if(lastGroup) selectRoom(lastGroup, r);
+}
+
+/* ---- ELIMINAR HABITACIÓN ---- */
+function deleteCurrentRoom(){
+  if(!selectedRoom) return;
+  if(!confirm("¿Eliminar estancia '" + selectedRoom.name + "'?")) return;
+  var rooms = currentRooms();
+  var idx = rooms.indexOf(selectedRoom);
+  if(idx > -1) rooms.splice(idx, 1);
+  deselect();
+  saveState();
+  renderRooms();
+}
+document.getElementById("delRoomBtn").addEventListener("click", deleteCurrentRoom);
+document.getElementById("rqDelBtn").addEventListener("click", deleteCurrentRoom);
+
+/* ---- POPOVERS Y ACCIONES DE BARRA RÁPIDA ---- */
+function closeAllPopovers(){
+  document.querySelectorAll(".popover-menu").forEach(function(m){ m.classList.remove("visible"); });
+}
+
+function positionPopover(pop, btn){
+  var rect = btn.getBoundingClientRect();
+  pop.style.top = (rect.bottom + 6) + "px";
+  pop.style.left = Math.min(window.innerWidth - 220, Math.max(10, rect.left)) + "px";
+  pop.classList.add("visible");
+}
+
+// Renombrar desde barra
+document.getElementById("rqRenameBtn").addEventListener("click", function(){
+  if(selectedGroup && selectedRoom) startRename(selectedGroup, selectedRoom);
+});
+
+// Selector de Textura
+var popTexture = document.getElementById("popoverTexture");
+document.getElementById("rqTextureBtn").addEventListener("click", function(e){
+  e.stopPropagation();
+  var isVis = popTexture.classList.contains("visible");
+  closeAllPopovers();
+  if(!isVis){
+    var grid = document.getElementById("textureGrid");
+    grid.innerHTML = "";
+    TEXTURES.forEach(function(t){
+      var b = document.createElement("button");
+      b.className = "texture-btn" + ((selectedRoom && selectedRoom.texture === t.id) ? " active" : "");
+      b.innerHTML = '<span style="font-size:1.2rem;">' + t.icon + '</span><span>' + t.name + '</span>';
+      b.addEventListener("click", function(){
+        if(selectedRoom){
+          selectedRoom.texture = t.id;
+          saveState();
+          renderRooms();
+          document.getElementById("rqTexLabel").textContent = t.name;
+        }
+        closeAllPopovers();
+      });
+      grid.appendChild(b);
+    });
+    positionPopover(popTexture, this);
+  }
+});
+
+// Selector de Color
+var popColor = document.getElementById("popoverColor");
+document.getElementById("rqColorBtn").addEventListener("click", function(e){
+  e.stopPropagation();
+  var isVis = popColor.classList.contains("visible");
+  closeAllPopovers();
+  if(!isVis){
+    var grid = document.getElementById("colorGrid");
+    grid.innerHTML = "";
+    Object.keys(ROOM_COLORS).forEach(function(ckey){
+      var dot = document.createElement("div");
+      dot.className = "color-circle" + ((selectedRoom && selectedRoom.color === ckey) ? " active" : "");
+      dot.style.background = ROOM_COLORS[ckey];
+      dot.addEventListener("click", function(){
+        if(selectedRoom){
+          selectedRoom.color = ckey;
+          saveState();
+          renderRooms();
+        }
+        closeAllPopovers();
+      });
+      grid.appendChild(dot);
+    });
+    positionPopover(popColor, this);
+  }
+});
+
+// Selector de Icono
+var popIcon = document.getElementById("popoverIcon");
+document.getElementById("rqIconBtn").addEventListener("click", function(e){
+  e.stopPropagation();
+  var isVis = popIcon.classList.contains("visible");
+  closeAllPopovers();
+  if(!isVis){
+    var grid = document.getElementById("iconGrid");
+    grid.innerHTML = "";
+    ICONS.forEach(function(ic){
+      var chip = document.createElement("button");
+      chip.className = "icon-chip";
+      chip.textContent = ic;
+      chip.addEventListener("click", function(){
+        if(selectedRoom){
+          selectedRoom.icon = ic;
+          saveState();
+          renderRooms();
+          document.getElementById("rqRoomName").textContent = ic + " " + selectedRoom.name;
+        }
+        closeAllPopovers();
+      });
+      grid.appendChild(chip);
+    });
+    positionPopover(popIcon, this);
+  }
+});
+
+// Duplicar habitación
+document.getElementById("rqDuplicateBtn").addEventListener("click", function(){
+  if(!selectedRoom) return;
+  var copy = Object.assign({}, selectedRoom);
+  copy.id = uid();
+  copy.name = copy.name + " (Copia)";
+  copy.x = (selectedRoom.x || 40) + 30;
+  copy.y = (selectedRoom.y || 40) + 30;
+  currentRooms().push(copy);
+  saveState();
+  renderRooms();
+  var groups = layer.getChildren().filter(function(n){ return n.getClassName() === "Group"; });
+  var lastGroup = groups[groups.length - 1];
+  if(lastGroup) selectRoom(lastGroup, copy);
+});
+
+// Mover de planta
+var popFloor = document.getElementById("popoverFloor");
+document.getElementById("rqFloorBtn").addEventListener("click", function(e){
+  e.stopPropagation();
+  var isVis = popFloor.classList.contains("visible");
+  closeAllPopovers();
+  if(!isVis){
+    var list = document.getElementById("floorMoveList");
+    list.innerHTML = "";
+    state.floors.forEach(function(fl){
+      if(fl.id === state.activeFloor) return;
+      var btn = document.createElement("button");
+      btn.className = "rq-btn";
+      btn.style.width = "100%";
+      btn.textContent = "🏢 " + fl.name + " (" + (fl.sub || "") + ")";
+      btn.addEventListener("click", function(){
+        if(selectedRoom){
+          var curList = currentRooms();
+          var idx = curList.indexOf(selectedRoom);
+          if(idx > -1) curList.splice(idx, 1);
+          if(!state.rooms[fl.id]) state.rooms[fl.id] = [];
+          state.rooms[fl.id].push(selectedRoom);
+          state.activeFloor = fl.id;
+          saveState();
+          renderFloorTabs();
+          renderRooms();
+        }
+        closeAllPopovers();
+      });
+      list.appendChild(btn);
+    });
+    positionPopover(popFloor, this);
+  }
+});
+
+document.addEventListener("click", function(e){
+  if(!e.target.closest(".popover-menu") && !e.target.closest(".rq-btn")){
+    closeAllPopovers();
+  }
+});
+
+// Inicialización de la vista
+document.getElementById("editToggle").classList.toggle("on", state.editMode);
+document.getElementById("editLabel").textContent = "Edición: " + (state.editMode ? "ON" : "OFF");
+document.getElementById("gridSnapBtn").classList.toggle("active", state.snapToGrid);
+
+renderFloorTabs();
+renderRooms();
+resizeCanvas();
+
+})();
+</script>
+</body>
+</html>

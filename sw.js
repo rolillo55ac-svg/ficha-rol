@@ -46,6 +46,7 @@ const PRECACHE_ASSETS = [
   './js/maps.js',
   './js/markers.js',
   './js/quests.js',
+  './js/konva.min.js',
   './js/house.js',
   './js/dice.js',
   './js/ui-modals.js',

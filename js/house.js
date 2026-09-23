@@ -561,6 +561,914 @@ function renderColorPaletteBar(roomId, currentColor){
   return html;
 }
 
+// ============================================================================
+// 1.6. MOTOR 2D KONVA: TEXTURAS PROCEDURALES DE SUELO Y CONFIGURACIÓN VISUAL
+// ============================================================================
+var HOUSE_COLOR_MAP = {
+  blood: "#C84B57",
+  gold: "#DEC392",
+  teal: "#76AC9D",
+  gm: "#D2691E",
+  purple: "#A569BD",
+  blue: "#5DADE2",
+  emerald: "#52BE80"
+};
+
+function resolveRoomColor(color){
+  if(!color) return "#DEC392";
+  if(HOUSE_COLOR_MAP[color]) return HOUSE_COLOR_MAP[color];
+  return color;
+}
+
+var HOUSE_TEXTURES = [
+  { id: "madera", name: "Madera / Parquet", icon: "🪵", desc: "Tablones de roble cálido con veta" },
+  { id: "piedra", name: "Piedra / Losas", icon: "🪨", desc: "Losas de cantería y granito ancestral" },
+  { id: "baldosas", name: "Baldosas", icon: "🟩", desc: "Suelo cerámico ajedrezado artesanal" },
+  { id: "musgo", name: "Musgo / Tierra", icon: "🌿", desc: "Tierra fértil con brotes y líquenes" },
+  { id: "alfombra", name: "Alfombra / Tapiz", icon: "🧶", desc: "Tejido aterciopelado con hilado noble" },
+  { id: "arcano", name: "Arcano / Runas", icon: "🔮", desc: "Grabados místicos y círculos encantados" },
+  { id: "liso", name: "Liso / Pizarra", icon: "⬛", desc: "Acabado liso sobrio y minimalista" }
+];
+
+var HOUSE_ICONS = ["🔥","🍲","🌿","🩸","🔮","🌙","🧪","🛡️","🗡️","🚪","🪜","🛋️","📚","🗝️","🪑","🍺","🎨","🏹","💤","🪙","🧭","🕯️","🪵","🦴","⚓","💍","📜","💎","⏳","⛺","🏰","💀"];
+
+var HOUSE_PRESETS = [
+  { name: "Salón del Hogar Caliente", icon: "🔥", color: "blood", texture: "madera", w: 280, h: 200, type: "salon" },
+  { name: "Cocina del Caldero Errante", icon: "🍲", color: "gold", texture: "baldosas", w: 280, h: 200, type: "cocina" },
+  { name: "Rincón Botánico", icon: "🌿", color: "teal", texture: "musgo", w: 280, h: 220, type: "habitacion_personal" },
+  { name: "Aposentos Personales", icon: "🛏️", color: "blood", texture: "alfombra", w: 260, h: 200, type: "habitacion_personal" },
+  { name: "Biblioteca Arcana", icon: "🔮", color: "gold", texture: "arcano", w: 300, h: 200, type: "biblioteca" },
+  { name: "Bodega de Venenos", icon: "🧪", color: "gm", texture: "piedra", w: 320, h: 220, type: "bodega" },
+  { name: "Taller y Armería", icon: "⚙️", color: "gm", texture: "piedra", w: 280, h: 200, type: "taller" },
+  { name: "Escaleras Principales", icon: "🪜", color: "gold", texture: "piedra", w: 140, h: 140, type: "escaleras" },
+  { name: "Galería Conectora", icon: "✦", color: "gold", texture: "madera", w: 240, h: 80, type: "pasillo" },
+  { name: "Habitación Vacía", icon: "🚪", color: "teal", texture: "madera", w: 220, h: 160, type: "otro" }
+];
+
+var _houseTextureCache = {};
+
+function getRoomTexturePattern(texId, colorKey){
+  texId = texId || "madera";
+  var key = texId + "_" + (colorKey || "def");
+  if(_houseTextureCache[key]) return _houseTextureCache[key];
+
+  var cv = document.createElement("canvas");
+  var ctx = cv.getContext("2d");
+
+  if(texId === "madera"){
+    cv.width = 64; cv.height = 64;
+    ctx.fillStyle = "#271B12"; ctx.fillRect(0, 0, 64, 64);
+    ctx.fillStyle = "rgba(176,141,87,0.12)"; ctx.fillRect(0, 0, 64, 64);
+    for(var y = 0; y < 64; y += 16){
+      ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(64, y); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, y + 1); ctx.lineTo(64, y + 1); ctx.stroke();
+      ctx.strokeStyle = "rgba(0,0,0,0.15)";
+      ctx.beginPath(); ctx.moveTo(0, y + 8); ctx.lineTo(64, y + 8); ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(0,0,0,0.45)"; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(32, 0); ctx.lineTo(32, 16);
+    ctx.moveTo(16, 16); ctx.lineTo(16, 32);
+    ctx.moveTo(48, 16); ctx.lineTo(48, 32);
+    ctx.moveTo(32, 32); ctx.lineTo(32, 48);
+    ctx.moveTo(16, 48); ctx.lineTo(16, 64);
+    ctx.moveTo(48, 48); ctx.lineTo(48, 64);
+    ctx.stroke();
+
+  } else if(texId === "piedra"){
+    cv.width = 64; cv.height = 64;
+    ctx.fillStyle = "#1B1F24"; ctx.fillRect(0, 0, 64, 64);
+    for(var py = 0; py < 64; py += 16){
+      ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(64, py); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, py + 1); ctx.lineTo(64, py + 1); ctx.stroke();
+    }
+    var offset = 0;
+    for(var py2 = 0; py2 < 64; py2 += 16){
+      ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(offset, py2); ctx.lineTo(offset, py2 + 16);
+      ctx.moveTo(offset + 32, py2); ctx.lineTo(offset + 32, py2 + 16);
+      ctx.stroke();
+      offset = (offset === 0 ? 16 : 0);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    for(var i = 0; i < 30; i++) ctx.fillRect((i * 17) % 64, (i * 23) % 64, 2, 2);
+
+  } else if(texId === "baldosas"){
+    cv.width = 40; cv.height = 40;
+    ctx.fillStyle = "#221711"; ctx.fillRect(0, 0, 40, 40);
+    ctx.fillStyle = "#19110B";
+    ctx.fillRect(0, 0, 20, 20); ctx.fillRect(20, 20, 20, 20);
+    ctx.strokeStyle = "rgba(176,141,87,0.22)"; ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, 40, 40); ctx.strokeRect(0, 0, 20, 20); ctx.strokeRect(20, 20, 20, 20);
+    ctx.fillStyle = "rgba(176,141,87,0.4)"; ctx.fillRect(19, 19, 2, 2);
+
+  } else if(texId === "musgo"){
+    cv.width = 48; cv.height = 48;
+    ctx.fillStyle = "#122216"; ctx.fillRect(0, 0, 48, 48);
+    var greens = ["#1A3622", "#275033", "#0E1A11", "#376E46", "#172E1E"];
+    for(var m = 0; m < 45; m++){
+      ctx.fillStyle = greens[m % greens.length];
+      var rx = (m * 13) % 48, ry = (m * 29) % 48;
+      ctx.fillRect(rx, ry, 2 + (m % 3), 2 + ((m + 1) % 3));
+    }
+
+  } else if(texId === "alfombra"){
+    cv.width = 32; cv.height = 32;
+    ctx.fillStyle = "#2D1017"; ctx.fillRect(0, 0, 32, 32);
+    ctx.strokeStyle = "rgba(176,141,87,0.18)"; ctx.lineWidth = 1;
+    for(var d = -32; d < 64; d += 8){ ctx.beginPath(); ctx.moveTo(d, 0); ctx.lineTo(d + 32, 32); ctx.stroke(); }
+    ctx.strokeStyle = "rgba(200,75,87,0.2)";
+    for(var d2 = 0; d2 < 64; d2 += 8){ ctx.beginPath(); ctx.moveTo(d2, 0); ctx.lineTo(d2 - 32, 32); ctx.stroke(); }
+
+  } else if(texId === "arcano"){
+    cv.width = 64; cv.height = 64;
+    ctx.fillStyle = "#141124"; ctx.fillRect(0, 0, 64, 64);
+    ctx.strokeStyle = "rgba(167,139,250,0.18)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(32, 32, 24, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(32, 32, 14, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(32, 4); ctx.lineTo(32, 60); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(4, 32); ctx.lineTo(60, 32); ctx.stroke();
+
+  } else {
+    cv.width = 32; cv.height = 32;
+    ctx.fillStyle = "#231812"; ctx.fillRect(0, 0, 32, 32);
+  }
+
+  _houseTextureCache[key] = cv;
+  return cv;
+}
+
+function inferRoomTexture(r){
+  if(!r) return "madera";
+  if(r.texture) return r.texture;
+  var name = (r.name || "").toLowerCase();
+  var type = (r.room_type || "").toLowerCase();
+
+  if(type === "cocina" || name.includes("cocina") || name.includes("fogón") || name.includes("caldero")) return "baldosas";
+  if(type === "biblioteca" || name.includes("biblioteca") || name.includes("arcana") || name.includes("mágic")) return "arcano";
+  if(name.includes("botánic") || name.includes("cherk") || name.includes("musgo") || name.includes("invernadero")) return "musgo";
+  if(type === "bodega" || name.includes("bodega") || name.includes("veneno") || name.includes("sótano") || type === "taller" || name.includes("armería")) return "piedra";
+  if(name.includes("scarleth") || name.includes("derek") || type === "habitacion_personal" || name.includes("aposentos")) return "alfombra";
+  if(type === "escaleras") return "piedra";
+  return "madera";
+}
+
+function getRoomItemCount(r){
+  if(!r) return 0;
+  var count = 0;
+  if(Array.isArray(r.furniture)){
+    r.furniture.forEach(function(f){
+      if(Array.isArray(f.items)) count += f.items.length;
+    });
+  }
+  if(typeof r.items === "number") count = Math.max(count, r.items);
+  return count;
+}
+
+function getHouseFloors(){
+  if(Array.isArray(houseState.floors) && houseState.floors.length > 0){
+    return houseState.floors;
+  }
+  return [
+    { id: 1, name: "Planta 1", sub: "Principal" },
+    { id: 2, name: "Planta 2", sub: "Aposentos" },
+    { id: 3, name: "Sótano", sub: "Bodega" }
+  ];
+}
+
+function isRoomOnFloor(room, targetFloor){
+  var rf = room ? room.floor : 1;
+  if(rf === targetFloor) return true;
+  if((targetFloor === 1 || targetFloor === "1" || targetFloor === "p1") && (rf === 1 || rf === "1" || rf === "p1")) return true;
+  if((targetFloor === 2 || targetFloor === "2" || targetFloor === "p2") && (rf === 2 || rf === "2" || rf === "p2")) return true;
+  if((targetFloor === 3 || targetFloor === "3" || targetFloor === "sotano") && (rf === 3 || rf === "3" || rf === "sotano")) return true;
+  return String(rf) === String(targetFloor);
+}
+
+function addHouseFloor(name){
+  if(!houseState.floors || houseState.floors.length === 0){
+    houseState.floors = getHouseFloors();
+  }
+  var nextId = houseState.floors.length + 1;
+  houseState.floors.push({ id: nextId, name: name, sub: "Ampliación" });
+  houseState.activeFloor = nextId;
+  saveHouseLocalData();
+  renderHouseView();
+  if(typeof showToast === "function") showToast("Planta '" + name + "' añadida a la casa.", "success");
+}
+
+/* ---- CONTROLADOR DEL ESCENARIO KONVA ---- */
+var houseKonvaStage = null;
+var houseKonvaLayer = null;
+var houseKonvaTransformer = null;
+var houseKonvaGridSnap = 20;
+var houseKonvaZoom = 1.0;
+var houseKonvaSelectedGroup = null;
+var houseKonvaPanning = false;
+var houseKonvaPanStart = { x: 0, y: 0 };
+var houseKonvaStageStart = { x: 0, y: 0 };
+
+function initOrRenderHouseKonvaStage(){
+  if(typeof Konva === "undefined"){
+    console.warn("Konva.js aún no está disponible.");
+    return;
+  }
+  var wrap = document.getElementById("canvasWrap");
+  var container = document.getElementById("stage-container");
+  if(!wrap || !container) return;
+
+  var containerWidth = wrap.clientWidth || 1000;
+  var containerHeight = Math.max(540, wrap.clientHeight || 640);
+
+  // Si el escenario ya existe y sigue vivo en el DOM
+  if(houseKonvaStage && houseKonvaStage.container() && document.body.contains(houseKonvaStage.container())){
+    houseKonvaStage.width(containerWidth);
+    houseKonvaStage.height(containerHeight);
+    renderKonvaRooms();
+    return;
+  }
+
+  if(houseKonvaStage){
+    try { houseKonvaStage.destroy(); } catch(e){}
+    houseKonvaStage = null;
+  }
+
+  container.innerHTML = "";
+  houseKonvaStage = new Konva.Stage({
+    container: "stage-container",
+    width: containerWidth,
+    height: containerHeight,
+    draggable: false
+  });
+
+  houseKonvaLayer = new Konva.Layer();
+  houseKonvaStage.add(houseKonvaLayer);
+
+  houseKonvaTransformer = new Konva.Transformer({
+    rotateEnabled: false,
+    enabledAnchors: ["bottom-right"],
+    anchorStroke: "#B08D57",
+    anchorFill: "#1A120D",
+    anchorSize: 14,
+    borderStroke: "#DEC392",
+    borderDash: [4, 4]
+  });
+  houseKonvaLayer.add(houseKonvaTransformer);
+
+  // Observador de redimensionado responsivo
+  if(window.ResizeObserver && !wrap._hasKonvaResizeObserver){
+    wrap._hasKonvaResizeObserver = true;
+    new ResizeObserver(function(){
+      if(houseKonvaStage && wrap){
+        var w = wrap.clientWidth;
+        var h = Math.max(540, wrap.clientHeight || 640);
+        if(w > 0 && h > 0){
+          houseKonvaStage.width(w);
+          houseKonvaStage.height(h);
+          if(houseKonvaLayer) houseKonvaLayer.batchDraw();
+        }
+      }
+    }).observe(wrap);
+  }
+
+  // Paneo (pan) arrastrando el fondo
+  houseKonvaStage.on("mousedown touchstart", function(e){
+    if(e.target === houseKonvaStage){
+      houseKonvaPanning = true;
+      var pos = houseKonvaStage.getPointerPosition();
+      if(pos){
+        houseKonvaPanStart = { x: pos.x, y: pos.y };
+        houseKonvaStageStart = { x: houseKonvaStage.x(), y: houseKonvaStage.y() };
+      }
+      deselectKonvaRoom();
+    }
+  });
+
+  houseKonvaStage.on("mousemove touchmove", function(){
+    if(!houseKonvaPanning) return;
+    var pos = houseKonvaStage.getPointerPosition();
+    if(!pos) return;
+    var dx = pos.x - houseKonvaPanStart.x;
+    var dy = pos.y - houseKonvaPanStart.y;
+    houseKonvaStage.position({ x: houseKonvaStageStart.x + dx, y: houseKonvaStageStart.y + dy });
+    houseKonvaStage.batchDraw();
+  });
+
+  houseKonvaStage.on("mouseup touchend", function(){
+    houseKonvaPanning = false;
+  });
+
+  // Zoom con rueda del ratón
+  houseKonvaStage.on("wheel", function(e){
+    e.evt.preventDefault();
+    var scaleBy = 1.08;
+    var oldScale = houseKonvaStage.scaleX();
+    var ptr = houseKonvaStage.getPointerPosition();
+    var newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+    applyHouseKonvaZoom(newScale, ptr);
+  });
+
+  renderKonvaRooms();
+}
+
+function renderKonvaRooms(){
+  if(!houseKonvaLayer || !houseKonvaStage) return;
+
+  houseKonvaLayer.destroyChildren();
+  houseKonvaLayer.add(houseKonvaTransformer);
+
+  var allRooms = houseState.rooms || [];
+  var curFloor = houseState.activeFloor || 1;
+  var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
+  var isEdit = !!houseState.editMode;
+
+  rooms.forEach(function(r){
+    if(typeof r.x !== "number" || typeof r.y !== "number"){
+      r.x = Math.max(20, (r.pos_x || 0) * 40 + 40);
+      r.y = Math.max(20, (r.pos_y || 0) * 40 + 40);
+      r.w = Math.max(120, (r.width || 4) * 40);
+      r.h = Math.max(90, (r.height || 3) * 40);
+    }
+
+    var group = new Konva.Group({
+      x: r.x,
+      y: r.y,
+      draggable: isEdit
+    });
+
+    var texCanvas = getRoomTexturePattern(r.texture || inferRoomTexture(r), r.color);
+    var strokeColor = resolveRoomColor(r.color);
+    var isSel = (houseState.selectedRoomId === r.id);
+
+    // 1. Rectángulo con textura de suelo
+    var bgRect = new Konva.Rect({
+      width: r.w,
+      height: r.h,
+      cornerRadius: 10,
+      fillPatternImage: texCanvas,
+      fillPatternRepeat: "repeat",
+      stroke: strokeColor,
+      strokeWidth: isSel ? 3 : 2,
+      shadowColor: "black",
+      shadowBlur: 16,
+      shadowOpacity: 0.52,
+      shadowOffsetY: 6
+    });
+
+    // 2. Velo semitransparente para legibilidad
+    var veil = new Konva.Rect({
+      width: r.w,
+      height: r.h,
+      cornerRadius: 10,
+      fill: "rgba(20, 14, 10, 0.42)"
+    });
+
+    // 3. Etiqueta con icono y nombre
+    var icon = r.icon || getRoomTypeIcon(r.room_type);
+    var label = new Konva.Text({
+      text: (icon ? icon + "  " : "") + (r.name || "Estancia"),
+      x: 12, y: 10,
+      width: r.w - 24,
+      fontFamily: "Georgia, serif",
+      fontSize: 15,
+      fontStyle: "bold",
+      fill: "#DEC392"
+    });
+
+    // 4. Insignia de objetos, textura y morador
+    var itemCount = getRoomItemCount(r);
+    var texName = (r.texture || inferRoomTexture(r)).toUpperCase();
+    var badgeText = "📦 " + itemCount + " · " + texName;
+    var owner = getRoomOwnerInfo(r.owner_character_id);
+    if(owner && owner.name){
+      badgeText += " · 👤 " + owner.name;
+    }
+
+    var badge = new Konva.Text({
+      text: badgeText,
+      x: 12,
+      y: r.h - 24,
+      fontFamily: "ui-monospace, monospace",
+      fontSize: 11,
+      fill: "#8F7D65"
+    });
+
+    // 5. Tirador de redimensionado visible en modo edición
+    var resizeHint = new Konva.Rect({
+      x: r.w - 16,
+      y: r.h - 16,
+      width: 12, height: 12,
+      cornerRadius: 2,
+      stroke: "rgba(176,141,87,0.65)",
+      strokeWidth: 1.5,
+      visible: isEdit
+    });
+
+    group.add(bgRect, veil, label, badge, resizeHint);
+
+    // Eventos de arrastre
+    group.on("dragmove", function(){
+      if(houseKonvaGridSnap > 0){
+        group.x(Math.round(group.x() / houseKonvaGridSnap) * houseKonvaGridSnap);
+        group.y(Math.round(group.y() / houseKonvaGridSnap) * houseKonvaGridSnap);
+      }
+    });
+
+    group.on("dragend", function(){
+      r.x = group.x();
+      r.y = group.y();
+      r.pos_x = Math.round((r.x - 40) / 40);
+      r.pos_y = Math.round((r.y - 40) / 40);
+      saveRoomChangesToRemoteAndBroadcast(r, "geometry");
+    });
+
+    // Clic / Tap
+    group.on("click tap", function(e){
+      e.cancelBubble = true;
+      selectKonvaRoom(group, r);
+    });
+
+    // Doble clic / toque para renombrar
+    group.on("dblclick dbltap", function(e){
+      e.cancelBubble = true;
+      startKonvaRename(group, r);
+    });
+
+    // Transformación de tamaño con Transformer
+    group.on("transformend", function(){
+      var rawW = bgRect.width() * group.scaleX();
+      var rawH = bgRect.height() * group.scaleY();
+      var newW = houseKonvaGridSnap > 0 ? Math.max(120, Math.round(rawW / houseKonvaGridSnap) * houseKonvaGridSnap) : Math.max(120, Math.round(rawW));
+      var newH = houseKonvaGridSnap > 0 ? Math.max(80, Math.round(rawH / houseKonvaGridSnap) * houseKonvaGridSnap) : Math.max(80, Math.round(rawH));
+
+      group.scaleX(1); group.scaleY(1);
+      bgRect.width(newW); bgRect.height(newH);
+      veil.width(newW); veil.height(newH);
+      label.width(newW - 24);
+      badge.y(newH - 24);
+      resizeHint.x(newW - 16); resizeHint.y(newH - 16);
+
+      r.w = newW; r.h = newH; r.x = group.x(); r.y = group.y();
+      r.width = Math.round(newW / 40);
+      r.height = Math.round(newH / 40);
+      r.pos_x = Math.round((r.x - 40) / 40);
+      r.pos_y = Math.round((r.y - 40) / 40);
+
+      saveRoomChangesToRemoteAndBroadcast(r, "geometry");
+      houseKonvaLayer.draw();
+    });
+
+    houseKonvaLayer.add(group);
+  });
+
+  // Re-adjuntar transformador si había selección
+  if(houseState.selectedRoomId){
+    var selR = allRooms.find(function(x){ return x.id === houseState.selectedRoomId; });
+    if(selR && isRoomOnFloor(selR, curFloor)){
+      var groups = houseKonvaLayer.getChildren().filter(function(n){ return n.getClassName() === "Group"; });
+      var found = groups.find(function(g){ return g.x() === selR.x && g.y() === selR.y; });
+      if(found) selectKonvaRoom(found, selR);
+      else deselectKonvaRoom();
+    } else {
+      deselectKonvaRoom();
+    }
+  } else {
+    deselectKonvaRoom();
+  }
+
+  houseKonvaLayer.draw();
+}
+
+function selectKonvaRoom(group, r){
+  houseKonvaSelectedGroup = group;
+  houseState.selectedRoomId = r.id;
+  if(houseKonvaTransformer) houseKonvaTransformer.nodes([group]);
+
+  var delBtn = document.getElementById("delRoomBtn");
+  if(delBtn) delBtn.disabled = false;
+
+  updateQuickRoomBar(r);
+
+  var insp = document.getElementById("houseInspectorContainer");
+  if(insp){
+    insp.innerHTML = renderRoomInspector(r.id);
+  }
+
+  if(houseKonvaLayer) houseKonvaLayer.draw();
+}
+
+function deselectKonvaRoom(){
+  houseKonvaSelectedGroup = null;
+  houseState.selectedRoomId = null;
+  if(houseKonvaTransformer) houseKonvaTransformer.nodes([]);
+
+  var delBtn = document.getElementById("delRoomBtn");
+  if(delBtn) delBtn.disabled = true;
+
+  var bar = document.getElementById("roomQuickBar");
+  if(bar) bar.classList.remove("visible");
+
+  closeAllHousePopovers();
+
+  var insp = document.getElementById("houseInspectorContainer");
+  if(insp){
+    insp.innerHTML = '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:12px;font-style:italic;">💡 Toca cualquier habitación del plano para ver sus detalles, muebles o activar sus buffs.</div>';
+  }
+
+  if(houseKonvaLayer) houseKonvaLayer.draw();
+}
+
+function updateQuickRoomBar(r){
+  var bar = document.getElementById("roomQuickBar");
+  if(!bar) return;
+  bar.classList.add("visible");
+  var nameEl = document.getElementById("rqRoomName");
+  if(nameEl) nameEl.textContent = (r.icon ? r.icon + " " : "") + r.name;
+  var texObj = HOUSE_TEXTURES.find(function(t){ return t.id === (r.texture || inferRoomTexture(r)); });
+  var texLbl = document.getElementById("rqTexLabel");
+  if(texLbl) texLbl.textContent = texObj ? texObj.name : "Madera";
+}
+
+function startKonvaRename(group, r){
+  if(!houseKonvaStage) return;
+  var stageBox = houseKonvaStage.container().getBoundingClientRect();
+  var scale = houseKonvaStage.scaleX();
+  var stageX = houseKonvaStage.x();
+  var stageY = houseKonvaStage.y();
+
+  var input = document.createElement("input");
+  input.className = "room-rename-input";
+  input.value = r.name;
+
+  var left = stageBox.left + stageX + (group.x() + 10) * scale;
+  var top = stageBox.top + stageY + (group.y() + 8) * scale;
+  var width = Math.max(140, ((r.w || 220) - 20) * scale);
+
+  input.style.left = left + "px";
+  input.style.top = top + "px";
+  input.style.width = width + "px";
+
+  document.body.appendChild(input);
+  input.focus(); input.select();
+
+  function commit(){
+    var val = input.value.trim();
+    if(val && val !== r.name){
+      r.name = val;
+      saveRoomChangesToRemoteAndBroadcast(r, "name");
+    }
+    if(document.body.contains(input)) document.body.removeChild(input);
+    renderKonvaRooms();
+    updateQuickRoomBar(r);
+  }
+
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", function(e){
+    if(e.key === "Enter") input.blur();
+    if(e.key === "Escape"){
+      if(document.body.contains(input)) document.body.removeChild(input);
+    }
+  });
+}
+
+function zoomFitHouse(){
+  if(!houseKonvaStage) return;
+  var allRooms = houseState.rooms || [];
+  var curFloor = houseState.activeFloor || 1;
+  var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
+
+  if(!rooms || rooms.length === 0){
+    houseKonvaStage.position({ x: 0, y: 0 });
+    applyHouseKonvaZoom(1.0);
+    return;
+  }
+
+  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  rooms.forEach(function(r){
+    var rx = (typeof r.x === "number") ? r.x : 40;
+    var ry = (typeof r.y === "number") ? r.y : 40;
+    var rw = (typeof r.w === "number") ? r.w : 220;
+    var rh = (typeof r.h === "number") ? r.h : 160;
+    minX = Math.min(minX, rx);
+    minY = Math.min(minY, ry);
+    maxX = Math.max(maxX, rx + rw);
+    maxY = Math.max(maxY, ry + rh);
+  });
+
+  var boundW = maxX - minX + 80;
+  var boundH = maxY - minY + 80;
+  var stageW = houseKonvaStage.width();
+  var stageH = houseKonvaStage.height();
+
+  var fitZoom = Math.min(1.5, Math.min(stageW / boundW, stageH / boundH));
+  fitZoom = Math.max(0.35, fitZoom);
+
+  var centerX = (minX + maxX) / 2;
+  var centerY = (minY + maxY) / 2;
+
+  houseKonvaStage.scale({ x: fitZoom, y: fitZoom });
+  houseKonvaStage.position({
+    x: stageW / 2 - centerX * fitZoom,
+    y: stageH / 2 - centerY * fitZoom
+  });
+  houseKonvaZoom = fitZoom;
+  var zLbl = document.getElementById("zoomLabel");
+  if(zLbl) zLbl.textContent = Math.round(houseKonvaZoom * 100) + "%";
+  houseKonvaStage.batchDraw();
+}
+
+function applyHouseKonvaZoom(newZoom, centerPos){
+  if(!houseKonvaStage) return;
+  newZoom = Math.max(0.3, Math.min(2.5, newZoom));
+  var oldZoom = houseKonvaStage.scaleX();
+
+  var mousePos = centerPos || { x: houseKonvaStage.width() / 2, y: houseKonvaStage.height() / 2 };
+  var worldPos = {
+    x: (mousePos.x - houseKonvaStage.x()) / oldZoom,
+    y: (mousePos.y - houseKonvaStage.y()) / oldZoom
+  };
+
+  houseKonvaStage.scale({ x: newZoom, y: newZoom });
+  var newStageX = mousePos.x - worldPos.x * newZoom;
+  var newStageY = mousePos.y - worldPos.y * newZoom;
+  houseKonvaStage.position({ x: newStageX, y: newStageY });
+
+  houseKonvaZoom = newZoom;
+  var zLbl = document.getElementById("zoomLabel");
+  if(zLbl) zLbl.textContent = Math.round(houseKonvaZoom * 100) + "%";
+  houseKonvaStage.batchDraw();
+}
+
+function quickAddRoomPreset(preset){
+  var allRooms = houseState.rooms || [];
+  var curFloor = houseState.activeFloor || 1;
+  var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
+
+  var nextX = 60, nextY = 60;
+  if(rooms.length > 0){
+    var last = rooms[rooms.length - 1];
+    nextX = (last.x || 40) + 40;
+    nextY = (last.y || 40) + 40;
+  }
+
+  var newRoom = {
+    id: "r" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36),
+    house_id: houseState.house ? houseState.house.id : "h0000000-0000-0000-0000-000000000001",
+    name: preset.name || "Nueva Estancia",
+    room_type: preset.type || "otro",
+    icon: preset.icon || "🚪",
+    color: preset.color || "teal",
+    texture: preset.texture || "madera",
+    floor: curFloor,
+    level: 1,
+    description: "",
+    x: nextX,
+    y: nextY,
+    w: preset.w || 220,
+    h: preset.h || 160,
+    pos_x: Math.round((nextX - 40) / 40),
+    pos_y: Math.round((nextY - 40) / 40),
+    width: Math.round((preset.w || 220) / 40),
+    height: Math.round((preset.h || 160) / 40),
+    furniture: [],
+    decor: []
+  };
+
+  houseState.rooms = houseState.rooms || [];
+  houseState.rooms.push(newRoom);
+  saveRoomChangesToRemoteAndBroadcast(newRoom, "create");
+  renderKonvaRooms();
+
+  var groups = houseKonvaLayer.getChildren().filter(function(n){ return n.getClassName() === "Group"; });
+  var lastGroup = groups[groups.length - 1];
+  if(lastGroup) selectKonvaRoom(lastGroup, newRoom);
+
+  if(typeof showToast === "function") showToast("Estancia '" + newRoom.name + "' creada.", "success");
+}
+
+function quickDeleteSelectedRoom(){
+  if(!houseState.selectedRoomId) return;
+  var r = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+  if(!r) return;
+  if(!confirm("¿Eliminar estancia '" + r.name + "' del plano?")) return;
+
+  deleteHouseRoomAction(r.id);
+  deselectKonvaRoom();
+  renderKonvaRooms();
+}
+
+function quickDuplicateSelectedRoom(){
+  if(!houseState.selectedRoomId) return;
+  var r = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+  if(!r) return;
+
+  var copy = JSON.parse(JSON.stringify(r));
+  copy.id = "r" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+  copy.name = copy.name + " (Copia)";
+  copy.x = (r.x || 40) + 30;
+  copy.y = (r.y || 40) + 30;
+  copy.pos_x = Math.round((copy.x - 40) / 40);
+  copy.pos_y = Math.round((copy.y - 40) / 40);
+
+  houseState.rooms.push(copy);
+  saveRoomChangesToRemoteAndBroadcast(copy, "create");
+  renderKonvaRooms();
+
+  var groups = houseKonvaLayer.getChildren().filter(function(n){ return n.getClassName() === "Group"; });
+  var lastGroup = groups[groups.length - 1];
+  if(lastGroup) selectKonvaRoom(lastGroup, copy);
+
+  if(typeof showToast === "function") showToast("Estancia duplicada.", "success");
+}
+
+function toggleKonvaGridSnap(){
+  houseKonvaGridSnap = (houseKonvaGridSnap > 0) ? 0 : 20;
+  var btn = document.getElementById("gridSnapBtn");
+  if(btn){
+    btn.innerHTML = (houseKonvaGridSnap > 0) ? "🧲 Rejilla: 20px" : "🖐️ Rejilla: Libre";
+    btn.classList.toggle("active", houseKonvaGridSnap > 0);
+  }
+  if(typeof showToast === "function"){
+    showToast(houseKonvaGridSnap > 0 ? "Rejilla magnética activada (20px)" : "Movimiento libre activado", "info");
+  }
+}
+
+function toggleTexturePopover(btn){
+  var pop = document.getElementById("popoverTexture");
+  if(!pop) return;
+  var isVis = pop.classList.contains("visible");
+  closeAllHousePopovers();
+  if(!isVis && houseState.selectedRoomId){
+    var selR = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+    var curTex = selR ? (selR.texture || inferRoomTexture(selR)) : "madera";
+    var grid = document.getElementById("textureGrid");
+    if(grid){
+      grid.innerHTML = "";
+      HOUSE_TEXTURES.forEach(function(t){
+        var b = document.createElement("button");
+        b.className = "house-texture-chip" + (curTex === t.id ? " active" : "");
+        b.innerHTML = '<span style="font-size:1.3rem;">' + t.icon + '</span><span style="font-weight:600;">' + t.name + '</span>';
+        b.addEventListener("click", function(){
+          if(selR){
+            selR.texture = t.id;
+            saveRoomChangesToRemoteAndBroadcast(selR, "texture");
+            renderKonvaRooms();
+            updateQuickRoomBar(selR);
+            if(typeof showToast === "function") showToast("Suelo cambiado a " + t.name, "info");
+          }
+          closeAllHousePopovers();
+        });
+        grid.appendChild(b);
+      });
+    }
+    positionHousePopover(pop, btn);
+  }
+}
+
+function toggleColorPopover(btn){
+  var pop = document.getElementById("popoverColor");
+  if(!pop) return;
+  var isVis = pop.classList.contains("visible");
+  closeAllHousePopovers();
+  if(!isVis && houseState.selectedRoomId){
+    var selR = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+    var grid = document.getElementById("colorGrid");
+    if(grid){
+      grid.innerHTML = "";
+      Object.keys(HOUSE_COLOR_MAP).forEach(function(ckey){
+        var dot = document.createElement("div");
+        dot.className = "color-circle" + ((selR && selR.color === ckey) ? " active" : "");
+        dot.style.background = HOUSE_COLOR_MAP[ckey];
+        dot.style.width = "28px"; dot.style.height = "28px"; dot.style.borderRadius = "50%";
+        dot.style.border = "2px solid rgba(255,255,255,0.2)"; dot.style.cursor = "pointer";
+        dot.addEventListener("click", function(){
+          if(selR){
+            selR.color = ckey;
+            saveRoomChangesToRemoteAndBroadcast(selR, "color");
+            renderKonvaRooms();
+          }
+          closeAllHousePopovers();
+        });
+        grid.appendChild(dot);
+      });
+    }
+    positionHousePopover(pop, btn);
+  }
+}
+
+function toggleIconPopover(btn){
+  var pop = document.getElementById("popoverIcon");
+  if(!pop) return;
+  var isVis = pop.classList.contains("visible");
+  closeAllHousePopovers();
+  if(!isVis && houseState.selectedRoomId){
+    var selR = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+    var grid = document.getElementById("iconGrid");
+    if(grid){
+      grid.innerHTML = "";
+      HOUSE_ICONS.forEach(function(ic){
+        var chip = document.createElement("button");
+        chip.className = "icon-chip";
+        chip.style.width = "34px"; chip.style.height = "34px"; chip.style.fontSize = "1.1rem";
+        chip.style.background = "var(--bg-card)"; chip.style.border = "1px solid var(--line)";
+        chip.style.borderRadius = "6px"; chip.style.cursor = "pointer";
+        chip.textContent = ic;
+        chip.addEventListener("click", function(){
+          if(selR){
+            selR.icon = ic;
+            saveRoomChangesToRemoteAndBroadcast(selR, "icon");
+            renderKonvaRooms();
+            updateQuickRoomBar(selR);
+          }
+          closeAllHousePopovers();
+        });
+        grid.appendChild(chip);
+      });
+    }
+    positionHousePopover(pop, btn);
+  }
+}
+
+function toggleFloorPopover(btn){
+  var pop = document.getElementById("popoverFloor");
+  if(!pop) return;
+  var isVis = pop.classList.contains("visible");
+  closeAllHousePopovers();
+  if(!isVis && houseState.selectedRoomId){
+    var selR = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+    var list = document.getElementById("floorMoveList");
+    if(list && selR){
+      list.innerHTML = "";
+      var floors = getHouseFloors();
+      floors.forEach(function(fl){
+        if(isRoomOnFloor(selR, fl.id)) return;
+        var b = document.createElement("button");
+        b.className = "house-tool-btn";
+        b.style.width = "100%";
+        b.style.justifyContent = "flex-start";
+        b.innerHTML = "🏢 <b>" + fl.name + "</b> (" + (fl.sub || "") + ")";
+        b.addEventListener("click", function(){
+          selR.floor = fl.id;
+          saveRoomChangesToRemoteAndBroadcast(selR, "floor");
+          houseState.activeFloor = fl.id;
+          renderHouseView();
+          closeAllHousePopovers();
+          if(typeof showToast === "function") showToast("Estancia trasladada a " + fl.name, "info");
+        });
+        list.appendChild(b);
+      });
+    }
+    positionHousePopover(pop, btn);
+  }
+}
+
+function positionHousePopover(pop, btn){
+  var rect = btn.getBoundingClientRect();
+  pop.style.top = (rect.bottom + 6) + "px";
+  pop.style.left = Math.min(window.innerWidth - 240, Math.max(10, rect.left)) + "px";
+  pop.classList.add("visible");
+}
+
+function closeAllHousePopovers(){
+  document.querySelectorAll(".popover-menu").forEach(function(m){ m.classList.remove("visible"); });
+}
+
+function openHousePresetModal(){
+  var modalId = "housePresetModalBackdrop";
+  var existing = document.getElementById(modalId);
+  if(existing) existing.remove();
+
+  var modal = document.createElement("div");
+  modal.id = modalId;
+  modal.className = "preset-modal-backdrop visible";
+
+  var gridHtml = '';
+  HOUSE_PRESETS.forEach(function(pr, idx){
+    gridHtml += '<div class="preset-card" data-action="select-preset-room" data-preset-idx="' + idx + '">' +
+      '<div class="pi">' + pr.icon + '</div>' +
+      '<div>' +
+      '  <div class="pname">' + esc(pr.name) + '</div>' +
+      '  <div class="psub">' + (pr.texture || "madera").toUpperCase() + ' · ' + pr.w + 'x' + pr.h + '</div>' +
+      '</div>' +
+      '</div>';
+  });
+
+  modal.innerHTML = '<div class="preset-modal">' +
+    '  <div class="preset-modal-title">' +
+    '    <span>Elige una Estancia para Añadir</span>' +
+    '    <button style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:1.4rem;" data-action="close-preset-room-modal">&times;</button>' +
+    '  </div>' +
+    '  <div class="preset-grid">' + gridHtml + '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
 function saveRoomChangesToRemoteAndBroadcast(room, fieldName){
   if(!room) return;
 
@@ -2697,125 +3605,131 @@ function renderHouseView(){
   html += renderHouseStatCard("🔮 Vínculo", "vinculo", h.vinculo || 1, h.vinculo_progress || 0, h.vinculo_max || 10, "Conexión anímica con los moradores.", gmMode);
   html += '</div>';
 
-  // 3. Sección del Plano Arquitectónico
+  // 3. Sección del Plano Arquitectónico 2D con Konva y Texturas de Suelo
   html += '<div class="house-blueprint-section">';
-  html += '  <div class="house-blueprint-toolbar">';
-  html += '    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
-  html += '      <h2 class="house-blueprint-title"><span>📐</span> Plano Arquitectónico</h2>';
 
-  // Selector de Plantas
-  html += '      <div class="house-floor-tabs">';
-  html += '        <button class="house-floor-tab' + (curFloor === 1 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="1">🏢 Planta 1 (Principal)</button>';
-  html += '        <button class="house-floor-tab' + (curFloor === 2 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="2">🌲 Planta 2 (Aposentos)</button>';
-  html += '        <button class="house-floor-tab' + (curFloor === 3 ? ' active' : '') + '" data-action="switch-house-floor" data-floor="3">🕯️ Sótano / Bodega</button>';
-  html += '      </div>';
-
-  // FASE 5: Controles de Zoom del Plano (Con ajuste rápido a móvil)
-  var curZoom = houseState.zoom || 1.0;
-  html += '      <div class="house-zoom-controls">';
-  html += '        <button class="house-zoom-btn" data-action="zoom-house-out" title="Alejar plano (Zoom -)">−</button>';
-  html += '        <button class="house-zoom-btn house-zoom-fit" data-action="zoom-house-fit" title="Ajustar al móvil o pantalla completa">📱 Ajustar</button>';
-  html += '        <button class="house-zoom-btn house-zoom-reset" data-action="zoom-house-reset" title="Restablecer zoom (100%)">🔍 ' + Math.round(curZoom * 100) + '%</button>';
-  html += '        <button class="house-zoom-btn" data-action="zoom-house-in" title="Acercar plano (Zoom +)">+</button>';
-  html += '      </div>';
+  // Topbar del plano
+  html += '<div class="house-topbar">';
+  html += '  <div class="house-topbar-row">';
+  html += '    <div class="house-crest">🏠</div>';
+  html += '    <div class="house-topbar-title">';
+  html += '      <div class="t1">Plano Cenital · ' + esc(h.name || "La Casa Andante") + '</div>';
+  html += '      <div class="t2">Lienzo 2D Interactivo · Texturas de Suelo y Escalabilidad</div>';
   html += '    </div>';
-
-  if(gmMode){
-    html += '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-    html += '      <button class="house-edit-mode-btn' + (houseState.editMode ? ' active' : '') + '" data-action="toggle-house-edit-mode" title="Alternar Modo Edición para arrastrar y redimensionar estancias">';
-    html += '        <span>' + (houseState.editMode ? '✏️ Modo Edición: ACTIVO' : '👁️ Modo Edición: OFF') + '</span>';
-    html += '      </button>';
-    if(houseState.editMode){
-      html += '      <button class="btn-compact highlight" data-action="create-house-corridor" style="font-size:0.78rem;padding:5px 10px;background:rgba(180,150,90,0.22);border-color:var(--gold);color:var(--gold-light);" title="Pintar o añadir un pasillo entre estancias">🬸 Añadir Pasillo</button>';
-    }
-    html += '      <button class="btn-solid-gold" data-action="open-create-room-modal" style="font-size:0.78rem;padding:5px 10px;">➕ Añadir Habitación</button>';
-    html += '    </div>';
-  }
+  html += '    <button class="house-edit-toggle' + (houseState.editMode ? ' on' : '') + '" data-action="toggle-house-edit-mode">';
+  html += '      <span class="dot"></span>';
+  html += '      <span id="editLabel">Edición: ' + (houseState.editMode ? 'ON' : 'OFF') + '</span>';
+  html += '    </button>';
   html += '  </div>';
 
-  // Banner informativo en Modo Edición
-  if(gmMode && houseState.editMode){
-    html += '<div class="house-edit-mode-banner">';
-    html += '  <span>🛠️ <b>Modo Edición Activo:</b> Arrastra cualquier estancia directamente con el dedo o ratón. Snapping automático y prevención de solapes. Selecciona una estancia y arrastra la esquina <b>↘</b> para redimensionar.</span>';
-    html += '</div>';
-  }
+  // Toolbar con selector de plantas y controles de zoom
+  html += '  <div class="house-toolbar">';
+  var floors = getHouseFloors();
+  floors.forEach(function(fl){
+    var isFlActive = isRoomOnFloor({ floor: houseState.activeFloor }, fl.id);
+    html += '    <button class="house-floor-tab-btn' + (isFlActive ? ' active' : '') + '" data-action="switch-house-floor" data-floor="' + fl.id + '">';
+    html += '      <div class="fmain">' + esc(fl.name) + '</div>';
+    html += '      <div class="fsub">' + esc(fl.sub || "") + '</div>';
+    html += '    </button>';
+  });
+  html += '    <button class="house-add-floor-btn" data-action="open-add-floor-modal" title="Crear nueva planta">+ Nueva Planta</button>';
 
-  // Barra para la habitación seleccionada en Modo Edición o D-Pad clásico de respaldo
-  if(gmMode && houseState.selectedRoomId){
-    var selRoom = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
-    if(selRoom){
-      if(houseState.editMode){
-        html += '<div class="house-edit-selected-bar">';
-        html += '  <div class="house-edit-sel-info">';
-        html += '    <span>🎯 Habitación seleccionada: <b>' + esc(selRoom.name) + '</b></span>';
-        html += '    <span class="house-edit-coords">(' + (selRoom.pos_x || 0) + ', ' + (selRoom.pos_y || 0) + ') · ' + (selRoom.width || 2) + 'x' + (selRoom.height || 2) + '</span>';
-        html += '  </div>';
-        html += '  <div class="house-edit-sel-actions">';
-        html += '    <div class="house-floor-mini-group">';
-        html += '      <span style="font-size:0.7rem;color:var(--ink-faint);font-weight:700;">Planta:</span>';
-        html += '      <button class="house-dpad-btn' + ((selRoom.floor||1)===1?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="1">P.1</button>';
-        html += '      <button class="house-dpad-btn' + ((selRoom.floor||1)===2?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="2">P.2</button>';
-        html += '      <button class="house-dpad-btn' + ((selRoom.floor||1)===3?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="3">Sót.</button>';
-        html += '    </div>';
-        html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + selRoom.id + '" style="font-size:0.72rem;padding:3px 8px;">✏️ Ajustar Coordenadas / Datos</button>';
-        html += '  </div>';
-        html += '</div>';
-      } else {
-        html += '<div class="house-dpad-bar">';
-        html += '  <div class="house-dpad-title">🎮 Mover <b>' + esc(selRoom.name) + '</b>:</div>';
-        html += '  <div class="house-dpad-group">';
-        html += '    <span class="house-dpad-label">Posición:</span>';
-        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="-1" data-dy="0" title="Mover Izquierda">⬅️</button>';
-        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="1" data-dy="0" title="Mover Derecha">➡️</button>';
-        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="0" data-dy="-1" title="Mover Arriba">⬆️</button>';
-        html += '    <button class="house-dpad-btn" data-action="nudge-room" data-dx="0" data-dy="1" title="Mover Abajo">⬇️</button>';
-        html += '  </div>';
-        html += '  <div class="house-dpad-group">';
-        html += '    <span class="house-dpad-label">Tamaño:</span>';
-        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="-1" data-dh="0" title="Reducir Ancho">Ancho -</button>';
-        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="1" data-dh="0" title="Aumentar Ancho">Ancho +</button>';
-        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="0" data-dh="-1" title="Reducir Alto">Alto -</button>';
-        html += '    <button class="house-dpad-btn" data-action="resize-room" data-dw="0" data-dh="1" title="Aumentar Alto">Alto +</button>';
-        html += '  </div>';
-        html += '  <div class="house-dpad-group">';
-        html += '    <span class="house-dpad-label">Planta:</span>';
-        html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===1?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="1">P.1</button>';
-        html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===2?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="2">P.2</button>';
-        html += '    <button class="house-dpad-btn' + ((selRoom.floor||1)===3?' active':'') + '" data-action="set-room-floor" data-room-id="' + selRoom.id + '" data-floor="3">Sót.</button>';
-        html += '  </div>';
-        html += '</div>';
-      }
-    }
-  }
+  html += '    <div class="house-toolbar-spacer"></div>';
 
-  // Si el usuario está dentro del Estudio Canva de una habitación, renderizar el estudio enfocado
+  html += '    <div class="house-zoom-group">';
+  html += '      <button data-action="zoom-house-out" title="Alejar plano">−</button>';
+  html += '      <span class="zlabel" id="zoomLabel">' + Math.round((houseKonvaZoom || 1.0) * 100) + '%</span>';
+  html += '      <button data-action="zoom-house-in" title="Acercar plano">+</button>';
+  html += '      <button data-action="zoom-house-fit" title="Ajustar estancias a pantalla">📱 Ajustar</button>';
+  html += '    </div>';
+  html += '  </div>';
+
+  // Fila de acciones principales
+  html += '  <div class="house-action-row">';
+  html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">➕ Añadir habitación</button>';
+  html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>✕ Eliminar seleccionada</button>';
+  html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: 20px' : '🖐️ Rejilla: Libre') + '</button>';
+  html += '  </div>';
+
+  // Barra de herramientas contextual de habitación seleccionada
+  var selRoom = houseState.selectedRoomId ? (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; }) : null;
+  var selBarVis = selRoom ? ' visible' : '';
+  var selTexName = selRoom ? (HOUSE_TEXTURES.find(function(t){ return t.id === (selRoom.texture || inferRoomTexture(selRoom)); })?.name || "Madera") : "Madera";
+  var selIconName = selRoom ? ((selRoom.icon ? selRoom.icon + " " : "") + selRoom.name) : "Habitación";
+
+  html += '  <div class="house-quick-tools' + selBarVis + '" id="roomQuickBar">';
+  html += '    <div class="house-quick-tools-title">🎯 <b id="rqRoomName">' + esc(selIconName) + '</b></div>';
+  html += '    <div class="house-quick-tools-group">';
+  html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">✏️ Renombrar</button>';
+  html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
+  html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
+  html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
+  html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
+  html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
+  html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">🗑️</button>';
+  html += '    </div>';
+  html += '  </div>';
+
+  html += '</div>'; // Fin house-topbar
+
+  // Si el usuario está dentro del Estudio Canva interior de una habitación
   if(houseState.studioRoomId){
     html += renderCanvaStudio(houseState.studioRoomId);
   } else {
-    // Lienzo de cuadrícula de la planta activa con soporte de Zoom
-    var canvasEditClass = (gmMode && houseState.editMode) ? ' edit-mode' : '';
-    var zoomStyle = (curZoom !== 1.0) ? 'style="transform:scale(' + curZoom + ');transform-origin:top left;"' : '';
-    html += '  <div class="house-grid-viewport">';
-    html += '    <div class="house-grid-canvas' + canvasEditClass + '" id="houseGridCanvas" ' + zoomStyle + '>';
-    html += renderHouseGridRooms(curFloor);
-    html += '    </div>';
-    html += '  </div>';
+    // Lienzo Konva 2D
+    html += '<div class="canvas-wrap" id="canvasWrap">';
+    html += '  <div id="stage-container"></div>';
+    html += '</div>';
 
-    // Inspector de la Habitación seleccionada
+    // Barra de consejos interactiva
+    html += '<div class="house-hint-bar">';
+    html += '  Con <b>Edición: ON</b> — Arrastra una habitación para moverla (se ajusta sola a la rejilla de 20px), tira de la esquina inferior derecha para redimensionarla, y haz <b>doble clic / doble toque</b> sobre el nombre para renombrarla. Arrastra el fondo para hacer paneo o usa la rueda/pellizco para zoom.';
+    html += '</div>';
+
+    // Popovers de texturas, color, icono, plantas
+    html += '<div class="popover-menu" id="popoverTexture">';
+    html += '  <div class="pop-header">Textura de Suelo de la Habitación</div>';
+    html += '  <div class="house-texture-grid" id="textureGrid"></div>';
+    html += '</div>';
+
+    html += '<div class="popover-menu" id="popoverColor">';
+    html += '  <div class="pop-header">Color del Borde y Tema</div>';
+    html += '  <div class="color-grid" id="colorGrid"></div>';
+    html += '</div>';
+
+    html += '<div class="popover-menu" id="popoverIcon">';
+    html += '  <div class="pop-header">Icono Temático</div>';
+    html += '  <div class="icon-grid" id="iconGrid"></div>';
+    html += '</div>';
+
+    html += '<div class="popover-menu" id="popoverFloor">';
+    html += '  <div class="pop-header">Mover a Otra Planta</div>';
+    html += '  <div id="floorMoveList" style="display:flex;flex-direction:column;gap:5px;"></div>';
+    html += '</div>';
+
+    // Inspector de Habitación
+    html += '<div id="houseInspectorContainer">';
     if(houseState.selectedRoomId){
       html += renderRoomInspector(houseState.selectedRoomId);
     } else {
       html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:12px;font-style:italic;">💡 Toca cualquier habitación del plano para ver sus detalles, muebles o activar sus buffs.</div>';
     }
+    html += '</div>';
   }
 
-  html += '</div>'; // Fin blueprint
+  html += '</div>'; // Fin house-blueprint-section
 
   // Historial de eventos
   html += renderHouseEventsSection();
 
   html += '</div>'; // Fin house-container
   main.innerHTML = html;
+
+  if(!houseState.studioRoomId){
+    setTimeout(function(){
+      initOrRenderHouseKonvaStage();
+    }, 10);
+  }
 }
 
 function renderHouseStatCard(label, statKey, val, prog, max, desc, gmMode){
@@ -4051,18 +4965,72 @@ document.addEventListener("click", function(e){
     e.preventDefault();
     backFromHouseView();
   } else if(act === "switch-house-floor"){
-    var fl = parseInt(btn.getAttribute("data-floor"), 10) || 1;
+    var fl = parseInt(btn.getAttribute("data-floor"), 10) || btn.getAttribute("data-floor") || 1;
     houseState.activeFloor = fl;
+    deselectKonvaRoom();
     renderHouseView();
   } else if(act === "switch-inspector-tab"){
     var inspTab = btn.getAttribute("data-tab") || "estancia";
     houseState.inspectorTab = inspTab;
-    renderHouseView();
-  } else if(act === "toggle-house-edit-mode"){
-    if(typeof isGM === "function" && isGM()){
-      houseState.editMode = !houseState.editMode;
+    var inspEl = document.getElementById("houseInspectorContainer");
+    if(inspEl && houseState.selectedRoomId){
+      inspEl.innerHTML = renderRoomInspector(houseState.selectedRoomId);
+    } else {
       renderHouseView();
     }
+  } else if(act === "toggle-house-edit-mode"){
+    houseState.editMode = !houseState.editMode;
+    renderHouseView();
+  } else if(act === "open-preset-room-modal"){
+    e.preventDefault();
+    openHousePresetModal();
+  } else if(act === "close-preset-room-modal"){
+    var pm = document.getElementById("housePresetModalBackdrop");
+    if(pm) pm.remove();
+  } else if(act === "select-preset-room"){
+    var pIdx = parseInt(btn.getAttribute("data-preset-idx"), 10);
+    if(!isNaN(pIdx) && HOUSE_PRESETS[pIdx]){
+      quickAddRoomPreset(HOUSE_PRESETS[pIdx]);
+    }
+    var pm2 = document.getElementById("housePresetModalBackdrop");
+    if(pm2) pm2.remove();
+  } else if(act === "quick-delete-selected-room"){
+    e.preventDefault();
+    quickDeleteSelectedRoom();
+  } else if(act === "quick-rename-selected-room"){
+    var qR = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
+    if(qR && houseKonvaSelectedGroup) startKonvaRename(houseKonvaSelectedGroup, qR);
+  } else if(act === "quick-toggle-texture-menu"){
+    e.stopPropagation();
+    toggleTexturePopover(btn);
+  } else if(act === "quick-toggle-color-menu"){
+    e.stopPropagation();
+    toggleColorPopover(btn);
+  } else if(act === "quick-toggle-icon-menu"){
+    e.stopPropagation();
+    toggleIconPopover(btn);
+  } else if(act === "quick-toggle-floor-menu"){
+    e.stopPropagation();
+    toggleFloorPopover(btn);
+  } else if(act === "quick-duplicate-selected-room"){
+    quickDuplicateSelectedRoom();
+  } else if(act === "toggle-house-grid-snap"){
+    toggleKonvaGridSnap();
+  } else if(act === "open-add-floor-modal"){
+    var flName = prompt("Nombre de la nueva planta (ej: Buhardilla, Ático, Cripta, Torreón):", "Ático");
+    if(flName) addHouseFloor(flName);
+  } else if(act === "zoom-house-in"){
+    applyHouseKonvaZoom(houseKonvaZoom + 0.15);
+  } else if(act === "zoom-house-out"){
+    applyHouseKonvaZoom(houseKonvaZoom - 0.15);
+  } else if(act === "zoom-house-reset"){
+    applyHouseKonvaZoom(1.0);
+    if(houseKonvaStage){
+      houseKonvaStage.position({ x: 0, y: 0 });
+      houseKonvaStage.batchDraw();
+    }
+  } else if(act === "zoom-house-fit"){
+    zoomFitHouse();
   } else if(act === "select-house-room"){
     if(houseSuppressNextClick){
       e.preventDefault();
@@ -4281,6 +5249,11 @@ document.addEventListener("click", function(e){
       bar.querySelectorAll(".house-color-chip").forEach(function(c){ c.classList.remove("is-active"); });
       btn.classList.add("is-active");
     }
+  }
+
+  // Cerrar popovers de la casa si se hace clic fuera
+  if(!e.target.closest(".popover-menu") && !e.target.closest("[data-action^='quick-toggle-']")){
+    closeAllHousePopovers();
   }
 });
 

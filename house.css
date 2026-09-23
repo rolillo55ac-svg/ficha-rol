@@ -2730,3 +2730,461 @@
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+/* ==========================================================================
+   KONVA 2D BLUEPRINT STYLES, FLOOR TEXTURES & INTERACTIVE CONTROLS
+   ========================================================================== */
+
+/* Topbar & Header */
+.house-topbar {
+  background: linear-gradient(180deg, var(--bg-elev, #1A120D) 85%, rgba(26,18,13,0.97));
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  border-radius: var(--radius, 10px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  margin-bottom: 12px;
+}
+
+.house-topbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.house-crest {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex: none;
+  background: radial-gradient(circle at 32% 28%, var(--blood-light, #C84B57), var(--blood, #8C252F) 78%);
+  border: 2px solid var(--gold, #B08D57);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 0 12px rgba(140, 37, 47, 0.45);
+}
+
+.house-topbar-title {
+  flex: 1;
+  min-width: 140px;
+}
+
+.house-topbar-title .t1 {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.15rem;
+  color: var(--gold-light, #DEC392);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.house-topbar-title .t2 {
+  font-size: 0.7rem;
+  color: var(--ink-faint, #8F7D65);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.house-edit-toggle {
+  border: 1px solid var(--line-strong, rgba(176,141,87,0.52));
+  border-radius: 20px;
+  padding: 8px 16px;
+  background: var(--bg-card, #231812);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim, #C2B196);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.house-edit-toggle:hover {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+}
+
+.house-edit-toggle .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-faint, #8F7D65);
+  transition: all 0.2s ease;
+}
+
+.house-edit-toggle.on {
+  border-color: var(--teal-light, #76AC9D);
+  color: var(--teal-light, #76AC9D);
+  background: rgba(61,110,96,0.22);
+}
+
+.house-edit-toggle.on .dot {
+  background: var(--teal-light, #76AC9D);
+  box-shadow: 0 0 8px var(--teal-light, #76AC9D);
+}
+
+/* Floor toolbar */
+.house-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(176,141,87,0.15);
+  padding-top: 10px;
+}
+
+.house-floor-tab-btn {
+  background: var(--bg-card, #231812);
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  border-radius: var(--radius-sm, 6px);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  color: var(--ink-dim, #C2B196);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.house-floor-tab-btn .fmain {
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 600;
+}
+
+.house-floor-tab-btn .fsub {
+  font-size: 0.62rem;
+  color: var(--ink-faint, #8F7D65);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.house-floor-tab-btn:hover {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+}
+
+.house-floor-tab-btn.active {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+  background: rgba(176,141,87,0.18);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.house-add-floor-btn {
+  background: transparent;
+  border: 1px dashed var(--line, rgba(176,141,87,0.3));
+  border-radius: var(--radius-sm, 6px);
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  color: var(--ink-faint, #8F7D65);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.house-add-floor-btn:hover {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+}
+
+.house-toolbar-spacer {
+  flex: 1;
+  min-width: 8px;
+}
+
+.house-zoom-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: rgba(0,0,0,0.3);
+  padding: 3px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+}
+
+.house-zoom-group button {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  background: var(--bg-card, #231812);
+  color: var(--ink-dim, #C2B196);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.house-zoom-group button:hover {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+}
+
+.house-zoom-group .zlabel {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  color: var(--ink-faint, #8F7D65);
+  min-width: 44px;
+  text-align: center;
+}
+
+/* Actions Row */
+.house-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.house-act-btn {
+  border-radius: var(--radius-sm, 6px);
+  padding: 8px 12px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--line-strong, rgba(176,141,87,0.52));
+  background: var(--bg-card, #231812);
+  color: var(--ink-dim, #C2B196);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.house-act-btn:hover {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+}
+
+.house-act-btn.primary {
+  background: linear-gradient(180deg, var(--blood-light, #C84B57), var(--blood, #8C252F));
+  color: #fff;
+  border-color: var(--blood, #8C252F);
+  box-shadow: 0 2px 10px rgba(140,37,47,0.35);
+}
+
+.house-act-btn.danger {
+  color: #E88178;
+  border-color: var(--danger, #C0392B);
+}
+
+.house-act-btn.danger:hover {
+  background: rgba(192, 57, 43, 0.2);
+}
+
+.house-act-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Quick Tools Bar for selected room */
+.house-quick-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: rgba(35, 24, 18, 0.95);
+  border: 1px solid var(--gold, #B08D57);
+  border-radius: var(--radius-sm, 6px);
+  margin-top: 6px;
+  animation: houseFadeIn 0.2s ease;
+}
+
+.house-quick-tools-title {
+  font-size: 0.78rem;
+  color: var(--gold-light, #DEC392);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.house-quick-tools-title b {
+  color: #FFF;
+}
+
+.house-quick-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.house-tool-btn {
+  background: var(--bg-card, #231812);
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.74rem;
+  color: var(--ink-dim, #C2B196);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.house-tool-btn:hover {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+}
+
+/* Canvas Area */
+.canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  margin: 10px 0;
+  border-radius: var(--radius, 10px);
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.7);
+  background-color: #0E0A08;
+  background-image: radial-gradient(rgba(176,141,87,0.18) 1px, transparent 1.5px);
+  background-size: 20px 20px;
+  touch-action: none;
+  min-height: 520px;
+  width: 100%;
+}
+
+#stage-container {
+  width: 100%;
+  height: 680px;
+  position: relative;
+  outline: none;
+}
+
+/* Inline Rename Input */
+.room-rename-input {
+  position: absolute;
+  z-index: 200;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 15px;
+  background: var(--bg-elev, #1A120D);
+  color: var(--gold-light, #DEC392);
+  border: 2px solid var(--gold, #B08D57);
+  border-radius: 6px;
+  padding: 6px 12px;
+  outline: none;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.85);
+}
+
+/* Popover / Menus (Textures, Icons, Colors, Presets) */
+.house-popover-menu {
+  position: absolute;
+  z-index: 300;
+  background: var(--bg-elev, #1A120D);
+  border: 1px solid var(--gold, #B08D57);
+  border-radius: var(--radius-sm, 6px);
+  padding: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.house-popover-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.house-texture-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.house-texture-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  background: var(--bg-card, #231812);
+  color: var(--ink-dim, #C2B196);
+  font-size: 0.74rem;
+  cursor: pointer;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.house-texture-chip:hover {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+  background: rgba(176,141,87,0.15);
+}
+
+.house-texture-chip.active {
+  border-color: var(--gold-light, #DEC392);
+  color: #fff;
+  background: rgba(176,141,87,0.25);
+  box-shadow: 0 0 8px rgba(176,141,87,0.3);
+}
+
+.house-hint-bar {
+  font-size: 0.72rem;
+  color: var(--ink-faint, #8F7D65);
+  padding: 4px 6px 12px;
+  line-height: 1.5;
+}
+
+.house-hint-bar b {
+  color: var(--ink-dim, #C2B196);
+}
+
+/* Modal Selector de Plantillas de Habitación */
+.house-preset-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.house-preset-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg-card, #231812);
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.house-preset-card:hover {
+  border-color: var(--gold, #B08D57);
+  background: rgba(176,141,87,0.12);
+  transform: translateY(-2px);
+}
+
+.house-preset-icon {
+  font-size: 1.6rem;
+  flex: none;
+}
+
+.house-preset-name {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 0.88rem;
+  color: var(--gold-light, #DEC392);
+  font-weight: 600;
+}
+
+.house-preset-sub {
+  font-size: 0.68rem;
+  color: var(--ink-faint, #8F7D65);
+}
