@@ -1546,10 +1546,20 @@ function loadState(){
           if(phaseParam === "2" && typeof lapidaryMinigameState !== "undefined"){
             lapidaryMinigameState.phase = 2;
             if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
+            if(typeof initLapidarySlideStage === "function") initLapidarySlideStage();
+          } else if(phaseParam === "3" && typeof lapidaryMinigameState !== "undefined"){
+            lapidaryMinigameState.phase = 3;
+            if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
             if(typeof startLapidaryTimingLoop === "function") startLapidaryTimingLoop();
+          } else if(phaseParam === "4" && typeof lapidaryMinigameState !== "undefined"){
+            lapidaryMinigameState.phase = 4;
+            lapidaryMinigameState.phase1Score = 85;
+            lapidaryMinigameState.phase2Score = 90;
+            lapidaryMinigameState.phase3Score = 100;
+            if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
           }
         }
-      }, 300);
+      }, 350);
     }
     return loaded;
   }catch(e){ return defaultState(); }

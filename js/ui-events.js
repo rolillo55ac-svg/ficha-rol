@@ -1292,11 +1292,28 @@ function handleClick(e){
     if(typeof closeLapidaryMinigame === "function") closeLapidaryMinigame();
     return;
   }
-  if(action==="advance-to-facetting"){
+  if(action==="advance-to-slide-cuts"){
     if(typeof lapidaryMinigameState !== "undefined"){
       lapidaryMinigameState.phase = 2;
       if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
+      if(typeof initLapidarySlideStage === "function"){
+        requestAnimationFrame(function(){ initLapidarySlideStage(); });
+      }
+    }
+    return;
+  }
+  if(action==="advance-to-facetting"){
+    if(typeof lapidaryMinigameState !== "undefined"){
+      lapidaryMinigameState.phase = 3;
+      if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
       if(typeof startLapidaryTimingLoop === "function") startLapidaryTimingLoop();
+    }
+    return;
+  }
+  if(action==="advance-to-verdict"){
+    if(typeof lapidaryMinigameState !== "undefined"){
+      lapidaryMinigameState.phase = 4;
+      if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
     }
     return;
   }

@@ -8205,15 +8205,286 @@ textarea,
   100% { box-shadow: 0 0 18px rgba(253, 224, 71, 0.9); }
 }
 
+/* Medidores duales Fase 1 (Limpieza e Integridad) */
+.lapidary-meters-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.lapidary-meter-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.lapidary-meter-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  margin-bottom: 5px;
+}
+.lapidary-meter-track {
+  width: 100%;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.lapidary-meter-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.15s ease-out;
+}
+.lapidary-meter-fill.clean {
+  background: linear-gradient(90deg, #10B981, #FDE047);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+.lapidary-meter-fill.integrity {
+  background: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+.lapidary-meter-fill.integrity.warning {
+  background: #F59E0B;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+.lapidary-meter-fill.integrity.danger {
+  background: #EF4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+}
+
+.danger-flash {
+  animation: dangerFlashAnim 0.25s ease-in-out;
+}
+@keyframes dangerFlashAnim {
+  0% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); border-color: var(--line-strong); }
+  50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.9); border-color: #EF4444; }
+  100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); border-color: var(--line-strong); }
+}
+
+.lapidary-danger-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #EF4444;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 8px #EF4444, 0 0 12px #FCA5A5;
+  animation: dangerParticlePop 0.35s ease-out forwards;
+}
+@keyframes dangerParticlePop {
+  0% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(0.2) translate(0, 15px); opacity: 0; }
+}
+
+/* Escenario Fase 2: Cortes Guiados por Deslizamiento (Slides) */
+.lapidary-slide-stage {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 0 auto 12px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 0, 0, 0.8);
+  border: 2px solid var(--line-strong);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lapidary-slide-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+  z-index: 2;
+}
+.lapidary-slide-header-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.lapidary-slide-desc-hint {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+.lapidary-spark-particle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: #FEF08A;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 8px #FDE047, 0 0 14px #F59E0B;
+  animation: sparkFade 0.35s ease-out forwards;
+}
+@keyframes sparkFade {
+  0% { transform: scale(1.6); opacity: 1; }
+  100% { transform: scale(0.3) translate(0, -10px); opacity: 0; }
+}
+
+/* Escenario Fase 4: Evaluación de Maestría y Riesgo de Rotura */
+.lapidary-score-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.lapidary-score-card {
+  background: rgba(0, 0, 0, 0.38);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.lapidary-score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: var(--ink-light);
+}
+.lapidary-score-header span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lapidary-score-header b {
+  font-family: var(--font-mono);
+  color: var(--gold-light);
+  flex-shrink: 0;
+}
+.lapidary-mini-meter {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.lapidary-mini-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), #FDE047);
+  box-shadow: 0 0 6px rgba(253, 224, 71, 0.4);
+}
+.lapidary-score-sub {
+  font-size: 0.65rem;
+  color: var(--ink-dim);
+}
+
+.lapidary-risk-card {
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1.5px solid var(--line);
+  transition: all var(--transition-normal);
+}
+.lapidary-risk-card.safe {
+  border-color: #10B981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(0, 0, 0, 0.5) 100%);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.15);
+}
+.lapidary-risk-card.moderate {
+  border-color: #F59E0B;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(0, 0, 0, 0.5) 100%);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+}
+.lapidary-risk-card.high-danger {
+  border-color: #EF4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.14) 0%, rgba(0, 0, 0, 0.55) 100%);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+  animation: pulseDangerCard 2.2s infinite alternate ease-in-out;
+}
+@keyframes pulseDangerCard {
+  0% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
+  100% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.45); }
+}
+
+.lapidary-risk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.lapidary-risk-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-light);
+}
+.lapidary-risk-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #FCA5A5;
+}
+.lapidary-risk-card.safe .lapidary-risk-val {
+  color: #6EE7B7;
+}
+.lapidary-risk-card.moderate .lapidary-risk-val {
+  color: #FCD34D;
+}
+.lapidary-risk-track {
+  width: 100%;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 8px;
+}
+.lapidary-risk-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F59E0B, #EF4444);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  border-radius: 6px;
+  transition: width 0.3s ease-out;
+}
+.lapidary-risk-card.safe .lapidary-risk-fill {
+  background: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+.lapidary-risk-desc {
+  font-size: 0.73rem;
+  color: var(--ink-dim);
+  line-height: 1.35;
+}
+.lapidary-roll-bonus-badge {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--gold-light);
+  background: rgba(176, 141, 87, 0.15);
+  border: 1px solid rgba(176, 141, 87, 0.35);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
 @media (max-width: 600px) {
   .lapidary-modal-box {
     padding: 14px 12px !important;
   }
-  .lapidary-scratch-stage {
+  .lapidary-scratch-stage, .lapidary-slide-stage {
     width: 250px;
     height: 250px;
   }
   .lapidary-bench-top {
     flex-direction: column;
   }
+  .lapidary-score-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
