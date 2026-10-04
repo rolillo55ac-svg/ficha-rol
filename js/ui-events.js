@@ -1292,6 +1292,17 @@ function handleClick(e){
     if(typeof closeLapidaryMinigame === "function") closeLapidaryMinigame();
     return;
   }
+  if(action==="select-lapidary-tool"){
+    var tool = btn.getAttribute("data-tool") || "hammer";
+    if(typeof lapidaryMinigameState !== "undefined"){
+      lapidaryMinigameState.selectedTool = tool;
+      var toolBtns = document.querySelectorAll(".lapidary-tool-btn");
+      toolBtns.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      if(typeof playSlideCutWhir === "function") playSlideCutWhir();
+    }
+    return;
+  }
   if(action==="advance-to-slide-cuts"){
     if(typeof lapidaryMinigameState !== "undefined"){
       lapidaryMinigameState.phase = 2;
