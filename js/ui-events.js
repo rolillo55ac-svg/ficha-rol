@@ -1266,7 +1266,7 @@ function handleClick(e){
     if(typeof confirmAddRoughStone === "function") confirmAddRoughStone(chIdConf);
     return;
   }
-  if(btn.classList.contains("add-stone-color-pill")){
+  if(action==="select-add-stone-color" || btn.classList.contains("add-stone-color-pill")){
     var colContainer = document.getElementById("addStoneColors");
     if(colContainer){
       colContainer.querySelectorAll(".add-stone-color-pill").forEach(function(p){ p.classList.remove("active"); });
@@ -1274,7 +1274,7 @@ function handleClick(e){
     }
     return;
   }
-  if(btn.classList.contains("add-stone-origin-pill")){
+  if(action==="select-add-stone-origin" || btn.classList.contains("add-stone-origin-pill")){
     var orgContainer = document.getElementById("addStoneOrigins");
     if(orgContainer){
       orgContainer.querySelectorAll(".add-stone-origin-pill").forEach(function(p){ p.classList.remove("active"); });

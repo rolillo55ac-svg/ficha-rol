@@ -39,7 +39,7 @@ function get3DGeodeVertices(){
   ];
 }
 
-// 20 Caras poligonales 3D: 16 de ganga basáltica y 4 fisuras críticas
+// 20 Caras poligonales 3D: 16 de ganga basáltica y 4 fisuras críticas con sistema Buscaminas
 function getInitial3DGeodeFaces(){
   var rawFaces = [
     [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
@@ -50,32 +50,90 @@ function getInitial3DGeodeFaces(){
 
   var fissureIndices = [3, 7, 12, 18];
 
+  // Precalcular vecinos que comparten arista (exactamente 2 vértices en común)
+  var neighborsMap = rawFaces.map(function(fA, i){
+    var nList = [];
+    for(var j = 0; j < rawFaces.length; j++){
+      if(i === j) continue;
+      var fB = rawFaces[j];
+      var shared = 0;
+      for(var v = 0; v < 3; v++){
+        if(fB.indexOf(fA[v]) !== -1) shared++;
+      }
+      if(shared === 2) nList.push(j);
+    }
+    return nList;
+  });
+
   return rawFaces.map(function(indices, id){
     var isFissure = fissureIndices.indexOf(id) !== -1;
+    var neighbors = neighborsMap[id] || [];
+    var dangerCount = neighbors.filter(function(nIdx){
+      return fissureIndices.indexOf(nIdx) !== -1;
+    }).length;
+
     return {
       id: id + 1,
       indices: indices,
+      neighbors: neighbors,
       type: isFissure ? 'fissure' : 'gangue',
-      label: isFissure ? '⚠️ FISURA' : ('Costra #' + (id + 1)),
-      cleared: false
+      dangerCount: isFissure ? 0 : dangerCount,
+      cleared: false,
+      flagged: false,
+      label: isFissure ? '⚠️ FISURA' : ('Costra #' + (id + 1))
     };
   });
+}
+
+// Cascada de revelación Buscaminas (al abrir una faceta con 0 fallas vecinas)
+function cascadeClearSafeFaces(startIdx){
+  var faces = lapidaryMinigameState.geodeFaces || [];
+  if(startIdx < 0 || startIdx >= faces.length) return false;
+
+  var queue = [startIdx];
+  var visited = {};
+  visited[startIdx] = true;
+  var clearedAny = false;
+
+  while(queue.length > 0){
+    var curIdx = queue.shift();
+    var f = faces[curIdx];
+    if(!f || f.type === 'fissure' || f.flagged) continue;
+
+    if(!f.cleared){
+      f.cleared = true;
+      clearedAny = true;
+    }
+
+    // Si la faceta tiene 0 fisuras adyacentes, propagar a las vecinas no marcadas
+    if(f.dangerCount === 0 && f.neighbors){
+      for(var i = 0; i < f.neighbors.length; i++){
+        var nIdx = f.neighbors[i];
+        var nFace = faces[nIdx];
+        if(nFace && !nFace.cleared && !nFace.flagged && nFace.type !== 'fissure' && !visited[nIdx]){
+          visited[nIdx] = true;
+          queue.push(nIdx);
+        }
+      }
+    }
+  }
+  return clearedAny;
 }
 
 var lapidaryMinigameState = {
   active: false,
   charId: null,
   stoneId: null,
-  phase: 1, // 1: Geoda 3D, 2: Sierra diamantada de alta habilidad, 3: Sweet spot timing, 4: Resumen y rotura
+  phase: 1, // 1: Geoda 3D Buscaminas, 2: Sierra diamantada de alta habilidad, 3: Sweet spot timing, 4: Resumen y rotura
 
-  // Fase 1: Geoda 3D (Inspección 360° y Cincelado Selectivo)
+  // Fase 1: Geoda 3D Buscaminas (Inspección 360° y Cincelado Lógico)
   cleanPct: 0,
   fragileHits: 0,
   maxFragileHits: 4,
   phase1Score: 100,
   crustPlates: getInitialCrustPlates(),
   geodeFaces: getInitial3DGeodeFaces(),
-  selectedTool: 'hammer', // 'hammer' | 'chisel'
+  selectedTool: 'chisel', // 'chisel' | 'flag' | 'hammer'
   geodeRotX: 0.35,
   geodeRotY: 0.50,
   isDraggingGeode: false,
@@ -83,6 +141,8 @@ var lapidaryMinigameState = {
   lastGeodeX: 0,
   lastGeodeY: 0,
   geodeAnimId: null,
+  isTouchCutting: false,
+  touchFingerPt: null,
   fragileVeins: [
     { x: 115, y: 145, r: 26, label: "Fisura A" },
     { x: 185, y: 145, r: 26, label: "Fisura B" },
@@ -719,6 +779,8 @@ function closeLapidaryMinigame(){
     cancelAnimationFrame(lapidaryMinigameState.geodeAnimId);
     lapidaryMinigameState.geodeAnimId = null;
   }
+  var modal = document.getElementById("lapidaryModal");
+  if(modal) modal.classList.remove("phase-2-fullscreen");
   var overlay = document.getElementById("lapidaryModalOverlay");
   if(overlay) overlay.classList.add("hidden");
 }
@@ -726,6 +788,12 @@ function closeLapidaryMinigame(){
 function renderLapidaryModalContent(){
   var modal = document.getElementById("lapidaryModal");
   if(!modal) return;
+
+  if(lapidaryMinigameState.phase === 2 && lapidaryMinigameState.slidePass <= lapidaryMinigameState.maxSlidePasses){
+    modal.classList.add("phase-2-fullscreen");
+  } else {
+    modal.classList.remove("phase-2-fullscreen");
+  }
 
   var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
   var stone = c ? (c.stones || []).find(function(st){ return st.id === lapidaryMinigameState.stoneId; }) : null;
@@ -769,7 +837,7 @@ function renderLapidaryModalContent(){
   '</div>';
 
   // ==========================================
-  // FASE 1: GEODA 3D (INSPECCIÓN 360° Y CINCELADO SELECTIVO)
+  // FASE 1: GEODA 3D BUSCAMINAS (INSPECCIÓN 360° Y DEDUCCIÓN LÓGICA)
   // ==========================================
   if(lapidaryMinigameState.phase === 1){
     var integrity = Math.max(0, 100 - (lapidaryMinigameState.fragileHits * 25));
@@ -779,18 +847,24 @@ function renderLapidaryModalContent(){
     var safeCleared = gangueFaces.filter(function(f){ return f.cleared; }).length;
     var targetClears = 12; // 75%
     var cleanPct = Math.min(100, Math.round((safeCleared / targetClears) * 100));
-    var p1Score = Math.max(0, Math.min(100, Math.round((cleanPct * 0.6) + (integrity * 0.4))));
+
+    var flaggedCount = geodeFaces.filter(function(f){ return f.flagged; }).length;
+    var correctlyFlagged = geodeFaces.filter(function(f){ return f.flagged && f.type === 'fissure'; }).length;
+    var minesweeperBonus = (correctlyFlagged === 4 && flaggedCount === 4) ? 15 : 0;
+
+    var p1Score = Math.max(0, Math.min(100, Math.round((cleanPct * 0.6) + (integrity * 0.4)) + minesweeperBonus));
     lapidaryMinigameState.cleanPct = cleanPct;
     lapidaryMinigameState.phase1Score = p1Score;
 
     html += '<div class="lapidary-phase-body">' +
       '<div class="lapidary-instructions">' +
-        '<b>Fase 1: Inspección y Desbaste de Geoda 3D</b><br>' +
-        'Gira la roca 360° en 3D arrastrando con el ratón/dedo. Usa el <b>🔨 Martillo</b> para fracturas de impacto o el <b>⛏️ Cincel</b> para toques finos (Meta: 12 placas / 75%+).<br>' +
-        '<span style="color:#F87171;font-weight:600;">⚠️ ¡Cuidado con las fallas carmesí (Fisuras frágiles)! Un golpe directo quebrará la integridad interna.</span>' +
+        '<b>Fase 1: Geoda Buscaminas 3D (Inspección y Deducción)</b><br>' +
+        'Gira la geoda 360° en 3D. Cada faceta revelada indica cuántas de sus 3 vecinas ocultan fisuras críticas.<br>' +
+        '<span style="color:#34D399;font-weight:600;">0 = Seguro (¡cascada!)</span> &bull; <span style="color:#FBBF24;font-weight:600;">1 = Falla leve</span> &bull; <span style="color:#F87171;font-weight:600;">2 = Peligro cercano</span>.<br>' +
+        'Usa la <b>🚩 Bandera</b> para proteger fallas y evitar dañarlas.' +
       '</div>' +
 
-      // Live HUD con puntos y porcentajes
+      // Live HUD con puntos, porcentajes y banderas
       '<div class="lapidary-live-hud">' +
         '<div class="lapidary-hud-badge">' +
           '<span class="hud-label">COSTRA 3D RETIRADA</span>' +
@@ -801,6 +875,10 @@ function renderLapidaryModalContent(){
           '<b class="hud-val ' + (integrity < 50 ? 'danger' : (integrity < 75 ? 'warning' : 'safe')) + '" id="lapidaryHudIntegrity">' + integrity + '% (' + integrity + ' pts)</b>' +
         '</div>' +
         '<div class="lapidary-hud-badge">' +
+          '<span class="hud-label">🚩 BANDERAS</span>' +
+          '<b class="hud-val" id="lapidaryHudFlags" style="color:#FCA5A5;">' + flaggedCount + ' / 4' + (minesweeperBonus > 0 ? ' ✨' : '') + '</b>' +
+        '</div>' +
+        '<div class="lapidary-hud-badge">' +
           '<span class="hud-label">PUNTUACIÓN FASE 1</span>' +
           '<b class="hud-val" id="lapidaryHudPhase1Score">' + p1Score + ' pts</b>' +
         '</div>' +
@@ -808,14 +886,15 @@ function renderLapidaryModalContent(){
 
       // Selector de Herramienta Geológica
       '<div class="lapidary-geode-toolbar">' +
-        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'hammer' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="hammer">🔨 Martillo Geológico (Impacto)</button>' +
-        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'chisel' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="chisel">⛏️ Cincel de Precisión (Fino)</button>' +
+        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'chisel' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="chisel">⛏️ Cincel (Revelar Faceta)</button>' +
+        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'flag' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="flag">🚩 Bandera (Marcar Fisura)</button>' +
+        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'hammer' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="hammer">🔨 Sonar (Ecos de Falla)</button>' +
       '</div>' +
 
       // Escenario 3D
       '<div class="lapidary-3d-stage" id="lapidary3DStage">' +
         '<canvas id="lapidary3DCanvas" width="300" height="300" class="lapidary-3d-canvas"></canvas>' +
-        '<div class="lapidary-3d-hint-badge">🔄 Arrastra para girar en 3D 360° &bull; Clic para fracturar faceta</div>' +
+        '<div class="lapidary-3d-hint-badge">🔄 Arrastra para girar en 3D 360° &bull; Toca para interactuar</div>' +
         '<div class="lapidary-particles-container" id="lapidaryParticles"></div>' +
       '</div>' +
 
@@ -832,7 +911,7 @@ function renderLapidaryModalContent(){
 
       '<div class="lapidary-action-footer">' +
         '<button type="button" class="btn-solid-gold lapidary-btn-advance ' + (cleanPct >= 75 ? 'pulse-glow' : '') + '" id="lapidaryBtnPhase2" data-action="advance-to-slide-cuts" ' + (cleanPct >= 75 ? '' : 'disabled') + '>' +
-          (cleanPct >= 75 ? '✨ Geoda Desbastada (' + p1Score + ' pts) Avanzar a Sierra de Cortes ➡️' : 'Gira en 3D y fractura placas (' + safeCleared + '/' + targetClears + ')...') +
+          (cleanPct >= 75 ? '✨ Geoda Desbastada (' + p1Score + ' pts) Avanzar a Sierra de Cortes ➡️' : 'Gira en 3D y descubre facetas seguras (' + safeCleared + '/' + targetClears + ')...') +
         '</button>' +
       '</div>' +
     '</div>';
@@ -851,6 +930,8 @@ function renderLapidaryModalContent(){
         '<b>Fase 2: Sierra Diamantada de Alta Habilidad (Velocidad, Pulso y Nódulos)</b><br>' +
         'Conduce el disco diamantado manteniendo la velocidad en la <b>Zona Óptima (40-110 px/s)</b>. No te detengas (sobrecalienta la gema) ni aceleres en exceso. En los <b>nódulos duros (◆)</b>, reduce la marcha para no rebotar.' +
       '</div>' +
+
+      '<div class="lapidary-mobile-touch-hint">📱 <b>Modo Táctil Cómodo:</b> El disco de corte diamantado se sitúa por encima de tu dedo para que nunca tapes la línea ni los nódulos.</div>' +
 
       // Tacómetro de Velocidad y Medidor de Calor por Fricción
       '<div class="lapidary-tachometer-wrap">' +
@@ -1171,9 +1252,60 @@ function draw3DGeode(ctx, w, h, familyHex, familyGlow){
       ctx.moveTo(p0.px, p0.py);
       ctx.lineTo(p1.px, p1.py);
       ctx.stroke();
+
+      // Placa central con indicador numérico Buscaminas (Peligro de 0 a 2)
+      var dCount = fData.dangerCount || 0;
+      ctx.beginPath();
+      ctx.arc(vf.screenCx, vf.screenCy, 9, 0, Math.PI * 2);
+      if(dCount === 0){
+        ctx.fillStyle = "rgba(16, 185, 129, 0.9)";
+        ctx.strokeStyle = "#A7F3D0";
+      } else if(dCount === 1){
+        ctx.fillStyle = "rgba(245, 158, 11, 0.92)";
+        ctx.strokeStyle = "#FEF08A";
+      } else {
+        ctx.fillStyle = "rgba(239, 68, 68, 0.95)";
+        ctx.strokeStyle = "#FECACA";
+      }
+      ctx.lineWidth = 1.5;
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 10px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(dCount === 0 ? "·" : dCount, vf.screenCx, vf.screenCy);
     } else {
-      if(fData.type === 'fissure'){
-        // Falla crítica / Fisura frágil (Advertencia carmesí)
+      if(fData.flagged){
+        // Faceta protegida con bandera 🚩
+        var l = vf.light;
+        var r = Math.round(55 * l + 20);
+        var g = Math.round(45 * l + 15);
+        var b = Math.round(40 * l + 12);
+        ctx.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
+        ctx.fill();
+
+        ctx.strokeStyle = "#EF4444";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Placa roja carmesí con bandera
+        ctx.beginPath();
+        ctx.arc(vf.screenCx, vf.screenCy, 12, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(185, 28, 28, 0.92)";
+        ctx.strokeStyle = "#FCA5A5";
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🚩", vf.screenCx, vf.screenCy);
+      } else if(fData.struck){
+        // Fisura fracturada revelada tras el golpe erróneo
         var fissGrad = ctx.createRadialGradient(vf.screenCx, vf.screenCy, 4, vf.screenCx, vf.screenCy, 36);
         fissGrad.addColorStop(0, "rgba(239, 68, 68, 0.95)");
         fissGrad.addColorStop(0.6, "rgba(185, 28, 28, 0.85)");
@@ -1181,12 +1313,10 @@ function draw3DGeode(ctx, w, h, familyHex, familyGlow){
         ctx.fillStyle = fissGrad;
         ctx.fill();
 
-        // Borde carmesí parpadeante
         ctx.strokeStyle = "#FCA5A5";
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
-        // Grietas rojas en zig-zag sobre la cara
         ctx.strokeStyle = "#FEE2E2";
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -1196,12 +1326,11 @@ function draw3DGeode(ctx, w, h, familyHex, familyGlow){
         ctx.lineTo(vf.screenCx + 16, vf.screenCy + 10);
         ctx.stroke();
 
-        // Rótulo de peligro
         ctx.fillStyle = "#FFFFFF";
         ctx.font = "bold 9px monospace";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("⚠️ FISURA", vf.screenCx, vf.screenCy);
+        ctx.fillText("⚠️ ROTURA", vf.screenCx, vf.screenCy);
       } else {
         // Ganga basáltica rugosa con sombreado de luz 3D
         var l = vf.light;
@@ -1224,12 +1353,14 @@ function draw3DGeode(ctx, w, h, familyHex, familyGlow){
         ctx.lineTo(vf.screenCx, vf.screenCy);
         ctx.stroke();
 
-        // Icono de cincelado según herramienta
-        ctx.fillStyle = "rgba(222, 195, 146, 0.75)";
+        // Icono interactivo según herramienta geológica activa
+        var tool = lapidaryMinigameState.selectedTool || 'chisel';
+        var toolIcon = (tool === 'flag') ? "🚩" : ((tool === 'hammer') ? "🔨" : "⛏️");
+        var toolColor = (tool === 'flag') ? "rgba(239, 68, 68, 0.6)" : ((tool === 'hammer') ? "rgba(147, 197, 253, 0.7)" : "rgba(222, 195, 146, 0.7)");
+        ctx.fillStyle = toolColor;
         ctx.font = "bold 10px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        var toolIcon = (lapidaryMinigameState.selectedTool === 'hammer') ? "🔨" : "⛏️";
         ctx.fillText(toolIcon, vf.screenCx, vf.screenCy);
       }
     }
@@ -1276,14 +1407,68 @@ function handle3DGeodeClick(clientX, clientY){
   if(!hitFace) return;
 
   var face = hitFace.face;
-  var tool = lapidaryMinigameState.selectedTool || 'hammer';
+  var tool = lapidaryMinigameState.selectedTool || 'chisel';
 
-  // 1. GOLPE EN FISURA CRÍTICA (Peligro de rotura)
+  // 1. HERRAMIENTA: 🚩 BANDERA (Proteger o desproteger faceta)
+  if(tool === 'flag'){
+    if(face.cleared){
+      showToast("Esta faceta ya ha sido tallada y pulida.", "info");
+      return;
+    }
+    face.flagged = !face.flagged;
+    if(face.flagged){
+      playGemFractureTick();
+      if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("light");
+      spawnFloatingScore(stageX, stageY, "🚩 MARCADA", false);
+    } else {
+      spawnFloatingScore(stageX, stageY, "🏳️ DESMARCADA", false);
+    }
+    update3DGeodeHUD();
+    return;
+  }
+
+  // 2. HERRAMIENTA: 🔨 SONAR ACÚSTICO (Auscultación sin riesgo de rotura)
+  if(tool === 'hammer'){
+    if(face.cleared){
+      showToast("Faceta limpia. No hay ganga para auscultar.", "info");
+      return;
+    }
+    playLapidaryHeavyHammer();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("light");
+    spawnRockDustParticles(stageX, stageY);
+
+    if(face.type === 'fissure'){
+      spawnDangerParticles(stageX, stageY);
+      spawnFloatingScore(stageX, stageY, "🚨 ¡ECO DISONANTE! (FALLA)", true);
+      showToast("🔨 Sonar: ¡Vibración fracturaria aguda! Falla crítica oculta bajo este basalto.", "warning");
+    } else if(face.dangerCount === 0){
+      spawnFloatingScore(stageX, stageY, "🎶 RESONANCIA PURA (0 FALLAS)", false);
+      showToast("🔨 Sonar: Tono armónico puro y cristalino. La roca circundante es 100% segura.", "info");
+    } else if(face.dangerCount === 1){
+      spawnFloatingScore(stageX, stageY, "⚠️ ECO OPACO (1 FALLA)", true);
+      showToast("🔨 Sonar: Tono seco y apagado. Hay 1 fisura vecina oculta en el sector.", "warning");
+    } else {
+      spawnFloatingScore(stageX, stageY, "🚨 ECO HUECO (2 FALLAS)", true);
+      showToast("🔨 Sonar: Resonancia hueca y vibrante. ¡Zona peligrosa con 2 fisuras vecinas!", "danger");
+    }
+    return;
+  }
+
+  // 3. HERRAMIENTA: ⛏️ CINCEL (Revelar Faceta / Desbastar)
+  if(face.flagged){
+    showToast("🚫 Faceta protegida con bandera 🚩. Desmárcala si deseas cincelarla.", "warning");
+    spawnFloatingScore(stageX, stageY, "PROTEGIDA 🚩", false);
+    return;
+  }
+  if(face.cleared) return;
+
   if(face.type === 'fissure'){
+    // Golpe accidental en fisura crítica
     var now = Date.now();
     if(now - (lapidaryMinigameState.lastFissureHit || 0) > 280){
       lapidaryMinigameState.lastFissureHit = now;
       lapidaryMinigameState.fragileHits++;
+      face.struck = true;
       playGemFractureTick();
       if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("fumble");
       spawnDangerParticles(stageX, stageY);
@@ -1299,35 +1484,23 @@ function handle3DGeodeClick(clientX, clientY){
     return;
   }
 
-  // 2. GOLPE EN GANGA BASÁLTICA SANA
-  if(face.type === 'gangue' && !face.cleared){
+  // Ganga basáltica sana
+  playLapidaryChiselStrike();
+  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("light");
+  spawnRockDustParticles(stageX, stageY);
+  spawnFlyingRockDebris(stageX, stageY);
+
+  if(face.dangerCount === 0){
+    // Cascada de despeje seguro (Minesweeper cascade)
+    cascadeClearSafeFaces(face.id - 1);
+    playGemSweetSpotHit();
+    spawnFloatingScore(stageX, stageY, "✨ ¡CASCADA CRISTALINA!", false);
+  } else {
     face.cleared = true;
-
-    if(tool === 'hammer'){
-      playLapidaryHeavyHammer();
-      if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("heavy");
-      spawnFlyingRockDebris(stageX, stageY);
-      spawnFloatingScore(stageX, stageY, "+10 pts (+8.3%)", false);
-
-      // Martillo tiene onda de choque: si hay una fisura adyacente visible, advierte
-      var adjacentFissure = visibleFaces.some(function(other){
-        return other.face.type === 'fissure' &&
-               Math.hypot(other.screenCx - hitFace.screenCx, other.screenCy - hitFace.screenCy) < 55;
-      });
-      if(adjacentFissure){
-        spawnDangerParticles(stageX + 15, stageY - 15);
-      }
-    } else {
-      // Cincel de precisión
-      playLapidaryChiselStrike();
-      if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("light");
-      spawnRockDustParticles(stageX, stageY);
-      spawnFlyingRockDebris(stageX, stageY);
-      spawnFloatingScore(stageX, stageY, "+10 pts (+8.3%)", false);
-    }
-
-    update3DGeodeHUD();
+    spawnFloatingScore(stageX, stageY, "+10 pts [Peligro: " + face.dangerCount + "]", false);
   }
+
+  update3DGeodeHUD();
 }
 
 function update3DGeodeHUD(){
@@ -1337,13 +1510,19 @@ function update3DGeodeHUD(){
   var targetClears = 12; // 75%
   var cleanPct = Math.min(100, Math.round((safeCleared / targetClears) * 100));
   var integrity = Math.max(0, 100 - (lapidaryMinigameState.fragileHits * 25));
-  var p1Score = Math.max(0, Math.min(100, Math.round((cleanPct * 0.6) + (integrity * 0.4))));
+
+  var flaggedCount = faces.filter(function(f){ return f.flagged; }).length;
+  var correctlyFlagged = faces.filter(function(f){ return f.flagged && f.type === 'fissure'; }).length;
+  var minesweeperBonus = (correctlyFlagged === 4 && flaggedCount === 4) ? 15 : 0;
+
+  var p1Score = Math.max(0, Math.min(100, Math.round((cleanPct * 0.6) + (integrity * 0.4)) + minesweeperBonus));
 
   lapidaryMinigameState.cleanPct = cleanPct;
   lapidaryMinigameState.phase1Score = p1Score;
 
   var hudClean = document.getElementById("lapidaryHudClean");
   var hudIntegrity = document.getElementById("lapidaryHudIntegrity");
+  var hudFlags = document.getElementById("lapidaryHudFlags");
   var hudPhase1Score = document.getElementById("lapidaryHudPhase1Score");
   var cleanBar = document.getElementById("lapidaryCleanBar");
   var integBar = document.getElementById("lapidaryIntegrityBar");
@@ -1357,6 +1536,10 @@ function update3DGeodeHUD(){
   if(hudIntegrity){
     hudIntegrity.textContent = integrity + "% (" + integrity + " pts)";
     hudIntegrity.className = "hud-val " + (integrity < 50 ? "danger" : (integrity < 75 ? "warning" : "safe"));
+  }
+  if(hudFlags){
+    hudFlags.textContent = flaggedCount + " / 4" + (minesweeperBonus > 0 ? " ✨ (+15)" : "");
+    hudFlags.style.color = (minesweeperBonus > 0) ? "#34D399" : "#FCA5A5";
   }
   if(hudPhase1Score){
     hudPhase1Score.textContent = p1Score + " pts";
@@ -1374,7 +1557,7 @@ function update3DGeodeHUD(){
 
   if(cleanPct >= 75 && btn && btn.disabled){
     btn.disabled = false;
-    btn.textContent = "✨ Geoda Desbastada (" + p1Score + " pts) Avanzar a Sierra de Cortes ➡️";
+    btn.textContent = "✨ Geoda Desbastada (" + p1Score + " pts" + (minesweeperBonus > 0 ? " +15 Bono Lógico" : "") + ") Avanzar a Sierra de Cortes ➡️";
     btn.classList.add("pulse-glow");
     playGemSweetSpotHit();
     if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("crit");
@@ -1697,6 +1880,41 @@ function drawSlideGuide(ctx, slide, userPt){
 
   // Retícula y disco de sierra diamantada en la punta del cursor
   if(userPt && lapidaryMinigameState.currentSlideActive){
+    // Modo táctil: dibujar rayo guía y halo indicador para que el dedo nunca tape el corte
+    if(lapidaryMinigameState.isTouchCutting && lapidaryMinigameState.touchFingerPt){
+      var finger = lapidaryMinigameState.touchFingerPt;
+      ctx.save();
+      // 1. Halo táctil donde apoya la yema del dedo
+      ctx.strokeStyle = "rgba(110, 231, 183, 0.45)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.arc(finger.x, finger.y, 22, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 2. Haz láser conector que asciende 42px hacia la cuchilla diamantada
+      ctx.strokeStyle = "rgba(110, 231, 183, 0.85)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(finger.x, finger.y - 10);
+      ctx.lineTo(userPt.x, userPt.y + 11);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 3. Indicador central táctil
+      ctx.fillStyle = "#6EE7B7";
+      ctx.beginPath();
+      ctx.arc(finger.x, finger.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(110, 231, 183, 0.9)";
+      ctx.font = "bold 8px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("👆 DEDO", finger.x, finger.y + 15);
+      ctx.restore();
+    }
+
     var isDev = (lapidaryMinigameState.lastDeviated === true);
     var spd = lapidaryMinigameState.sawSpeed || 0;
     var sawColor = isDev ? "#EF4444" : (spd < 35 ? "#60A5FA" : (spd <= 115 ? "#10B981" : "#EF4444"));
@@ -1826,21 +2044,31 @@ function initLapidarySlideStage(){
   drawSlideGuide(ctx, curSlide, null);
   updateLiveSlideHUD(100, 0, 0, 0);
 
-  function getCanvasCoords(clientX, clientY){
+  function getCanvasCoords(clientX, clientY, isTouch){
     var rect = canvas.getBoundingClientRect();
-    return {
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height)
-    };
+    var x = (clientX - rect.left) * (canvas.width / rect.width);
+    var rawY = (clientY - rect.top) * (canvas.height / rect.height);
+    var y = rawY;
+    if(isTouch){
+      // Elevar la cuchilla diamantada 42px por encima del dedo para visión total
+      y = rawY - 42;
+      lapidaryMinigameState.isTouchCutting = true;
+      lapidaryMinigameState.touchFingerPt = { x: x, y: rawY };
+    } else {
+      lapidaryMinigameState.isTouchCutting = false;
+      lapidaryMinigameState.touchFingerPt = null;
+    }
+    return { x: x, y: y };
   }
 
-  function handleSlideStart(clientX, clientY){
-    var pt = getCanvasCoords(clientX, clientY);
+  function handleSlideStart(clientX, clientY, isTouch){
+    var pt = getCanvasCoords(clientX, clientY, isTouch);
     var wps = curSlide.waypoints || [{ x: curSlide.x1, y: curSlide.y1 }, { x: curSlide.x2, y: curSlide.y2 }];
     var start = wps[0];
     var dStart = Math.hypot(pt.x - start.x, pt.y - start.y);
+    var snapRadius = isTouch ? 42 : 30;
 
-    if(dStart <= 30){
+    if(dStart <= snapRadius){
       lapidaryMinigameState.currentSlideActive = true;
       lapidaryMinigameState.slideSamples = 0;
       lapidaryMinigameState.slideDeviations = 0;
@@ -1861,9 +2089,9 @@ function initLapidarySlideStage(){
     }
   }
 
-  function handleSlideMove(clientX, clientY){
+  function handleSlideMove(clientX, clientY, isTouch){
     if(!lapidaryMinigameState.currentSlideActive) return;
-    var pt = getCanvasCoords(clientX, clientY);
+    var pt = getCanvasCoords(clientX, clientY, isTouch);
     var wps = curSlide.waypoints || [{ x: curSlide.x1, y: curSlide.y1 }, { x: curSlide.x2, y: curSlide.y2 }];
     var totalSegments = wps.length - 1;
 
@@ -2001,6 +2229,8 @@ function initLapidarySlideStage(){
   }
 
   function handleSlideEnd(){
+    lapidaryMinigameState.isTouchCutting = false;
+    lapidaryMinigameState.touchFingerPt = null;
     if(!lapidaryMinigameState.currentSlideActive) return;
     lapidaryMinigameState.currentSlideActive = false;
     if(lapidaryMinigameState.slideProgress < 0.92){
@@ -2010,23 +2240,23 @@ function initLapidarySlideStage(){
     }
   }
 
-  canvas.onmousedown = function(e){ handleSlideStart(e.clientX, e.clientY); };
+  canvas.onmousedown = function(e){ handleSlideStart(e.clientX, e.clientY, false); };
   window.onmousemove = function(e){
     if(lapidaryMinigameState.active && lapidaryMinigameState.phase === 2){
-      handleSlideMove(e.clientX, e.clientY);
+      handleSlideMove(e.clientX, e.clientY, false);
     }
   };
   window.onmouseup = function(){ handleSlideEnd(); };
 
   canvas.ontouchstart = function(e){
     if(e.touches && e.touches[0]){
-      handleSlideStart(e.touches[0].clientX, e.touches[0].clientY);
+      handleSlideStart(e.touches[0].clientX, e.touches[0].clientY, true);
     }
     e.preventDefault();
   };
   canvas.ontouchmove = function(e){
     if(lapidaryMinigameState.currentSlideActive && e.touches && e.touches[0]){
-      handleSlideMove(e.touches[0].clientX, e.touches[0].clientY);
+      handleSlideMove(e.touches[0].clientX, e.touches[0].clientY, true);
     }
     e.preventDefault();
   };
@@ -2057,6 +2287,8 @@ function spawnSlideDeviationParticle(x, y){
 
 function finishCurrentSlide(ctx, slide){
   lapidaryMinigameState.currentSlideActive = false;
+  lapidaryMinigameState.isTouchCutting = false;
+  lapidaryMinigameState.touchFingerPt = null;
 
   var precision = lapidaryMinigameState.slidePrecision || 85;
   lapidaryMinigameState.slideScores.push(precision);
@@ -2080,6 +2312,10 @@ function finishCurrentSlide(ctx, slide){
       renderLapidaryModalContent();
       requestAnimationFrame(function(){ initLapidarySlideStage(); });
     } else {
+      // Retornar de inmediato a pantalla normal al concluir el minijuego de cortes
+      var modal = document.getElementById("lapidaryModal");
+      if(modal) modal.classList.remove("phase-2-fullscreen");
+
       // Media de los 3 cortes
       var sum = lapidaryMinigameState.slideScores.reduce(function(a, b){ return a + b; }, 0);
       lapidaryMinigameState.phase2Score = Math.round(sum / lapidaryMinigameState.slideScores.length);
@@ -2313,14 +2549,14 @@ function openAddRoughStoneModal(charId){
   if(!modal || !overlay) return;
 
   var colorPills = (typeof MAGIC_STONE_FAMILIES !== "undefined" ? MAGIC_STONE_FAMILIES : []).map(function(fam, idx){
-    return '<button type="button" class="f-pill add-stone-color-pill ' + (idx === 0 ? 'active' : '') + '" data-color="' + fam.id + '" style="border-color:' + fam.hex + ';">' +
+    return '<button type="button" class="f-pill add-stone-color-pill ' + (idx === 0 ? 'active' : '') + '" data-action="select-add-stone-color" data-color="' + fam.id + '" style="--pill-border:' + fam.hex + ';--pill-bg:' + fam.hex + '33;--pill-glow:' + fam.hex + '88;border-color:' + (idx === 0 ? fam.hex : 'rgba(255,255,255,0.18)') + ';">' +
       fam.icon + ' ' + fam.name + ' (' + fam.gema + ')' +
     '</button>';
   }).join('');
 
   var origins = ["Minas / Cuevas", "Comercio / Compra"];
   var originPills = origins.map(function(org, idx){
-    return '<button type="button" class="f-pill add-stone-origin-pill ' + (idx === 0 ? 'active' : '') + '" data-origin="' + org + '">' +
+    return '<button type="button" class="f-pill add-stone-origin-pill ' + (idx === 0 ? 'active' : '') + '" data-action="select-add-stone-origin" data-origin="' + org + '">' +
       (org.includes("Minas") ? "⛏️ " : "🪙 ") + org +
     '</button>';
   }).join('');
@@ -2328,11 +2564,11 @@ function openAddRoughStoneModal(charId){
   var html = '<h2>➕ Nueva Piedra en Bruto<button type="button" data-action="close-add-stone-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="field">' +
       '<label>Familia / Color de la Gema</label>' +
-      '<div class="filter-pills" id="addStoneColors" style="flex-wrap:wrap;gap:5px;margin-top:4px;">' + colorPills + '</div>' +
+      '<div class="filter-pills" id="addStoneColors" style="flex-wrap:wrap;gap:6px;margin-top:4px;">' + colorPills + '</div>' +
     '</div>' +
     '<div class="field" style="margin-top:12px;">' +
       '<label>Origen del Mineral</label>' +
-      '<div class="filter-pills" id="addStoneOrigins" style="flex-wrap:wrap;gap:5px;margin-top:4px;">' + originPills + '</div>' +
+      '<div class="filter-pills" id="addStoneOrigins" style="flex-wrap:wrap;gap:6px;margin-top:4px;">' + originPills + '</div>' +
     '</div>' +
     '<div class="field" style="margin-top:12px;">' +
       '<label>Efecto Concreto de la Gema (Solo visible al confirmar o revelar GM)</label>' +
@@ -2345,6 +2581,23 @@ function openAddRoughStoneModal(charId){
     '<button type="button" class="btn-solid-gold" style="width:100%;margin-top:14px;padding:9px;" data-action="confirm-add-rough-stone" data-char-id="' + charId + '">Registrar Piedra en Bruto</button>';
 
   modal.innerHTML = html;
+
+  // Delegación de clics directa en el modal para máxima compatibilidad táctil y móvil
+  modal.onclick = function(e){
+    var cBtn = e.target.closest(".add-stone-color-pill");
+    if(cBtn){
+      modal.querySelectorAll(".add-stone-color-pill").forEach(function(p){ p.classList.remove("active"); });
+      cBtn.classList.add("active");
+      return;
+    }
+    var oBtn = e.target.closest(".add-stone-origin-pill");
+    if(oBtn){
+      modal.querySelectorAll(".add-stone-origin-pill").forEach(function(p){ p.classList.remove("active"); });
+      oBtn.classList.add("active");
+      return;
+    }
+  };
+
   overlay.classList.remove("hidden");
 }
 
