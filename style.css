@@ -8318,6 +8318,106 @@ textarea,
   color: var(--ink-dim);
   font-style: italic;
 }
+/* Live HUD de Puntuación y Porcentajes en Vivo */
+.lapidary-live-hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.lapidary-hud-badge {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+}
+.lapidary-hud-badge .hud-label {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.lapidary-hud-badge .hud-val {
+  font-size: 0.88rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  color: var(--gold-light);
+  transition: color var(--transition-fast);
+}
+.lapidary-hud-badge .hud-val.safe {
+  color: #34D399;
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+}
+.lapidary-hud-badge .hud-val.warning {
+  color: #FBBF24;
+}
+.lapidary-hud-badge .hud-val.danger {
+  color: #F87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+}
+
+.lapidary-slide-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #2C2117 0%, #150F0B 100%);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #FDE047;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 25px rgba(253, 224, 71, 0.5);
+  z-index: 10;
+  animation: bannerPopAnim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+}
+@keyframes bannerPopAnim {
+  0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.lapidary-float-score {
+  position: absolute;
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  pointer-events: none;
+  z-index: 8;
+  animation: floatScoreFade 0.65s ease-out forwards;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+@keyframes floatScoreFade {
+  0% { transform: translate(-50%, 0) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -30px) scale(0.85); opacity: 0; }
+}
+
+.lapidary-rock-chunk {
+  position: absolute;
+  background: #4B3E31;
+  border: 1px solid #78644E;
+  pointer-events: none;
+  z-index: 6;
+  animation: rockChunkFly 0.5s ease-out forwards;
+}
+@keyframes rockChunkFly {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0.9; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+.lapidary-scratch-canvas.chisel-canvas {
+  cursor: crosshair;
+}
+
 .lapidary-spark-particle {
   position: absolute;
   width: 5px;
@@ -8351,21 +8451,20 @@ textarea,
 }
 .lapidary-score-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.68rem;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.72rem;
   color: var(--ink-light);
 }
 .lapidary-score-header span {
+  font-weight: 600;
+  color: var(--gold-light);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .lapidary-score-header b {
   font-family: var(--font-mono);
-  color: var(--gold-light);
-  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: #FDE047;
 }
 .lapidary-mini-meter {
   height: 6px;
