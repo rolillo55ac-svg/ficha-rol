@@ -2628,3 +2628,105 @@ window.openCharSoundModal = openCharSoundModal;
 window.saveCharSoundFromModal = saveCharSoundFromModal;
 window.removeCharSoundFromModal = removeCharSoundFromModal;
 window.testCharSoundFromModal = testCharSoundFromModal;
+
+/* ==========================================================================
+   MODAL DE COMPENDIO Y CATÁLOGO ALQUÍMICO
+   ========================================================================== */
+var alchemyModalFilterType = "Todos";
+var alchemyModalSearchText = "";
+
+function openAlchemyCatalogModal(c){
+  c = c || activeChar();
+  if(!c) return;
+  alchemyModalFilterType = "Todos";
+  alchemyModalSearchText = "";
+
+  var html = '<h2>Compendio Alquímico del Mundo <button data-action="close-modals" aria-label="Cerrar">&times;</button></h2>' +
+    '<p style="font-size:0.75rem;color:var(--ink-dim);margin-bottom:10px;line-height:1.4;">' +
+      'Selecciona cualquier sustancia catalogada en el mundo de Krysalis para añadirla a tu laboratorio o grimorio.' +
+    '</p>' +
+    '<div style="margin-bottom:10px;">' +
+      '<input type="text" id="alchemyModalSearchInp" placeholder="🔍 Filtrar sustancias, efectos o terrenos..." style="width:100%;padding:7px 10px;background:rgba(18,13,10,0.85);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:0.8rem;" value="">' +
+    '</div>' +
+    '<div class="filter-pills" id="alchemyModalTypePills" style="margin-bottom:12px;gap:4px;flex-wrap:wrap;">' +
+      ['Todos', 'Veneno', 'Poción', 'Ungüento'].map(function(t){
+        return '<button type="button" class="f-pill ' + (t === 'Todos' ? 'active' : '') + '" data-action="alchemy-modal-filter-type" data-val="' + t + '">' + (t === 'Veneno' ? '🧪 ' : (t === 'Poción' ? '✨ ' : (t === 'Ungüento' ? '🌿 ' : ''))) + t + '</button>';
+      }).join('') +
+    '</div>' +
+    '<div id="alchemyModalListContainer" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px;">' +
+      renderAlchemyCatalogModalList(c) +
+    '</div>';
+
+  var modal = document.getElementById("dataModal");
+  modal.innerHTML = html;
+  document.getElementById("dataModalOverlay").classList.remove("hidden");
+
+  var sInp = document.getElementById("alchemyModalSearchInp");
+  if(sInp){
+    sInp.addEventListener("input", function(e){
+      alchemyModalSearchText = e.target.value.toLowerCase().trim();
+      var container = document.getElementById("alchemyModalListContainer");
+      if(container) container.innerHTML = renderAlchemyCatalogModalList(c);
+    });
+  }
+}
+
+function renderAlchemyCatalogModalList(c){
+  var catalog = typeof ALCHEMY_CATALOG !== "undefined" ? ALCHEMY_CATALOG : [];
+  var myPoisons = (c && c.poisons) || [];
+
+  var filtered = catalog.filter(function(subst){
+    if(alchemyModalFilterType !== "Todos" && subst.type !== alchemyModalFilterType) return false;
+    if(alchemyModalSearchText){
+      var matchName = (subst.name || '').toLowerCase().includes(alchemyModalSearchText);
+      var matchMat = (subst.rawMaterial || '').toLowerCase().includes(alchemyModalSearchText);
+      var matchTer = (subst.terrain || '').toLowerCase().includes(alchemyModalSearchText);
+      var matchEffE = (subst.efectoEnemigo || '').toLowerCase().includes(alchemyModalSearchText);
+      var matchEffC = (subst.efectoCherk || '').toLowerCase().includes(alchemyModalSearchText);
+      if(!matchName && !matchMat && !matchTer && !matchEffE && !matchEffC) return false;
+    }
+    return true;
+  });
+
+  if(!filtered.length){
+    return '<p style="text-align:center;padding:20px;color:var(--ink-faint);font-size:0.8rem;">No se encontraron sustancias en el catálogo.</p>';
+  }
+
+  var html = '';
+  filtered.forEach(function(s){
+    var alreadyHas = myPoisons.some(function(p){
+      return (p.catalogId && p.catalogId === s.id) || (p.name.trim().toLowerCase() === s.name.trim().toLowerCase());
+    });
+
+    var rColor = s.rarity === 'Legendaria' ? '#FDE047' : (s.rarity === 'Muy rara' ? '#C084FC' : (s.rarity === 'Rara' ? '#60A5FA' : '#C2B196'));
+    var typeIcon = s.type === 'Poción' ? '✨' : (s.type === 'Ungüento' ? '🌿' : '🧪');
+
+    html += '<div style="background:rgba(25,18,13,0.85);border:1px solid var(--line);border-left:3px solid ' + rColor + ';border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:4px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<span>' + typeIcon + '</span>' +
+          '<b style="color:var(--gold-light);font-size:0.88rem;font-family:var(--font-display);">' + esc(s.name) + '</b>' +
+          '<span style="font-size:0.62rem;color:' + rColor + ';border:1px solid ' + rColor + ';padding:0 4px;border-radius:4px;">' + esc(s.rarity) + '</span>' +
+        '</div>' +
+        (alreadyHas ? 
+          '<span style="font-size:0.68rem;color:var(--teal-light);font-weight:700;">✓ En tu laboratorio</span>' :
+          '<button type="button" class="btn-compact btn-solid-gold" data-action="add-from-alchemy-catalog" data-subst-id="' + s.id + '" style="padding:3px 8px;font-size:0.68rem;">+ Añadir a Ficha</button>') +
+      '</div>' +
+      '<div style="font-size:0.68rem;color:var(--ink-faint);display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<span>🗺️ ' + esc(s.terrain) + ' (' + esc(s.continent) + ')</span>' +
+        '<span>🌱 <i>' + esc(s.rawMaterial) + '</i></span>' +
+        '<span>CD Extracción: ' + s.dificultadExtraccion + '</span>' +
+      '</div>' +
+      '<div style="font-size:0.72rem;color:var(--ink-dim);line-height:1.3;margin-top:2px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+        '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:#FF8A96;font-weight:600;">⚔️ Enemigo:</span> ' + esc(s.efectoEnemigo) + '</div>' +
+        '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:var(--teal-light);font-weight:600;">🛡️ Propio:</span> ' + esc(s.efectoCherk) + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+
+  return html;
+}
+
+window.openAlchemyCatalogModal = openAlchemyCatalogModal;
+window.renderAlchemyCatalogModalList = renderAlchemyCatalogModalList;
+

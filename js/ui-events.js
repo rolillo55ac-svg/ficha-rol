@@ -63,6 +63,16 @@ function setBind(target, path, rawValue, inputType){
 }
 
 function handleChange(e){
+  if(e.target && e.target.id === "alchemySearchInput"){
+    alchemySearch = e.target.value;
+    renderTab();
+    var sInp = document.getElementById("alchemySearchInput");
+    if(sInp){
+      sInp.focus();
+      sInp.selectionStart = sInp.selectionEnd = sInp.value.length;
+    }
+    return;
+  }
   if(e.target && e.target.tagName === "TEXTAREA" && typeof autoResizeTextarea === "function"){
     autoResizeTextarea(e.target);
   }
@@ -1384,8 +1394,271 @@ function handleClick(e){
     }
     return;
   }
-  if(action==="add-poison"){ if(!c || !canEditChar(c)) return; if(!c.poisons)c.poisons=[]; var newPs = {id:uid(),name:"",dosis:1,efectoEnemigo:"",efectoCherk:"",estado:"descubierto"}; c.poisons.push(newPs); renderTab(); manageListItemRPC(c, 'poisons', 'add', newPs); return; }
-  if(action==="del-poison"){ if(!c || !canEditChar(c)) return; var psId = btn.getAttribute("data-id"); c.poisons = (c.poisons || []).filter(function(p){return p.id!==psId;}); renderTab(); manageListItemRPC(c, 'poisons', 'remove', null, psId); return; }
+  // --- ACCIONES DE ALQUIMIA (Grimorio, Doble Eje y Taller) ---
+  if(action==="set-alchemy-view"){
+    alchemyView = btn.getAttribute("data-val") || "recetario";
+    renderTab();
+    return;
+  }
+  if(action==="set-alchemy-type-filter"){
+    alchemyFilterType = btn.getAttribute("data-val") || "Todos";
+    renderTab();
+    return;
+  }
+  if(action==="set-alchemy-prog-filter"){
+    alchemyFilterProg = btn.getAttribute("data-val") || "todos";
+    renderTab();
+    return;
+  }
+  if(action==="set-alchemy-terrain-filter"){
+    alchemyFilterTerrain = btn.getAttribute("data-val") || "Todos";
+    renderTab();
+    return;
+  }
+  if(action==="toggle-alchemy-card"){
+    var psId = btn.getAttribute("data-id");
+    if(psId){
+      if(typeof window.alchemyExpandedCards === "undefined") window.alchemyExpandedCards = {};
+      window.alchemyExpandedCards[psId] = !window.alchemyExpandedCards[psId];
+      renderTab();
+    }
+    return;
+  }
+  if(action==="toggle-all-alchemy-cards"){
+    if(!c) return;
+    if(typeof window.alchemyExpandedCards === "undefined") window.alchemyExpandedCards = {};
+    var anyCollapsed = (c.poisons || []).some(function(p){ return !window.alchemyExpandedCards[p.id]; });
+    (c.poisons || []).forEach(function(p){
+      window.alchemyExpandedCards[p.id] = anyCollapsed;
+    });
+    renderTab();
+    return;
+  }
+  if(action==="set-alchemy-stage"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    var axis = btn.getAttribute("data-axis"); // "progEnemigo" o "progCherk"
+    var stage = btn.getAttribute("data-stage");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem){
+      pItem[axis] = stage;
+      if(stage === "confirmado"){
+        var cat = typeof ALCHEMY_CATALOG !== "undefined" ? ALCHEMY_CATALOG.find(function(x){
+          return (pItem.catalogId && x.id === pItem.catalogId) || (x.name.trim().toLowerCase() === (pItem.name||'').trim().toLowerCase());
+        }) : null;
+        if(cat){
+          if(axis === "progEnemigo" && !pItem.efectoEnemigo) pItem.efectoEnemigo = cat.efectoEnemigo;
+          if(axis === "progCherk" && !pItem.efectoCherk) pItem.efectoCherk = cat.efectoCherk;
+        }
+      }
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
+      renderTab();
+      var axisLabel = axis === "progEnemigo" ? "Enemigos" : "Cherk / Propio";
+      showToast(pItem.name + " (" + axisLabel + "): " + getAlchemyStageLabel(stage), "info");
+    }
+    return;
+  }
+  if(action==="alchemy-mod-dosis"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    var delta = parseInt(btn.getAttribute("data-delta")||"0", 10);
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem){
+      pItem.dosis = Math.max(0, num(pItem.dosis, 0) + delta);
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="alchemy-craft-single"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem){
+      var basesIdx = (c.inventory||[]).findIndex(function(it){
+        var n = (it.name||'').toLowerCase();
+        return n.includes("base de veneno") || n.includes("bases de veneno");
+      });
+      if(basesIdx !== -1 && num(c.inventory[basesIdx].qty, 1) > 0){
+        c.inventory[basesIdx].qty = Math.max(0, num(c.inventory[basesIdx].qty, 1) - 1);
+        var baseItem = c.inventory[basesIdx];
+        if(c.inventory[basesIdx].qty === 0){ c.inventory.splice(basesIdx, 1); }
+        markCharDirty(c.id, "inventory");
+        if(typeof manageListItemRPC === 'function') manageListItemRPC(c, 'inventory', 'update_item', baseItem, baseItem.id);
+      }
+      pItem.dosis = num(pItem.dosis, 0) + 1;
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
+      renderTab();
+      showToast("⚗️ Destilada 1 dosis de '" + pItem.name + "'. Viales listos: " + pItem.dosis, "success");
+    }
+    return;
+  }
+  if(action==="alchemy-apply-weapon"){
+    if(!c) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem && num(pItem.dosis, 0) > 0){
+      pItem.dosis = num(pItem.dosis, 0) - 1;
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
+      renderTab();
+      var eff = pItem.efectoEnemigo ? pItem.efectoEnemigo : "Toxina activa en punta";
+      showToast("🎯 Arma untada con '" + pItem.name + "'. Efecto al impactar: " + eff, "info");
+    }
+    return;
+  }
+  if(action==="alchemy-consume-dose"){
+    if(!c) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem && num(pItem.dosis, 0) > 0){
+      pItem.dosis = num(pItem.dosis, 0) - 1;
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
+      renderTab();
+      var eff = pItem.efectoCherk ? pItem.efectoCherk : "Asimilación orgánica en cuerpo";
+      showToast("💉 Inoculación realizada con '" + pItem.name + "'. Efecto asimilado: " + eff, "success");
+    }
+    return;
+  }
+  if(action==="alchemy-gm-reveal"){
+    if(!isGM()) return;
+    var psId = btn.getAttribute("data-id");
+    var axis = btn.getAttribute("data-axis");
+    var text = btn.getAttribute("data-text");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem){
+      pItem[axis] = "confirmado";
+      if(axis === "progEnemigo") pItem.efectoEnemigo = text;
+      else pItem.efectoCherk = text;
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
+      renderTab();
+      showToast("👁️ Efecto revelado a todos los jugadores: " + text, "success");
+    }
+    return;
+  }
+  if(action==="alchemy-jump-lore"){
+    var lTitle = btn.getAttribute("data-lore-title");
+    if(lTitle){
+      state.activeTab = "mundo";
+      if(typeof currentWorldSubtab !== 'undefined') currentWorldSubtab = "lore";
+      if(typeof currentLoreSubtab !== 'undefined') currentLoreSubtab = "objetos";
+      if(typeof loreSearch !== 'undefined') loreSearch = lTitle.replace(/^(Veneno|Poción|Ungüento):\s*/i, '').trim();
+      renderTabbar();
+      renderTab();
+    }
+    return;
+  }
+  if(action==="alchemy-roll-herbalism"){
+    var cd = parseInt(btn.getAttribute("data-cd")||"10", 10);
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    var sName = pItem ? pItem.name : "Sustancia";
+    if(typeof openBg3DiceRoll === "function"){
+      openBg3DiceRoll("Extracción: " + sName, "herboristeria", c, cd);
+    } else {
+      var mod = num(c.skillBonus && c.skillBonus.herboristeria, 0);
+      var d20 = rollDie(20);
+      var total = d20 + mod;
+      showToast("🎲 Extracción de " + sName + ": d20(" + d20 + ") + " + mod + " = " + total + (total >= cd ? " (¡Éxito! CD " + cd + ")" : " (Fallo, CD " + cd + ")"), total >= cd ? "success" : "warning");
+    }
+    return;
+  }
+  if(action==="open-alchemy-catalog-modal"){
+    if(typeof openAlchemyCatalogModal === "function") openAlchemyCatalogModal(c);
+    return;
+  }
+  if(action==="alchemy-modal-filter-type"){
+    alchemyModalFilterType = btn.getAttribute("data-val") || "Todos";
+    var pParent = btn.parentElement;
+    if(pParent){
+      pParent.querySelectorAll(".f-pill").forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+    }
+    var cList = document.getElementById("alchemyModalListContainer");
+    if(cList && typeof renderAlchemyCatalogModalList === "function") cList.innerHTML = renderAlchemyCatalogModalList(c);
+    return;
+  }
+  if(action==="add-from-alchemy-catalog"){
+    if(!c || !canEditChar(c)) return;
+    var sId = btn.getAttribute("data-subst-id");
+    var cat = typeof ALCHEMY_CATALOG !== "undefined" ? ALCHEMY_CATALOG.find(function(x){ return x.id === sId; }) : null;
+    if(cat){
+      c.poisons = c.poisons || [];
+      var newP = {
+        id: uid(),
+        catalogId: cat.id,
+        name: cat.name,
+        type: cat.type,
+        rarity: cat.rarity,
+        terrain: cat.terrain,
+        rawMaterial: cat.rawMaterial,
+        dosis: 1,
+        materiaPrimaQty: 0,
+        progEnemigo: isGM() ? "confirmado" : "identificado",
+        progCherk: isGM() ? "confirmado" : "desconocido",
+        efectoEnemigo: isGM() ? cat.efectoEnemigo : "",
+        efectoCherk: isGM() ? cat.efectoCherk : "",
+        notasInvestigacion: "",
+        custom: false
+      };
+      c.poisons.unshift(newP);
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'add', newP);
+      closeModals();
+      renderTab();
+      showToast("Añadida al laboratorio: " + cat.name, "success");
+    }
+    return;
+  }
+  if(action==="add-poison"){
+    if(!c || !canEditChar(c)) return;
+    if(!c.poisons) c.poisons = [];
+    var newPs = {
+      id: uid(),
+      catalogId: null,
+      name: "Nueva Fórmula Artesanal",
+      type: "Veneno",
+      rarity: "Común",
+      dosis: 1,
+      materiaPrimaQty: 0,
+      progEnemigo: "identificado",
+      progCherk: "desconocido",
+      efectoEnemigo: "",
+      efectoCherk: "",
+      notasInvestigacion: "",
+      custom: true
+    };
+    c.poisons.unshift(newPs);
+    markCharDirty(c.id, "poisons");
+    saveState(false);
+    renderTab();
+    manageListItemRPC(c, 'poisons', 'add', newPs);
+    showToast("Fórmula artesanal añadida al grimorio", "info");
+    return;
+  }
+  if(action==="del-poison"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    c.poisons = (c.poisons || []).filter(function(p){ return p.id !== psId; });
+    markCharDirty(c.id, "poisons");
+    saveState(false);
+    renderTab();
+    manageListItemRPC(c, 'poisons', 'remove', null, psId);
+    showToast("Fórmula eliminada de la ficha", "info");
+    return;
+  }
   if(action==="add-passiveNeg"){ if(!c || !canEditChar(c)) return; c.passivesNeg = c.passivesNeg || []; var newPn = {id:uid(),text:""}; c.passivesNeg.push(newPn); renderTab(); manageListItemRPC(c, 'passivesNeg', 'add', newPn); return; }
   if(action==="del-passiveNeg"){ if(!c || !canEditChar(c)) return; var pnId = btn.getAttribute("data-id"); c.passivesNeg = (c.passivesNeg || []).filter(function(p){return p.id!==pnId;}); renderTab(); manageListItemRPC(c, 'passivesNeg', 'remove', null, pnId); return; }
   if(action==="add-passivePos"){ if(!c || !canEditChar(c)) return; c.passivesPos = c.passivesPos || []; var newPp = {id:uid(),text:""}; c.passivesPos.push(newPp); renderTab(); manageListItemRPC(c, 'passivesPos', 'add', newPp); return; }

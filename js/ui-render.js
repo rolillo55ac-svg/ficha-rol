@@ -1212,6 +1212,59 @@ function tplMagia(c){
   return html;
 }
 
+var alchemyView = "recetario";
+var alchemySearch = "";
+var alchemyFilterType = "Todos";
+var alchemyFilterProg = "todos";
+var alchemyFilterTerrain = "Todos";
+
+var ALCHEMY_STAGES = [
+  { id: "identificado", label: "Muestra", num: 1, icon: "🌿", desc: "Materia prima identificada" },
+  { id: "extraido", label: "Extraído", num: 2, icon: "🧪", desc: "Sustancia refinada en frasco" },
+  { id: "probado", label: "Probado", num: 3, icon: "🎯", desc: "Efecto experimentado en campo" },
+  { id: "confirmado", label: "Catalogado", num: 4, icon: "📜", desc: "Efecto oficial verificado" }
+];
+
+function getAlchemyStageIndex(stageId){
+  if(stageId === "confirmado" || stageId === "catalogado") return 4;
+  if(stageId === "probado") return 3;
+  if(stageId === "extraido") return 2;
+  if(stageId === "identificado" || stageId === "muestra") return 1;
+  return 0; // desconocido
+}
+
+function getAlchemyStageLabel(stageId){
+  if(stageId === "confirmado" || stageId === "catalogado") return "Catalogado Oficial";
+  if(stageId === "probado") return "Probado (En prueba)";
+  if(stageId === "extraido") return "Extraído (Efecto incierto)";
+  if(stageId === "identificado" || stageId === "muestra") return "Muestra Identificada";
+  return "Sin descubrir";
+}
+
+function renderAlchemyAxisStepper(p, axis, canEdit){
+  var isEnemy = (axis === "Enemigo");
+  var curVal = isEnemy ? (p.progEnemigo || "desconocido") : (p.progCherk || "desconocido");
+  var curIdx = getAlchemyStageIndex(curVal);
+  var axisKey = isEnemy ? "progEnemigo" : "progCherk";
+
+  var html = '<div class="alchemy-stepper" role="radiogroup" aria-label="Progreso de eje ' + axis + '">';
+  ALCHEMY_STAGES.forEach(function(st){
+    var isPast = curIdx > st.num;
+    var isActive = curIdx === st.num;
+    var stateClass = isActive ? ' is-active' : (isPast ? ' is-past' : '');
+    var iconSym = isActive ? '●' : (isPast ? '✓' : '○');
+    
+    html += '<button type="button" class="alchemy-step-pill' + stateClass + '" ' +
+      (canEdit ? 'data-action="set-alchemy-stage" data-id="' + p.id + '" data-axis="' + axisKey + '" data-stage="' + st.id + '"' : 'disabled') +
+      ' title="' + esc(st.label + ': ' + st.desc) + '">' +
+        '<span class="step-icon">' + iconSym + '</span>' +
+        '<span class="step-text">' + esc(st.label) + '</span>' +
+      '</button>';
+  });
+  html += '</div>';
+  return html;
+}
+
 function tplAlquimia(c){
   var canEdit = canEditChar(c);
   var html = '';
@@ -1220,33 +1273,392 @@ function tplAlquimia(c){
       '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar fórmulas ni venenos en esta ficha.</span>'+
     '</div>';
   }
-  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Laboratorio Alquímico y Venenos</span></div>';
-  (c.poisons||[]).forEach(function(p){
-    html += '<div class="creature-card">'+
-      '<div class="creature-card-header">'+
-        '<input type="text" class="creature-name-input" data-bind="poisons.'+p.id+'.name" value="'+esc(p.name)+'" placeholder="Nombre del veneno" '+(canEdit?'':'readonly')+'>'+
-        '<div style="display:flex;align-items:center;gap:6px;">'+
-          '<span style="font-size:.65rem;color:var(--ink-faint);">Dosis:</span>'+
-          '<input type="number" style="width:40px;text-align:center;background:var(--bg-card);padding:2px;" data-bind="poisons.'+p.id+'.dosis" value="'+num(p.dosis,0)+'" '+(canEdit?'':'readonly')+'>'+
-          (canEdit ? '<button class="row-del" data-action="del-poison" data-id="'+p.id+'" aria-label="Eliminar veneno">✕</button>' : '')+
-        '</div>'+
-      '</div>'+
-      '<div class="creature-grid" style="grid-template-columns:1fr 1fr;margin-top:6px;">'+
-        '<div class="creature-field"><label style="color:#E74C3C;">Efecto en Enemigos</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoEnemigo" '+(canEdit?'':'readonly')+'>'+esc(p.efectoEnemigo)+'</textarea></div>'+
-        '<div class="creature-field"><label style="color:var(--teal-light);">Efecto Propio (Buff)</label><textarea class="creature-notes" data-bind="poisons.'+p.id+'.efectoCherk" '+(canEdit?'':'readonly')+'>'+esc(p.efectoCherk)+'</textarea></div>'+
-      '</div>'+
-      '<div style="margin-top:6px;">'+
-        '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 6px;" data-bind="poisons.'+p.id+'.estado" '+(canEdit?'':'disabled')+'>'+
-          '<option value="descubierto" '+(p.estado==='descubierto'?'selected':'')+'>Descubierto</option>'+
-          '<option value="investigando" '+(p.estado==='investigando'?'selected':'')+'>Investigando...</option>'+
-        '</select>'+
-      '</div>'+
-      '</div>';
-  });
-  if(canEdit){
-    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-poison">+ Añadir veneno / fórmula</button>';
+
+  var poisonsList = c.poisons || [];
+  var totalFormulas = poisonsList.length;
+  var totalDosis = poisonsList.reduce(function(acc, p){ return acc + num(p.dosis, 0); }, 0);
+  var inInvestigation = poisonsList.filter(function(p){
+    return getAlchemyStageIndex(p.progEnemigo) < 4 || getAlchemyStageIndex(p.progCherk) < 4;
+  }).length;
+
+  html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">';
+  html += '<div class="section-title"><span>Laboratorio Alquímico y Herboristería</span></div>';
+
+  // Barra de Métricas y Estadísticas
+  html += '<div class="alchemy-stats-row">' +
+    '<div class="alchemy-stat-chip">' +
+      '<span class="alchemy-stat-icon">📜</span>' +
+      '<div class="alchemy-stat-info">' +
+        '<span class="alchemy-stat-val">' + totalFormulas + '</span>' +
+        '<span class="alchemy-stat-lbl">Fórmulas</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="alchemy-stat-chip">' +
+      '<span class="alchemy-stat-icon">🧪</span>' +
+      '<div class="alchemy-stat-info">' +
+        '<span class="alchemy-stat-val">' + totalDosis + '</span>' +
+        '<span class="alchemy-stat-lbl">Viales Listos</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="alchemy-stat-chip">' +
+      '<span class="alchemy-stat-icon">🔬</span>' +
+      '<div class="alchemy-stat-info">' +
+        '<span class="alchemy-stat-val">' + inInvestigation + '</span>' +
+        '<span class="alchemy-stat-lbl">En Estudio</span>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  // Conmutador de vista: [Recetario / Grimorio] vs [Taller de Elaboración]
+  html += '<div class="filter-pills" style="margin-bottom:12px;">' +
+    '<button class="f-pill ' + (alchemyView === 'recetario' ? 'active' : '') + '" data-action="set-alchemy-view" data-val="recetario">📜 Grimorio y Fórmulas</button>' +
+    '<button class="f-pill ' + (alchemyView === 'taller' ? 'active' : '') + '" data-action="set-alchemy-view" data-val="taller">⚗️ Mesa de Elaboración</button>' +
+  '</div>';
+
+  if(alchemyView === "taller"){
+    html += tplAlquimiaTaller(c, canEdit);
+  } else {
+    html += tplAlquimiaRecetario(c, canEdit);
   }
+
   html += '</div>';
+  return html;
+}
+
+function renderMiniTrackBlocks(stageIndex){
+  var res = '';
+  for(var i = 1; i <= 4; i++){
+    var cls = '';
+    if(stageIndex === i) cls = ' is-active';
+    else if(stageIndex > i) cls = ' is-past';
+    res += '<span class="alchemy-mini-bar-block' + cls + '"></span>';
+  }
+  return res;
+}
+
+function tplAlquimiaRecetario(c, canEdit){
+  var html = '';
+  var isMaster = isGM();
+
+  // Control de tarjetas expandidas en Recetario
+  var urlParams = (typeof URLSearchParams !== "undefined" && typeof window !== "undefined" && window.location) ? new URLSearchParams(window.location.search) : null;
+  var expParam = urlParams ? urlParams.get("expand") : null;
+  if(typeof window.alchemyExpandedCards === 'undefined' || !Object.keys(window.alchemyExpandedCards).length || expParam){
+    if(typeof window.alchemyExpandedCards === 'undefined' || expParam) window.alchemyExpandedCards = {};
+    if(expParam === "all"){
+      (c.poisons || []).forEach(function(p){ window.alchemyExpandedCards[p.id] = true; });
+    } else if(expParam){
+      (c.poisons || []).forEach(function(p){
+        if(p.catalogId === expParam || p.id === expParam || (p.name && p.name.toLowerCase().includes(expParam.toLowerCase()))){
+          window.alchemyExpandedCards[p.id] = true;
+        }
+      });
+    } else {
+      // Por defecto, abrimos la primera sustancia asimétrica (ej: Cactus) para apreciar la vista expandida
+      var asymItem = (c.poisons || []).find(function(x){
+        var e = getAlchemyStageIndex(x.progEnemigo);
+        var ch = getAlchemyStageIndex(x.progCherk);
+        return e !== ch;
+      });
+      if(asymItem){
+        window.alchemyExpandedCards[asymItem.id] = true;
+      }
+    }
+  }
+
+  // Tarjeta de Controles y Filtros (.f-pill)
+  html += '<div class="alchemy-controls-card">' +
+    '<div class="alchemy-search-box">' +
+      '<input type="text" class="alchemy-search-input" id="alchemySearchInput" value="' + esc(alchemySearch) + '" placeholder="🔍 Buscar por sustancia, efecto, materia prima o terreno..." data-action="search-alchemy">' +
+    '</div>' +
+    
+    // Filtro por Tipo
+    '<div class="alchemy-filter-row">' +
+      '<span class="alchemy-filter-lbl">Tipo:</span>' +
+      '<div class="alchemy-pills-list">' +
+        ['Todos', 'Veneno', 'Poción', 'Ungüento'].map(function(t){
+          var isAct = alchemyFilterType === t;
+          var ico = t === 'Veneno' ? '🧪 ' : (t === 'Poción' ? '✨ ' : (t === 'Ungüento' ? '🌿 ' : ''));
+          return '<button class="f-pill ' + (isAct ? 'active' : '') + '" data-action="set-alchemy-type-filter" data-val="' + t + '">' + ico + t + '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // Filtro por Progresión
+    '<div class="alchemy-filter-row">' +
+      '<span class="alchemy-filter-lbl">Estado:</span>' +
+      '<div class="alchemy-pills-list">' +
+        [
+          { id: "todos", label: "Todos" },
+          { id: "confirmado", label: "Catalogados (Completos)" },
+          { id: "investigando", label: "En Estudio" },
+          { id: "sin_probar", label: "Sin Probar" }
+        ].map(function(st){
+          var isAct = alchemyFilterProg === st.id;
+          return '<button class="f-pill ' + (isAct ? 'active' : '') + '" data-action="set-alchemy-prog-filter" data-val="' + st.id + '">' + st.label + '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // Filtro por Terreno
+    '<div class="alchemy-filter-row">' +
+      '<span class="alchemy-filter-lbl">Terreno:</span>' +
+      '<div class="alchemy-pills-list">' +
+        ['Todos', 'Bosque', 'Pantano', 'Minas / Cuevas', 'Desierto', 'Montañas', 'Praderas', 'Jungla', 'Aguas profundas'].map(function(tr){
+          var isAct = alchemyFilterTerrain === tr;
+          return '<button class="f-pill ' + (isAct ? 'active' : '') + '" data-action="set-alchemy-terrain-filter" data-val="' + tr + '">' + tr + '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // Botones de Acción Globales: Catálogo, Artesanal y Expandir/Colapsar
+    '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      (canEdit ? 
+        '<button class="btn-compact btn-solid-gold" style="flex:1;min-width:180px;" data-action="open-alchemy-catalog-modal">📖 + Descubrir de Catálogo del Mundo</button>' +
+        '<button class="btn-compact" style="flex:1;min-width:160px;" data-action="add-poison">+ Crear Fórmula Artesanal</button>' : '') +
+      '<button type="button" class="btn-compact" style="flex:none;" data-action="toggle-all-alchemy-cards" title="Expandir o colapsar todas las fórmulas">↕️ Alternar Vista (Todas)</button>' +
+    '</div>' +
+  '</div>';
+
+  // Filtrado de la lista
+  var sText = alchemySearch.trim().toLowerCase();
+  var filtered = (c.poisons || []).filter(function(p){
+    // 1. Tipo
+    if(alchemyFilterType !== "Todos" && (p.type || "Veneno") !== alchemyFilterType) return false;
+    
+    // 2. Terreno (comprobado en catálogo si existe)
+    var catItem = typeof ALCHEMY_CATALOG !== "undefined" ? ALCHEMY_CATALOG.find(function(x){
+      return (p.catalogId && x.id === p.catalogId) || (x.name.trim().toLowerCase() === (p.name||'').trim().toLowerCase());
+    }) : null;
+    var terrain = (catItem && catItem.terrain) || p.terrain || "Desconocido";
+    if(alchemyFilterTerrain !== "Todos" && terrain !== alchemyFilterTerrain) return false;
+
+    // 3. Progresión
+    var eIdx = getAlchemyStageIndex(p.progEnemigo);
+    var cIdx = getAlchemyStageIndex(p.progCherk);
+    if(alchemyFilterProg === "confirmado" && (eIdx < 4 || cIdx < 4)) return false;
+    if(alchemyFilterProg === "investigando" && (eIdx === 4 && cIdx === 4)) return false;
+    if(alchemyFilterProg === "sin_probar" && (eIdx >= 3 && cIdx >= 3)) return false;
+
+    // 4. Texto libre
+    if(sText){
+      var matchName = (p.name || '').toLowerCase().includes(sText);
+      var matchEffE = (p.efectoEnemigo || '').toLowerCase().includes(sText);
+      var matchEffC = (p.efectoCherk || '').toLowerCase().includes(sText);
+      var matchMat = (catItem && catItem.rawMaterial && catItem.rawMaterial.toLowerCase().includes(sText)) || false;
+      var matchTrn = terrain.toLowerCase().includes(sText);
+      if(!matchName && !matchEffE && !matchEffC && !matchMat && !matchTrn) return false;
+    }
+    return true;
+  });
+
+  if(!filtered.length){
+    html += '<div style="text-align:center;padding:30px 10px;color:var(--ink-faint);background:rgba(0,0,0,0.25);border-radius:var(--radius-sm);border:1px dashed var(--line);">' +
+      '<p style="font-size:1.1rem;margin-bottom:6px;">🌿 No se hallaron sustancias con los filtros activos</p>' +
+      (canEdit ? '<button class="btn-compact" data-action="open-alchemy-catalog-modal" style="margin-top:6px;">Abrir Compendio Alquímico</button>' : '') +
+    '</div>';
+    return html;
+  }
+
+  // Renderizar cada sustancia en tarjeta
+  filtered.forEach(function(p){
+    var cat = typeof ALCHEMY_CATALOG !== "undefined" ? ALCHEMY_CATALOG.find(function(x){
+      return (p.catalogId && x.id === p.catalogId) || (x.name.trim().toLowerCase() === (p.name||'').trim().toLowerCase());
+    }) : null;
+
+    var typeIcon = p.type === 'Poción' ? '✨' : (p.type === 'Ungüento' ? '🌿' : '🧪');
+    var rarity = p.rarity || (cat ? cat.rarity : 'Común');
+    var rClass = 'rarity-' + rarity.toLowerCase().replace(/\s+/g, '');
+    var terrain = (cat ? cat.terrain : (p.terrain || 'Bosque'));
+    var rawMat = (cat ? cat.rawMaterial : (p.rawMaterial || 'Materia orgánica recolectable'));
+    var loreTitle = cat ? cat.loreRefTitle : null;
+
+    var eIdx = getAlchemyStageIndex(p.progEnemigo);
+    var cIdx = getAlchemyStageIndex(p.progCherk);
+    var isExpanded = !!window.alchemyExpandedCards[p.id];
+
+    html += '<div class="creature-card alchemy-card ' + rClass + (isExpanded ? '' : ' is-collapsed') + '" id="alchemy-card-' + p.id + '">' +
+      // Cabecera de la Tarjeta (interactiva y compacta en colapsado)
+      '<div class="alchemy-card-top">' +
+        '<div class="alchemy-card-header-left" data-action="toggle-alchemy-card" data-id="' + p.id + '" title="Clic para expandir / colapsar fórmula">' +
+          '<button type="button" class="alchemy-card-chevron" data-action="toggle-alchemy-card" data-id="' + p.id + '" aria-label="Expandir o colapsar">' + (isExpanded ? '▼' : '▶') + '</button>' +
+          '<span class="alchemy-type-badge" title="' + esc(p.type || 'Veneno') + '">' + typeIcon + '</span>' +
+          '<span class="alchemy-card-title-text" title="' + esc(p.name) + '">' + esc(p.name) + '</span>' +
+          '<div class="alchemy-header-tags">' +
+            '<span class="alchemy-header-tag rarity">' + esc(rarity) + '</span>' +
+            '<span class="alchemy-header-tag">' + esc(terrain) + '</span>' +
+          '</div>' +
+          // Mini-indicador compacto de progreso de ambos ejes (sin texto)
+          '<div class="alchemy-dual-mini-tracks" title="Progreso: Enemigos (' + getAlchemyStageLabel(p.progEnemigo) + ') | Cherk (' + getAlchemyStageLabel(p.progCherk) + ')">' +
+            '<div class="alchemy-mini-track enemy" title="Enemigos: ' + getAlchemyStageLabel(p.progEnemigo) + '">' +
+              renderMiniTrackBlocks(eIdx) +
+            '</div>' +
+            '<div class="alchemy-mini-track cherk" title="Cherk: ' + getAlchemyStageLabel(p.progCherk) + '">' +
+              renderMiniTrackBlocks(cIdx) +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display:flex;align-items:center;gap:6px;flex:none;">' +
+          // Control de Dosis
+          '<div class="alchemy-dosis-stepper" title="Dosis disponibles en inventario">' +
+            '<button type="button" class="alchemy-dosis-btn" data-action="alchemy-mod-dosis" data-id="' + p.id + '" data-delta="-1" ' + (canEdit ? '' : 'disabled') + ' aria-label="Restar dosis">-</button>' +
+            '<span class="alchemy-dosis-num">' + num(p.dosis, 0) + '</span>' +
+            '<button type="button" class="alchemy-dosis-btn" data-action="alchemy-mod-dosis" data-id="' + p.id + '" data-delta="1" ' + (canEdit ? '' : 'disabled') + ' aria-label="Sumar dosis">+</button>' +
+          '</div>' +
+          // Botón Eliminar
+          (canEdit ? '<button class="row-del" data-action="del-poison" data-id="' + p.id + '" aria-label="Eliminar fórmula" title="Eliminar fórmula de la ficha">✕</button>' : '') +
+        '</div>' +
+      '</div>' +
+
+      // Cuerpo expandible de la tarjeta
+      '<div class="alchemy-card-body">' +
+        // Fila de edición de nombre y Metadatos completos
+        (canEdit ? 
+          '<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">' +
+            '<label style="font-size:0.72rem;color:var(--ink-faint);flex:none;">Nombre:</label>' +
+            '<input type="text" class="alchemy-name-text" data-bind="poisons.' + p.id + '.name" value="' + esc(p.name) + '" placeholder="Nombre de la sustancia...">' +
+          '</div>' : '') +
+
+        '<div class="alchemy-meta-row">' +
+          '<span>🏷️ <b>' + esc(rarity) + '</b></span>' +
+          '<span>•</span>' +
+          '<span>🗺️ ' + esc(terrain) + '</span>' +
+          '<span>•</span>' +
+          '<span>🌱 <i>' + esc(rawMat) + '</i></span>' +
+          (loreTitle ? ' <button type="button" class="alchemy-source-link" data-action="alchemy-jump-lore" data-lore-title="' + esc(loreTitle) + '">[Ver en Lore ↗]</button>' : '') +
+        '</div>' +
+
+        // LOS DOS EJES INDEPENDIENTES (Grid Responsive)
+        '<div class="alchemy-axes-grid">' +
+          // Eje 1: Enemigos (Ofensivo / Carmesí)
+          '<div class="alchemy-axis-box alchemy-axis-enemy">' +
+            '<div class="alchemy-axis-header">' +
+              '<span class="alchemy-axis-title">⚔️ Efecto en Enemigos</span>' +
+              (eIdx === 4 ? '<span class="alchemy-axis-seal" title="Eje Completamente Catalogado">✓</span>' : '') +
+            '</div>' +
+            renderAlchemyAxisStepper(p, "Enemigo", canEdit) +
+            '<div class="alchemy-effect-area">' +
+              (eIdx >= 3 || isMaster ? 
+                '<textarea data-bind="poisons.' + p.id + '.efectoEnemigo" placeholder="Describe los efectos observados en combate..." ' + (canEdit ? '' : 'readonly') + '>' + esc(p.efectoEnemigo) + '</textarea>' :
+                '<div class="alchemy-mystery-fog"><span>🔒 Efecto sin confirmar en enemigos. Requiere probarlo en combate.</span></div>') +
+              (isMaster && cat && cat.efectoEnemigo ?
+                '<div class="alchemy-gm-confidential-card">' +
+                  '<div class="alchemy-gm-confidential-header">' +
+                    '<span class="alchemy-gm-badge">🔒 INFO SECRETA MÁSTER</span>' +
+                    '<button type="button" class="alchemy-btn-reveal" data-action="alchemy-gm-reveal" data-id="' + p.id + '" data-axis="progEnemigo" data-text="' + esc(cat.efectoEnemigo) + '">👁️ Revelar a Jugador</button>' +
+                  '</div>' +
+                  '<div class="alchemy-gm-confidential-body"><b>Anotación secreta:</b> ' + esc(cat.efectoEnemigo) + '</div>' +
+                '</div>' : '') +
+            '</div>' +
+          '</div>' +
+
+          // Eje 2: Cherk / Propio (Asimilación / Teal)
+          '<div class="alchemy-axis-box alchemy-axis-cherk">' +
+            '<div class="alchemy-axis-header">' +
+              '<span class="alchemy-axis-title">🛡️ Asimilación Propia (Cherk)</span>' +
+              (cIdx === 4 ? '<span class="alchemy-axis-seal" title="Eje Completamente Catalogado">✓</span>' : '') +
+            '</div>' +
+            renderAlchemyAxisStepper(p, "Cherk", canEdit) +
+            '<div class="alchemy-effect-area">' +
+              (cIdx >= 3 || isMaster ? 
+                '<textarea data-bind="poisons.' + p.id + '.efectoCherk" placeholder="Describe los efectos y buffs en el organismo propio..." ' + (canEdit ? '' : 'readonly') + '>' + esc(p.efectoCherk) + '</textarea>' :
+                '<div class="alchemy-mystery-fog"><span>🔒 Efecto propio desconocido. Requiere ingesta / inoculación experimental.</span></div>') +
+              (isMaster && cat && cat.efectoCherk ?
+                '<div class="alchemy-gm-confidential-card">' +
+                  '<div class="alchemy-gm-confidential-header">' +
+                    '<span class="alchemy-gm-badge">🔒 INFO SECRETA MÁSTER</span>' +
+                    '<button type="button" class="alchemy-btn-reveal" data-action="alchemy-gm-reveal" data-id="' + p.id + '" data-axis="progCherk" data-text="' + esc(cat.efectoCherk) + '">👁️ Revelar a Jugador</button>' +
+                  '</div>' +
+                  '<div class="alchemy-gm-confidential-body"><b>Anotación secreta:</b> ' + esc(cat.efectoCherk) + '</div>' +
+                '</div>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Barra inferior de Acciones Inmediatas
+        '<div class="alchemy-bottom-bar">' +
+          '<div class="alchemy-quick-actions">' +
+            (canEdit ? '<button type="button" class="alchemy-btn-action alchemy-btn-craft" data-action="alchemy-craft-single" data-id="' + p.id + '" title="Elaborar y añadir 1 dosis">⚗️ Destilar (+1)</button>' : '') +
+            '<button type="button" class="alchemy-btn-action alchemy-btn-weapon" data-action="alchemy-apply-weapon" data-id="' + p.id + '" ' + (num(p.dosis,0) > 0 ? '' : 'disabled') + ' title="Impregnar arma o dardo con 1 dosis">🎯 Untar en arma</button>' +
+            '<button type="button" class="alchemy-btn-action alchemy-btn-cherk" data-action="alchemy-consume-dose" data-id="' + p.id + '" ' + (num(p.dosis,0) > 0 ? '' : 'disabled') + ' title="Inyectar o asimilar dosis (Efecto Cherk)">💉 Asimilar en Cherk</button>' +
+          '</div>' +
+          (p.notasInvestigacion ? '<span style="font-size:0.68rem;color:var(--ink-faint);font-style:italic;">Notas de campo guardadas</span>' : '') +
+        '</div>' +
+      '</div>' +
+
+    '</div>';
+  });
+
+  return html;
+}
+
+function tplAlquimiaTaller(c, canEdit){
+  var html = '<div class="alchemy-controls-card" style="margin-bottom:14px;">' +
+    '<h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.05rem;margin-bottom:4px;">⚗️ Mesa de Destilación y Extracción Alquímica</h3>' +
+    '<p style="font-size:0.78rem;color:var(--ink-dim);line-height:1.4;">' +
+      'Procesa materias primas recolectadas en el mundo combinándolas con bases solventes. Las tiradas de extracción utilizan tu habilidad de <b>Herboristería</b>.' +
+    '</p>' +
+  '</div>';
+
+  var poisonsList = c.poisons || [];
+  if(!poisonsList.length){
+    html += '<p style="text-align:center;padding:24px;color:var(--ink-faint);">No posees fórmulas en tu grimorio para elaborar.</p>';
+    return html;
+  }
+
+  // Comprobar bases en inventario
+  var basesVeneno = 0;
+  (c.inventory || []).forEach(function(it){
+    var n = (it.name || '').toLowerCase();
+    if(n.includes('base de veneno') || n.includes('bases de veneno')){
+      basesVeneno += num(it.qty, 1);
+    }
+  });
+
+  html += '<div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--line);">' +
+    '<span>🎒 <b>Suministros en Mochila:</b></span>' +
+    '<span style="color:' + (basesVeneno > 0 ? 'var(--teal-light)' : 'var(--blood-light)') + ';">Bases de veneno: <b>' + basesVeneno + '</b></span>' +
+  '</div>';
+
+  html += '<div class="alchemy-workshop-grid">';
+  poisonsList.forEach(function(p){
+    var cat = typeof ALCHEMY_CATALOG !== "undefined" ? ALCHEMY_CATALOG.find(function(x){
+      return (p.catalogId && x.id === p.catalogId) || (x.name.trim().toLowerCase() === (p.name||'').trim().toLowerCase());
+    }) : null;
+
+    var cd = cat ? cat.dificultadExtraccion : 10;
+    var baseName = cat ? cat.baseRequerida : "Base de veneno";
+    var rawName = cat ? cat.rawMaterial : (p.name + " silvestre");
+
+    html += '<div class="alchemy-craft-card">' +
+      '<div class="alchemy-craft-header">' +
+        '<span style="font-family:var(--font-display);font-weight:700;color:var(--gold-light);font-size:0.95rem;">' + esc(p.name) + '</span>' +
+        '<span class="alchemy-stage-badge" style="border-color:var(--gold);color:var(--gold-light);">' + esc(p.type || 'Veneno') + '</span>' +
+      '</div>' +
+
+      '<div class="alchemy-craft-ingredients">' +
+        '<div class="alchemy-ing-item has-item">' +
+          '<span>🌱 Muestra: ' + esc(rawName) + '</span>' +
+          '<span>Disponible</span>' +
+        '</div>' +
+        '<div class="alchemy-ing-item ' + (basesVeneno > 0 ? 'has-item' : 'lacks-item') + '">' +
+          '<span>🧪 Solvente: ' + esc(baseName) + '</span>' +
+          '<span>' + (basesVeneno > 0 ? 'Listo (' + basesVeneno + ')' : 'Agotado') + '</span>' +
+        '</div>' +
+        '<div style="margin-top:6px;font-size:0.7rem;color:var(--gold);">' +
+          'Dificultad de extracción: <b>CD ' + cd + '</b> (Herboristería)' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:flex;gap:6px;margin-top:auto;">' +
+        '<button type="button" class="btn-compact" style="flex:1;" data-action="alchemy-roll-herbalism" data-id="' + p.id + '" data-cd="' + cd + '">🎲 Tirar Extracción</button>' +
+        '<button type="button" class="btn-compact btn-solid-gold" style="flex:1;" data-action="alchemy-craft-single" data-id="' + p.id + '" ' + (canEdit ? '' : 'disabled') + '>⚗️ Destilar Vial</button>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+
   return html;
 }
 

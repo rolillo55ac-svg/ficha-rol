@@ -100,13 +100,13 @@ function getOfficialCharacters(){
       buffs: {},
       customBuffs: [],
       poisons: [
-        { id: uid(), name: "Seta del sueño", dosis: 3, efectoEnemigo: "Sueño / Paralización", efectoCherk: "No necesitas dormir (Máximo 1 noche)", estado: "descubierto" },
-        { id: uid(), name: "Seta terrosa", dosis: 2, efectoEnemigo: "Entumecer", efectoCherk: "+ Mitad de movilidad (4 Turnos)", estado: "descubierto" },
-        { id: uid(), name: "Nenúfar de Pantano", dosis: 3, efectoEnemigo: "Reduce Percepción rival", efectoCherk: "+2 a Percepción (20 min)", estado: "descubierto" },
-        { id: uid(), name: "Nenúfar de Manglar", dosis: 4, efectoEnemigo: "Daño continuo", efectoCherk: "+3 de vida falsa (hasta perderla)", estado: "descubierto" },
-        { id: uid(), name: "Flor de sombra", dosis: 1, efectoEnemigo: "", efectoCherk: "Visión en la oscuridad (20 min)", estado: "descubierto" },
-        { id: uid(), name: "Cactus", dosis: 2, efectoEnemigo: "", efectoCherk: "+1 a las acciones (3 Turnos)", estado: "descubierto" },
-        { id: uid(), name: "Pez globo", dosis: 1, efectoEnemigo: "", efectoCherk: "Respiración acuática (20 min)", estado: "descubierto" }
+        { id: uid(), catalogId: "subst_seta_sueno", name: "Seta del sueño", type: "Veneno", rarity: "Común", dosis: 3, materiaPrimaQty: 1, progEnemigo: "confirmado", progCherk: "confirmado", efectoEnemigo: "Sueño / Paralización", efectoCherk: "No necesitas dormir (Máximo 1 noche)", notasInvestigacion: "Eficacia probada en combate." },
+        { id: uid(), catalogId: "subst_seta_terrosa", name: "Seta terrosa", type: "Veneno", rarity: "Común", dosis: 2, materiaPrimaQty: 0, progEnemigo: "confirmado", progCherk: "confirmado", efectoEnemigo: "Entumecer músculos", efectoCherk: "+ Mitad de movilidad (4 Turnos)", notasInvestigacion: "Efecto rápido al contacto con mucosas." },
+        { id: uid(), catalogId: "subst_nenufar_p", name: "Nenúfar de Pantano", type: "Veneno", rarity: "Común", dosis: 3, materiaPrimaQty: 2, progEnemigo: "confirmado", progCherk: "confirmado", efectoEnemigo: "Reduce Percepción rival (-2)", efectoCherk: "+2 a Percepción (20 min)", notasInvestigacion: "Excelente contra centinelas." },
+        { id: uid(), catalogId: "subst_nenufar_m", name: "Nenúfar de Manglar", type: "Veneno", rarity: "Común", dosis: 4, materiaPrimaQty: 0, progEnemigo: "confirmado", progCherk: "confirmado", efectoEnemigo: "Daño continuo (1d4 por turno)", efectoCherk: "+3 de vida falsa (hasta perderla)", notasInvestigacion: "Genera una capa dérmica espesa." },
+        { id: uid(), catalogId: "subst_flor_sombra", name: "Flor de sombra", type: "Veneno", rarity: "Rara", dosis: 1, materiaPrimaQty: 1, progEnemigo: "extraido", progCherk: "confirmado", efectoEnemigo: "", efectoCherk: "Visión en la oscuridad (20 min)", notasInvestigacion: "Efecto en adversarios aún sin probar en el campo." },
+        { id: uid(), catalogId: "subst_cactus", name: "Cactus", type: "Veneno", rarity: "Común", dosis: 2, materiaPrimaQty: 3, progEnemigo: "probado", progCherk: "identificado", efectoEnemigo: "Espasmos musculares y -4 a movilidad del objetivo", efectoCherk: "", notasInvestigacion: "Efecto ofensivo verificado en alimañas. Cherk aún no se ha atrevido a ingerir una muestra." },
+        { id: uid(), catalogId: "subst_pez_globo", name: "Pez globo", type: "Veneno", rarity: "Rara", dosis: 1, materiaPrimaQty: 0, progEnemigo: "extraido", progCherk: "confirmado", efectoEnemigo: "", efectoCherk: "Respiración acuática (20 min)", notasInvestigacion: "Extraído en los muelles de Trysar. Pendiente probar en rivales." }
       ],
       skillPoints: 0,
       activeBuffs: [],

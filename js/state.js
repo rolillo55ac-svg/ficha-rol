@@ -1,4 +1,4 @@
-var APP_VERSION = "1.3.9.8";
+var APP_VERSION = "1.3.9.9";
 var APP_BUILD = "2026.09.23.02";
 
 var state = null;
@@ -130,6 +130,33 @@ function ensureCharDefaults(c){
   if(!c.buffs || typeof c.buffs !== "object") c.buffs = {};
   if(!Array.isArray(c.customBuffs)) c.customBuffs = [];
   if(!Array.isArray(c.poisons)) c.poisons = [];
+  c.poisons.forEach(function(p){
+    if(!p.id) p.id = uid();
+    if(p.dosis === undefined) p.dosis = 1;
+    if(p.materiaPrimaQty === undefined) p.materiaPrimaQty = 0;
+    if(!p.type) p.type = "Veneno";
+    if(!p.rarity) p.rarity = "Común";
+    if(!p.progEnemigo){
+      p.progEnemigo = (p.estado === "investigando") ? "extraido" : ((p.efectoEnemigo && p.efectoEnemigo.trim()) ? "confirmado" : "desconocido");
+    }
+    if(!p.progCherk){
+      p.progCherk = (p.estado === "investigando") ? "extraido" : ((p.efectoCherk && p.efectoCherk.trim()) ? "confirmado" : "desconocido");
+    }
+    if(p.efectoEnemigo === undefined) p.efectoEnemigo = "";
+    if(p.efectoCherk === undefined) p.efectoCherk = "";
+    if(p.notasInvestigacion === undefined) p.notasInvestigacion = "";
+    if(!p.catalogId && typeof ALCHEMY_CATALOG !== "undefined"){
+      var matchCat = ALCHEMY_CATALOG.find(function(cat){
+        return (cat.name||'').trim().toLowerCase() === (p.name||'').trim().toLowerCase() ||
+               (cat.loreRefTitle||'').trim().toLowerCase() === (p.name||'').trim().toLowerCase();
+      });
+      if(matchCat){
+        p.catalogId = matchCat.id;
+        if(!p.type) p.type = matchCat.type;
+        if(!p.rarity) p.rarity = matchCat.rarity;
+      }
+    }
+  });
   if(!Array.isArray(c.activeBuffs)) c.activeBuffs = [];
   c.activeBuffs.forEach(function(ab){
     if(ab.active === undefined) ab.active = true;
@@ -217,6 +244,754 @@ function migrateBestiaryData(bestiary){
     }
   });
 }
+
+function getSeedAlchemyCatalog(){
+  return [
+    // --- VENENOS OFICIALES ---
+    {
+      id: "subst_amanita",
+      name: "Amanita (Base)",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Bosque",
+      continent: "Todos",
+      rawMaterial: "Seta Amanita silvestre",
+      loreRefTitle: "Veneno: Amanita (Base)",
+      bestiaryRefName: null,
+      dificultadExtraccion: 8,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Base de venenos (Muy común). Entorpece las funciones motoras.",
+      efectoCherk: "Neutralizante digestivo / Estimulante base.",
+      desc: "Hongo común de bosque húmedo. Su savia filtrada sirve como base de fijación para toxinas complejas."
+    },
+    {
+      id: "subst_seta_sueno",
+      name: "Seta del sueño",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Bosque",
+      continent: "Todos",
+      rawMaterial: "Esporas de seta somnífera",
+      loreRefTitle: "Veneno: Seta del sueño",
+      bestiaryRefName: null,
+      dificultadExtraccion: 10,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Sueño profundo / Paralización motora progresiva.",
+      efectoCherk: "No necesitas dormir (Máximo 1 noche sin penalización).",
+      desc: "Libera finas esporas azucaradas. Induce un sopor narcótico en adversarios, mientras que Cherk metaboliza el principio activo como lucidez continuada."
+    },
+    {
+      id: "subst_seta_terrosa",
+      name: "Seta terrosa",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Minas / Cuevas",
+      continent: "Todos",
+      rawMaterial: "Hongo petrificado de caverna",
+      loreRefTitle: "Veneno: Seta terrosa",
+      bestiaryRefName: null,
+      dificultadExtraccion: 10,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Entumecer músculos y articulaciones.",
+      efectoCherk: "+ Mitad de movilidad (4 Turnos).",
+      desc: "Crece adherida a vetas minerales en penumbra. Agota los reflejos del rival pero activa la circulación periférica en Cherk."
+    },
+    {
+      id: "subst_nenufar_p",
+      name: "Nenúfar de Pantano",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Pantano",
+      continent: "Todos",
+      rawMaterial: "Pétalos de nenúfar violáceo",
+      loreRefTitle: "Veneno: Nenúfar P",
+      bestiaryRefName: null,
+      dificultadExtraccion: 10,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Reduce la Percepción rival (-2 a tiradas de Advertir y Buscar).",
+      efectoCherk: "+2 a Percepción (20 min).",
+      desc: "Planta flotante de aguas turbias. Su extracto obnubila la vista y el oído enemigo, pero afina los sentidos sensoriales de Cherk."
+    },
+    {
+      id: "subst_nenufar_m",
+      name: "Nenúfar de Manglar",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Manglar",
+      continent: "Todos",
+      rawMaterial: "Raíz fibrosa de nenúfar cenagoso",
+      loreRefTitle: "Veneno: Nenúfar M",
+      bestiaryRefName: null,
+      dificultadExtraccion: 11,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Daño continuo por toxina corrosiva (1d4 por turno).",
+      efectoCherk: "+3 de vida falsa / escudo orgánico (hasta perderla).",
+      desc: "Vegetal viscoso de manglar salobre. Al inyectarse, su reacción orgánica genera una coraza celular protectora en Cherk."
+    },
+    {
+      id: "subst_flor_caido",
+      name: "Flor del Caído",
+      type: "Veneno",
+      rarity: "Muy rara",
+      terrain: "Jungla",
+      continent: "Todos",
+      rawMaterial: "Corola negra de flor del Caído",
+      loreRefTitle: "Veneno: Flor del Caído",
+      bestiaryRefName: null,
+      dificultadExtraccion: 16,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Veneno mortal. Colapso biológico fulminante.",
+      efectoCherk: "Trance agónico: Inmune a caer inconsciente durante 3 turnos.",
+      desc: "Planta legendaria de la jungla profunda que florece donde cayeron héroes antiguos. Letal para el organismo común."
+    },
+    {
+      id: "subst_flor_sombra",
+      name: "Flor de Sombra",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Bosque",
+      continent: "Todos",
+      rawMaterial: "Pétalos nocturnos umbríos",
+      loreRefTitle: "Veneno: Flor de Sombra",
+      bestiaryRefName: null,
+      dificultadExtraccion: 13,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Ceguera temporal e hipersensibilidad a la luz.",
+      efectoCherk: "Visión en la oscuridad completa (20 min).",
+      desc: "Flor que solo abre sus cálices bajo la noche sin luna. Su resina ciega a quien la recibe en los ojos pero dilata la pupila de Cherk."
+    },
+    {
+      id: "subst_cactus",
+      name: "Cactus",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Desierto",
+      continent: "Todos",
+      rawMaterial: "Espinas urticantes desérticas",
+      loreRefTitle: "Veneno: Cactus",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Urticante lacerante, ardor constante que distrae en combate.",
+      efectoCherk: "+1 a las acciones (3 Turnos).",
+      desc: "Planta crasa de las arenas. Su jugo irritante genera un estallido adrenérgico que duplica el ímpetu de Cherk."
+    },
+    {
+      id: "subst_corteza_congelada",
+      name: "Corteza Congelada",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Montañas",
+      continent: "Todos",
+      rawMaterial: "Resina criogénica de árboles helados",
+      loreRefTitle: "Veneno: Corteza Congelada",
+      bestiaryRefName: null,
+      dificultadExtraccion: 13,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Congela al rival (-4 a Movilidad / entumecimiento glacial).",
+      efectoCherk: "Resistencia térmica absoluta al calor y fuego (15 min).",
+      desc: "Resina recolectada en tundras de alta montaña que mantiene el frío perenne."
+    },
+    {
+      id: "subst_seta_secante",
+      name: "Seta Secante",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Desierto",
+      continent: "Aslan",
+      rawMaterial: "Sombrero desecado de hongo de duna",
+      loreRefTitle: "Veneno: Seta Secante",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Deshidrata con extrema rapidez, causando jadeo y sed dolorosa.",
+      efectoCherk: "Absorbe y drena toxinas estomacales ajenas.",
+      desc: "Fungo de las tierras de Aslan capaz de chupar la humedad de cualquier tejido circundante."
+    },
+    {
+      id: "subst_flor_volcan",
+      name: "Flor de volcán",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Montañas",
+      continent: "Todos",
+      rawMaterial: "Néctar sulfuroso magmático",
+      loreRefTitle: "Veneno: Flor de volcán",
+      bestiaryRefName: null,
+      dificultadExtraccion: 13,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Azufre corrosivo. Quema piel y corroe armaduras leves.",
+      efectoCherk: "Calor interno que otorga inmunidad al congelamiento ambiental.",
+      desc: "Vegetal termófilo que florece cerca de chimeneas de basalto incandescente."
+    },
+    {
+      id: "subst_baya_v",
+      name: "Baya V de arbusto",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Bosque",
+      continent: "Todos",
+      rawMaterial: "Racimo de bayas verduzcas",
+      loreRefTitle: "Veneno: Baya V de arbusto",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Visión monocromática en blanco y negro (anula contrastes).",
+      efectoCherk: "Visión térmica: Detecta siluetas calientes en la penumbra.",
+      desc: "Arbusto común de claros boscosos. Afecta los conos retinianos del adversario."
+    },
+    {
+      id: "subst_baya_n",
+      name: "Baya N de arbusto",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Bosque",
+      continent: "Todos",
+      rawMaterial: "Bayas negras de espino",
+      loreRefTitle: "Veneno: Baya N de arbusto",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Duerme la lengua y cuerdas vocales (impide articular conjuros).",
+      efectoCherk: "Anestesia local: Ignora penalizadores por dolor.",
+      desc: "Frutos negros de espino venenoso con fuerte efecto paralizante en mucosas orales."
+    },
+    {
+      id: "subst_quimera",
+      name: "Quimera",
+      type: "Veneno",
+      rarity: "Muy rara",
+      terrain: "Minas / Cuevas",
+      continent: "Vetrys",
+      rawMaterial: "Veneno de aguijón de Kimera",
+      loreRefTitle: "Veneno: Quimera",
+      bestiaryRefName: "Kimera",
+      dificultadExtraccion: 16,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Paraliza por completo el sistema nervioso motor.",
+      efectoCherk: "Hiperreflejos felinos: +3 a Reflejos y Esquivar (3 turnos).",
+      desc: "Toxina pura recolectada de bestias de Kimera en las grutas profundas de Vetrys."
+    },
+    {
+      id: "subst_escorpion_cobre",
+      name: "Escorpión de cobre",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Desierto",
+      continent: "Aslan",
+      rawMaterial: "Glándula venenosa de escorpión de cobre",
+      loreRefTitle: "Veneno: Escorpión de cobre",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Quemadura de sol abrasadora interna.",
+      efectoCherk: "Piel bronceada endurecida: +2 a la Absorción física.",
+      desc: "Arácnido metálico que mora bajo las arenas cobrizas de Aslan."
+    },
+    {
+      id: "subst_flor_n_oasis",
+      name: "Flor N de oasis",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Desierto",
+      continent: "Aslan",
+      rawMaterial: "Pétalos nocturnos de oasis",
+      loreRefTitle: "Veneno: Flor N de oasis",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Ceguera por fotofobia aguda y lagrimeo constante.",
+      efectoCherk: "Clarividencia: Ojos descansados bajo la noche estelar.",
+      desc: "Brote floral que crece en las orillas de manantiales escondidos en el desierto."
+    },
+    {
+      id: "subst_escorpion_negro",
+      name: "Escorpión negro",
+      type: "Veneno",
+      rarity: "Muy rara",
+      terrain: "Desierto",
+      continent: "Aslan",
+      rawMaterial: "Extracto de aguijón de escorpión negro gigante",
+      loreRefTitle: "Veneno: Escorpión negro",
+      bestiaryRefName: null,
+      dificultadExtraccion: 15,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Dolor fatal e insuficiencia nerviosa dolorosa.",
+      efectoCherk: "Furia adrenalínica: +1d6 al daño del próximo ataque físico.",
+      desc: "Criatura de pesadilla de las dunas profundas. Su veneno es legendario en los bazares."
+    },
+    {
+      id: "subst_sudor_pajaro",
+      name: "Sudor de pájaro",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Jungla",
+      continent: "Todos",
+      rawMaterial: "Secreción cutánea de ave de presa selvática",
+      loreRefTitle: "Veneno: Sudor de pájaro",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Corrosivo dérmico y escozor agudo al contacto.",
+      efectoCherk: "Ligereza corporal y reducción de penalización de armadura.",
+      desc: "Exudado aceitoso de aves exóticas que ayuda a disolver impurezas."
+    },
+    {
+      id: "subst_melocoton_pinch",
+      name: "Melocotón pinch",
+      type: "Veneno",
+      rarity: "Común",
+      terrain: "Praderas",
+      continent: "Todos",
+      rawMaterial: "Pulpa de melocotón espinoso",
+      loreRefTitle: "Veneno: Melocotón pinch",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Adicción severa, náusea e inestabilidad al disiparse.",
+      efectoCherk: "Éxtasis embriagador: Inmune a efectos de miedo o cobardía.",
+      desc: "Fruta silvestre de aroma dulzón engañoso. Muy codiciada por contrabandistas."
+    },
+    {
+      id: "subst_calamar_gigante",
+      name: "Calamar gigante",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Aguas profundas",
+      continent: "Todos",
+      rawMaterial: "Tinta negra concentrada de calamar abisal",
+      loreRefTitle: "Veneno: Calamar gigante",
+      bestiaryRefName: null,
+      dificultadExtraccion: 13,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Indigestión masiva y mareo de mar en tierra.",
+      efectoCherk: "Elasticidad tentacular: +2 a maniobras de presa o escape.",
+      desc: "Sustancia viscosa extraída de moluscos de alta mar con alto contenido de álcalis tóxicos."
+    },
+    {
+      id: "subst_v_serpiente",
+      name: "V. de serpiente",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Pantano",
+      continent: "Tryssar",
+      rawMaterial: "Veneno de víbora o anaconda pantanosa",
+      loreRefTitle: "Veneno: V. de serpiente",
+      bestiaryRefName: "Anaconda G.",
+      dificultadExtraccion: 12,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Pesadillas alucinógenas y pánico visceral.",
+      efectoCherk: "Termorrecepción ofídica: Capacidad de percibir criaturas a 15m.",
+      desc: "Extraído de reptiles de Tryssar. Afecta los centros cerebrales del miedo."
+    },
+    {
+      id: "subst_pez_globo",
+      name: "Pez globo",
+      type: "Veneno",
+      rarity: "Rara",
+      terrain: "Aguas profundas",
+      continent: "Tryssar",
+      rawMaterial: "Hígado con tetrodotoxina de pez globo",
+      loreRefTitle: "Pez globo",
+      bestiaryRefName: null,
+      dificultadExtraccion: 13,
+      baseRequerida: "Base de veneno",
+      efectoEnemigo: "Parálisis respiratoria y sofoco asfixiante.",
+      efectoCherk: "Respiración acuática completa (20 min).",
+      desc: "Toxina marina de Tryssar que paradójicamente desbloquea las branquias latentes de Cherk."
+    },
+
+    // --- POCIONES OFICIALES ---
+    {
+      id: "subst_alga_playa",
+      name: "Alga playa (Base)",
+      type: "Poción",
+      rarity: "Común",
+      terrain: "Playa",
+      continent: "Todos",
+      rawMaterial: "Algas pardas de costa",
+      loreRefTitle: "Poción: Alga playa (Base)",
+      bestiaryRefName: null,
+      dificultadExtraccion: 8,
+      baseRequerida: "Agua de manantial",
+      efectoEnemigo: "Sabor salobre vomitivo que interrumpe acciones.",
+      efectoCherk: "Base de pociones (Muy común). Facilita decocciones curativas.",
+      desc: "Alga marina de fácil recolección en rompientes. Diluida conforma el sustrato de elixires."
+    },
+    {
+      id: "subst_musgo_v",
+      name: "Musgo V",
+      type: "Poción",
+      rarity: "Común",
+      terrain: "Minas / Cuevas",
+      continent: "Todos",
+      rawMaterial: "Musgo fosforescente verde",
+      loreRefTitle: "Poción: Musgo V",
+      bestiaryRefName: null,
+      dificultadExtraccion: 8,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Fosforescencia delatora: Ilumina al enemigo e impide ocultarse.",
+      efectoCherk: "Emite Luz Verde suave iluminando 10m sin necesidad de antorcha.",
+      desc: "Briófito de minas profundas que almacena luz química y la devuelve lentamente."
+    },
+    {
+      id: "subst_flor_rey",
+      name: "Flor del Rey",
+      type: "Poción",
+      rarity: "Muy rara",
+      terrain: "Bosque",
+      continent: "Todos",
+      rawMaterial: "Corola áurea de Flor del Rey",
+      loreRefTitle: "Poción: Flor del Rey",
+      bestiaryRefName: null,
+      dificultadExtraccion: 15,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Inestabilidad de éter: Penaliza el lanzamiento de hechizos.",
+      efectoCherk: "+Defensa mágica temporal (+4 contra magia durante 1 hora).",
+      desc: "Hierba real de fragancia solemne. Escudo vegetal contra las fuerzas del tejido místico."
+    },
+    {
+      id: "subst_flor_lirio_p",
+      name: "Flor de Lirio P",
+      type: "Poción",
+      rarity: "Muy rara",
+      terrain: "Pantano",
+      continent: "Todos",
+      rawMaterial: "Lirio púrpura de ciénaga",
+      loreRefTitle: "Poción: Flor de Lirio P",
+      bestiaryRefName: null,
+      dificultadExtraccion: 14,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Purga gástrica incontrolable.",
+      efectoCherk: "Cura venenos, toxinas y ponzoñas activas de inmediato.",
+      desc: "Antídoto supremo de los pantanos. Destruye cualquier compuesto ponzoñoso en sangre."
+    },
+    {
+      id: "subst_raiz_manglar",
+      name: "Raíz Manglar",
+      type: "Poción",
+      rarity: "Común",
+      terrain: "Manglar",
+      continent: "Todos",
+      rawMaterial: "Extracto leñoso de raíz zancuda",
+      loreRefTitle: "Poción: Raíz Manglar",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Enraizamiento vegetal molesto a sus pies.",
+      efectoCherk: "Crecimiento de Plantas acelerado en la tierra circundante.",
+      desc: "Rica en auxinas botánicas concentradas capaces de germinar semillas al instante."
+    },
+    {
+      id: "subst_flor_dia",
+      name: "Flor del día",
+      type: "Poción",
+      rarity: "Muy rara",
+      terrain: "Jungla",
+      continent: "Todos",
+      rawMaterial: "Pétalos solares de mediodía",
+      loreRefTitle: "Poción: Flor del día",
+      bestiaryRefName: null,
+      dificultadExtraccion: 15,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Deslumbramiento por energía solar desbordada.",
+      efectoCherk: "+Vitalidad temporal (+10 PV máximos por 2 horas).",
+      desc: "Florece solo cuando el sol alcanza su cénit en el dosel de la jungla."
+    },
+    {
+      id: "subst_crisantemo",
+      name: "Crisantemo",
+      type: "Poción",
+      rarity: "Común",
+      terrain: "Praderas",
+      continent: "Todos",
+      rawMaterial: "Flor silvestre dorada de prado",
+      loreRefTitle: "Poción: Crisantemo",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Sobrecarga de estímulos sensoriales.",
+      efectoCherk: "+Percepción aguda (+2 a tiradas de Advertir/Buscar).",
+      desc: "Infusión clásica de boticario para aclarar la vista y despejar la niebla mental."
+    },
+    {
+      id: "subst_flor_oasis",
+      name: "Flor de Oasis",
+      type: "Poción",
+      rarity: "Muy rara",
+      terrain: "Desierto",
+      continent: "Aslan",
+      rawMaterial: "Néctar cristalino de oasis",
+      loreRefTitle: "Poción: Flor de Oasis",
+      bestiaryRefName: null,
+      dificultadExtraccion: 16,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Fuga de maná por sobre-ionización.",
+      efectoCherk: "Regeneración de Maná / Energía rápida (+10 Maná al instante).",
+      desc: "El elixir místico más codiciado por hechiceros y místicos de las dunas."
+    },
+    {
+      id: "subst_musgo_a",
+      name: "Musgo A",
+      type: "Poción",
+      rarity: "Común",
+      terrain: "Minas / Cuevas",
+      continent: "Todos",
+      rawMaterial: "Musgo bioluminiscente azul",
+      loreRefTitle: "Poción: Musgo A",
+      bestiaryRefName: null,
+      dificultadExtraccion: 8,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Resplandor azulado que revela puntos débiles.",
+      efectoCherk: "Emite Luz Azul fría y serena útil para explorar sin ruido.",
+      desc: "Variedad cavernaria que tiñe los frascos de un azul eléctrico brillante."
+    },
+    {
+      id: "subst_flor_cristal",
+      name: "Flor de cristal",
+      type: "Poción",
+      rarity: "Muy rara",
+      terrain: "Montañas",
+      continent: "Todos",
+      rawMaterial: "Cálices cristalizados de alta cumbre",
+      loreRefTitle: "Poción: Flor de cristal",
+      bestiaryRefName: null,
+      dificultadExtraccion: 16,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Petrificación celular transitoria y dolor articular.",
+      efectoCherk: "Regeneración celular avanzada: Recupera 3 PV por turno (3 turnos).",
+      desc: "Rarísima flor mineralizada que regenera cartílagos y tejidos de inmediato."
+    },
+    {
+      id: "subst_flor_melosa",
+      name: "Flor melosa",
+      type: "Poción",
+      rarity: "Común",
+      terrain: "Praderas",
+      continent: "Todos",
+      rawMaterial: "Polen dulce de pradera",
+      loreRefTitle: "Poción: Flor melosa",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Alga playa (Base)",
+      efectoEnemigo: "Sopor placentero que reduce la agresividad.",
+      efectoCherk: "Dulce sedante: Disipa crisis nerviosas o penalizadores de pánico.",
+      desc: "Jarabe de sabor amielado que reconforta el espíritu de aventureros exhaustos."
+    },
+
+    // --- UNGÜENTOS OFICIALES ---
+    {
+      id: "subst_musgo_rio",
+      name: "Musgo de río (Base)",
+      type: "Ungüento",
+      rarity: "Común",
+      terrain: "Ríos",
+      continent: "Todos",
+      rawMaterial: "Musgo fluvial fresco de cantos rodados",
+      loreRefTitle: "Ungüento: Musgo de río (Base)",
+      bestiaryRefName: null,
+      dificultadExtraccion: 8,
+      baseRequerida: "Grasa animal o bálsamo",
+      efectoEnemigo: "Emplasto resbaladizo inofensivo.",
+      efectoCherk: "Base de ungüentos (Muy común). Facilita bálsamos tópicos.",
+      desc: "Emplasto rico en minerales que humecta y fija cataplasmas en la piel."
+    },
+    {
+      id: "subst_flor_aire",
+      name: "Flor de Aire",
+      type: "Ungüento",
+      rarity: "Rara",
+      terrain: "Montañas",
+      continent: "Todos",
+      rawMaterial: "Pétalos etéreos de cresta montañosa",
+      loreRefTitle: "Ungüento: Flor de Aire",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Evaporación acelerada de defensas dérmicas.",
+      efectoCherk: "Mejorador de ungüentos: Duplica la duración de otros bálsamos.",
+      desc: "Flor mecida por vientos huracanados que impregna ligereza en las mezclas."
+    },
+    {
+      id: "subst_margarita",
+      name: "Margarita",
+      type: "Ungüento",
+      rarity: "Común",
+      terrain: "Praderas",
+      continent: "Todos",
+      rawMaterial: "Flores blancas de prado",
+      loreRefTitle: "Ungüento: Margarita",
+      bestiaryRefName: null,
+      dificultadExtraccion: 8,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Cicatrización superficial mínima.",
+      efectoCherk: "Curación básica de heridas: Restaura 1d6+2 PV al aplicarse.",
+      desc: "Bálsamo clásico de campaña indispensable en el botiquín de cualquier explorador."
+    },
+    {
+      id: "subst_margarita_x2",
+      name: "Margarita x2",
+      type: "Ungüento",
+      rarity: "Común",
+      terrain: "Praderas",
+      continent: "Todos",
+      rawMaterial: "Concentrado denso de margaritas",
+      loreRefTitle: "Ungüento: Margarita x2",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Inocuo en humanoides.",
+      efectoCherk: "Curación animal: Restaura 2d6 PV a monturas, bestias o familiares.",
+      desc: "Formulación veterinaria tradicional para sanar corceles y sabuesos heridos."
+    },
+    {
+      id: "subst_musgo_olor",
+      name: "Musgo Olor",
+      type: "Ungüento",
+      rarity: "Común",
+      terrain: "Pantano",
+      continent: "Todos",
+      rawMaterial: "Musgo almizclado aromático",
+      loreRefTitle: "Ungüento: Musgo Olor",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Olor penetrante que delata al enemigo a larga distancia.",
+      efectoCherk: "Rastreo de feromonas y pistas: +3 a tiradas de Rastrear.",
+      desc: "Desprende un almizcle acre que orienta el olfato del rastreador avezado."
+    },
+    {
+      id: "subst_flor_agua",
+      name: "Flor de agua",
+      type: "Ungüento",
+      rarity: "Rara",
+      terrain: "Aguas profundas",
+      continent: "Todos",
+      rawMaterial: "Cutícula impermeable de lirio acuático",
+      loreRefTitle: "Ungüento: Flor de agua",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Obstrucción de poros y sensación de ahogo.",
+      efectoCherk: "Apnea prolongada bajo el agua (hasta 15 min sin consumir aire).",
+      desc: "Ungüento que se unta en el pecho y cuello para sellar el consumo de oxígeno."
+    },
+    {
+      id: "subst_seta_lenosa",
+      name: "Seta Leñosa",
+      type: "Ungüento",
+      rarity: "Común",
+      terrain: "Jungla",
+      continent: "Todos",
+      rawMaterial: "Hongo leñoso de corteza de árbol",
+      loreRefTitle: "Ungüento: Seta Leñosa",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Coagulación desordenada en cortes externos.",
+      efectoCherk: "Cicatrización rápida de cortes profundos y cese de sangrados.",
+      desc: "Excelente hemostático vegetal que coagula heridas abiertas en segundos."
+    },
+    {
+      id: "subst_musgo_estanque",
+      name: "Musgo Estanque",
+      type: "Ungüento",
+      rarity: "Común",
+      terrain: "Lagos",
+      continent: "Todos",
+      rawMaterial: "Manto verde de superficie de remansos",
+      loreRefTitle: "Ungüento: Musgo Estanque",
+      bestiaryRefName: null,
+      dificultadExtraccion: 9,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Tinte verdoso que ensucia armaduras.",
+      efectoCherk: "Camuflaje con el entorno: +2 a tiradas de Sigilo entre vegetación.",
+      desc: "Arcilla con pigmentos miméticos que rompen la silueta corporal en la maleza."
+    },
+    {
+      id: "subst_flor_hestia",
+      name: "Flor de Hestia",
+      type: "Ungüento",
+      rarity: "Rara",
+      terrain: "Desierto",
+      continent: "Aslan",
+      rawMaterial: "Pétalos ígneos del desierto de cobre",
+      loreRefTitle: "Ungüento: Flor de Hestia",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Calor sofocante cutáneo.",
+      efectoCherk: "Resistencia al frío extremo e inmunidad a hipotermia ambiental.",
+      desc: "Manteca cálida que protege el cuerpo de ventiscas heladas durante horas."
+    },
+    {
+      id: "subst_flor_terra",
+      name: "Flor de Terra",
+      type: "Ungüento",
+      rarity: "Rara",
+      terrain: "Sabana",
+      continent: "Todos",
+      rawMaterial: "Semillas trituradas de flor de tierra",
+      loreRefTitle: "Ungüento: Flor de Terra",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Espasmo muscular menor en extremidades.",
+      efectoCherk: "Energía y rendimiento de Atleta: +2 en Atletismo y +2 Movilidad.",
+      desc: "Fortalece tendones y ligamentos permitiendo carreras y zancadas mayores."
+    },
+    {
+      id: "subst_flor_escarcha",
+      name: "Flor Escarcha",
+      type: "Ungüento",
+      rarity: "Rara",
+      terrain: "Montañas",
+      continent: "Todos",
+      rawMaterial: "Pétalos gélidos de nieves perpetuas",
+      loreRefTitle: "Ungüento: Flor Escarcha",
+      bestiaryRefName: null,
+      dificultadExtraccion: 12,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Escalofríos paralizantes.",
+      efectoCherk: "Resistencia al calor extremo y quemaduras por sol o brasas.",
+      desc: "Ungüento refrescante que baja la temperatura corporal en páramos calcinantes."
+    },
+    {
+      id: "subst_bayas_glue",
+      name: "Bayas Glue",
+      type: "Ungüento",
+      rarity: "Común",
+      terrain: "Bosque",
+      continent: "Todos",
+      rawMaterial: "Resina pegajosa de bayas glue",
+      loreRefTitle: "Ungüento: Bayas Glue",
+      bestiaryRefName: null,
+      dificultadExtraccion: 8,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Adherencia molesta en manos y mangos de armas.",
+      efectoCherk: "Pegamento adhesivo instantáneo de gran tenacidad mecánica.",
+      desc: "Cola vegetal de fraguado inmediato capaz de unir cuerdas, armas o trampas."
+    },
+    {
+      id: "subst_hestia_escarcha",
+      name: "Hestia + Escarcha",
+      type: "Ungüento",
+      rarity: "Muy rara",
+      terrain: "Especial",
+      continent: "Todos",
+      rawMaterial: "Mezcla simbiótica de Flor de Hestia y Flor Escarcha",
+      loreRefTitle: "Ungüento: Hestia + Escarcha",
+      bestiaryRefName: null,
+      dificultadExtraccion: 16,
+      baseRequerida: "Musgo de río (Base)",
+      efectoEnemigo: "Choque térmico alternante desestabilizador.",
+      efectoCherk: "Adaptación climática universal: Inmune tanto al frío como al calor extremos.",
+      desc: "Cúspide de la ungüentística elemental: el equilibrio perfecto entre hielo y fuego."
+    }
+  ];
+}
+
+var ALCHEMY_CATALOG = getSeedAlchemyCatalog();
 
 function getSeedLore(){
   return {
@@ -551,6 +1326,62 @@ function migrateState(s){
     s.officialDataVersion = 6;
   }
 
+  // 11. Migración v7: Rediseño Alquimia con doble eje independiente (Enemigo vs Cherk/Propio)
+  if(!s.officialDataVersion || s.officialDataVersion < 7){
+    (s.characters || []).forEach(function(c){
+      if(Array.isArray(c.poisons)){
+        c.poisons.forEach(function(p){
+          if(!p.progEnemigo){
+            p.progEnemigo = (p.estado === "investigando") ? "extraido" : ((p.efectoEnemigo && p.efectoEnemigo.trim()) ? "confirmado" : "desconocido");
+          }
+          if(!p.progCherk){
+            p.progCherk = (p.estado === "investigando") ? "extraido" : ((p.efectoCherk && p.efectoCherk.trim()) ? "confirmado" : "desconocido");
+          }
+          if(!p.type) p.type = "Veneno";
+          if(!p.rarity) p.rarity = "Común";
+          if(p.materiaPrimaQty === undefined) p.materiaPrimaQty = 0;
+          if(!p.catalogId && typeof ALCHEMY_CATALOG !== "undefined"){
+            var mCat = ALCHEMY_CATALOG.find(function(cat){
+              return (cat.name||'').trim().toLowerCase() === (p.name||'').trim().toLowerCase() ||
+                     (cat.loreRefTitle||'').trim().toLowerCase() === (p.name||'').trim().toLowerCase();
+            });
+            if(mCat){
+              p.catalogId = mCat.id;
+              p.type = mCat.type;
+              p.rarity = mCat.rarity;
+            }
+          }
+        });
+      }
+    });
+    s.officialDataVersion = 7;
+  }
+
+  // 12. Migración v8: Refresco de datos de prueba asimétricos para Alquimia (Cherk)
+  if(!s.officialDataVersion || s.officialDataVersion < 8){
+    (s.characters || []).forEach(function(c){
+      if(c.id === "char_cherk" && Array.isArray(c.poisons)){
+        var cactus = c.poisons.find(function(p){ return p.catalogId === "subst_cactus" || (p.name||'').toLowerCase() === "cactus"; });
+        if(cactus){
+          cactus.progEnemigo = "probado";
+          cactus.progCherk = "identificado";
+          cactus.efectoEnemigo = "Espasmos musculares intensos y -4 a movilidad del objetivo";
+          cactus.efectoCherk = "";
+          cactus.notasInvestigacion = "Efecto ofensivo verificado en combate. Cherk aún no se ha atrevido a ingerir una muestra.";
+        }
+        var flor = c.poisons.find(function(p){ return p.catalogId === "subst_flor_sombra" || (p.name||'').toLowerCase() === "flor de sombra"; });
+        if(flor){
+          flor.progEnemigo = "extraido";
+          flor.progCherk = "confirmado";
+          flor.efectoEnemigo = "";
+          flor.efectoCherk = "Visión en la oscuridad (20 min)";
+          flor.notasInvestigacion = "Asimilada con éxito en organismo Cherk. Pendiente probar toxina en rivales.";
+        }
+      }
+    });
+    s.officialDataVersion = 8;
+  }
+
   (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });
   ["pistas","npcs","objetos"].forEach(function(cat){
     if(s.lore && s.lore[cat]){
@@ -620,9 +1451,22 @@ function loadState(){
         loaded.activeId = matched.id;
       }
     }
-    var savedTab = localStorage.getItem("krysalis_active_tab");
-    if(savedTab){
-      loaded.activeTab = savedTab;
+    var urlParams = (typeof URLSearchParams !== "undefined" && typeof window !== "undefined" && window.location) ? new URLSearchParams(window.location.search) : null;
+    var tabParam = urlParams ? urlParams.get("tab") : null;
+    if(tabParam){
+      loaded.activeTab = tabParam;
+    } else {
+      var savedTab = localStorage.getItem("krysalis_active_tab");
+      if(savedTab){
+        loaded.activeTab = savedTab;
+      }
+    }
+    var charParam = urlParams ? (urlParams.get("char") || urlParams.get("character")) : null;
+    if(charParam){
+      var matchP = (loaded.characters || []).find(function(ch){
+        return ch.id === charParam || (ch.name && ch.name.toLowerCase() === charParam.toLowerCase());
+      });
+      if(matchP) loaded.activeId = matchP.id;
     }
     return loaded;
   }catch(e){ return defaultState(); }
