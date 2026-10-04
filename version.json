@@ -1,6 +1,6 @@
 {
-  "version": "1.3.9.9",
-  "build": "2026.10.04.01",
-  "updatedAt": "2026-10-04T22:00:00Z",
-  "changelog": "Laboratorio Alquímico: refinamiento visual de steppers con alto contraste y soporte de casos asimétricos, tarjetas colapsables con mini-tracks duales, notas de GM confidenciales con patrón rayado y diferenciación cromática de acciones."
+  "version": "1.4.0.0",
+  "build": "2026.10.04.02",
+  "updatedAt": "2026-10-04T22:20:00Z",
+  "changelog": "Taller de Lapidario y Piedras Mágicas: minijuego de 2 fases (desbaste en canvas y corte con timing sweet spot), desglose detallado de modificadores en tirada D10, 7 familias cromáticas, 6 tiers de herramientas, bordes de calidad de gemas y patrón de secreto GM con revelación."
 }

@@ -15,6 +15,7 @@ var loreContinentFilter = "Todos";
 var loreTypeFilter = "Todos";
 var loreTerrainFilter = "Todos";
 var currentLoreSubtab = "objetos";
+var currentMagicSubtab = "hechizos"; // "hechizos" | "lapidario"
 var currentBuffTab = "all";
 
 
@@ -120,8 +121,19 @@ function ensureCharDefaults(c){
     if(!it.category) it.category = "Miscelánea";
   });
   if(!Array.isArray(c.spells)) c.spells = [];
-  if(!Array.isArray(c.stones)) c.stones = [];
   if(!Array.isArray(c.passivesNeg)) c.passivesNeg = [];
+  if(!c.lapidaryTier) c.lapidaryTier = "hierro";
+  if(!Array.isArray(c.stones)) c.stones = [];
+  c.stones.forEach(function(st){
+    if(!st.id) st.id = "stn_" + uid();
+    if(!st.estado) st.estado = "pulida";
+    if(!st.color) st.color = "blanca";
+    if(!st.origen) st.origen = "Minas / Cuevas";
+    if(st.calidad === undefined) st.calidad = (st.estado === "pulida") ? "buena" : null;
+    if(!st.progDescubrimiento) st.progDescubrimiento = (st.efecto || st.efectoConcreto) ? "confirmado" : "sin_descubrir";
+    if(st.efectoConcreto === undefined) st.efectoConcreto = st.efecto || "";
+    if(st.notasInvestigacion === undefined) st.notasInvestigacion = "";
+  });
   if(!Array.isArray(c.passivesPos)) c.passivesPos = [];
   if(!Array.isArray(c.goddessCurses)) c.goddessCurses = [];
   if(!Array.isArray(c.goddessBlessings)) c.goddessBlessings = [];
@@ -1382,6 +1394,54 @@ function migrateState(s){
     s.officialDataVersion = 8;
   }
 
+  // 13. Migración v9: Sistema de Piedras Mágicas y Taller de Lapidario
+  if(!s.officialDataVersion || s.officialDataVersion < 9){
+    (s.characters || []).forEach(function(c){
+      if(!c.lapidaryTier){
+        c.lapidaryTier = (c.id === "char_cherk") ? "diamante" : "hierro";
+      }
+      if(Array.isArray(c.stones)){
+        c.stones.forEach(function(st){
+          if(!st.id) st.id = "stn_" + uid();
+          if(!st.estado) st.estado = "pulida";
+          if(!st.color) st.color = "blanca";
+          if(!st.origen) st.origen = "Minas / Cuevas";
+          if(st.calidad === undefined) st.calidad = "buena";
+          if(!st.progDescubrimiento) st.progDescubrimiento = (st.efecto || st.efectoConcreto) ? "confirmado" : "sin_descubrir";
+          if(st.efectoConcreto === undefined) st.efectoConcreto = st.efecto || "";
+          if(st.notasInvestigacion === undefined) st.notasInvestigacion = "";
+        });
+      }
+      // Piedras de prueba para Cherk si no tiene piedras en bruto
+      if(c.id === "char_cherk" && Array.isArray(c.stones)){
+        var hasBruto = c.stones.some(function(st){ return st.estado === "en_bruto"; });
+        if(!hasBruto){
+          c.stones.push({
+            id: "stn_" + uid(),
+            estado: "en_bruto",
+            color: "rojo",
+            origen: "Minas / Cuevas",
+            calidad: null,
+            progDescubrimiento: "sin_descubrir",
+            efectoConcreto: "Potencia bruta: +2 al daño físico cuerpo a cuerpo por 3 turnos",
+            notasInvestigacion: "Gema hallada en una veta profunda de cuarzo férrico."
+          });
+          c.stones.push({
+            id: "stn_" + uid(),
+            estado: "en_bruto",
+            color: "azul",
+            origen: "Comercio / Compra",
+            calidad: null,
+            progDescubrimiento: "sin_descubrir",
+            efectoConcreto: "Catalizador de maná: reduce en -1 el coste de todos los hechizos durante 1 combate",
+            notasInvestigacion: "Adquirida a un mercader ambulante en los muelles de Tryssar."
+          });
+        }
+      }
+    });
+    s.officialDataVersion = 9;
+  }
+
   (s.weaponsCatalog||[]).forEach(function(w){ if(w.visible===undefined) w.visible=true; });
   ["pistas","npcs","objetos"].forEach(function(cat){
     if(s.lore && s.lore[cat]){
@@ -1461,12 +1521,35 @@ function loadState(){
         loaded.activeTab = savedTab;
       }
     }
+    var subtabParam = urlParams ? (urlParams.get("subtab") || urlParams.get("sub")) : null;
+    if(subtabParam){
+      if(subtabParam === "lapidario" || subtabParam === "hechizos"){
+        currentMagicSubtab = subtabParam;
+      }
+      if(subtabParam === "objetos" || subtabParam === "pistas" || subtabParam === "npcs"){
+        currentLoreSubtab = subtabParam;
+      }
+    }
     var charParam = urlParams ? (urlParams.get("char") || urlParams.get("character")) : null;
     if(charParam){
       var matchP = (loaded.characters || []).find(function(ch){
         return ch.id === charParam || (ch.name && ch.name.toLowerCase() === charParam.toLowerCase());
       });
       if(matchP) loaded.activeId = matchP.id;
+    }
+    var minigameParam = urlParams ? urlParams.get("minigame") : null;
+    var phaseParam = urlParams ? urlParams.get("phase") : null;
+    if(minigameParam){
+      setTimeout(function(){
+        if(typeof openLapidaryMinigame === "function"){
+          openLapidaryMinigame(loaded.activeId, minigameParam);
+          if(phaseParam === "2" && typeof lapidaryMinigameState !== "undefined"){
+            lapidaryMinigameState.phase = 2;
+            if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
+            if(typeof startLapidaryTimingLoop === "function") startLapidaryTimingLoop();
+          }
+        }
+      }, 300);
     }
     return loaded;
   }catch(e){ return defaultState(); }

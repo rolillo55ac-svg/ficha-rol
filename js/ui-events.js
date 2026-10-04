@@ -230,6 +230,7 @@ function handleClick(e){
   if(action==="set-lore-type"){ loreTypeFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-terrain"){ loreTerrainFilter = btn.getAttribute("data-val"); renderTab(); return; }
   if(action==="set-lore-subtab"){ currentLoreSubtab = btn.getAttribute("data-val"); renderTab(); return; }
+  if(action==="set-magic-subtab"){ currentMagicSubtab = btn.getAttribute("data-val") || "hechizos"; renderTab(); return; }
   if(action==="set-skills-view"){
     var sVal = btn.getAttribute("data-val") || "attr";
     if(!state) state = {};
@@ -1235,7 +1236,91 @@ function handleClick(e){
     }
     return;
   }
-  if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; var newSt = {id:uid(),color:"",efecto:""}; c.stones.push(newSt); renderTab(); manageListItemRPC(c, 'stones', 'add', newSt); return; }
+  // Taller de Lapidario y Piedras Mágicas
+  if(action==="change-lapidary-tier"){
+    var chIdTier = btn.getAttribute("data-char-id");
+    var targetCharTier = (state.characters || []).find(function(x){ return x.id === chIdTier; }) || c;
+    if(!targetCharTier || !canEditChar(targetCharTier)) return;
+    targetCharTier.lapidaryTier = btn.value;
+    targetCharTier._lastLocalEdit = Date.now();
+    saveState(false);
+    if(typeof pushCharacterPatch === 'function'){
+      pushCharacterPatch(targetCharTier.id, { lapidaryTier: targetCharTier.lapidaryTier });
+    }
+    renderTab();
+    showToast("Herramienta de lapidario cambiada a " + btn.value.toUpperCase(), "info");
+    return;
+  }
+  if(action==="open-add-stone-modal"){
+    var chIdModal = btn.getAttribute("data-char-id") || (c ? c.id : null);
+    if(typeof openAddRoughStoneModal === "function") openAddRoughStoneModal(chIdModal);
+    return;
+  }
+  if(action==="close-add-stone-modal"){
+    var overlayStn = document.getElementById("addStoneModalOverlay");
+    if(overlayStn) overlayStn.classList.add("hidden");
+    return;
+  }
+  if(action==="confirm-add-rough-stone"){
+    var chIdConf = btn.getAttribute("data-char-id") || (c ? c.id : null);
+    if(typeof confirmAddRoughStone === "function") confirmAddRoughStone(chIdConf);
+    return;
+  }
+  if(btn.classList.contains("add-stone-color-pill")){
+    var colContainer = document.getElementById("addStoneColors");
+    if(colContainer){
+      colContainer.querySelectorAll(".add-stone-color-pill").forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+    }
+    return;
+  }
+  if(btn.classList.contains("add-stone-origin-pill")){
+    var orgContainer = document.getElementById("addStoneOrigins");
+    if(orgContainer){
+      orgContainer.querySelectorAll(".add-stone-origin-pill").forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+    }
+    return;
+  }
+  if(action==="open-lapidary-minigame"){
+    var sIdMini = btn.getAttribute("data-id");
+    var chIdMini = btn.getAttribute("data-char-id") || (c ? c.id : null);
+    if(typeof openLapidaryMinigame === "function") openLapidaryMinigame(chIdMini, sIdMini);
+    return;
+  }
+  if(action==="close-lapidary-minigame"){
+    if(typeof closeLapidaryMinigame === "function") closeLapidaryMinigame();
+    return;
+  }
+  if(action==="advance-to-facetting"){
+    if(typeof lapidaryMinigameState !== "undefined"){
+      lapidaryMinigameState.phase = 2;
+      if(typeof renderLapidaryModalContent === "function") renderLapidaryModalContent();
+      if(typeof startLapidaryTimingLoop === "function") startLapidaryTimingLoop();
+    }
+    return;
+  }
+  if(action==="lapidary-trigger-cut"){
+    if(typeof handleLapidaryCutTrigger === "function") handleLapidaryCutTrigger();
+    return;
+  }
+  if(action==="lapidary-launch-roll"){
+    if(typeof launchLapidaryRollModal === "function") launchLapidaryRollModal();
+    return;
+  }
+  if(action==="investigate-stone"){
+    var sIdInv = btn.getAttribute("data-id");
+    var chIdInv = btn.getAttribute("data-char-id") || (c ? c.id : null);
+    if(typeof rollStoneInvestigation === "function") rollStoneInvestigation(chIdInv, sIdInv);
+    return;
+  }
+  if(action==="stone-gm-reveal"){
+    var sIdRev = btn.getAttribute("data-id");
+    var chIdRev = btn.getAttribute("data-char-id") || (c ? c.id : null);
+    if(typeof revealStoneSecretToPlayer === "function") revealStoneSecretToPlayer(chIdRev, sIdRev);
+    return;
+  }
+  if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; var newSt = {id:"stn_" + uid(),estado:"en_bruto",color:"blanca",origen:"Minas / Cuevas",calidad:null,progDescubrimiento:"sin_descubrir",efectoConcreto:"",notasInvestigacion:""}; c.stones.push(newSt); renderTab(); manageListItemRPC(c, 'stones', 'add', newSt); return; }
   if(action==="del-stone"){ if(!c || !canEditChar(c)) return; var sid = btn.getAttribute("data-id"); c.stones = (c.stones || []).filter(function(s){return s.id!==sid;}); renderTab(); manageListItemRPC(c, 'stones', 'remove', null, sid); return; }
   if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",casillasMovimiento:"6",inteligencia:"",habilidades:"",tiradas:"",rasgos:"",notas:"",image:null}; c.summons.push(newSm); renderTab(); manageListItemRPC(c, 'summons', 'add', newSm); return; }
   if(action==="del-summon"){ if(!c || !canEditChar(c)) return; var smId = btn.getAttribute("data-id"); c.summons = (c.summons || []).filter(function(s){return s.id!==smId;}); renderTab(); manageListItemRPC(c, 'summons', 'remove', null, smId); return; }

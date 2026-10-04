@@ -70,6 +70,8 @@ function init(){
     safeListen("loreModal", "click", loreModalClick);
     safeListen("conflictModal", "click", handleClick);
     safeListen("feedbackModal", "click", feedbackModalClick);
+    safeListen("lapidaryModal", "click", handleClick);
+    safeListen("addStoneModal", "click", handleClick);
     
     safeListen("charModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("charSoundModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
@@ -79,6 +81,8 @@ function init(){
     safeListen("loreModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("conflictModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
     safeListen("feedbackModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
+    safeListen("lapidaryModalOverlay", "click", function(e){ if(e.target===this) closeLapidaryMinigame(); });
+    safeListen("addStoneModalOverlay", "click", function(e){ if(e.target===this) closeModals(); });
 
     document.addEventListener("keydown", function(e){
       if(e.key === "Escape"){

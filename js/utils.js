@@ -48,6 +48,32 @@ var TERRENOS = ["Todos", "Bosque", "Minas / Cuevas", "Pantano", "Manglar", "Prad
 var TERRENOS_MODAL = ["Bosque", "Minas / Cuevas", "Pantano", "Manglar", "Praderas", "Desierto", "Montañas"];
 var RAREZAS_LIST = ["Común", "Rara", "Muy rara", "Legendaria"];
 
+var MAGIC_STONE_FAMILIES = [
+  { id: "blanca",   name: "Blanca",   hex: "#F8FAFC", glow: "rgba(248, 250, 252, 0.75)", gema: "Diamante / Cuarzo",    familia: "Control de Elemento Natural",          desc: "Controla un elemento natural (Fuego, Agua, Tierra, Viento, Rayo, Hielo...)", icon: "🌪️" },
+  { id: "rojo",     name: "Rojo",     hex: "#E74C3C", glow: "rgba(231, 76, 60, 0.75)",   gema: "Rubí Sangriento",      familia: "Potencia Física",           desc: "Potencia física (Fuerza bruta, resistencia muscular, vigor o agilidad explosiva)", icon: "💪" },
+  { id: "azul",     name: "Azul",     hex: "#3B82F6", glow: "rgba(59, 130, 246, 0.75)",  gema: "Zafiro Místico",       familia: "Potenciación de Magia/Maná",desc: "Mejora magias o maná (NO energía). Reserva mística, catalizador de maná", icon: "✨" },
+  { id: "amarilla", name: "Amarilla", hex: "#FACC15", glow: "rgba(250, 204, 21, 0.75)",  gema: "Topacio Áureo",       familia: "Invocación / Control",     desc: "Invocación de criaturas o control y telequinesis sobre objetos inertes", icon: "🪙" },
+  { id: "verde",    name: "Verde",    hex: "#10B981", glow: "rgba(16, 185, 129, 0.75)",  gema: "Esmeralda Primordial", familia: "Debuffo y Aflicción",       desc: "Debuffo y aflicciones orgánicas (Asfixia, debilidad muscular, letargo, pesadez)", icon: "🌿" },
+  { id: "negra",    name: "Negra",    hex: "#334155", glow: "rgba(100, 116, 139, 0.75)",  gema: "Ónice Abisal",         familia: "Misterio / Vacío",          desc: "Todo lo que no entra en las demás categorías (Sombras, vacío, distorsión sensorial)", icon: "🌑" },
+  { id: "morado",   name: "Morado",   hex: "#A855F7", glow: "rgba(168, 85, 247, 0.75)",  gema: "Amatista Titiritera",  familia: "Dominación Mental",         desc: "Control de otra persona sin su consentimiento (Sugestión forzada, marioneta mental)", icon: "👁️" }
+];
+
+var LAPIDARY_TIERS = [
+  { id: "hierro",   name: "Puntas de Hierro",   tier: 1, bonusRoll: 0, icon: "⛏️", desc: "Herramienta rudimentaria. Sin bonificador a la tirada." },
+  { id: "bronce",   name: "Puntas de Bronce",   tier: 2, bonusRoll: 1, icon: "🔨", desc: "Corte básico pulido. Bono +1 a la tirada." },
+  { id: "plata",    name: "Puntas de Plata",    tier: 3, bonusRoll: 2, icon: "🪙", desc: "Afilado de orfebre. Bono +2 a la tirada." },
+  { id: "oro",      name: "Puntas de Oro",      tier: 4, bonusRoll: 3, icon: "⚜️", desc: "Herramienta alquímica fina. Bono +3 a la tirada." },
+  { id: "platino",  name: "Puntas de Platino",  tier: 5, bonusRoll: 4, icon: "🛡️", desc: "Aleación mística de alta precisión. Bono +4 a la tirada." },
+  { id: "diamante", name: "Puntas de Diamante", tier: 6, bonusRoll: 5, icon: "💎", desc: "Filo supremo de diamante tallador. Bono +5 a la tirada." }
+];
+
+var STONE_QUALITIES = [
+  { id: "arruinada", label: "Arruinada", minRoll: 0, maxRoll: 7, color: "#64748B", badgeClass: "quality-arruinada", desc: "Fracturada durante el corte. Su magia se ha disipado o es caótica e inservible." },
+  { id: "imperfecta", label: "Imperfecta", minRoll: 8, maxRoll: 13, color: "#60A5FA", badgeClass: "quality-imperfecta", desc: "Presenta impurezas y fisuras menores. Canaliza magia pero de potencia atenuada." },
+  { id: "buena", label: "Buena", minRoll: 14, maxRoll: 17, color: "#A855F7", badgeClass: "quality-buena", desc: "Facetado limpio y regular. Canaliza el efecto místico con plena eficacia." },
+  { id: "perfecta", label: "Perfecta", minRoll: 18, maxRoll: 99, color: "#FDE047", badgeClass: "quality-perfecta", desc: "Gema maestra sin imperfecciones. Brillo deslumbrante y máxima potencia mágica." }
+];
+
 function uid(){ return "id" + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
 function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function num(v,d){ var n=parseFloat(v); return isNaN(n)?(d||0):n; }

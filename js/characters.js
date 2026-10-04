@@ -86,7 +86,49 @@ function getOfficialCharacters(){
         { id: uid(), name: "Pez globo", coste: 5, rango: "1", efecto: "1 - Respiración acuática (20 min)", statAttr: "", statMod: "", active: false },
         { id: uid(), name: "Amplificación del éxtasis", coste: 15, rango: "", efecto: "Reactiva el efecto del veneno", statAttr: "", statMod: "", active: false }
       ],
-      stones: [],
+      lapidaryTier: "diamante",
+      stones: [
+        {
+          id: "stn_cherk_1",
+          estado: "pulida",
+          color: "rojo",
+          origen: "Minas / Cuevas",
+          calidad: "perfecta",
+          progDescubrimiento: "confirmado",
+          efectoConcreto: "Furia del Berserker: +3 al daño físico melé durante 3 turnos",
+          notasInvestigacion: "Gema roja tallada con facetas prismáticas de brillo cegador."
+        },
+        {
+          id: "stn_cherk_2",
+          estado: "pulida",
+          color: "blanca",
+          origen: "Minas / Cuevas",
+          calidad: "buena",
+          progDescubrimiento: "teorizado",
+          efectoConcreto: "Ráfaga Glacial: Congela una superficie de 4 casillas ralentizando el paso a la mitad",
+          notasInvestigacion: "El frío emana de su núcleo. Pendiente de verificar el alcance real."
+        },
+        {
+          id: "stn_cherk_3",
+          estado: "en_bruto",
+          color: "amarilla",
+          origen: "Minas / Cuevas",
+          calidad: null,
+          progDescubrimiento: "sin_descubrir",
+          efectoConcreto: "Telequinesis Arcana: Permite levantar y arrojar objetos de hasta 25kg a 10m",
+          notasInvestigacion: "Extraída en las cavernas orientales de Krysalis, cubierta de costra arcillosa."
+        },
+        {
+          id: "stn_cherk_4",
+          estado: "en_bruto",
+          color: "verde",
+          origen: "Comercio / Compra",
+          calidad: null,
+          progDescubrimiento: "sin_descubrir",
+          efectoConcreto: "Miasma Asfixiante: Priva de oxígeno al objetivo reduciendo sus acciones en 1",
+          notasInvestigacion: "Comprada a bajo precio a un buhonero en Tryssar por parecer un pedrusco sin valor."
+        }
+      ],
       passivesNeg: [
         { id: uid(), text: "El mono: necesita pincharse un veneno mínimo cada 12h (máximo 2 veces seguidas el mismo). Si no se inyecta, -1 a todas las tiradas hasta que se chute y estaría muy ansioso." }
       ],

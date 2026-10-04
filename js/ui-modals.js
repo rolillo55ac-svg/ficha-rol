@@ -1084,7 +1084,7 @@ function closeModals(){
       }
     }
   }
-  ["charModalOverlay","charSoundModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay","feedbackModalOverlay"].forEach(function(id){
+  ["charModalOverlay","charSoundModalOverlay","diceModalOverlay","dataModalOverlay","pinModalOverlay","loreModalOverlay","conflictModalOverlay","feedbackModalOverlay","lapidaryModalOverlay","addStoneModalOverlay"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.classList.add("hidden");
   });
