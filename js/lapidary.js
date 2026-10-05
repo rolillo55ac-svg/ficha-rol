@@ -660,7 +660,7 @@ function getStoneFamily(colorId){
     name: colorId || "Desconocida",
     hex: "#DEC392",
     glow: "rgba(222, 195, 146, 0.6)",
-    gema: "Gema Mística",
+    gema: "Piedra Mágica",
     familia: "Afinidad Arcana",
     desc: "Piedra mágica de propiedades sutiles.",
     icon: "💎"
@@ -1578,15 +1578,16 @@ function initLapidary3DGeodeStage(){
   var startX = 0, startY = 0;
   var lastX = 0, lastY = 0;
   var totalDragDist = 0;
+  var lastUserInteractTime = 0;
 
   function renderLoop(){
     if(!lapidaryMinigameState.active || lapidaryMinigameState.phase !== 1){
       return;
     }
 
-    // Auto-rotación sutil cuando el usuario no está arrastrando activamente
-    if(!isPointerDown){
-      lapidaryMinigameState.geodeRotY += 0.0035;
+    // Auto-rotación sutil pausada cuando el usuario está pensando o interactuando
+    if(!isPointerDown && Date.now() - lastUserInteractTime > 3200){
+      lapidaryMinigameState.geodeRotY += 0.0022;
     }
 
     draw3DGeode(ctx, canvas.width, canvas.height, family.hex, family.glow);
@@ -1602,6 +1603,7 @@ function initLapidary3DGeodeStage(){
   // Gestión de Arrastre 3D vs Clic / Toque
   canvas.onmousedown = function(e){
     isPointerDown = true;
+    lastUserInteractTime = Date.now();
     startX = e.clientX; startY = e.clientY;
     lastX = e.clientX;  lastY = e.clientY;
     totalDragDist = 0;
@@ -1609,6 +1611,7 @@ function initLapidary3DGeodeStage(){
 
   window.onmousemove = function(e){
     if(!isPointerDown || !lapidaryMinigameState.active || lapidaryMinigameState.phase !== 1) return;
+    lastUserInteractTime = Date.now();
     var dx = e.clientX - lastX;
     var dy = e.clientY - lastY;
     lastX = e.clientX;
@@ -1623,16 +1626,18 @@ function initLapidary3DGeodeStage(){
   window.onmouseup = function(e){
     if(!isPointerDown) return;
     isPointerDown = false;
-    // Si el movimiento total fue mínimo (< 7px), se trata de un clic intencional de fractura
-    if(totalDragDist < 7 && e){
-      handle3DGeodeClick(e.clientX, e.clientY);
+    lastUserInteractTime = Date.now();
+    // Si el movimiento total fue mínimo (< 8px), es un clic de herramienta
+    if(totalDragDist < 8 && e){
+      handle3DGeodeClick(startX, startY);
     }
   };
 
-  // Soporte táctil móvil (Touch)
+  // Soporte táctil móvil (Touch) optimizado para pantallas táctiles
   canvas.ontouchstart = function(e){
     if(e.touches && e.touches[0]){
       isPointerDown = true;
+      lastUserInteractTime = Date.now();
       startX = e.touches[0].clientX; startY = e.touches[0].clientY;
       lastX = e.touches[0].clientX;  lastY = e.touches[0].clientY;
       totalDragDist = 0;
@@ -1642,6 +1647,7 @@ function initLapidary3DGeodeStage(){
 
   canvas.ontouchmove = function(e){
     if(!isPointerDown || !e.touches || !e.touches[0]) return;
+    lastUserInteractTime = Date.now();
     var dx = e.touches[0].clientX - lastX;
     var dy = e.touches[0].clientY - lastY;
     lastX = e.touches[0].clientX;
@@ -1653,11 +1659,13 @@ function initLapidary3DGeodeStage(){
     e.preventDefault();
   };
 
-  canvas.ontouchend = function(){
+  canvas.ontouchend = function(e){
     if(!isPointerDown) return;
     isPointerDown = false;
-    if(totalDragDist < 7){
-      handle3DGeodeClick(lastX, lastY);
+    lastUserInteractTime = Date.now();
+    // Umbral de 14px adaptado al área de contacto del dedo móvil
+    if(totalDragDist < 14){
+      handle3DGeodeClick(startX, startY);
     }
   };
 }
@@ -2550,7 +2558,7 @@ function openAddRoughStoneModal(charId){
 
   var colorPills = (typeof MAGIC_STONE_FAMILIES !== "undefined" ? MAGIC_STONE_FAMILIES : []).map(function(fam, idx){
     return '<button type="button" class="f-pill add-stone-color-pill ' + (idx === 0 ? 'active' : '') + '" data-action="select-add-stone-color" data-color="' + fam.id + '" style="--pill-border:' + fam.hex + ';--pill-bg:' + fam.hex + '33;--pill-glow:' + fam.hex + '88;border-color:' + (idx === 0 ? fam.hex : 'rgba(255,255,255,0.18)') + ';">' +
-      fam.icon + ' ' + fam.name + ' (' + fam.gema + ')' +
+      fam.icon + ' Piedra ' + fam.name +
     '</button>';
   }).join('');
 
@@ -2563,15 +2571,15 @@ function openAddRoughStoneModal(charId){
 
   var html = '<h2>➕ Nueva Piedra en Bruto<button type="button" data-action="close-add-stone-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="field">' +
-      '<label>Familia / Color de la Gema</label>' +
+      '<label>Color de la Piedra Mágica</label>' +
       '<div class="filter-pills" id="addStoneColors" style="flex-wrap:wrap;gap:6px;margin-top:4px;">' + colorPills + '</div>' +
     '</div>' +
     '<div class="field" style="margin-top:12px;">' +
-      '<label>Origen del Mineral</label>' +
+      '<label>Origen o Yacimiento</label>' +
       '<div class="filter-pills" id="addStoneOrigins" style="flex-wrap:wrap;gap:6px;margin-top:4px;">' + originPills + '</div>' +
     '</div>' +
     '<div class="field" style="margin-top:12px;">' +
-      '<label>Efecto Concreto de la Gema (Solo visible al confirmar o revelar GM)</label>' +
+      '<label>Efecto Concreto de la Piedra Mágica (Opcional, secreto del GM)</label>' +
       '<input type="text" id="addStoneEfectoConcreto" placeholder="Ej: Furia del Berserker: +2 al daño físico durante 3 turnos">' +
     '</div>' +
     '<div class="field" style="margin-top:10px;">' +

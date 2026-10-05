@@ -1,6 +1,6 @@
 {
-  "version": "1.4.0.0",
-  "build": "2026.10.04.02",
-  "updatedAt": "2026-10-04T22:20:00Z",
-  "changelog": "Taller de Lapidario y Piedras Mágicas: minijuego de 2 fases (desbaste en canvas y corte con timing sweet spot), desglose detallado de modificadores en tirada D10, 7 familias cromáticas, 6 tiers de herramientas, bordes de calidad de gemas y patrón de secreto GM con revelación."
+  "version": "1.4.1.0",
+  "build": "2026.10.05.01",
+  "updatedAt": "2026-10-05T18:50:00Z",
+  "changelog": "Taller de Lapidario v1.4.1.0: Piedras Mágicas por color puro (eliminados cuarzo/diamante/rubí), Geoda Buscaminas 3D con deducción lógica, banderas protectoras y sonar acústico, corte diamantado táctil elevado sin obstrucción de dedo en móvil y pantalla completa adaptativa."
 }

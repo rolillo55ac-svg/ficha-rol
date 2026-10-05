@@ -49,13 +49,13 @@ var TERRENOS_MODAL = ["Bosque", "Minas / Cuevas", "Pantano", "Manglar", "Pradera
 var RAREZAS_LIST = ["Común", "Rara", "Muy rara", "Legendaria"];
 
 var MAGIC_STONE_FAMILIES = [
-  { id: "blanca",   name: "Blanca",   hex: "#F8FAFC", glow: "rgba(248, 250, 252, 0.75)", gema: "Diamante / Cuarzo",    familia: "Control de Elemento Natural",          desc: "Controla un elemento natural (Fuego, Agua, Tierra, Viento, Rayo, Hielo...)", icon: "🌪️" },
-  { id: "rojo",     name: "Rojo",     hex: "#E74C3C", glow: "rgba(231, 76, 60, 0.75)",   gema: "Rubí Sangriento",      familia: "Potencia Física",           desc: "Potencia física (Fuerza bruta, resistencia muscular, vigor o agilidad explosiva)", icon: "💪" },
-  { id: "azul",     name: "Azul",     hex: "#3B82F6", glow: "rgba(59, 130, 246, 0.75)",  gema: "Zafiro Místico",       familia: "Potenciación de Magia/Maná",desc: "Mejora magias o maná (NO energía). Reserva mística, catalizador de maná", icon: "✨" },
-  { id: "amarilla", name: "Amarilla", hex: "#FACC15", glow: "rgba(250, 204, 21, 0.75)",  gema: "Topacio Áureo",       familia: "Invocación / Control",     desc: "Invocación de criaturas o control y telequinesis sobre objetos inertes", icon: "🪙" },
-  { id: "verde",    name: "Verde",    hex: "#10B981", glow: "rgba(16, 185, 129, 0.75)",  gema: "Esmeralda Primordial", familia: "Debuffo y Aflicción",       desc: "Debuffo y aflicciones orgánicas (Asfixia, debilidad muscular, letargo, pesadez)", icon: "🌿" },
-  { id: "negra",    name: "Negra",    hex: "#334155", glow: "rgba(100, 116, 139, 0.75)",  gema: "Ónice Abisal",         familia: "Misterio / Vacío",          desc: "Todo lo que no entra en las demás categorías (Sombras, vacío, distorsión sensorial)", icon: "🌑" },
-  { id: "morado",   name: "Morado",   hex: "#A855F7", glow: "rgba(168, 85, 247, 0.75)",  gema: "Amatista Titiritera",  familia: "Dominación Mental",         desc: "Control de otra persona sin su consentimiento (Sugestión forzada, marioneta mental)", icon: "👁️" }
+  { id: "blanca",   name: "Blanca",   hex: "#F8FAFC", glow: "rgba(248, 250, 252, 0.75)", gema: "Piedra Blanca",    familia: "Control de Elemento Natural",          desc: "Controla un elemento natural (Fuego, Agua, Tierra, Viento, Rayo, Hielo...)", icon: "🌪️" },
+  { id: "rojo",     name: "Roja",     hex: "#E74C3C", glow: "rgba(231, 76, 60, 0.75)",   gema: "Piedra Roja",        familia: "Potencia Física",           desc: "Potencia física (Fuerza bruta, resistencia muscular, vigor o agilidad explosiva)", icon: "💪" },
+  { id: "azul",     name: "Azul",     hex: "#3B82F6", glow: "rgba(59, 130, 246, 0.75)",  gema: "Piedra Azul",        familia: "Potenciación de Magia/Maná",desc: "Mejora magias o maná (NO energía). Reserva mística, catalizador de maná", icon: "✨" },
+  { id: "amarilla", name: "Amarilla", hex: "#FACC15", glow: "rgba(250, 204, 21, 0.75)",  gema: "Piedra Amarilla",    familia: "Invocación / Control",     desc: "Invocación de criaturas o control y telequinesis sobre objetos inertes", icon: "🪙" },
+  { id: "verde",    name: "Verde",    hex: "#10B981", glow: "rgba(16, 185, 129, 0.75)",  gema: "Piedra Verde",       familia: "Debuffo y Aflicción",       desc: "Debuffo y aflicciones orgánicas (Asfixia, debilidad muscular, letargo, pesadez)", icon: "🌿" },
+  { id: "negra",    name: "Negra",    hex: "#334155", glow: "rgba(100, 116, 139, 0.75)",  gema: "Piedra Negra",       familia: "Misterio / Vacío",          desc: "Todo lo que no entra en las demás categorías (Sombras, vacío, distorsión sensorial)", icon: "🌑" },
+  { id: "morado",   name: "Morada",   hex: "#A855F7", glow: "rgba(168, 85, 247, 0.75)",  gema: "Piedra Morada",      familia: "Dominación Mental",         desc: "Control de otra persona sin su consentimiento (Sugestión forzada, marioneta mental)", icon: "👁️" }
 ];
 
 var LAPIDARY_TIERS = [

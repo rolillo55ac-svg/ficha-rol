@@ -1288,16 +1288,16 @@ function renderLapidaryWorkshop(c, canEdit){
   } else {
     html += '<div class="lapidary-rough-grid">';
     roughStones.forEach(function(st){
-      var fam = (typeof getStoneFamily === "function") ? getStoneFamily(st.color) : { name: st.color, icon: "💎", hex: "#DEC392", gema: "Gema en Bruto" };
+      var fam = (typeof getStoneFamily === "function") ? getStoneFamily(st.color) : { name: st.color, icon: "💎", hex: "#DEC392", gema: "Piedra Mágica en Bruto" };
       html += '<div class="lapidary-rough-card">' +
         '<div class="lapidary-rough-header">' +
           '<div class="lapidary-rough-title">' +
             '<span class="lapidary-gem-dot" style="background:' + fam.hex + ';box-shadow:0 0 8px ' + (fam.glow || fam.hex) + ';"></span>' +
-            '<b>' + esc(fam.name) + ' en Bruto</b>' +
+            '<b>Piedra ' + esc(fam.name) + ' en Bruto</b>' +
           '</div>' +
           '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? "⛏️ " : "🪙 ") + esc(st.origen) + '</span>' +
         '</div>' +
-        '<div class="lapidary-rough-desc">Mineral: ' + esc(fam.gema) + ' &bull; Potencial: <i>' + esc(fam.familia) + '</i></div>' +
+        '<div class="lapidary-rough-desc">Familia: Piedra ' + esc(fam.name) + ' &bull; Potencial: <i>' + esc(fam.familia) + '</i></div>' +
         (st.notasInvestigacion ? '<div class="lapidary-rough-notes">' + esc(st.notasInvestigacion) + '</div>' : '') +
         '<div class="lapidary-rough-actions">' +
           (canEdit ? '<button type="button" class="btn-solid-gold lapidary-btn-polish" data-action="open-lapidary-minigame" data-id="' + st.id + '" data-char-id="' + c.id + '">✨ Pulir en Taller</button>' : '') +
@@ -1319,7 +1319,7 @@ function renderLapidaryWorkshop(c, canEdit){
     '</div>';
   } else {
     polishedStones.forEach(function(st){
-      var fam = (typeof getStoneFamily === "function") ? getStoneFamily(st.color) : { name: st.color, icon: "💎", hex: "#DEC392", gema: "Gema Pulida" };
+      var fam = (typeof getStoneFamily === "function") ? getStoneFamily(st.color) : { name: st.color, icon: "💎", hex: "#DEC392", gema: "Piedra Mágica Pulida" };
       var qId = (st.calidad || "buena").toLowerCase();
       var qInfo = (typeof getStoneQuality === "function") ? getStoneQuality(qId) : { label: qId.toUpperCase(), color: "#60A5FA" };
 
@@ -1336,8 +1336,8 @@ function renderLapidaryWorkshop(c, canEdit){
           '<div class="lapidary-card-title-row">' +
             '<span class="lapidary-card-icon" style="color:' + fam.hex + ';filter:drop-shadow(0 0 6px ' + (fam.glow || fam.hex) + ');">' + fam.icon + '</span>' +
             '<div class="lapidary-card-main-title">' +
-              '<h3>' + esc(fam.gema) + '</h3>' +
-              '<div class="lapidary-card-subtitle">Familia: ' + esc(fam.name) + ' (' + esc(fam.familia) + ')</div>' +
+              '<h3>Piedra ' + esc(fam.name) + ' Pulida</h3>' +
+              '<div class="lapidary-card-subtitle">Efecto Base: ' + esc(fam.familia) + '</div>' +
             '</div>' +
           '</div>' +
           '<div class="lapidary-card-badges">' +
@@ -1403,14 +1403,14 @@ function renderLapidaryWorkshop(c, canEdit){
 
   // 4. Códice de Piedras y Familias (Consulta y Lore de Krysalis)
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">' +
-    '<div class="section-title"><span>📜 Códice de Gemas y Familias Arcanas</span></div>' +
+    '<div class="section-title"><span>📜 Códice de Piedras Mágicas y Familias Arcanas</span></div>' +
     '<div class="lapidary-codex-grid">' +
       (typeof MAGIC_STONE_FAMILIES !== "undefined" ? MAGIC_STONE_FAMILIES : []).map(function(f){
         return '<div class="lapidary-codex-card">' +
           '<div class="lapidary-codex-header">' +
             '<span class="lapidary-codex-icon" style="color:' + f.hex + ';filter:drop-shadow(0 0 6px ' + f.glow + ');">' + f.icon + '</span>' +
             '<div>' +
-              '<b style="color:' + f.hex + ';">' + esc(f.name) + ' (' + esc(f.gema) + ')</b>' +
+              '<b style="color:' + f.hex + ';">Piedra ' + esc(f.name) + '</b>' +
               '<div class="lapidary-codex-family">' + esc(f.familia) + '</div>' +
             '</div>' +
           '</div>' +
