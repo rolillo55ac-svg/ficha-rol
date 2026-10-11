@@ -1,6 +1,6 @@
 {
-  "version": "1.4.2.0",
-  "build": "2026.10.11.01",
-  "updatedAt": "2026-10-11T12:00:00Z",
-  "changelog": "Taller de Lapidario y Piedras Mágicas ahora tiene pestaña propia (💎 Piedras) en la barra superior, separada de Magia."
+  "version": "1.4.3.0",
+  "build": "2026.10.11.02",
+  "updatedAt": "2026-10-11T18:00:00Z",
+  "changelog": "La Casa: nuevo plano tipo tablero (texturas de suelo, paredes, puertas, nombres legibles, ficha del dueño), modos Ver y Editar, panel inferior con baúl y buffos, y el máster decide si los jugadores pueden editar su propia habitación."
 }
