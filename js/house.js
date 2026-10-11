@@ -1342,9 +1342,13 @@ function selectKonvaRoom(group, r){
     if(qBar) qBar.classList.remove("visible");
   }
 
+  houseState.showRoomDetail = false;
   var insp = document.getElementById("houseInspectorContainer");
   if(insp){
-    insp.innerHTML = renderRoomInspector(r.id);
+    insp.innerHTML = renderRoomPanel(r.id);
+    if(!houseState.editMode && insp.scrollIntoView){
+      setTimeout(function(){ insp.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30);
+    }
   }
 
   if(houseKonvaLayer) houseKonvaLayer.draw();
@@ -4219,7 +4223,7 @@ function renderHouseView(){
     // Inspector de Habitación
     html += '<div id="houseInspectorContainer">';
     if(houseState.selectedRoomId){
-      html += renderRoomInspector(houseState.selectedRoomId);
+      html += renderRoomPanel(houseState.selectedRoomId);
     } else {
       html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:12px;font-style:italic;">💡 Toca cualquier habitación del plano para ver sus detalles, muebles o activar sus buffs.</div>';
     }
@@ -4537,6 +4541,57 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
 // ============================================================================
 // 7. INSPECTOR DE HABITACIÓN SEGMENTADO
 // ============================================================================
+// Panel inferior del modo Ver: lo importante para jugar (baúl, dueño, buffos) y dos botones grandes.
+// "Abrir baúl" y "Ver buffos" abren el inspector completo en la pestaña correspondiente.
+function renderRoomPanel(roomId){
+  if(houseState.editMode || houseState.showRoomDetail) return renderRoomInspector(roomId);
+  var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!r) return '';
+
+  var owner = getRoomOwnerInfo(r.owner_character_id);
+  var itemCount = getRoomItemCount(r);
+  var activeBuffs = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id && u.unlocked; });
+  var isPassage = (r.room_type === "pasillo");
+
+  var html = '<div class="house-room-sheet" id="houseRoomInspector">';
+  html += '  <div class="house-sheet-handle"></div>';
+  html += '  <div class="house-sheet-head">';
+  html += '    <span class="house-sheet-icon">' + (r.icon || getRoomTypeIcon(r.room_type) || '') + '</span>';
+  html += '    <h3 class="house-sheet-title">' + esc(r.name || "Estancia") + '</h3>';
+  html += '    <button class="house-sheet-close" data-action="close-room-inspector" title="Cerrar" aria-label="Cerrar">&times;</button>';
+  html += '  </div>';
+
+  html += '  <div class="house-sheet-chips">';
+  if(!isPassage) html += '    <span class="house-sheet-chip">📦 Baúl · ' + itemCount + (itemCount === 1 ? ' objeto' : ' objetos') + '</span>';
+  if(owner && owner.name) html += '    <span class="house-sheet-chip">Habitación de ' + esc(owner.name) + '</span>';
+  html += '    <span class="house-sheet-chip">Nivel ' + (r.level || 1) + '</span>';
+  html += '  </div>';
+
+  if(r.description){
+    html += '  <div class="house-sheet-desc">' + esc(r.description) + '</div>';
+  }
+
+  if(!isPassage){
+    html += '  <div class="house-sheet-label">Buffos activos</div>';
+    html += '  <div class="house-sheet-chips">';
+    if(activeBuffs.length === 0){
+      html += '    <span class="house-sheet-chip empty">Sin buffos activos</span>';
+    } else {
+      activeBuffs.forEach(function(u){
+        html += '    <span class="house-sheet-chip buff">✨ ' + esc(u.name || "Buff") + (u.bonus_value ? ' ' + esc(String(u.bonus_value)) : '') + '</span>';
+      });
+    }
+    html += '  </div>';
+
+    html += '  <div class="house-sheet-actions">';
+    html += '    <button class="house-sheet-btn primary" data-action="open-room-detail" data-tab="muebles">Abrir baúl</button>';
+    html += '    <button class="house-sheet-btn" data-action="open-room-detail" data-tab="buffs">Ver buffos</button>';
+    html += '  </div>';
+  }
+  html += '</div>';
+  return html;
+}
+
 function renderRoomInspector(roomId){
   var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!r) return '';
@@ -5508,6 +5563,12 @@ document.addEventListener("click", function(e){
     return;
   } else if(act === "toggle-house-players-edit"){
     setHousePlayersCanEdit(!housePlayersCanEdit());
+    return;
+  } else if(act === "open-room-detail"){
+    houseState.inspectorTab = btn.getAttribute("data-tab") || "muebles";
+    houseState.showRoomDetail = true;
+    var detEl = document.getElementById("houseInspectorContainer");
+    if(detEl && houseState.selectedRoomId) detEl.innerHTML = renderRoomInspector(houseState.selectedRoomId);
     return;
   }
 

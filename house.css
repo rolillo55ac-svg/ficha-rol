@@ -3347,3 +3347,133 @@
 #stage-container {
   height: auto;
 }
+
+/* ===== Panel inferior de estancia (modo Ver) ===== */
+.house-room-sheet {
+  margin-top: 12px;
+  padding: 10px 16px 18px;
+  background: #1E1611;
+  border: 1px solid rgba(176,141,87,0.35);
+  border-top: 2px solid var(--gold, #B08D57);
+  border-radius: 18px 18px 12px 12px;
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.45);
+}
+
+.house-sheet-handle {
+  width: 44px;
+  height: 5px;
+  margin: 0 auto 10px;
+  border-radius: 3px;
+  background: rgba(194,177,150,0.35);
+}
+
+.house-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.house-sheet-icon {
+  font-size: 1.5rem;
+  flex: none;
+}
+
+.house-sheet-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.35rem;
+  line-height: 1.2;
+  color: var(--ink, #F3EADB);
+  overflow-wrap: anywhere;
+}
+
+.house-sheet-close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line, rgba(176,141,87,0.25));
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-dim, #C2B196);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.house-sheet-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.house-sheet-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(176,141,87,0.5);
+  border-radius: 999px;
+  background: #2A1F18;
+  color: var(--ink, #F3EADB);
+  font-size: 0.9rem;
+}
+
+.house-sheet-chip.buff {
+  border-color: var(--gold, #B08D57);
+  color: var(--gold-light, #DEC392);
+}
+
+.house-sheet-chip.empty {
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-faint, #8F7D65);
+}
+
+.house-sheet-desc {
+  margin-top: 10px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ink-dim, #C2B196);
+}
+
+.house-sheet-label {
+  margin-top: 16px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim, #C2B196);
+}
+
+.house-sheet-label + .house-sheet-chips {
+  margin-top: 8px;
+}
+
+.house-sheet-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.house-sheet-btn {
+  min-height: 52px;
+  padding: 0 12px;
+  border: 1.5px solid var(--gold, #B08D57);
+  border-radius: 12px;
+  background: transparent;
+  color: #E2B65A;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.house-sheet-btn.primary {
+  border-color: #E2B65A;
+  background: linear-gradient(180deg, #E8C06A, #D9A84A);
+  color: #1A120D;
+}
