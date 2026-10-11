@@ -19,6 +19,23 @@ var GEODE_DIFFICULTY_TABLE = {
   veinsBonusFromExp: 6     // con experiencia 6 o más, +1 veta
 };
 
+// Tabla de dificultad de los cortes (paso 2). Medidas en anchos de lienzo; un kit mejor y más experiencia siempre ayudan
+var CUT_DIFFICULTY_TABLE = {
+  bandMin: 0.028,          // mitad del ancho de la franja: novato con hierro
+  bandMax: 0.042,          // … experto con diamante
+  hardSpeedMin: 0.25,      // velocidad máxima en tramos duros ◆ (anchos por segundo)
+  hardSpeedMax: 0.35,
+  driftMax: 0.10,          // fuerza de la deriva de la veta (anchos por segundo)
+  driftMin: 0.05,
+  heatRateMax: 0.55,       // calentamiento por segundo yendo muy despacio (kit de hierro)
+  heatRateMin: 0.30,       // … (kit de diamante)
+  coolRate: 0.35,          // enfriamiento por segundo a ritmo normal
+  idleCoolRate: 0.50,      // enfriamiento por segundo con el dedo levantado
+  slowSpeed: 0.06,         // por debajo de esta velocidad la sierra se calienta
+  visionMinExp: 7,         // visión limitada desde esta experiencia (no hay dato de rareza de piedra)
+  visionAhead: 0.30        // fracción del recorrido restante que se ve con claridad
+};
+
 var GEODE_COLS = 7;
 var GEODE_ROWS = 9;
 var GEODE_ROW_WIDTHS = [3, 5, 7, 7, 7, 7, 7, 5, 3];
@@ -798,83 +815,8 @@ var lapidaryMinigameState = {
   fragileHits: 0,
   phase1Score: 0,
 
-  // Fase 2: Sierra Diamantada de Alta Habilidad (Tacómetro, Calor de Fricción e Inclusiones)
-  slidePass: 1,
-  maxSlidePasses: 3,
-  slideScores: [],
-  currentSlideActive: false,
-  slideSamples: 0,
-  slideDeviations: 0,
-  slideProgress: 0,
-  slidePrecision: 100,
-  traveledPoints: [],
-  pathProgressIdx: 0,
-  sawSpeed: 0,
-  lastSawPos: null,
-  lastSawTime: 0,
-  frictionHeat: 0,
-  clearedInclusions: [],
-  slidePoints: [
-    {
-      id: 1,
-      name: "Corte 1: Onda Sinuosa de Cintura",
-      type: "sinusoidal",
-      desc: "Onda de faceta: modula la velocidad en zona óptima (40-110 px/s) y pasa con cautela por los 2 nódulos.",
-      tolerance: 8,
-      inclusions: [0.35, 0.70],
-      x1: 45, y1: 150, x2: 255, y2: 150,
-      waypoints: [
-        { x: 45,  y: 150 },
-        { x: 75,  y: 112 },
-        { x: 105, y: 92 },
-        { x: 135, y: 118 },
-        { x: 150, y: 150 },
-        { x: 165, y: 182 },
-        { x: 195, y: 208 },
-        { x: 225, y: 188 },
-        { x: 255, y: 150 }
-      ]
-    },
-    {
-      id: 2,
-      name: "Corte 2: Perfil en Zigzag de Corona",
-      type: "zigzag",
-      desc: "Facetado angular: contrarresta la micro-vibración y reduce a 30 px/s en los ángulos cerrados.",
-      tolerance: 8,
-      inclusions: [0.38, 0.72],
-      x1: 45, y1: 220, x2: 255, y2: 220,
-      waypoints: [
-        { x: 45,  y: 220 },
-        { x: 80,  y: 120 },
-        { x: 115, y: 195 },
-        { x: 150, y: 80 },
-        { x: 185, y: 195 },
-        { x: 220, y: 120 },
-        { x: 255, y: 220 }
-      ]
-    },
-    {
-      id: 3,
-      name: "Corte 3: Arco Parabólico de Pabellón",
-      type: "arch",
-      desc: "Arco de alta tensión: tolerancia crítica en la cúspide (8px); desacelera para perforar el nódulo apical.",
-      tolerance: 8,
-      inclusions: [0.48, 0.80],
-      x1: 60, y1: 240, x2: 240, y2: 240,
-      waypoints: [
-        { x: 60,  y: 240 },
-        { x: 85,  y: 165 },
-        { x: 110, y: 105 },
-        { x: 135, y: 65 },
-        { x: 150, y: 52 },
-        { x: 165, y: 65 },
-        { x: 190, y: 105 },
-        { x: 215, y: 165 },
-        { x: 240, y: 240 }
-      ]
-    }
-  ],
-  lastSlidePos: null,
+  // Fase 2: Cortes (calcar la silueta con la sierra; ver createCutGame)
+  cut: null,
   phase2Score: 0,
 
   // Fase 3: Pulido (barra con zona dorada que cambia de sitio en cada pasada)
@@ -1370,21 +1312,8 @@ function openLapidaryMinigame(charId, stoneId){
   lapidaryMinigameState.fragileHits = 0;
   lapidaryMinigameState.phase1Score = 0;
 
-  // Reset Fase 2 (Sierra Diamantada de Alta Habilidad)
-  lapidaryMinigameState.slidePass = 1;
-  lapidaryMinigameState.slideScores = [];
-  lapidaryMinigameState.currentSlideActive = false;
-  lapidaryMinigameState.slideSamples = 0;
-  lapidaryMinigameState.slideDeviations = 0;
-  lapidaryMinigameState.slideProgress = 0;
-  lapidaryMinigameState.slidePrecision = 100;
-  lapidaryMinigameState.traveledPoints = [];
-  lapidaryMinigameState.pathProgressIdx = 0;
-  lapidaryMinigameState.sawSpeed = 0;
-  lapidaryMinigameState.lastSawPos = null;
-  lapidaryMinigameState.lastSawTime = 0;
-  lapidaryMinigameState.frictionHeat = 0;
-  lapidaryMinigameState.clearedInclusions = [];
+  // Reset Fase 2 (Cortes)
+  lapidaryMinigameState.cut = null;
   lapidaryMinigameState.phase2Score = 0;
 
   // Reset Fase 3
@@ -1422,8 +1351,6 @@ function closeLapidaryMinigame(){
     cancelAnimationFrame(lapidaryMinigameState.animId);
     lapidaryMinigameState.animId = null;
   }
-  var modal = document.getElementById("lapidaryModal");
-  if(modal) modal.classList.remove("phase-2-fullscreen");
   var overlay = document.getElementById("lapidaryModalOverlay");
   if(overlay) overlay.classList.add("hidden");
 }
@@ -1431,12 +1358,6 @@ function closeLapidaryMinigame(){
 function renderLapidaryModalContent(){
   var modal = document.getElementById("lapidaryModal");
   if(!modal) return;
-
-  if(lapidaryMinigameState.phase === 2 && lapidaryMinigameState.slidePass <= lapidaryMinigameState.maxSlidePasses){
-    modal.classList.add("phase-2-fullscreen");
-  } else {
-    modal.classList.remove("phase-2-fullscreen");
-  }
 
   var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
   var stone = c ? (c.stones || []).find(function(st){ return st.id === lapidaryMinigameState.stoneId; }) : null;
@@ -1465,7 +1386,7 @@ function renderLapidaryModalContent(){
     '<div class="lapidary-step-line ' + (lapidaryMinigameState.phase > 1 ? 'active' : '') + '"></div>' +
     '<div class="lapidary-step ' + (lapidaryMinigameState.phase === 2 ? 'current' : (lapidaryMinigameState.phase > 2 ? 'completed' : '')) + '">' +
       '<div class="lapidary-step-num">2</div>' +
-      '<div class="lapidary-step-label">Cortes Guiados</div>' +
+      '<div class="lapidary-step-label">Cortes</div>' +
     '</div>' +
     '<div class="lapidary-step-line ' + (lapidaryMinigameState.phase > 2 ? 'active' : '') + '"></div>' +
     '<div class="lapidary-step ' + (lapidaryMinigameState.phase === 3 ? 'current' : (lapidaryMinigameState.phase > 3 ? 'completed' : '')) + '">' +
@@ -1489,85 +1410,10 @@ function renderLapidaryModalContent(){
 
 
   // ==========================================
-  // FASE 2: SIERRA DIAMANTADA DE ALTA HABILIDAD (Velocidad, Pulso y Nódulos)
+  // FASE 2: CORTES
   // ==========================================
   else if(lapidaryMinigameState.phase === 2){
-    var curSlide = lapidaryMinigameState.slidePoints[lapidaryMinigameState.slidePass - 1] || lapidaryMinigameState.slidePoints[0];
-    var livePrecision = lapidaryMinigameState.slidePrecision || 100;
-    var liveProgress = Math.round((lapidaryMinigameState.slideProgress || 0) * 100);
-
-    html += '<div class="lapidary-phase-body">' +
-      '<div class="lapidary-instructions">' +
-        '<b>Fase 2: Sierra Diamantada de Alta Habilidad (Velocidad, Pulso y Nódulos)</b><br>' +
-        'Conduce el disco diamantado manteniendo la velocidad en la <b>Zona Óptima (40-110 px/s)</b>. No te detengas (sobrecalienta la gema) ni aceleres en exceso. En los <b>nódulos duros (◆)</b>, reduce la marcha para no rebotar.' +
-      '</div>' +
-
-      '<div class="lapidary-mobile-touch-hint">📱 <b>Modo Táctil Cómodo:</b> El disco de corte diamantado se sitúa por encima de tu dedo para que nunca tapes la línea ni los nódulos.</div>' +
-
-      // Tacómetro de Velocidad y Medidor de Calor por Fricción
-      '<div class="lapidary-tachometer-wrap">' +
-        '<div class="lapidary-tachometer-header">' +
-          '<span>VELOCÍMETRO DEL DISCO</span>' +
-          '<b id="lapidaryTachoVal">0 px/s [PARADO]</b>' +
-        '</div>' +
-        '<div class="lapidary-tachometer-track">' +
-          '<div class="lapidary-tacho-zone slow" title="Lento (Fricción / Sobrecalentamiento)"></div>' +
-          '<div class="lapidary-tacho-zone optimal" title="Zona Óptima de Corte"></div>' +
-          '<div class="lapidary-tacho-zone fast" title="Exceso de Velocidad"></div>' +
-          '<div class="lapidary-tacho-cursor" id="lapidaryTachoCursor" style="left:0%;"></div>' +
-        '</div>' +
-        '<div class="lapidary-heat-row">' +
-          '<span>🔥 CALOR DE FRICCIÓN:</span>' +
-          '<div class="lapidary-heat-track">' +
-            '<div class="lapidary-heat-fill" id="lapidaryHeatFill" style="width:0%;"></div>' +
-          '</div>' +
-          '<span id="lapidaryHeatVal">0%</span>' +
-        '</div>' +
-      '</div>' +
-
-      // Live HUD con precisión, progreso y puntos en tiempo real
-      '<div class="lapidary-live-hud">' +
-        '<div class="lapidary-hud-badge precision">' +
-          '<span class="hud-label">PRECISIÓN DE CORTE</span>' +
-          '<b class="hud-val ' + (livePrecision < 65 ? 'danger' : (livePrecision < 85 ? 'warning' : 'safe')) + '" id="lapidaryLivePrecision">' + livePrecision + '%</b>' +
-        '</div>' +
-        '<div class="lapidary-hud-badge progress">' +
-          '<span class="hud-label">AVANCE DEL CORTE</span>' +
-          '<b class="hud-val" id="lapidaryLiveProgress">' + liveProgress + '%</b>' +
-        '</div>' +
-        '<div class="lapidary-hud-badge points">' +
-          '<span class="hud-label">PUNTOS DE CORTE</span>' +
-          '<b class="hud-val" id="lapidaryLivePoints">+' + livePrecision + ' pts</b>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="lapidary-slide-stage" id="lapidarySlideStage">' +
-        '<div class="lapidary-gem-underlay">' +
-          '<div class="lapidary-gem-silhouette" style="background:radial-gradient(circle at 40% 40%, ' + family.hex + ' 10%, ' + family.glow + ' 60%, rgba(0,0,0,0.8) 100%);box-shadow:0 0 35px ' + family.glow + ';opacity:0.4;"></div>' +
-        '</div>' +
-        '<canvas id="lapidarySlideCanvas" width="300" height="300" class="lapidary-slide-canvas"></canvas>' +
-        '<div class="lapidary-particles-container" id="lapidarySlideParticles"></div>' +
-        '<div class="lapidary-slide-banner hidden" id="lapidarySlideBanner"></div>' +
-      '</div>' +
-
-      '<div class="lapidary-slide-header-bar">' +
-        '<div class="lapidary-pass-tag">' + esc(curSlide.name) + ' (' + lapidaryMinigameState.slidePass + ' / ' + lapidaryMinigameState.maxSlidePasses + ')</div>' +
-        '<div class="lapidary-slide-desc-hint">' + esc(curSlide.desc) + '</div>' +
-      '</div>' +
-
-      '<div class="lapidary-hits-summary" style="margin-top:10px;">' +
-        '<div class="lapidary-hit-slot ' + (lapidaryMinigameState.slideScores[0] ? 'hit' : '') + '">Corte 1: ' + (lapidaryMinigameState.slideScores[0] ? lapidaryMinigameState.slideScores[0] + '% (' + lapidaryMinigameState.slideScores[0] + ' pts)' : '—') + '</div>' +
-        '<div class="lapidary-hit-slot ' + (lapidaryMinigameState.slideScores[1] ? 'hit' : '') + '">Corte 2: ' + (lapidaryMinigameState.slideScores[1] ? lapidaryMinigameState.slideScores[1] + '% (' + lapidaryMinigameState.slideScores[1] + ' pts)' : '—') + '</div>' +
-        '<div class="lapidary-hit-slot ' + (lapidaryMinigameState.slideScores[2] ? 'hit' : '') + '">Corte 3: ' + (lapidaryMinigameState.slideScores[2] ? lapidaryMinigameState.slideScores[2] + '% (' + lapidaryMinigameState.slideScores[2] + ' pts)' : '—') + '</div>' +
-      '</div>' +
-
-      '<div class="lapidary-action-footer" style="margin-top:14px;">' +
-        (lapidaryMinigameState.slidePass > lapidaryMinigameState.maxSlidePasses ?
-          '<button type="button" class="btn-solid-gold lapidary-btn-advance pulse-glow" data-action="advance-to-facetting">💎 ¡3 Cortes Concluidos! (' + lapidaryMinigameState.phase2Score + ' pts) Avanzar al Pulido ➡️</button>' :
-          '<button type="button" class="btn-compact" disabled style="width:100%;padding:9px;">Conduce la sierra diamantada con pulso y velocidad...</button>'
-        ) +
-      '</div>' +
-    '</div>';
+    html += renderCutsPhaseHTML(family);
   }
 
   // ==========================================
@@ -1731,579 +1577,750 @@ function spawnRockDustParticles(x, y){
 }
 
 /* ==========================================================================
-   5. CONTROL DE SLIDES: FASE 2 (SIERRA DIAMANTADA DE ALTA HABILIDAD)
+   5. FASE 2: CORTES — calcar la silueta de la gema con la sierra
    ========================================================================== */
 
-function drawSlideGuide(ctx, slide, userPt){
-  var w = ctx.canvas.width;
-  var h = ctx.canvas.height;
-  ctx.clearRect(0, 0, w, h);
+// Contorno de la gema (fracciones del lienzo: x del ancho, y del alto)
+var CUT_GL = [0.08, 0.40], CUT_CL = [0.27, 0.17], CUT_CR = [0.73, 0.17], CUT_GR = [0.92, 0.40], CUT_CU = [0.50, 0.92];
 
-  var wps = slide.waypoints || [
-    { x: slide.x1, y: slide.y1 },
-    { x: slide.x2, y: slide.y2 }
-  ];
-  if(wps.length < 2) return;
+// Tres cortes; cada uno añade un desafío nuevo (f = fracción del recorrido)
+var LAPIDARY_CUTS = [
+  {
+    name: "La corona",
+    pts: [CUT_GL, CUT_CL, CUT_CR, CUT_GR],
+    hard: [[0.30, 0.42], [0.62, 0.72]],
+    drift: [],
+    inclusions: [],
+    hint: "Sigue el borde de arriba, de izquierda a derecha."
+  },
+  {
+    name: "Pabellón izquierdo",
+    pts: [CUT_GL, [0.28, 0.66], CUT_CU],
+    hard: [[0.15, 0.27], [0.64, 0.76]],
+    drift: [{ f0: 0.34, f1: 0.56, dir: 1 }],
+    inclusions: [],
+    hint: "Baja por el lado izquierdo hasta la punta."
+  },
+  {
+    name: "Pabellón derecho",
+    pts: [CUT_GR, [0.72, 0.66], CUT_CU],
+    hard: [[0.10, 0.20], [0.46, 0.55], [0.86, 0.95]],
+    drift: [{ f0: 0.22, f1: 0.40, dir: -1 }],
+    inclusions: [{ f: 0.30, side: 1, pair: false }, { f: 0.68, side: 1, pair: true }, { f: 0.68, side: -1, pair: true }],
+    hint: "Baja por el lado derecho hasta la punta."
+  }
+];
 
-  var corridorWidth = (slide.tolerance || 8) * 2;
+var CUT_TOUCH_OFFSET = 46;   // px: la sierra se dibuja por encima del dedo
+var CUT_START_RADIUS = 44;   // px: radio para empezar o seguir tocando la sierra
+var CUT_MAX_GEMS = 3;
+
+function getCutDifficulty(c){
+  var T = CUT_DIFFICULTY_TABLE;
+  var kit = getLapidaryKitIndex(c);
+  var exp = getLapidaryExperience(c);
+  var kitF = kit / 5, expF = (exp - 1) / 9;
+  var skill = (kitF + expF) / 2;
+  return {
+    kit: kit,
+    exp: exp,
+    band: T.bandMin + (T.bandMax - T.bandMin) * skill,
+    hardMaxSpeed: T.hardSpeedMin + (T.hardSpeedMax - T.hardSpeedMin) * skill,
+    drift: T.driftMax - (T.driftMax - T.driftMin) * (kitF * 0.6 + expF * 0.4),
+    heatRate: T.heatRateMax - (T.heatRateMax - T.heatRateMin) * (kitF * 0.8 + expF * 0.2),
+    limitedVision: exp >= T.visionMinExp
+  };
+}
+
+function cutState(){ return lapidaryMinigameState.cut; }
+
+function createCutGame(c){
+  return { diff: getCutDifficulty(c), idx: 0, results: [null, null, null], failed: [false, false, false], retries: [false, false, false], introsSeen: {}, S: null, W: 0, H: 0, DPR: 1, stoneTex: null, sheetOpen: false, lastHint: "", lastWhir: 0, lastWarn: 0 };
+}
+
+function resetCurrentCut(){
+  var CG = cutState();
+  var cut = LAPIDARY_CUTS[CG.idx];
+  var lens = [0];
+  for(var i = 1; i < cut.pts.length; i++){
+    var a = cut.pts[i - 1], b = cut.pts[i];
+    lens.push(lens[i - 1] + Math.hypot(b[0] - a[0], (b[1] - a[1]) * 0.86));
+  }
+  CG.S = {
+    lens: lens, total: lens[lens.length - 1], prog: 0, trail: [], samples: 0, qsum: 0, sparks: 0,
+    gems: CUT_MAX_GEMS, heat: 0, active: false, started: false, done: false, failed: false,
+    saw: null, finger: null, state: "ok", lastT: 0, lastP: null, lastMoveT: 0, speed: 0, rot: 0,
+    lastSpark: 0, lastOutSample: 0, pauseStart: 0, pauseTotal: 0, driftVec: [0, 0], driftActive: null,
+    incHit: cut.inclusions.map(function(){ return false; }), shakeUntil: 0
+  };
+}
+
+// Punto del recorrido a distancia d (en anchos de lienzo) → fracciones [x, y]
+function cutPointAt(d){
+  var CG = cutState(), cut = LAPIDARY_CUTS[CG.idx], lens = CG.S.lens, pts = cut.pts;
+  for(var i = 1; i < pts.length; i++){
+    if(d <= lens[i] || i === pts.length - 1){
+      var t = Math.max(0, Math.min(1, (d - lens[i - 1]) / Math.max(1e-6, lens[i] - lens[i - 1])));
+      return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t];
+    }
+  }
+  return pts[pts.length - 1];
+}
+
+// Normal (en píxeles, unitaria) del tramo del recorrido en la distancia d
+function cutNormalAt(d){
+  var CG = cutState(), cut = LAPIDARY_CUTS[CG.idx], lens = CG.S.lens, pts = cut.pts;
+  var i = 1;
+  while(i < pts.length - 1 && d > lens[i]) i++;
+  var dx = (pts[i][0] - pts[i - 1][0]) * CG.W, dy = (pts[i][1] - pts[i - 1][1]) * CG.H;
+  var L = Math.hypot(dx, dy) || 1;
+  return [-dy / L, dx / L];
+}
+
+function cutPx(p){ var CG = cutState(); return [p[0] * CG.W, p[1] * CG.H]; }
+
+// Proyecta un punto (px) sobre el recorrido, solo cerca del avance actual
+function cutProject(px, py){
+  var CG = cutState(), cut = LAPIDARY_CUTS[CG.idx], S = CG.S, best = null;
+  for(var i = 1; i < cut.pts.length; i++){
+    var a = cutPx(cut.pts[i - 1]), b = cutPx(cut.pts[i]);
+    var dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+    var t = Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / L2));
+    var qx = a[0] + dx * t, qy = a[1] + dy * t;
+    var dist = Math.hypot(px - qx, py - qy) / CG.W;
+    var d = S.lens[i - 1] + (S.lens[i] - S.lens[i - 1]) * t;
+    if(Math.abs(d - S.prog) > 0.12) continue;
+    if(!best || dist < best.dist) best = { dist: dist, d: d };
+  }
+  return best;
+}
+
+function cutFractionIn(list, d){
+  var S = cutState().S, f = d / S.total;
+  return list.some(function(h){ return f >= h[0] && f <= h[1]; });
+}
+
+function cutDriftAt(d){
+  var CG = cutState(), S = CG.S, f = d / S.total;
+  return LAPIDARY_CUTS[CG.idx].drift.find(function(z){ return f >= z.f0 && f <= z.f1; }) || null;
+}
+
+// Medidas de las inclusiones (en anchos de lienzo)
+function cutInclusionGeometry(){
+  var CG = cutState(), D = CG.diff;
+  var sawR = 0.032, incR = 0.012;
+  return { sawR: sawR, incR: incR, single: sawR + incR + D.band * 0.85, pair: sawR + incR + D.band * 0.5 };
+}
+
+function cutInclusionPos(inc){
+  var CG = cutState(), S = CG.S, g = cutInclusionGeometry();
+  var d = inc.f * S.total, p = cutPx(cutPointAt(d)), n = cutNormalAt(d);
+  var off = (inc.pair ? g.pair : g.single) * CG.W * inc.side;
+  return [p[0] + n[0] * off, p[1] + n[1] * off];
+}
+
+// Nota del corte (0-100): un único sitio
+function computeCutScore(S){
+  if(!S || !S.samples) return 0;
+  var precision = (S.qsum / S.samples) * 55;
+  var integrity = (Math.max(0, S.gems) / CUT_MAX_GEMS) * 25;
+  var rhythm = Math.max(0, 20 - S.sparks * 4 - Math.min(10, (S.pauseTotal / 1000) * 0.5));
+  var total = Math.round(Math.max(0, Math.min(100, precision + integrity + rhythm)));
+  return S.failed ? Math.min(30, total) : total;
+}
+
+function cutStarsFor(v){ return v >= 90 ? 3 : (v >= 75 ? 2 : (v >= 50 ? 1 : 0)); }
+
+function cutStarsHTML(n){
+  var s = "";
+  for(var k = 0; k < 3; k++) s += k < n ? "★" : '<span class="off">★</span>';
+  return s;
+}
+
+function cutGemsHTML(n){
+  var s = "";
+  for(var k = 0; k < CUT_MAX_GEMS; k++) s += k < n ? "💎" : '<span class="off">💎</span>';
+  return s;
+}
+
+function renderCutsPhaseHTML(family){
+  return '<div class="lapidary-phase-body lapidary-cuts">' +
+    '<div class="lapidary-cuts-head">' +
+      '<div><span class="lapidary-sheet-tag" id="lapidaryCutTag"></span><h3 id="lapidaryCutName"></h3></div>' +
+      '<div class="lapidary-cuts-status"><span class="lapidary-cuts-gems" id="lapidaryCutGems"></span><span class="lapidary-cuts-stars" id="lapidaryCutLiveStars"></span></div>' +
+    '</div>' +
+    '<div class="lapidary-cut-stage" id="lapidaryCutStage"><canvas id="lapidaryCutCanvas" aria-label="Piedra para cortar"></canvas></div>' +
+    '<div class="lapidary-geode-hint" id="lapidaryCutHint"></div>' +
+    '<div class="lapidary-polish-legend"><span><i class="perf"></i>Sierra bien</span><span><i class="warn"></i>Rozando el borde</span><span><i class="bad"></i>Fuera o muy rápido</span></div>' +
+    '<div class="lapidary-cut-slots" id="lapidaryCutSlots"></div>' +
+    '<div class="lapidary-sheet-actions">' +
+      '<button type="button" class="lapidary-ghost-btn" id="lapidaryCutRetry" data-action="cut-retry">Repetir corte</button>' +
+      '<button type="button" class="lapidary-cta-btn" id="lapidaryCutNext" data-action="cut-next" disabled>Siguiente corte</button>' +
+    '</div>' +
+    '<div id="lapidaryCutSheet"></div>' +
+  '</div>';
+}
+
+function updateCutPanel(){
+  var CG = cutState(), S = CG.S;
+  if(!S) return;
+  var cut = LAPIDARY_CUTS[CG.idx];
+  var setHTML = function(id, v){ var el = document.getElementById(id); if(el) el.innerHTML = v; };
+  setHTML("lapidaryCutTag", "Corte " + (CG.idx + 1) + " de 3");
+  setHTML("lapidaryCutName", esc(cut.name));
+  setHTML("lapidaryCutGems", cutGemsHTML(S.gems));
+  setHTML("lapidaryCutLiveStars", S.samples ? cutStarsHTML(cutStarsFor(computeCutScore(S))) : "");
+  setHTML("lapidaryCutSlots", LAPIDARY_CUTS.map(function(cc, i){
+    var r = CG.results[i];
+    return '<div class="lapidary-cut-slot' + (i === CG.idx ? " now" : "") + (CG.failed[i] ? " failed" : "") + '">' + esc(cc.name) +
+      '<span class="lapidary-cuts-stars">' + (r == null ? '<span class="off">★★★</span>' : cutStarsHTML(cutStarsFor(r))) + '</span></div>';
+  }).join(""));
+  var retry = document.getElementById("lapidaryCutRetry");
+  if(retry){
+    retry.disabled = CG.retries[CG.idx] || !S.started;
+    retry.textContent = CG.retries[CG.idx] ? "Ya repetido" : "Repetir corte";
+  }
+  var next = document.getElementById("lapidaryCutNext");
+  if(next){
+    next.disabled = !S.done;
+    next.textContent = CG.idx < 2 ? "Siguiente corte" : "Pasar al pulido";
+  }
+}
+
+function setCutHint(html){
+  var CG = cutState();
+  if(CG.lastHint === html) return;
+  CG.lastHint = html;
+  var el = document.getElementById("lapidaryCutHint");
+  if(el) el.innerHTML = html;
+}
+
+function defaultCutHint(){
+  var CG = cutState(), S = CG.S, cut = LAPIDARY_CUTS[CG.idx];
+  if(S.done){
+    return S.failed ? '<span class="bad">El corte se ha agrietado.</span> Puedes repetirlo o seguir.' :
+      "Corte terminado: <b>" + cutStarsHTML(cutStarsFor(CG.results[CG.idx])) + "</b>. Puedes repetirlo o seguir.";
+  }
+  if(!S.started) return cut.hint + " <b>Pon el dedo en la sierra</b> y arrastra. En los tramos <b>◆</b> ve despacio, pero sin pararte.";
+  if(!S.active) return "Pausa. Vuelve a poner el dedo sobre la sierra para seguir.";
+  return "";
+}
+
+// Lienzo: ancho disponible, alto = 0,86 × ancho, nítido con devicePixelRatio
+function sizeCutCanvas(){
+  var CG = cutState();
+  var cv = document.getElementById("lapidaryCutCanvas");
+  if(!cv || !cv.parentElement) return false;
+  var w = cv.parentElement.clientWidth;
+  if(!w) return false;
+  CG.DPR = Math.min(2, window.devicePixelRatio || 1);
+  CG.W = w; CG.H = Math.round(w * 0.86);
+  cv.width = Math.round(CG.W * CG.DPR); cv.height = Math.round(CG.H * CG.DPR);
+  cv.style.height = CG.H + "px";
+  cv.getContext("2d").setTransform(CG.DPR, 0, 0, CG.DPR, 0, 0);
+  buildCutStoneTexture();
+  return true;
+}
+
+function cutGemPath(ctx){
+  ctx.beginPath();
+  [CUT_GL, CUT_CL, CUT_CR, CUT_GR, CUT_CU].forEach(function(p, i){ var q = cutPx(p); if(i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+  ctx.closePath();
+}
+
+function buildCutStoneTexture(){
+  var CG = cutState(), W = CG.W, H = CG.H;
+  var family = getPolishFamily();
+  var off = document.createElement("canvas");
+  off.width = Math.round(W * CG.DPR); off.height = Math.round(H * CG.DPR);
+  var o = off.getContext("2d");
+  o.scale(CG.DPR, CG.DPR);
+  // Piedra en bruto irregular alrededor de la gema
+  var cx = W * 0.5, cy = H * 0.5, n = 22;
+  o.beginPath();
+  for(var k = 0; k <= n; k++){
+    var a = k / n * Math.PI * 2;
+    var r = (0.47 + 0.04 * Math.sin(a * 3) + 0.03 * Math.cos(a * 5)) * W;
+    var x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.92;
+    if(k) o.lineTo(x, y); else o.moveTo(x, y);
+  }
+  o.closePath();
+  var g = o.createRadialGradient(cx, cy * 0.85, W * 0.05, cx, cy, W * 0.55);
+  g.addColorStop(0, mixLapidaryHex("#7a4a40", family.hex, 0.15));
+  g.addColorStop(1, "#3a2620");
+  o.fillStyle = g; o.fill();
+  o.save(); o.clip();
+  var seed = 11;
+  for(var s = 0; s < 700; s++){
+    seed = (seed * 9301 + 49297) % 233280; var rx = seed / 233280;
+    seed = (seed * 9301 + 49297) % 233280; var ry = seed / 233280;
+    o.fillStyle = s % 2 ? "rgba(255,230,210,.07)" : "rgba(0,0,0,.18)";
+    o.fillRect(rx * W, ry * H, 1.6, 1.6);
+  }
+  o.restore();
+  // La gema dentro, apagada
+  cutGemPath(o);
+  o.fillStyle = mixLapidaryHex("#2a1a16", family.hex, 0.35);
+  o.globalAlpha = 0.55; o.fill(); o.globalAlpha = 1;
+  CG.stoneTex = off;
+}
+
+function cutStrokePath(ctx, pts, color, width, dash){
+  ctx.beginPath();
+  pts.forEach(function(p, i){ var q = cutPx(p); if(i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.setLineDash(dash || []); ctx.stroke(); ctx.setLineDash([]);
+}
+
+function cutSamplePath(d0, d1, step){
+  var out = [];
+  for(var d = d0; d <= d1 + 1e-6; d += step) out.push(cutPointAt(Math.min(d, d1)));
+  return out;
+}
+
+function drawCutStage(now){
+  var CG = cutState(), S = CG.S;
+  var cv = document.getElementById("lapidaryCutCanvas");
+  if(!cv || !S || !CG.W) return;
+  var ctx = cv.getContext("2d"), W = CG.W, H = CG.H, D = CG.diff, cut = LAPIDARY_CUTS[CG.idx];
+  var family = getPolishFamily();
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+  if(now < S.shakeUntil){ ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 6); }
+  if(CG.stoneTex) ctx.drawImage(CG.stoneTex, 0, 0, W, H);
+
+  // Cortes ya hechos (dorados) o agrietados
+  for(var i = 0; i < LAPIDARY_CUTS.length; i++){
+    if(CG.results[i] == null || i === CG.idx) continue;
+    if(CG.failed[i]) cutStrokePath(ctx, LAPIDARY_CUTS[i].pts, "#F07A84", 2.5, [3, 4]);
+    else cutStrokePath(ctx, LAPIDARY_CUTS[i].pts, "#DEC392", 3, []);
+  }
+  var allDone = CG.results.every(function(r){ return r != null; });
+  if(allDone){
+    cutGemPath(ctx);
+    var gg = ctx.createLinearGradient(0, H * 0.15, 0, H * 0.9);
+    gg.addColorStop(0, mixLapidaryHex(family.hex, "#ffffff", 0.4));
+    gg.addColorStop(0.5, family.hex);
+    gg.addColorStop(1, mixLapidaryHex(family.hex, "#000000", 0.55));
+    ctx.fillStyle = gg; ctx.shadowColor = family.glow; ctx.shadowBlur = 24; ctx.fill(); ctx.shadowBlur = 0;
+  }
+
+  var band = D.band * W;
+  // Visión limitada: la guía solo se ve clara cerca de la sierra
+  var visEnd = S.total;
+  if(D.limitedVision && !S.done) visEnd = Math.min(S.total, S.prog + Math.max(0.12, (S.total - S.prog) * CUT_DIFFICULTY_TABLE.visionAhead));
+  var clearPts = cutSamplePath(0, visEnd, 0.01), farPts = visEnd < S.total ? cutSamplePath(visEnd, S.total, 0.01) : [];
+
+  // Margen del corte
+  cutStrokePath(ctx, clearPts, "rgba(222,195,146,.14)", band * 2, []);
+  if(farPts.length) cutStrokePath(ctx, farPts, "rgba(222,195,146,.04)", band * 2, []);
+  // Tramos duros ◆
+  cut.hard.forEach(function(h){
+    var d0 = h[0] * S.total, d1 = h[1] * S.total;
+    var vis = d0 <= visEnd;
+    cutStrokePath(ctx, cutSamplePath(d0, d1, 0.01), vis ? "rgba(232,184,90,.38)" : "rgba(232,184,90,.08)", band * 2, []);
+    if(vis){
+      var m = cutPx(cutPointAt((d0 + d1) / 2)), n = cutNormalAt((d0 + d1) / 2);
+      ctx.fillStyle = "#E8B85A"; ctx.font = "bold 15px Georgia, serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("◆", m[0] - n[0] * (band + 10), m[1] - n[1] * (band + 10));
+    }
+  });
+  // Línea guía
+  cutStrokePath(ctx, clearPts, "rgba(243,234,219,.8)", 1.6, [6, 6]);
+  if(farPts.length) cutStrokePath(ctx, farPts, "rgba(243,234,219,.12)", 1.2, [6, 6]);
+
+  // Aviso de deriva: flechas finas justo antes y durante el tramo
+  cut.drift.forEach(function(z){
+    var d0 = z.f0 * S.total, d1 = z.f1 * S.total;
+    var warnFrom = d0 - 0.08;
+    if(S.done || S.prog < warnFrom || S.prog > d1) return;
+    for(var dd = d0; dd <= d1; dd += 0.05){
+      var p = cutPx(cutPointAt(dd)), nn = cutNormalAt(dd);
+      var sx = p[0] - nn[0] * z.dir * band * 0.9, sy = p[1] - nn[1] * z.dir * band * 0.9;
+      var ex = p[0] + nn[0] * z.dir * band * 1.6, ey = p[1] + nn[1] * z.dir * band * 1.6;
+      ctx.strokeStyle = "rgba(118,172,157,.75)"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+      var ang = Math.atan2(ey - sy, ex - sx);
+      ctx.beginPath(); ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - Math.cos(ang - 0.5) * 6, ey - Math.sin(ang - 0.5) * 6);
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - Math.cos(ang + 0.5) * 6, ey - Math.sin(ang + 0.5) * 6);
+      ctx.stroke();
+    }
+  });
+
+  // Inclusiones
+  var g = cutInclusionGeometry();
+  cut.inclusions.forEach(function(inc, k){
+    var ip = cutInclusionPos(inc);
+    ctx.beginPath(); ctx.arc(ip[0], ip[1], g.incR * W, 0, Math.PI * 2);
+    ctx.fillStyle = S.incHit[k] ? "#5a1c22" : "#140c0a"; ctx.fill();
+    ctx.strokeStyle = S.incHit[k] ? "#F07A84" : "rgba(0,0,0,.6)"; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+
+  // Estela
   ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-
-  // Resplandor exterior del canal de corte
-  ctx.strokeStyle = "rgba(176, 141, 87, 0.15)";
-  ctx.lineWidth = corridorWidth + 8;
-  ctx.beginPath();
-  ctx.moveTo(wps[0].x, wps[0].y);
-  for(var i = 1; i < wps.length; i++) ctx.lineTo(wps[i].x, wps[i].y);
-  ctx.stroke();
-
-  // Tubo del canal con ranura guía estrecha (Tolerancia crítica de 8px)
-  ctx.strokeStyle = "rgba(176, 141, 87, 0.35)";
-  ctx.lineWidth = corridorWidth;
-  ctx.beginPath();
-  ctx.moveTo(wps[0].x, wps[0].y);
-  for(var j = 1; j < wps.length; j++) ctx.lineTo(wps[j].x, wps[j].y);
-  ctx.stroke();
-
-  // Línea central de corte diamantado
-  ctx.strokeStyle = "rgba(253, 224, 71, 0.65)";
-  ctx.lineWidth = 2;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.moveTo(wps[0].x, wps[0].y);
-  for(var k = 1; k < wps.length; k++) ctx.lineTo(wps[k].x, wps[k].y);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Trazo recorrido por el usuario (Verde óptimo / Rojo desvío / Azul lento)
-  var userTrail = lapidaryMinigameState.traveledPoints || [];
-  if(userTrail.length > 1){
-    ctx.lineWidth = 3.5;
-    for(var u = 1; u < userTrail.length; u++){
-      var pA = userTrail[u - 1];
-      var pB = userTrail[u];
-      ctx.strokeStyle = pB.isDeviating ? "#EF4444" : (pB.isSlow ? "#60A5FA" : "#10B981");
-      ctx.beginPath();
-      ctx.moveTo(pA.x, pA.y);
-      ctx.lineTo(pB.x, pB.y);
-      ctx.stroke();
-    }
+  for(var t = 1; t < S.trail.length; t++){
+    var a = S.trail[t - 1], b = S.trail[t];
+    ctx.beginPath(); ctx.moveTo(a.x * W, a.y * H); ctx.lineTo(b.x * W, b.y * H);
+    ctx.strokeStyle = b.q >= 0.9 && !b.spark ? "#DEC392" : (b.q >= 0.5 && !b.spark ? "#E8B85A" : "#F07A84");
+    ctx.lineWidth = 4; ctx.stroke();
   }
-
-  // Nódulos de dureza mineral (◆) a lo largo de la curva
-  var inclusions = slide.inclusions || [];
-  var totalSegments = wps.length - 1;
-  for(var incIdx = 0; incIdx < inclusions.length; incIdx++){
-    var incT = inclusions[incIdx]; // e.g. 0.35
-    var segFloat = incT * totalSegments;
-    var segIdx = Math.min(totalSegments - 1, Math.floor(segFloat));
-    var segFraction = segFloat - segIdx;
-    var pStart = wps[segIdx];
-    var pEnd = wps[segIdx + 1];
-    var incX = pStart.x + (pEnd.x - pStart.x) * segFraction;
-    var incY = pStart.y + (pEnd.y - pStart.y) * segFraction;
-
-    var isCleared = (lapidaryMinigameState.clearedInclusions || []).indexOf(incIdx) !== -1;
-
-    ctx.save();
-    ctx.translate(incX, incY);
-    ctx.rotate(Math.PI / 4);
-
-    if(isCleared){
-      // Nódulo pulverizado exitosamente
-      ctx.fillStyle = "rgba(16, 185, 129, 0.3)";
-      ctx.strokeStyle = "#10B981";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-6, -6, 12, 12);
-      ctx.fillRect(-6, -6, 12, 12);
-    } else {
-      // Nódulo activo que requiere desacelerar
-      ctx.fillStyle = "#F59E0B";
-      ctx.shadowColor = "#F59E0B";
-      ctx.shadowBlur = 10;
-      ctx.fillRect(-7, -7, 14, 14);
-      ctx.strokeStyle = "#FEF3C7";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-7, -7, 14, 14);
-    }
-    ctx.restore();
-
-    // Etiqueta del nódulo
-    ctx.fillStyle = isCleared ? "#10B981" : "#FDE047";
-    ctx.font = "bold 8px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(isCleared ? "✓ CORTADO" : "◆ NÓDULO (LENTO)", incX, incY - 14);
-  }
-
-  // Nodo Inicio (Esmeralda)
-  var start = wps[0];
-  ctx.fillStyle = "#10B981";
-  ctx.beginPath();
-  ctx.arc(start.x, start.y, 14, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#A7F3D0";
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "bold 9px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("INICIO", start.x, start.y);
-
-  // Nodo Meta (Ámbar)
-  var finish = wps[wps.length - 1];
-  ctx.fillStyle = "#F59E0B";
-  ctx.beginPath();
-  ctx.arc(finish.x, finish.y, 14, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#FEF08A";
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-  ctx.fillStyle = "#120D0A";
-  ctx.fillText("META", finish.x, finish.y);
-
-  // Retícula y disco de sierra diamantada en la punta del cursor
-  if(userPt && lapidaryMinigameState.currentSlideActive){
-    // Modo táctil: dibujar rayo guía y halo indicador para que el dedo nunca tape el corte
-    if(lapidaryMinigameState.isTouchCutting && lapidaryMinigameState.touchFingerPt){
-      var finger = lapidaryMinigameState.touchFingerPt;
-      ctx.save();
-      // 1. Halo táctil donde apoya la yema del dedo
-      ctx.strokeStyle = "rgba(110, 231, 183, 0.45)";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      ctx.arc(finger.x, finger.y, 22, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // 2. Haz láser conector que asciende 42px hacia la cuchilla diamantada
-      ctx.strokeStyle = "rgba(110, 231, 183, 0.85)";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([2, 2]);
-      ctx.beginPath();
-      ctx.moveTo(finger.x, finger.y - 10);
-      ctx.lineTo(userPt.x, userPt.y + 11);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // 3. Indicador central táctil
-      ctx.fillStyle = "#6EE7B7";
-      ctx.beginPath();
-      ctx.arc(finger.x, finger.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "rgba(110, 231, 183, 0.9)";
-      ctx.font = "bold 8px monospace";
-      ctx.textAlign = "center";
-      ctx.fillText("👆 DEDO", finger.x, finger.y + 15);
-      ctx.restore();
-    }
-
-    var isDev = (lapidaryMinigameState.lastDeviated === true);
-    var spd = lapidaryMinigameState.sawSpeed || 0;
-    var sawColor = isDev ? "#EF4444" : (spd < 35 ? "#60A5FA" : (spd <= 115 ? "#10B981" : "#EF4444"));
-
-    // Disco giratorio de sierra
-    ctx.save();
-    ctx.translate(userPt.x, userPt.y);
-    var bladeAngle = (Date.now() / 40) % (Math.PI * 2);
-    ctx.rotate(bladeAngle);
-
-    ctx.strokeStyle = sawColor;
-    ctx.lineWidth = 2;
+  // Corte agrietado
+  if(S.failed){
+    var cp = cutSamplePath(0, S.total, 0.025);
     ctx.beginPath();
-    ctx.arc(0, 0, 9, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Dientes del disco diamantado
-    for(var t = 0; t < 6; t++){
-      var a = (t / 6) * Math.PI * 2;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a) * 7, Math.sin(a) * 7);
-      ctx.lineTo(Math.cos(a) * 11, Math.sin(a) * 11);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // Retícula central
-    ctx.strokeStyle = sawColor;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(userPt.x - 14, userPt.y); ctx.lineTo(userPt.x + 14, userPt.y);
-    ctx.moveTo(userPt.x, userPt.y - 14); ctx.lineTo(userPt.x, userPt.y + 14);
-    ctx.stroke();
+    cp.forEach(function(p, i){ var q = cutPx(p), z = (i % 2 ? 4 : -4); if(i) ctx.lineTo(q[0] + z, q[1] - z); else ctx.moveTo(q[0], q[1]); });
+    ctx.strokeStyle = "#F07A84"; ctx.lineWidth = 2; ctx.stroke();
   }
+  // Fin del corte
+  var e = cutPx(cutPointAt(S.total));
+  ctx.beginPath(); ctx.arc(e[0], e[1], 9, 0, Math.PI * 2); ctx.strokeStyle = "rgba(222,195,146,.8)"; ctx.lineWidth = 2; ctx.stroke();
+
+  // Sierra con anillo de calor
+  if(!S.done){
+    var sp = S.saw || cutPx(cutPointAt(S.prog));
+    var R = g.sawR * W;
+    if(S.finger){
+      ctx.beginPath(); ctx.arc(S.finger[0], S.finger[1], 16, 0, Math.PI * 2); ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(S.finger[0], S.finger[1] - 16); ctx.lineTo(sp[0], sp[1] + R); ctx.strokeStyle = "rgba(255,255,255,.2)"; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // Anillo de calor: se llena al ir muy despacio o pararse
+    ctx.beginPath(); ctx.arc(sp[0], sp[1], R + 7, 0, Math.PI * 2); ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 4; ctx.stroke();
+    if(S.heat > 0.01){
+      var hc = S.heat < 0.5 ? "#E8B85A" : (S.heat < 0.8 ? "#F0904A" : "#F05A4A");
+      ctx.beginPath(); ctx.arc(sp[0], sp[1], R + 7, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, S.heat));
+      ctx.strokeStyle = hc; ctx.lineWidth = 4; ctx.shadowColor = hc; ctx.shadowBlur = S.heat > 0.8 ? 12 : 0; ctx.stroke(); ctx.shadowBlur = 0;
+    }
+    var col = S.state === "ok" ? "#7CC4A4" : (S.state === "edge" ? "#E8B85A" : "#F07A84");
+    ctx.save(); ctx.translate(sp[0], sp[1]); ctx.rotate(S.rot);
+    ctx.beginPath();
+    for(var k2 = 0; k2 < 16; k2++){ var an = k2 / 16 * Math.PI * 2, rr = k2 % 2 ? R * 0.78 : R; ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); }
+    ctx.closePath();
+    ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(0, 0, R * 0.3, 0, Math.PI * 2); ctx.fillStyle = "#1a120d"; ctx.fill();
+    ctx.restore();
+    if(!S.active){
+      var pulse = now / 400;
+      ctx.beginPath(); ctx.arc(sp[0], sp[1], R + 12 + Math.sin(pulse) * 4, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(124,196,164,.55)"; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
-function updateLiveSlideHUD(precision, progress, sawSpeed, frictionHeat){
-  var precEl = document.getElementById("lapidaryLivePrecision");
-  var progEl = document.getElementById("lapidaryLiveProgress");
-  var ptsEl = document.getElementById("lapidaryLivePoints");
-  var tachoCursor = document.getElementById("lapidaryTachoCursor");
-  var tachoVal = document.getElementById("lapidaryTachoVal");
-  var heatFill = document.getElementById("lapidaryHeatFill");
-  var heatVal = document.getElementById("lapidaryHeatVal");
-
-  var progPct = Math.round(progress * 100);
-
-  if(precEl){
-    precEl.textContent = precision + "%";
-    precEl.className = "hud-val " + (precision < 65 ? "danger" : (precision < 85 ? "warning" : "safe"));
-  }
-  if(progEl){
-    progEl.textContent = progPct + "%";
-  }
-  if(ptsEl){
-    ptsEl.textContent = "+" + precision + " pts";
-  }
-
-  // Tacómetro (0 a 180 px/s mapeado al track)
-  var curSpeed = Math.round(sawSpeed || 0);
-  if(tachoCursor){
-    var tachoPct = Math.max(0, Math.min(100, (curSpeed / 160) * 100));
-    tachoCursor.style.left = tachoPct + "%";
-  }
-  if(tachoVal){
-    if(curSpeed < 15){
-      tachoVal.textContent = curSpeed + " px/s [PARADO]";
-      tachoVal.style.color = "#9CA3AF";
-    } else if(curSpeed < 40){
-      tachoVal.textContent = curSpeed + " px/s [LENTO - FRICCIÓN]";
-      tachoVal.style.color = "#60A5FA";
-    } else if(curSpeed <= 110){
-      tachoVal.textContent = curSpeed + " px/s [ÓPTIMO ✨]";
-      tachoVal.style.color = "#10B981";
-    } else {
-      tachoVal.textContent = curSpeed + " px/s [¡EXCESO DE VELOCIDAD!]";
-      tachoVal.style.color = "#EF4444";
-    }
-  }
-
-  // Calor de Fricción
-  var curHeat = Math.round(frictionHeat || 0);
-  if(heatFill){
-    heatFill.style.width = curHeat + "%";
-    if(curHeat > 75){
-      heatFill.classList.add("critical");
-    } else {
-      heatFill.classList.remove("critical");
-    }
-  }
-  if(heatVal){
-    heatVal.textContent = curHeat + "%";
-    heatVal.style.color = curHeat > 75 ? "#EF4444" : "#DEC392";
-  }
+function cutLocalPoint(e){
+  var cv = document.getElementById("lapidaryCutCanvas");
+  var r = cv.getBoundingClientRect();
+  var x = e.clientX - r.left, y = e.clientY - r.top;
+  var touch = e.pointerType !== "mouse";
+  return { x: x, y: touch ? y - CUT_TOUCH_OFFSET : y, fx: x, fy: y, touch: touch };
 }
 
-function initLapidarySlideStage(){
-  // Detener cualquier animación 3D previa
+function cutLoseGem(reason){
+  var CG = cutState(), S = CG.S;
+  S.gems = Math.max(0, S.gems - 1);
+  S.shakeUntil = performance.now() + 320;
+  playGemFractureTick();
+  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("fumble");
+  setCutHint('<span class="bad">' + reason + '</span> −1 💎');
+  updateCutPanel();
+  if(S.gems <= 0) finishCurrentCut(true);
+}
 
-  var canvas = document.getElementById("lapidarySlideCanvas");
-  if(!canvas) return;
-  var ctx = canvas.getContext("2d");
-  if(!ctx) return;
-
-  var curSlide = lapidaryMinigameState.slidePoints[lapidaryMinigameState.slidePass - 1] || lapidaryMinigameState.slidePoints[0];
-  lapidaryMinigameState.currentSlideActive = false;
-  lapidaryMinigameState.slideSamples = 0;
-  lapidaryMinigameState.slideDeviations = 0;
-  lapidaryMinigameState.slideProgress = 0;
-  lapidaryMinigameState.slidePrecision = 100;
-  lapidaryMinigameState.traveledPoints = [];
-  lapidaryMinigameState.pathProgressIdx = 0;
-  lapidaryMinigameState.lastSawPos = null;
-  lapidaryMinigameState.lastSawTime = 0;
-  lapidaryMinigameState.sawSpeed = 0;
-  lapidaryMinigameState.frictionHeat = 0;
-  lapidaryMinigameState.clearedInclusions = [];
-  lapidaryMinigameState.lastDeviated = false;
-
-  var banner = document.getElementById("lapidarySlideBanner");
-  if(banner) banner.classList.add("hidden");
-
-  drawSlideGuide(ctx, curSlide, null);
-  updateLiveSlideHUD(100, 0, 0, 0);
-
-  function getCanvasCoords(clientX, clientY, isTouch){
-    var rect = canvas.getBoundingClientRect();
-    var x = (clientX - rect.left) * (canvas.width / rect.width);
-    var rawY = (clientY - rect.top) * (canvas.height / rect.height);
-    var y = rawY;
-    if(isTouch){
-      // Elevar la cuchilla diamantada 42px por encima del dedo para visión total
-      y = rawY - 42;
-      lapidaryMinigameState.isTouchCutting = true;
-      lapidaryMinigameState.touchFingerPt = { x: x, y: rawY };
-    } else {
-      lapidaryMinigameState.isTouchCutting = false;
-      lapidaryMinigameState.touchFingerPt = null;
-    }
-    return { x: x, y: y };
+function finishCurrentCut(failed){
+  var CG = cutState(), S = CG.S;
+  if(S.done) return;
+  S.done = true; S.active = false; S.failed = !!failed; S.finger = null; S.saw = null;
+  if(!S.samples){ S.samples = 1; S.qsum = 0; }
+  CG.results[CG.idx] = computeCutScore(S);
+  CG.failed[CG.idx] = !!failed;
+  if(failed){
+    playGemFracture();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("fumble");
+  } else {
+    playSlideSuccess();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("crit");
   }
+  if(CG.results.every(function(r){ return r != null; })){
+    lapidaryMinigameState.phase2Score = Math.round(CG.results.reduce(function(a, b){ return a + b; }, 0) / 3);
+  }
+  CG.lastHint = "";
+  setCutHint(defaultCutHint());
+  updateCutPanel();
+}
 
-  function handleSlideStart(clientX, clientY, isTouch){
-    var pt = getCanvasCoords(clientX, clientY, isTouch);
-    var wps = curSlide.waypoints || [{ x: curSlide.x1, y: curSlide.y1 }, { x: curSlide.x2, y: curSlide.y2 }];
-    var start = wps[0];
-    var dStart = Math.hypot(pt.x - start.x, pt.y - start.y);
-    var snapRadius = isTouch ? 42 : 30;
+// Avance del corte con cada movimiento del dedo
+function handleCutMove(p, now){
+  var CG = cutState(), S = CG.S, D = CG.diff;
+  var dt = (now - S.lastT) / 1000;
 
-    if(dStart <= snapRadius){
-      lapidaryMinigameState.currentSlideActive = true;
-      lapidaryMinigameState.slideSamples = 0;
-      lapidaryMinigameState.slideDeviations = 0;
-      lapidaryMinigameState.slideProgress = 0;
-      lapidaryMinigameState.slidePrecision = 100;
-      lapidaryMinigameState.traveledPoints = [{ x: start.x, y: start.y, isDeviating: false, isSlow: false }];
-      lapidaryMinigameState.pathProgressIdx = 0;
-      lapidaryMinigameState.lastSawPos = pt;
-      lapidaryMinigameState.lastSawTime = performance.now();
-      lapidaryMinigameState.sawSpeed = 45;
-      lapidaryMinigameState.frictionHeat = 0;
-      lapidaryMinigameState.clearedInclusions = [];
-      lapidaryMinigameState.lastDeviated = false;
-
-      playSlideCutWhir();
-      drawSlideGuide(ctx, curSlide, pt);
-      updateLiveSlideHUD(100, 0, 45, 0);
+  // Deriva de la veta: empuja la sierra hacia un lado mientras avanzas
+  var dz = cutDriftAt(S.prog);
+  S.driftActive = dz;
+  var sawRaw = [p.x, p.y];
+  if(dt > 0){
+    var movedPx = S.lastP ? Math.hypot(p.x - S.lastP[0], p.y - S.lastP[1]) : 0;
+    if(dt > 0.008){
+      var v = movedPx / CG.W / dt;
+      S.speed = S.speed * 0.6 + v * 0.4;
+      S.lastT = now; S.lastP = [p.x, p.y];
     }
   }
+  var sx = sawRaw[0] + S.driftVec[0], sy = sawRaw[1] + S.driftVec[1];
+  S.saw = [sx, sy];
+  S.finger = p.touch ? [p.fx, p.fy] : null;
+  S.lastMoveT = now;
+  S.rot += 0.5;
 
-  function handleSlideMove(clientX, clientY, isTouch){
-    if(!lapidaryMinigameState.currentSlideActive) return;
-    var pt = getCanvasCoords(clientX, clientY, isTouch);
-    var wps = curSlide.waypoints || [{ x: curSlide.x1, y: curSlide.y1 }, { x: curSlide.x2, y: curSlide.y2 }];
-    var totalSegments = wps.length - 1;
-
-    // 1. Cálculo de velocidad instantánea (px/s)
-    var now = performance.now();
-    var dt = (now - (lapidaryMinigameState.lastSawTime || now)) / 1000;
-    if(dt > 0.012 && lapidaryMinigameState.lastSawPos){
-      var dDist = Math.hypot(pt.x - lapidaryMinigameState.lastSawPos.x, pt.y - lapidaryMinigameState.lastSawPos.y);
-      var instantSpeed = dDist / dt;
-      lapidaryMinigameState.sawSpeed = (lapidaryMinigameState.sawSpeed * 0.6) + (instantSpeed * 0.4);
+  // Inclusiones: tocarlas con el borde de la sierra cuesta 💎
+  var g = cutInclusionGeometry(), cut = LAPIDARY_CUTS[CG.idx];
+  cut.inclusions.forEach(function(inc, k){
+    if(S.incHit[k] || S.done) return;
+    var ip = cutInclusionPos(inc);
+    if(Math.hypot(sx - ip[0], sy - ip[1]) < (g.sawR + g.incR) * CG.W){
+      S.incHit[k] = true;
+      cutLoseGem("¡Crack! Has tocado una inclusión.");
     }
-    lapidaryMinigameState.lastSawPos = pt;
-    lapidaryMinigameState.lastSawTime = now;
-    var spd = lapidaryMinigameState.sawSpeed;
+  });
+  if(S.done) return;
 
-    // 2. Modulación de calor por fricción
-    if(spd < 30){
-      lapidaryMinigameState.frictionHeat = Math.min(100, lapidaryMinigameState.frictionHeat + 2.2);
-    } else if(spd >= 40 && spd <= 110){
-      lapidaryMinigameState.frictionHeat = Math.max(0, lapidaryMinigameState.frictionHeat - 2.8);
+  var pr = cutProject(sx, sy);
+  if(!pr){
+    S.state = "bad";
+    if(now - S.lastOutSample > 60){ S.samples++; S.lastOutSample = now; }
+    setCutHint('<span class="bad">Te has salido.</span> Vuelve a la línea.');
+    return;
+  }
+  var rel = pr.dist / D.band;
+  var q = rel <= 0.55 ? 1 : (rel <= 1 ? 0.6 : 0);
+  var hard = cutFractionIn(cut.hard, pr.d);
+  var tooFast = hard && S.speed > D.hardMaxSpeed;
+  S.state = (q === 0 || tooFast) ? "bad" : (q < 1 ? "edge" : "ok");
+
+  if(tooFast && now - S.lastSpark > 300){
+    S.sparks++; S.lastSpark = now;
+    playGemFractureTick();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("shake");
+    if(typeof spawnSlideSparkParticle === "function") spawnSlideSparkParticle(sx, sy);
+    setCutHint('<span class="bad">¡Chispas! Muy rápido en el tramo duro.</span> Frena en los ◆.');
+  } else if(q === 0){
+    setCutHint('<span class="bad">Te has salido del margen.</span> Vuelve a la línea.');
+  } else if(S.heat > 0.7){
+    setCutHint('<span class="bad">¡Se calienta!</span> Muévete.');
+  } else if(dz){
+    var nn = cutNormalAt(pr.d), px = nn[0] * dz.dir, py = nn[1] * dz.dir;
+    var dirTxt = Math.abs(px) >= Math.abs(py) ? (px > 0 ? "→ corrige hacia la izquierda" : "← corrige hacia la derecha") : (py > 0 ? "↓ corrige hacia arriba" : "↑ corrige hacia abajo");
+    setCutHint("La veta empuja " + dirTxt);
+  } else if(cut.inclusions.some(function(inc){ return inc.pair && Math.abs(inc.f * S.total - pr.d) < 0.08; })){
+    setCutHint("Paso estrecho entre inclusiones: <b>al centro</b>.");
+  } else if(hard){
+    setCutHint("Tramo duro <b>◆</b>: despacio…");
+  } else {
+    setCutHint("&nbsp;");
+  }
+
+  if(pr.d > S.prog && q > 0){
+    // Deriva: mientras avanzas por su tramo, la veta empuja la sierra hacia un lado (con tope)
+    if(dz && dt > 0){
+      var dn = cutNormalAt(pr.d);
+      var push = D.drift * CG.W * Math.min(0.1, dt) * dz.dir;
+      var maxDrift = D.band * 3 * CG.W;
+      var nx = S.driftVec[0] + dn[0] * push, ny = S.driftVec[1] + dn[1] * push;
+      var mag = Math.hypot(nx, ny);
+      if(mag > maxDrift){ nx *= maxDrift / mag; ny *= maxDrift / mag; }
+      S.driftVec = [nx, ny];
     }
+    S.prog = pr.d; S.samples++; S.qsum += q;
+    S.trail.push({ x: sx / CG.W, y: sy / CG.H, q: q, spark: tooFast });
+  } else if(q === 0 && now - S.lastOutSample > 60){
+    S.samples++; S.lastOutSample = now;
+  }
+  if(S.prog >= S.total - 0.012) finishCurrentCut(false);
+}
 
-    // Sobrecalentamiento crítico
-    if(lapidaryMinigameState.frictionHeat >= 100){
-      lapidaryMinigameState.slideDeviations += 2;
-      playLapidaryThermalSizzle();
-      spawnSlideDeviationParticle(pt.x, pt.y);
-      spawnFloatingScore(pt.x, pt.y, "🔥 ¡SOBRECALENTAMIENTO!", true);
-      lapidaryMinigameState.frictionHeat = 60; // Enfriamiento tras micro-fisura
+// Bucle por fotograma: calor, sonido de la sierra y dibujo
+function startCutLoop(){
+  if(lapidaryMinigameState.animId) cancelAnimationFrame(lapidaryMinigameState.animId);
+  var last = performance.now();
+  function loop(now){
+    var CG = cutState();
+    if(!lapidaryMinigameState.active || lapidaryMinigameState.phase !== 2 || !CG){
+      lapidaryMinigameState.animId = null;
+      return;
     }
-
-    // 3. Proyección de punto sobre el camino (Polyline)
-    var bestDist = Infinity;
-    var bestSeg = lapidaryMinigameState.pathProgressIdx;
-    var bestT = 0;
-
-    var minSeg = Math.max(0, lapidaryMinigameState.pathProgressIdx - 1);
-    var maxSeg = Math.min(totalSegments - 1, lapidaryMinigameState.pathProgressIdx + 1);
-
-    for(var s = minSeg; s <= maxSeg; s++){
-      var A = wps[s];
-      var B = wps[s + 1];
-      var dx = B.x - A.x;
-      var dy = B.y - A.y;
-      var lenSq = dx * dx + dy * dy;
-      var t = ((pt.x - A.x) * dx + (pt.y - A.y) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t));
-      var projX = A.x + t * dx;
-      var projY = A.y + t * dy;
-      var dist = Math.hypot(pt.x - projX, pt.y - projY);
-
-      if(dist < bestDist){
-        bestDist = dist;
-        bestSeg = s;
-        bestT = t;
-      }
-    }
-
-    if(bestSeg > lapidaryMinigameState.pathProgressIdx || (bestSeg === lapidaryMinigameState.pathProgressIdx && bestT > 0.85)){
-      lapidaryMinigameState.pathProgressIdx = Math.max(lapidaryMinigameState.pathProgressIdx, bestSeg);
-    }
-
-    var progressPct = Math.min(1, (lapidaryMinigameState.pathProgressIdx + bestT) / totalSegments);
-    lapidaryMinigameState.slideProgress = progressPct;
-    lapidaryMinigameState.slideSamples++;
-
-    // 4. Verificación de nódulos de dureza mineral (◆)
-    var inclusions = curSlide.inclusions || [];
-    for(var incIdx = 0; incIdx < inclusions.length; incIdx++){
-      var incT = inclusions[incIdx];
-      var incSegFloat = incT * totalSegments;
-      var incSeg = Math.min(totalSegments - 1, Math.floor(incSegFloat));
-      var incFract = incSegFloat - incSeg;
-      var nA = wps[incSeg], nB = wps[incSeg + 1];
-      var nX = nA.x + (nB.x - nA.x) * incFract;
-      var nY = nA.y + (nB.y - nA.y) * incFract;
-
-      var dNodule = Math.hypot(pt.x - nX, pt.y - nY);
-      if(dNodule < 16 && lapidaryMinigameState.clearedInclusions.indexOf(incIdx) === -1){
-        if(spd > 60){
-          // Demasiado rápido: la sierra rebota violentamente
-          lapidaryMinigameState.slideDeviations += 2;
-          playPulsoWarning();
-          spawnSlideDeviationParticle(pt.x, pt.y);
-          spawnFloatingScore(pt.x, pt.y, "💥 ¡REBOTE EN NÓDULO! (-12%)", true);
-        } else {
-          // Velocidad controlada: perforación limpia
-          lapidaryMinigameState.clearedInclusions.push(incIdx);
-          playGemSweetSpotHit();
-          spawnSlideSparkParticle(pt.x, pt.y);
-          spawnFloatingScore(pt.x, pt.y, "✨ NÓDULO TRITURADO (+10 pts)", false);
+    var S = CG.S, D = CG.diff, T = CUT_DIFFICULTY_TABLE;
+    var dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+    last = now;
+    if(S && !S.done){
+      if(S.active){
+        // Sin movimiento del dedo, la velocidad cae a cero
+        if(now - S.lastMoveT > 120) S.speed *= Math.pow(0.02, dt);
+        if(S.speed < T.slowSpeed) S.heat += D.heatRate * dt;
+        else S.heat -= T.coolRate * dt;
+        if(S.speed > 0.03 && now - CG.lastWhir > 110){ CG.lastWhir = now; playSlideCutWhir(); }
+        if(S.heat > 0.75 && now - CG.lastWarn > 1200){ CG.lastWarn = now; playPulsoWarning(); }
+        if(S.heat >= 1){
+          S.heat = 0.5;
+          cutLoseGem("¡Microfisura por calor!");
         }
+      } else {
+        S.heat -= T.idleCoolRate * dt;
       }
+      S.heat = Math.max(0, Math.min(1, S.heat));
+      // La deriva se recupera fuera de sus tramos
+      if(!S.driftActive){ S.driftVec = [S.driftVec[0] * Math.pow(0.05, dt), S.driftVec[1] * Math.pow(0.05, dt)]; }
     }
-
-    // 5. Tolerancia y desvío
-    var tolerance = curSlide.tolerance || 8;
-    var isDeviating = (bestDist > tolerance) || (spd > 125);
-    lapidaryMinigameState.lastDeviated = isDeviating;
-
-    if(isDeviating){
-      lapidaryMinigameState.slideDeviations++;
-      spawnSlideDeviationParticle(pt.x, pt.y);
-      if(lapidaryMinigameState.slideSamples % 4 === 0){
-        playPulsoWarning();
-      }
-    } else {
-      spawnSlideSparkParticle(pt.x, pt.y);
-      if(lapidaryMinigameState.slideSamples % 6 === 0){
-        playSlideCutWhir();
-      }
-    }
-
-    // Precisión calculada en tiempo real
-    var devRate = lapidaryMinigameState.slideDeviations / Math.max(1, lapidaryMinigameState.slideSamples);
-    var precision = Math.max(25, Math.min(100, Math.round(100 - (devRate * 185))));
-    lapidaryMinigameState.slidePrecision = precision;
-
-    lapidaryMinigameState.traveledPoints.push({
-      x: pt.x, y: pt.y,
-      isDeviating: isDeviating,
-      isSlow: (spd < 35)
-    });
-    if(lapidaryMinigameState.traveledPoints.length > 280){
-      lapidaryMinigameState.traveledPoints.shift();
-    }
-
-    drawSlideGuide(ctx, curSlide, pt);
-    updateLiveSlideHUD(precision, progressPct, spd, lapidaryMinigameState.frictionHeat);
-
-    // Meta final alcanzada (progressPct >= 0.95)
-    if(progressPct >= 0.95){
-      finishCurrentSlide(ctx, curSlide);
-    }
+    drawCutStage(now);
+    lapidaryMinigameState.animId = requestAnimationFrame(loop);
   }
+  lapidaryMinigameState.animId = requestAnimationFrame(loop);
+}
 
-  function handleSlideEnd(){
-    lapidaryMinigameState.isTouchCutting = false;
-    lapidaryMinigameState.touchFingerPt = null;
-    if(!lapidaryMinigameState.currentSlideActive) return;
-    lapidaryMinigameState.currentSlideActive = false;
-    if(lapidaryMinigameState.slideProgress < 0.92){
-      showToast("¡Pulso interrumpido! Vuelve a trazar desde el INICIO verde.", "warning");
-      drawSlideGuide(ctx, curSlide, null);
-      updateLiveSlideHUD(lapidaryMinigameState.slidePrecision, 0, 0, lapidaryMinigameState.frictionHeat);
-    }
-  }
-
-  canvas.onmousedown = function(e){ handleSlideStart(e.clientX, e.clientY, false); };
-  window.onmousemove = function(e){
-    if(lapidaryMinigameState.active && lapidaryMinigameState.phase === 2){
-      handleSlideMove(e.clientX, e.clientY, false);
-    }
-  };
-  window.onmouseup = function(){ handleSlideEnd(); };
-
-  canvas.ontouchstart = function(e){
-    if(e.touches && e.touches[0]){
-      handleSlideStart(e.touches[0].clientX, e.touches[0].clientY, true);
-    }
+function bindCutCanvas(){
+  var cv = document.getElementById("lapidaryCutCanvas");
+  if(!cv || cv._cutBound) return;
+  cv._cutBound = true;
+  cv.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+  cv.addEventListener("pointerdown", function(e){
+    var CG = cutState(), S = CG && CG.S;
+    if(!S || S.done || CG.sheetOpen) return;
+    var p = cutLocalPoint(e);
+    var sp = S.saw || cutPx(cutPointAt(S.prog));
+    if(!S.started) sp = cutPx(cutPointAt(S.prog));
+    var near = Math.hypot(p.x - sp[0], p.y - sp[1]) <= CUT_START_RADIUS || Math.hypot(p.fx - sp[0], p.fy - sp[1]) <= CUT_START_RADIUS;
+    if(!near){ setCutHint("Empieza desde la <b>sierra</b> (el círculo verde que late)."); return; }
     e.preventDefault();
-  };
-  canvas.ontouchmove = function(e){
-    if(lapidaryMinigameState.currentSlideActive && e.touches && e.touches[0]){
-      handleSlideMove(e.touches[0].clientX, e.touches[0].clientY, true);
-    }
+    try { cv.setPointerCapture(e.pointerId); } catch(err){}
+    var now = performance.now();
+    if(S.pauseStart){ S.pauseTotal += now - S.pauseStart; S.pauseStart = 0; }
+    S.active = true; S.started = true;
+    S.lastT = now; S.lastMoveT = now; S.lastP = [p.x, p.y]; S.speed = 0.1;
+    // Se continúa desde donde estaba la sierra (la deriva acumulada se conserva)
+    S.saw = [p.x + S.driftVec[0], p.y + S.driftVec[1]];
+    S.finger = p.touch ? [p.fx, p.fy] : null;
+    setCutHint("&nbsp;");
+    updateCutPanel();
+  });
+  cv.addEventListener("pointermove", function(e){
+    var CG = cutState(), S = CG && CG.S;
+    if(!S || !S.active || S.done) return;
     e.preventDefault();
-  };
-  canvas.ontouchend = function(){ handleSlideEnd(); };
-}
-
-function spawnSlideSparkParticle(x, y){
-  var container = document.getElementById("lapidarySlideParticles");
-  if(!container) return;
-  var p = document.createElement("div");
-  p.className = "lapidary-spark-particle";
-  p.style.left = x + "px";
-  p.style.top = y + "px";
-  container.appendChild(p);
-  setTimeout(function(){ if(p.parentNode) p.parentNode.removeChild(p); }, 350);
-}
-
-function spawnSlideDeviationParticle(x, y){
-  var container = document.getElementById("lapidarySlideParticles");
-  if(!container) return;
-  var p = document.createElement("div");
-  p.className = "lapidary-danger-particle";
-  p.style.left = x + "px";
-  p.style.top = y + "px";
-  container.appendChild(p);
-  setTimeout(function(){ if(p.parentNode) p.parentNode.removeChild(p); }, 350);
-}
-
-function finishCurrentSlide(ctx, slide){
-  lapidaryMinigameState.currentSlideActive = false;
-  lapidaryMinigameState.isTouchCutting = false;
-  lapidaryMinigameState.touchFingerPt = null;
-
-  var precision = lapidaryMinigameState.slidePrecision || 85;
-  lapidaryMinigameState.slideScores.push(precision);
-
-  playSlideSuccess();
-  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("crit");
-
-  var banner = document.getElementById("lapidarySlideBanner");
-  if(banner){
-    banner.innerHTML = '<span class="banner-title">✨ ¡CORTE COMPLETADO!</span>' +
-      '<span class="banner-sub">Precisión de pulso: <b>' + precision + '%</b> (+' + precision + ' pts)</span>';
-    banner.classList.remove("hidden");
+    handleCutMove(cutLocalPoint(e), performance.now());
+    if(!S.done) updateCutLiveStars();
+  });
+  function endPress(){
+    var CG = cutState(), S = CG && CG.S;
+    if(!S || !S.active) return;
+    S.active = false; S.finger = null; S.state = "ok";
+    S.saw = cutPx(cutPointAt(S.prog));
+    S.driftVec = [0, 0];
+    S.pauseStart = performance.now();
+    CG.lastHint = "";
+    if(!S.done) setCutHint(defaultCutHint());
   }
-
-  lapidaryMinigameState.slidePass++;
-
-  setTimeout(function(){
-    if(banner) banner.classList.add("hidden");
-
-    if(lapidaryMinigameState.slidePass <= lapidaryMinigameState.maxSlidePasses){
-      renderLapidaryModalContent();
-      requestAnimationFrame(function(){ initLapidarySlideStage(); });
-    } else {
-      // Retornar de inmediato a pantalla normal al concluir el minijuego de cortes
-      var modal = document.getElementById("lapidaryModal");
-      if(modal) modal.classList.remove("phase-2-fullscreen");
-
-      // Media de los 3 cortes
-      var sum = lapidaryMinigameState.slideScores.reduce(function(a, b){ return a + b; }, 0);
-      lapidaryMinigameState.phase2Score = Math.round(sum / lapidaryMinigameState.slideScores.length);
-      renderLapidaryModalContent();
-    }
-  }, 950);
+  cv.addEventListener("pointerup", endPress);
+  cv.addEventListener("pointercancel", endPress);
 }
 
+function updateCutLiveStars(){
+  var S = cutState().S;
+  var el = document.getElementById("lapidaryCutLiveStars");
+  if(el) el.innerHTML = S.samples ? cutStarsHTML(cutStarsFor(computeCutScore(S))) : "";
+}
+
+// Tarjeta antes de los cortes que traen un desafío nuevo
+function openCutIntroSheet(idx){
+  var CG = cutState();
+  var host = document.getElementById("lapidaryCutSheet");
+  if(!host) return;
+  var title, text, svg;
+  if(idx === 1){
+    title = "La veta empuja";
+    text = "En algunos tramos la piedra <b>empuja la sierra hacia un lado</b>. Antes verás unas flechas finas: mueve el dedo hacia el lado contrario para seguir en la línea.";
+    svg = '<svg viewBox="0 0 120 60" aria-hidden="true"><path d="M10 30 H110" stroke="#F3EADB" stroke-dasharray="5 5" stroke-width="1.6"/><g stroke="#76AC9D" stroke-width="1.6" fill="none"><path d="M40 36 V16 M35 21 L40 16 L45 21"/><path d="M60 36 V16 M55 21 L60 16 L65 21"/><path d="M80 36 V16 M75 21 L80 16 L85 21"/></g><circle cx="60" cy="44" r="7" fill="#7CC4A4"/><path d="M60 54 V58" stroke="#fff" stroke-opacity=".4"/></svg>';
+  } else {
+    title = "Inclusiones";
+    text = "Los <b>puntos oscuros</b> junto a la línea son inclusiones: tocarlas con el borde de la sierra cuesta 💎. Donde hay dos juntas, el paso es más estrecho: <b>pasa por el centro</b>.";
+    svg = '<svg viewBox="0 0 120 60" aria-hidden="true"><path d="M10 30 H110" stroke="#F3EADB" stroke-dasharray="5 5" stroke-width="1.6"/><circle cx="62" cy="20" r="5" fill="#140c0a" stroke="#000"/><circle cx="62" cy="40" r="5" fill="#140c0a" stroke="#000"/><circle cx="30" cy="22" r="5" fill="#140c0a" stroke="#000"/><path d="M50 30 H74" stroke="#DEC392" stroke-width="3" stroke-linecap="round"/></svg>';
+  }
+  CG.sheetOpen = true;
+  host.innerHTML = '<div class="lapidary-sheet-bg"><div class="lapidary-sheet" role="dialog" aria-modal="true">' +
+    '<span class="lapidary-sheet-tag">Nuevo desafío · Corte ' + (idx + 1) + ' de 3</span>' +
+    '<h3 class="lapidary-sheet-title">' + title + '</h3>' +
+    '<div class="lapidary-cut-intro-ill">' + svg + '</div>' +
+    '<p>' + text + '</p>' +
+    '<button type="button" class="lapidary-cta-btn" data-action="cut-intro-ok">Entendido</button>' +
+  '</div></div>';
+}
+
+function startCurrentCut(){
+  var CG = cutState();
+  resetCurrentCut();
+  CG.lastHint = "";
+  setCutHint(defaultCutHint());
+  updateCutPanel();
+  if(CG.idx > 0 && !CG.introsSeen[CG.idx]){
+    CG.introsSeen[CG.idx] = true;
+    openCutIntroSheet(CG.idx);
+  }
+}
+
+// Punto de entrada del paso 2 (nombre heredado: lo llaman ui-events.js y el enlace ?phase=2 de state.js)
+function initLapidarySlideStage(){
+  var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
+  if(!lapidaryMinigameState.cut) lapidaryMinigameState.cut = createCutGame(c);
+  if(!sizeCutCanvas()) return;
+  bindCutCanvas();
+  if(!cutState().S) startCurrentCut();
+  else { updateCutPanel(); setCutHint(defaultCutHint()); }
+  startCutLoop();
+  var stage = document.getElementById("lapidaryCutStage");
+  if(stage && window.ResizeObserver && !stage._cutObserved){
+    stage._cutObserved = true;
+    var lastW = cutState().W;
+    new ResizeObserver(function(){
+      requestAnimationFrame(function(){
+        var st = document.getElementById("lapidaryCutStage");
+        if(!st || !cutState() || st.clientWidth === lastW || !st.clientWidth) return;
+        lastW = st.clientWidth;
+        sizeCutCanvas();
+      });
+    }).observe(stage);
+  }
+}
+
+// Botones del paso 2
+document.addEventListener("click", function(e){
+  var btn = e.target.closest("[data-action]");
+  if(!btn || !lapidaryMinigameState.active || lapidaryMinigameState.phase !== 2) return;
+  var act = btn.getAttribute("data-action");
+  var CG = cutState();
+  if(!CG) return;
+  if(act === "cut-retry"){
+    if(CG.retries[CG.idx] || !CG.S || !CG.S.started) return;
+    CG.retries[CG.idx] = true;
+    CG.results[CG.idx] = null;
+    CG.failed[CG.idx] = false;
+    lapidaryMinigameState.phase2Score = 0;
+    startCurrentCut();
+  } else if(act === "cut-next"){
+    if(!CG.S || !CG.S.done) return;
+    if(CG.idx < 2){
+      CG.idx++;
+      startCurrentCut();
+    } else {
+      lapidaryMinigameState.phase = 3;
+      if(lapidaryMinigameState.animId){ cancelAnimationFrame(lapidaryMinigameState.animId); lapidaryMinigameState.animId = null; }
+      renderLapidaryModalContent();
+      startLapidaryTimingLoop();
+    }
+  } else if(act === "cut-intro-ok"){
+    CG.sheetOpen = false;
+    var host = document.getElementById("lapidaryCutSheet");
+    if(host) host.innerHTML = "";
+  }
+});
 
 /* ==========================================================================
    6. FASE 3: PULIDO DE FACETAS
