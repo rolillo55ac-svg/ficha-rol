@@ -8891,36 +8891,6 @@ textarea,
     line-height: 1.35;
   }
 
-  /* Fase 2 Fullscreen en móvil para que no se tape con el dedo */
-  #lapidaryModal.phase-2-fullscreen {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-    padding: 12px 10px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    z-index: 10001 !important;
-    overflow-y: auto !important;
-  }
-  #lapidaryModal.phase-2-fullscreen .lapidary-slide-stage {
-    width: 100% !important;
-    max-width: 330px !important;
-    height: 310px !important;
-    margin: 6px auto !important;
-  }
-  #lapidaryModal.phase-2-fullscreen .lapidary-slide-canvas {
-    width: 100% !important;
-    height: 100% !important;
-  }
 }
 
 
@@ -9091,3 +9061,32 @@ textarea,
 .lapidary-polish-pass.g { background: rgba(124,196,164,.15); border-color: #7CC4A4; color: #7CC4A4; }
 .lapidary-polish-pass.f { background: rgba(240,122,132,.12); border-color: #F07A84; color: #F07A84; }
 .lapidary-polish-btn { width: 100%; min-height: 72px; font-size: 1.2rem; }
+
+/* ==========================================================================
+   TALLER DE LAPIDARIO — Paso 2: Cortes
+   ========================================================================== */
+.lapidary-cuts { display: flex; flex-direction: column; gap: 10px; }
+.lapidary-cuts-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.lapidary-cuts-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.15rem; color: var(--ink); }
+.lapidary-cuts-status { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.lapidary-cuts-gems { font-size: 1rem; letter-spacing: 1px; white-space: nowrap; }
+.lapidary-cuts-gems .off { filter: grayscale(1) brightness(.4); }
+.lapidary-cuts-stars { color: var(--gold-light); letter-spacing: 2px; font-size: 1rem; white-space: nowrap; min-height: 1.2em; }
+.lapidary-cuts-stars .off { color: #4a3329; }
+.lapidary-cut-stage { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid var(--line); background: var(--bg-elev); }
+.lapidary-cut-stage canvas { display: block; width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#lapidaryCutHint .bad { color: #F07A84; }
+.lapidary-polish-legend i.warn { background: #E8B85A; }
+.lapidary-polish-legend i.bad { background: #F07A84; }
+.lapidary-cut-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.lapidary-cut-slot { padding: 6px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-elev); text-align: center; font-size: .74rem; color: var(--ink-faint); }
+.lapidary-cut-slot.now { border-color: var(--gold); color: var(--ink); }
+.lapidary-cut-slot.failed { border-color: rgba(240,122,132,.6); }
+.lapidary-cut-slot .lapidary-cuts-stars { display: block; font-size: .85rem; }
+.lapidary-cut-intro-ill { display: grid; place-items: center; padding: 8px; border-radius: 12px; background: var(--bg-card); }
+.lapidary-cut-intro-ill svg { width: 100%; max-width: 240px; height: auto; }
+.lapidary-ghost-btn:disabled { opacity: .45; cursor: not-allowed; }
+/* Alturas fijas: si el modal cambia de alto mientras cortas, el lienzo se movería bajo el dedo */
+#lapidaryCutHint { min-height: 4.2em; display: flex; align-items: center; justify-content: center; }
+.lapidary-cuts-stars { height: 1.25em; line-height: 1.25em; }
+#lapidaryModal { scrollbar-gutter: stable; }
