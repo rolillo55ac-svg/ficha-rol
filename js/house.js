@@ -14,6 +14,7 @@ var houseState = {
   activeFloor: 1,
   inspectorTab: "estancia", // "estancia" | "muebles" | "buffs"
   loading: false,
+  remote: false, // true si La Casa se ha cargado de Supabase
   house: null,
   rooms: [],
   upgrades: [],
@@ -412,6 +413,7 @@ function migrateRoomsTo16Cols(rooms){
 }
 
 function loadHouseLocalData(){
+  houseState.remote = false;
   try {
     var raw = localStorage.getItem("krysalis_house_beta_v1");
     if(raw){
@@ -502,11 +504,13 @@ async function fetchHouseRemoteData(){
       return;
     }
     houseState.house = houseRes.data;
+    houseState.remote = true;
 
     var roomsRes = await supabaseClient.from("house_rooms").select("*").eq("house_id", houseState.house.id).order("created_at", { ascending: true });
     if(!roomsRes.error && roomsRes.data && roomsRes.data.length > 0){
       houseState.rooms = roomsRes.data;
     }
+    await fetchHouseItemsRemote();
 
     var upgRes = await supabaseClient.from("house_upgrades").select("*").eq("house_id", houseState.house.id);
     if(!upgRes.error && upgRes.data){
@@ -1864,7 +1868,7 @@ function saveRoomChangesToRemoteAndBroadcast(room, fieldName){
       width: Math.max(1, room.width || 2),
       height: Math.max(1, room.height || 2),
       floor: room.floor || 1,
-      furniture: Array.isArray(room.furniture) ? room.furniture : [],
+      furniture: stripFurnitureItems(room.furniture),
       decor: Array.isArray(room.decor) ? room.decor : [],
       color: room.color || null,
       updated_at: new Date().toISOString()
@@ -1888,6 +1892,86 @@ function saveRoomChangesToRemoteAndBroadcast(room, fieldName){
   }
 }
 
+// Baúles: en Supabase los objetos van en la tabla house_items (por estancia y mueble), no dentro
+// de los muebles, para que mover o cambiar muebles no pise lo guardado.
+function isHouseRemote(){
+  return !!(houseState.remote && typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine);
+}
+
+function stripFurnitureItems(list){
+  return (Array.isArray(list) ? list : []).map(function(f){
+    var copy = Object.assign({}, f);
+    delete copy.items;
+    return copy;
+  });
+}
+
+// Los muebles que llegan sin objetos (de la base o de otro dispositivo) conservan los que ya había
+function keepFurnitureItems(oldList, newList){
+  if(!Array.isArray(newList)) return newList;
+  var prev = {};
+  (oldList || []).forEach(function(f){ if(f && f.id) prev[f.id] = f.items; });
+  return newList.map(function(f){
+    if(f && !Array.isArray(f.items) && Array.isArray(prev[f.id])) return Object.assign({}, f, { items: prev[f.id] });
+    return f;
+  });
+}
+
+function houseItemFromRow(row){
+  return { id: row.id, name: row.name, qty: row.qty || 1, notes: row.notes || "" };
+}
+
+function findHouseFurniture(roomId, furnitureId){
+  var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!r || !Array.isArray(r.furniture)) return null;
+  return r.furniture.find(function(f){ return f.id === furnitureId; }) || null;
+}
+
+async function fetchHouseItemsRemote(){
+  var res = await supabaseClient.from("house_items").select("*")
+    .order("sort", { ascending: true }).order("created_at", { ascending: true });
+  if(res.error || !res.data) return;
+  var byKey = {};
+  res.data.forEach(function(row){
+    var k = row.room_id + "|" + row.furniture_id;
+    (byKey[k] = byKey[k] || []).push(houseItemFromRow(row));
+  });
+  (houseState.rooms || []).forEach(function(r){
+    (r.furniture || []).forEach(function(f){
+      f.items = byKey[r.id + "|" + f.id] || [];
+    });
+  });
+}
+
+function handleRemoteHouseItemChange(payload){
+  if(!payload) return;
+  var row = (payload.eventType !== "DELETE" && payload.new && payload.new.id) ? payload.new : null;
+  var itemId = row ? row.id : (payload.old && payload.old.id);
+  if(!itemId) return;
+
+  var oldFur = null, oldIdx = -1;
+  (houseState.rooms || []).forEach(function(r){
+    (r.furniture || []).forEach(function(f){
+      if(oldFur || !Array.isArray(f.items)) return;
+      var idx = f.items.findIndex(function(it){ return it.id === itemId; });
+      if(idx >= 0){ oldFur = f; oldIdx = idx; }
+    });
+  });
+  if(oldFur) oldFur.items.splice(oldIdx, 1);
+
+  if(row){
+    var fur = findHouseFurniture(row.room_id, row.furniture_id);
+    if(fur){
+      if(!Array.isArray(fur.items)) fur.items = [];
+      if(fur === oldFur) fur.items.splice(oldIdx, 0, houseItemFromRow(row));
+      else fur.items.push(houseItemFromRow(row));
+    }
+  }
+
+  saveHouseLocalData();
+  if(houseState.active) renderHouseView();
+}
+
 function handleRemoteHouseRoomUpdate(payload){
   if(!payload) return;
   var rId = payload.id || payload.roomId;
@@ -1896,7 +1980,7 @@ function handleRemoteHouseRoomUpdate(payload){
   var room = (houseState.rooms || []).find(function(x){ return x.id === rId; });
   if(!room) return;
 
-  if(payload.furniture !== undefined) room.furniture = payload.furniture;
+  if(payload.furniture !== undefined) room.furniture = keepFurnitureItems(room.furniture, payload.furniture);
   if(payload.decor !== undefined) room.decor = payload.decor;
   if(payload.color !== undefined) room.color = payload.color;
   if(payload.name !== undefined) room.name = payload.name;
@@ -1952,6 +2036,9 @@ function initHouseRealtimeSync(){
             handleRemoteHouseRoomUpdate(payload.new);
           }
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "house_items" }, function(payload){
+          handleRemoteHouseItemChange(payload);
+        })
         .subscribe();
     } catch(err){
       console.warn("Error suscribiendo a postgres_changes de house_rooms:", err);
@@ -1986,6 +2073,21 @@ function getRoomOwnerInfo(ownerCharId){
   if(ownerCharId.includes("ink") || ownerCharId.includes("ece1")) return { name: "Ink", portrait: null };
 
   return { name: "Personaje (" + ownerCharId.slice(0, 8) + ")", portrait: null };
+}
+
+// Baúles: el máster todos; en estancias sin dueño, cualquiera; en habitaciones con dueño, solo su dueño.
+// Igual que la política RLS de house_items (la protección real).
+function canUserUseChest(room){
+  if(!room) return false;
+  if(!room.owner_character_id) return true;
+  if(typeof isGM === "function" && isGM()) return true;
+  if(typeof currentUser !== "undefined" && currentUser){
+    // Con sesión manda el dueño real de la ficha (owner_id), no la ficha que se tenga abierta
+    return ((state && state.characters) || []).some(function(c){
+      return (c.id === room.owner_character_id || c.db_id === room.owner_character_id) && c.owner_id === currentUser.id;
+    });
+  }
+  return canUserEditRoom(room);
 }
 
 function canUserEditRoom(room){
@@ -4629,6 +4731,7 @@ function renderRoomInspector(roomId){
 
   var owner = getRoomOwnerInfo(r.owner_character_id);
   var canEdit = canUserEditRoom(r);
+  var canChest = canUserUseChest(r);
   var canDecor = canUserEditRoomGeometry(r);
   var isGm = (typeof isGM === "function" && isGM());
   var isEditMode = (isGm && houseState.editMode);
@@ -4746,8 +4849,10 @@ function renderRoomInspector(roomId){
         html += '      <div class="house-furniture-card-head">';
         html += '        <span class="house-furniture-card-title">' + icon + ' ' + esc(fur.name) + '</span>';
         html += '        <div style="display:flex;gap:6px;align-items:center;">';
-        if(canEdit){
+        if(canChest){
           html += '          <button class="btn-compact" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + fur.id + '" style="font-size:0.68rem;padding:2px 6px;">➕ Guardar Objeto</button>';
+        }
+        if(canEdit){
           html += '          <button class="btn-compact" data-action="delete-furniture" data-room-id="' + r.id + '" data-furniture-id="' + fur.id + '" style="font-size:0.68rem;color:#E74C3C;" title="Quitar mueble">&times;</button>';
         }
         html += '        </div>';
@@ -4764,7 +4869,7 @@ function renderRoomInspector(roomId){
             html += '            <span class="house-furniture-item-name">' + esc(it.name) + '</span>';
             if(it.notes) html += ' <small style="color:var(--ink-dim);">(' + esc(it.notes) + ')</small>';
             html += '          </div>';
-            if(canEdit){
+            if(canChest){
               html += '          <button class="btn-compact" data-action="delete-furniture-item" data-room-id="' + r.id + '" data-furniture-id="' + fur.id + '" data-item-idx="' + itIdx + '" style="font-size:0.65rem;padding:1px 5px;color:#E74C3C;" title="Sacar objeto">&times;</button>';
             }
             html += '        </div>';
@@ -4917,6 +5022,10 @@ function openAddItemModal(roomId, furnitureId){
   if(!r || !Array.isArray(r.furniture)) return;
   var fur = r.furniture.find(function(f){ return f.id === furnitureId; });
   if(!fur) return;
+  if(!canUserUseChest(r)){
+    if(typeof showToast === "function") showToast("Este baúl es de la habitación de otro personaje.", "warning");
+    return;
+  }
 
   var overlay = document.createElement("div");
   overlay.className = "house-modal-overlay";
@@ -4977,7 +5086,7 @@ function confirmAddFurnitureAction(){
   if(typeof showToast === "function") showToast("Mueble '" + newFur.name + "' instalado.", "success");
 }
 
-function confirmAddFurnitureItemAction(){
+async function confirmAddFurnitureItemAction(){
   var rIdEl = document.getElementById("itemRoomId");
   var furIdEl = document.getElementById("itemFurId");
   var nameEl = document.getElementById("newItName");
@@ -4997,6 +5106,23 @@ function confirmAddFurnitureItemAction(){
   var itName = nameEl.value.trim();
   var itQty = Math.max(1, parseInt(qtyEl.value, 10) || 1);
   var itNotes = notesEl ? notesEl.value.trim() : "";
+
+  if(isHouseRemote()){
+    closeHouseModal();
+    var res = await supabaseClient.from("house_items").insert({
+      room_id: r.id, furniture_id: fur.id, name: itName, qty: itQty, notes: itNotes, sort: fur.items.length
+    }).select().maybeSingle();
+    if(res.error || !res.data){
+      console.warn("Aviso guardando objeto del baúl:", res.error && (res.error.message || res.error));
+      if(typeof showToast === "function") showToast("No se ha podido guardar el objeto (sin permiso o sin conexión).", "warning");
+      return;
+    }
+    if(!fur.items.some(function(it){ return it.id === res.data.id; })) fur.items.push(houseItemFromRow(res.data));
+    saveHouseLocalData();
+    renderHouseView();
+    if(typeof showToast === "function") showToast("Objeto guardado en " + fur.name + ".", "success");
+    return;
+  }
 
   fur.items.push({ name: itName, qty: itQty, notes: itNotes });
 
@@ -5018,12 +5144,25 @@ function deleteFurnitureAction(roomId, furnitureId){
   renderHouseView();
 }
 
-function deleteFurnitureItemAction(roomId, furnitureId, itemIdx){
+async function deleteFurnitureItemAction(roomId, furnitureId, itemIdx){
   var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!r || !Array.isArray(r.furniture)) return;
 
   var fur = r.furniture.find(function(f){ return f.id === furnitureId; });
   if(!fur || !Array.isArray(fur.items)) return;
+
+  var item = fur.items[itemIdx];
+  if(item && item.id && isHouseRemote()){
+    var res = await supabaseClient.from("house_items").delete().eq("id", item.id).select();
+    if(res.error || !res.data || res.data.length === 0){
+      if(typeof showToast === "function") showToast("No se ha podido sacar el objeto (sin permiso o sin conexión).", "warning");
+      return;
+    }
+    fur.items = fur.items.filter(function(it){ return it.id !== item.id; });
+    saveHouseLocalData();
+    renderHouseView();
+    return;
+  }
 
   fur.items.splice(itemIdx, 1);
   saveRoomChangesToRemoteAndBroadcast(r, "furniture");
