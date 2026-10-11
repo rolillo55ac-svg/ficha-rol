@@ -1,6 +1,6 @@
 {
-  "version": "1.4.6.0",
-  "build": "2026.10.12.02",
-  "updatedAt": "2026-10-12T15:00:00Z",
-  "changelog": "La Casa: el máster puede subir a la nube la Casa guardada en su dispositivo (se pregunta una vez y se guarda copia). Arreglado: al actualizarse, la web ya no borra La Casa local ni otros ajustes guardados."
+  "version": "1.4.7.0",
+  "build": "2026.10.12.03",
+  "updatedAt": "2026-10-12T18:00:00Z",
+  "changelog": "La Casa: los muebles ya no se montan unos encima de otros, se pueden arrastrar a cualquier casilla de la estancia, girar cambia de verdad ancho y alto, cada mueble entra con su tamaño y las casillas del editor son cuadradas."
 }
