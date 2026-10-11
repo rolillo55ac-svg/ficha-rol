@@ -954,6 +954,77 @@ function initOrRenderHouseKonvaStage(){
   renderKonvaRooms();
 }
 
+var houseKonvaDoorsGroup = null;
+var HOUSE_TOKEN_COLORS = ["#4FB3A9", "#E8879B", "#8E7CC3", "#E9C46A", "#6FA8DC", "#E07A5F", "#81B29A"];
+var HOUSE_PASSAGE_TYPES = ["pasillo", "escaleras", "entrada"];
+
+function getHouseTokenColor(name){
+  var hsh = 0;
+  for(var i = 0; i < name.length; i++) hsh = (hsh * 31 + name.charCodeAt(i)) >>> 0;
+  return HOUSE_TOKEN_COLORS[hsh % HOUSE_TOKEN_COLORS.length];
+}
+
+function setKonvaNoPreventDefault(node){
+  node.preventDefault(false);
+  if(node.getChildren) node.getChildren().forEach(setKonvaNoPreventDefault);
+}
+
+// Puertas de madera donde una estancia comparte pared con un pasillo, escalera o entrada.
+// La entrada tiene además una puerta al exterior en una pared libre.
+function drawHouseDoors(rooms){
+  var doors = new Konva.Group({ listening: false });
+  var C = HOUSE_CELL_PX;
+  function cell(r){
+    return { x: r.pos_x || 0, y: r.pos_y || 0, w: Math.max(1, r.width || 2), h: Math.max(1, r.height || 2) };
+  }
+  function addDoor(cx, cy, horizontal){
+    var len = C * 0.7, thick = 9;
+    doors.add(new Konva.Rect({
+      x: (cx + 1) * C - (horizontal ? len / 2 : thick / 2),
+      y: (cy + 1) * C - (horizontal ? thick / 2 : len / 2),
+      width: horizontal ? len : thick,
+      height: horizontal ? thick : len,
+      cornerRadius: 2,
+      fill: "#C09257",
+      stroke: "#4A2E14",
+      strokeWidth: 1.5
+    }));
+  }
+  for(var i = 0; i < rooms.length; i++){
+    for(var j = i + 1; j < rooms.length; j++){
+      var A = rooms[i], B = rooms[j];
+      if(HOUSE_PASSAGE_TYPES.indexOf(A.room_type) === -1 && HOUSE_PASSAGE_TYPES.indexOf(B.room_type) === -1) continue;
+      var a = cell(A), b = cell(B);
+      var y0 = Math.max(a.y, b.y), y1 = Math.min(a.y + a.h, b.y + b.h);
+      var x0 = Math.max(a.x, b.x), x1 = Math.min(a.x + a.w, b.x + b.w);
+      if((a.x + a.w === b.x || b.x + b.w === a.x) && y1 - y0 >= 1){
+        addDoor(a.x + a.w === b.x ? b.x : a.x, (y0 + y1) / 2, false);
+      } else if((a.y + a.h === b.y || b.y + b.h === a.y) && x1 - x0 >= 1){
+        addDoor((x0 + x1) / 2, a.y + a.h === b.y ? b.y : a.y, true);
+      }
+    }
+  }
+  rooms.forEach(function(R){
+    if(R.room_type !== "entrada") return;
+    var e = cell(R);
+    function touches(side){
+      return rooms.some(function(O){
+        if(O === R) return false;
+        var o = cell(O);
+        if(side === "bottom") return o.y === e.y + e.h && o.x < e.x + e.w && o.x + o.w > e.x;
+        if(side === "top") return o.y + o.h === e.y && o.x < e.x + e.w && o.x + o.w > e.x;
+        if(side === "left") return o.x + o.w === e.x && o.y < e.y + e.h && o.y + o.h > e.y;
+        return o.x === e.x + e.w && o.y < e.y + e.h && o.y + o.h > e.y;
+      });
+    }
+    if(!touches("bottom")) addDoor(e.x + e.w / 2, e.y + e.h, true);
+    else if(!touches("left")) addDoor(e.x, e.y + e.h / 2, false);
+    else if(!touches("right")) addDoor(e.x + e.w, e.y + e.h / 2, false);
+    else if(!touches("top")) addDoor(e.x + e.w / 2, e.y, true);
+  });
+  return doors;
+}
+
 function renderKonvaRooms(){
   if(!houseKonvaLayer || !houseKonvaStage) return;
 
@@ -990,99 +1061,166 @@ function renderKonvaRooms(){
     });
 
     var texCanvas = getRoomTexturePattern(r.texture || inferRoomTexture(r), r.color);
-    var strokeColor = resolveRoomColor(r.color);
     var isSel = (houseState.selectedRoomId === r.id);
+    // u = 1 píxel de pantalla en unidades del plano: textos y fichas mantienen tamaño legible con cualquier zoom
+    var u = 1 / (houseKonvaStage.scaleX() || 1);
+    var inset = 7 * u;
 
-    // 1. Rectángulo con textura de suelo
+    // 1. Suelo con textura y paredes gruesas
     var bgRect = new Konva.Rect({
       width: r.w,
       height: r.h,
-      cornerRadius: 10,
       fillPatternImage: texCanvas,
       fillPatternRepeat: "repeat",
-      stroke: strokeColor,
-      strokeWidth: isSel ? 3 : 2,
-      shadowColor: "black",
-      shadowBlur: 16,
-      shadowOpacity: 0.52,
-      shadowOffsetY: 6
+      stroke: "#17110D",
+      strokeWidth: 6
     });
 
-    // 2. Velo semitransparente para legibilidad
-    var veil = new Konva.Rect({
-      width: r.w,
-      height: r.h,
-      cornerRadius: 10,
-      fill: "rgba(20, 14, 10, 0.42)"
+    // Sombra interior suave junto a las paredes
+    var innerShade = new Konva.Rect({
+      x: 3, y: 3,
+      width: Math.max(0, r.w - 6), height: Math.max(0, r.h - 6),
+      stroke: "rgba(0,0,0,0.28)",
+      strokeWidth: 4,
+      listening: false
     });
 
-    // 3. Etiqueta con icono y nombre
-    var icon = r.icon || getRoomTypeIcon(r.room_type);
-    var label = new Konva.Text({
-      text: (icon ? icon + "  " : "") + (r.name || "Estancia"),
-      x: 12, y: 10,
-      width: r.w - 24,
-      fontFamily: "Georgia, serif",
-      fontSize: 15,
-      fontStyle: "bold",
-      fill: "#DEC392"
-    });
+    group.add(bgRect, innerShade);
 
-    // 4. Insignia de objetos, textura y morador
-    var itemCount = getRoomItemCount(r);
-    var texName = (r.texture || inferRoomTexture(r)).toUpperCase();
-    var badgeText = "📦 " + itemCount + " · " + texName;
-    var owner = getRoomOwnerInfo(r.owner_character_id);
-    if(owner && owner.name){
-      badgeText += " · 👤 " + owner.name;
+    // 2. Mobiliario: solo en modo Editar (en Ver se deja el suelo limpio)
+    if(isEdit){
+      var allItems = (r.furniture || []).concat(r.decor || []);
+      var roomCols = Math.max(2, r.width || Math.round(r.w / 40) || 6);
+      var roomRows = Math.max(2, r.height || Math.round(r.h / 40) || 4);
+      var cellW = r.w / roomCols;
+      var cellH = Math.max(14, (r.h - 36) / roomRows);
+
+      allItems.forEach(function(item){
+        var iw = Math.max(1, item.w || 1);
+        var ih = Math.max(1, item.h || 1);
+        var px = Math.min(r.w - 18, (item.pos_x || 0) * cellW + 3);
+        var py = Math.min(r.h - 18, 22 + (item.pos_y || 0) * cellH);
+        var pw = Math.max(16, Math.min(r.w - px - 3, iw * cellW - 5));
+        var ph = Math.max(14, Math.min(r.h - py - 18, ih * cellH - 3));
+
+        var itemBox = new Konva.Rect({
+          x: px, y: py,
+          width: pw, height: ph,
+          cornerRadius: 3,
+          fill: item.items ? "rgba(42, 30, 20, 0.72)" : "rgba(22, 28, 36, 0.65)",
+          stroke: item.items ? "rgba(212, 175, 55, 0.55)" : "rgba(148, 163, 184, 0.4)",
+          strokeWidth: 1
+        });
+
+        var itemIcon = item.icon || getFurnitureIcon(item.type) || "📦";
+        var itemLabel = new Konva.Text({
+          text: itemIcon,
+          x: px, y: py + Math.max(0, (ph - 13) / 2),
+          width: pw,
+          align: "center",
+          fontSize: Math.min(15, Math.max(10, ph - 3))
+        });
+
+        group.add(itemBox, itemLabel);
+      });
     }
 
-    var badge = new Konva.Text({
-      text: badgeText,
-      x: 12,
-      y: r.h - 24,
-      fontFamily: "ui-monospace, monospace",
-      fontSize: 11,
-      fill: "#8F7D65"
+    // 3. Nombre en pastilla oscura semitransparente (legible sobre cualquier textura)
+    var icon = r.icon || getRoomTypeIcon(r.room_type);
+    var fs = 15 * u;
+    var innerW = r.w - inset * 2;
+    var innerH = r.h - inset * 2;
+    var fullText = (icon ? icon + " " : "") + (r.name || "Estancia");
+    var probe = new Konva.Text({ text: fullText, fontFamily: "Georgia, serif", fontStyle: "bold", fontSize: fs, padding: 6 * u });
+    // Estancias estrechas y alargadas (pasillos): nombre en vertical
+    var vertical = (r.h >= r.w * 1.8) && probe.width() > innerW;
+    var maxW = vertical ? innerH : innerW;
+    var maxH = vertical ? innerW : innerH * 0.62;
+    var iconOnly = maxW < fs * 3.2 || maxH < fs * 1.6;
+    if(iconOnly) vertical = false;
+
+    var label = new Konva.Label({ x: inset, y: vertical ? r.h - inset : inset, rotation: vertical ? -90 : 0, listening: false });
+    label.add(new Konva.Tag({
+      fill: "rgba(16,11,8,0.82)",
+      stroke: "rgba(222,195,146,0.45)",
+      strokeWidth: 1 * u,
+      cornerRadius: 7 * u
+    }));
+    var nameText = new Konva.Text({
+      text: iconOnly ? (icon || "•") : fullText,
+      fontFamily: "Georgia, serif",
+      fontStyle: "bold",
+      fontSize: fs,
+      lineHeight: 1.15,
+      fill: "#F3EADB",
+      padding: 6 * u
+    });
+    if(!iconOnly && nameText.width() > maxW){
+      nameText.width(maxW);
+      nameText.wrap("word");
+    }
+    if(!iconOnly && nameText.height() > maxH){
+      nameText.height(maxH);
+      nameText.ellipsis(true);
+    }
+    label.add(nameText);
+    if(iconOnly){
+      label.position({ x: (r.w - nameText.width()) / 2, y: (r.h - nameText.height()) / 2 });
+    }
+    group.add(label);
+
+    // 4. Objetos del baúl (abajo a la izquierda)
+    var itemCount = getRoomItemCount(r);
+    var bfs = 12 * u;
+    var labelBottom = vertical ? 0 : inset + nameText.height();
+    if(itemCount > 0 && !vertical && !iconOnly && (r.h - labelBottom) > bfs * 2.6 + inset){
+      var badge = new Konva.Label({ x: inset, listening: false });
+      badge.add(new Konva.Tag({ fill: "rgba(16,11,8,0.82)", cornerRadius: 6 * u }));
+      var badgeText = new Konva.Text({ text: "📦 " + itemCount, fontFamily: "Georgia, serif", fontStyle: "bold", fontSize: bfs, fill: "#DEC392", padding: 5 * u });
+      badge.add(badgeText);
+      badge.y(r.h - inset - badgeText.height());
+      group.add(badge);
+    }
+
+    // 5. Ficha redonda del dueño (abajo a la derecha)
+    var owner = getRoomOwnerInfo(r.owner_character_id);
+    if(owner && owner.name){
+      var tokR = Math.min(13 * u, r.w / 4, r.h / 4);
+      var tokColor = getHouseTokenColor(owner.name);
+      var tok = new Konva.Group({ x: r.w - inset - tokR, y: r.h - inset - tokR, listening: false });
+      tok.add(new Konva.Circle({
+        radius: tokR,
+        fill: tokColor,
+        stroke: "#F3EADB",
+        strokeWidth: 2 * u,
+        shadowColor: "black", shadowBlur: 6 * u, shadowOpacity: 0.6
+      }));
+      tok.add(new Konva.Text({
+        text: owner.name.charAt(0).toUpperCase(),
+        x: -tokR, y: -tokR,
+        width: tokR * 2, height: tokR * 2,
+        align: "center", verticalAlign: "middle",
+        fontFamily: "Georgia, serif", fontStyle: "bold",
+        fontSize: tokR * 1.15,
+        fill: "#14100C"
+      }));
+      group.add(tok);
+    }
+
+    // 6. Borde dorado con brillo de la estancia seleccionada
+    var halo = new Konva.Rect({
+      name: "selHalo",
+      width: r.w, height: r.h,
+      stroke: "#E2B65A",
+      strokeWidth: 5,
+      shadowColor: "#E2B65A",
+      shadowBlur: 22,
+      shadowOpacity: 0.9,
+      visible: isSel,
+      listening: false
     });
 
-    // 5. Renderizado visual de mobiliario y decoración en el plano cenital
-    var allItems = (r.furniture || []).concat(r.decor || []);
-    var roomCols = Math.max(2, r.width || Math.round(r.w / 40) || 6);
-    var roomRows = Math.max(2, r.height || Math.round(r.h / 40) || 4);
-    var cellW = r.w / roomCols;
-    var cellH = Math.max(14, (r.h - 36) / roomRows);
-
-    allItems.forEach(function(item){
-      var iw = Math.max(1, item.w || 1);
-      var ih = Math.max(1, item.h || 1);
-      var px = Math.min(r.w - 18, (item.pos_x || 0) * cellW + 3);
-      var py = Math.min(r.h - 18, 22 + (item.pos_y || 0) * cellH);
-      var pw = Math.max(16, Math.min(r.w - px - 3, iw * cellW - 5));
-      var ph = Math.max(14, Math.min(r.h - py - 18, ih * cellH - 3));
-
-      var itemBox = new Konva.Rect({
-        x: px, y: py,
-        width: pw, height: ph,
-        cornerRadius: 3,
-        fill: item.items ? "rgba(42, 30, 20, 0.72)" : "rgba(22, 28, 36, 0.65)",
-        stroke: item.items ? "rgba(212, 175, 55, 0.55)" : "rgba(148, 163, 184, 0.4)",
-        strokeWidth: 1
-      });
-
-      var itemIcon = item.icon || getFurnitureIcon(item.type) || "📦";
-      var itemLabel = new Konva.Text({
-        text: itemIcon,
-        x: px, y: py + Math.max(0, (ph - 13) / 2),
-        width: pw,
-        align: "center",
-        fontSize: Math.min(15, Math.max(10, ph - 3))
-      });
-
-      group.add(itemBox, itemLabel);
-    });
-
-    // 6. Tirador de redimensionado visible en modo edición
+    // 7. Tirador de redimensionado visible en modo edición
     var resizeHint = new Konva.Rect({
       x: r.w - 16,
       y: r.h - 16,
@@ -1093,7 +1231,10 @@ function renderKonvaRooms(){
       visible: canGeom
     });
 
-    group.add(bgRect, veil, label, badge, resizeHint);
+    group.add(halo, resizeHint);
+
+    // En modo Ver, tocar el plano no bloquea el desplazamiento de la página
+    if(!canGeom) setKonvaNoPreventDefault(group);
 
     // Eventos de arrastre
     group.on("dragmove", function(){
@@ -1150,6 +1291,8 @@ function renderKonvaRooms(){
     houseKonvaLayer.add(group);
   });
 
+  houseKonvaDoorsGroup = drawHouseDoors(rooms);
+  houseKonvaLayer.add(houseKonvaDoorsGroup);
   houseKonvaTransformer.moveToTop();
 
   // Re-adjuntar transformador si había selección
@@ -1170,9 +1313,22 @@ function renderKonvaRooms(){
   houseKonvaLayer.draw();
 }
 
+function setKonvaSelectionHalo(group){
+  if(!houseKonvaLayer) return;
+  houseKonvaLayer.find(".selHalo").forEach(function(h){ h.visible(false); });
+  if(group){
+    var halo = group.findOne(".selHalo");
+    if(halo) halo.visible(true);
+    group.moveToTop();
+    if(houseKonvaDoorsGroup) houseKonvaDoorsGroup.moveToTop();
+    if(houseKonvaTransformer) houseKonvaTransformer.moveToTop();
+  }
+}
+
 function selectKonvaRoom(group, r){
   houseKonvaSelectedGroup = group;
   houseState.selectedRoomId = r.id;
+  setKonvaSelectionHalo(group);
   var canGeom = !!houseState.editMode && canUserEditRoomGeometry(r);
   if(houseKonvaTransformer) houseKonvaTransformer.nodes(canGeom ? [group] : []);
 
@@ -1197,6 +1353,7 @@ function selectKonvaRoom(group, r){
 function deselectKonvaRoom(){
   houseKonvaSelectedGroup = null;
   houseState.selectedRoomId = null;
+  setKonvaSelectionHalo(null);
   if(houseKonvaTransformer) houseKonvaTransformer.nodes([]);
 
   var delBtn = document.getElementById("delRoomBtn");
