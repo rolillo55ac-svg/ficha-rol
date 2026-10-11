@@ -7,6 +7,9 @@
 
 var CONFIG_ENABLE_HOUSE = true;
 
+// Campaña de La Casa en Supabase (las pruebas automáticas la cambian por una "prueba-…")
+var HOUSE_CAMPAIGN_ID = "c0000000-0000-0000-0000-000000000001";
+
 var houseState = {
   active: false,
   previousTab: "ficha",
@@ -495,7 +498,7 @@ async function fetchHouseRemoteData(){
 
   try {
     houseState.loading = true;
-    var campaignId = "c0000000-0000-0000-0000-000000000001";
+    var campaignId = HOUSE_CAMPAIGN_ID;
 
     var houseRes = await supabaseClient.from("house").select("*").eq("campaign_id", campaignId).maybeSingle();
     if(houseRes.error || !houseRes.data){
@@ -1970,6 +1973,102 @@ function handleRemoteHouseItemChange(payload){
 
   saveHouseLocalData();
   if(houseState.active) renderHouseView();
+}
+
+// Subir a la nube la Casa guardada en este dispositivo: solo para el máster, solo si la nube no
+// tiene Casa en la campaña y solo se pregunta una vez por dispositivo (si dice que no, no vuelve a preguntar).
+var HOUSE_IMPORT_FLAG = "krysalis_house_import_asked";
+var houseImportRunning = false;
+
+function buildHouseImportPayload(parsed){
+  // Dueños guardados con el id local de la ficha: se traducen al id de la base, que es el que mira RLS
+  var dbIds = {};
+  ((typeof state !== "undefined" && state && state.characters) || []).forEach(function(c){
+    if(c && c.id && c.db_id) dbIds[c.id] = c.db_id;
+  });
+  var rooms = migrateRoomsTo16Cols(parsed.rooms).map(function(r){
+    var copy = Object.assign({}, r);
+    if(copy.owner_character_id && dbIds[copy.owner_character_id]) copy.owner_character_id = dbIds[copy.owner_character_id];
+    return copy;
+  });
+  var house = Object.assign({}, parsed.house);
+  if(!Array.isArray(house.floors) && Array.isArray(houseState.floors)) house.floors = houseState.floors;
+  return { house: house, rooms: rooms, upgrades: parsed.upgrades || [], events: parsed.events || [] };
+}
+
+function downloadHouseBackup(raw, stamp){
+  try {
+    var blob = new Blob([raw], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "krysalis_casa_" + stamp + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch(e){
+    console.warn("No se pudo descargar la copia de La Casa:", e);
+  }
+}
+
+async function maybeOfferHouseImport(){
+  if(houseImportRunning) return;
+  if(typeof isGM !== "function" || !isGM()) return;
+  if(typeof currentUser === "undefined" || !currentUser) return;
+  if(typeof supabaseClient === "undefined" || !supabaseClient || !navigator.onLine) return;
+
+  var raw = null;
+  try {
+    if(localStorage.getItem(HOUSE_IMPORT_FLAG)) return;
+    raw = localStorage.getItem("krysalis_house_beta_v1");
+  } catch(e){ return; }
+  if(!raw) return;
+  var parsed = null;
+  try { parsed = JSON.parse(raw); } catch(e){ return; }
+  if(!parsed || !parsed.house || !Array.isArray(parsed.rooms)) return;
+
+  houseImportRunning = true;
+  try {
+    var existing = await supabaseClient.from("house").select("id").eq("campaign_id", HOUSE_CAMPAIGN_ID).maybeSingle();
+    // Si falla la consulta no se pregunta ahora; si ya hay Casa en la nube, nunca se toca
+    if(existing.error || existing.data) return;
+    if(!isGM() || !currentUser) return;
+
+    var nItems = 0;
+    parsed.rooms.forEach(function(r){
+      (Array.isArray(r.furniture) ? r.furniture : []).forEach(function(f){
+        if(Array.isArray(f.items)) nItems += f.items.length;
+      });
+    });
+    // Se marca antes de preguntar: así no se repite aunque la página se recargue con el aviso abierto
+    try { localStorage.setItem(HOUSE_IMPORT_FLAG, "no"); } catch(e){}
+    var ok = confirm("Tienes una Casa guardada en este dispositivo (" + parsed.rooms.length + " estancias, " + nItems + " objetos en baúles). ¿Subirla a la nube para todos?");
+    if(!ok) return;
+
+    // Copia por si acaso: en este dispositivo y descargada en un .json
+    var stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 13).replace("T", "_");
+    try { localStorage.setItem("krysalis_house_backup_" + stamp, raw); } catch(e){}
+    downloadHouseBackup(raw, stamp);
+
+    var res = await supabaseClient.rpc("import_house", { p_data: buildHouseImportPayload(parsed), p_campaign_id: HOUSE_CAMPAIGN_ID });
+    if(res.error || !res.data || !res.data.success){
+      console.warn("Error subiendo La Casa:", res.error);
+      if(typeof showToast === "function") showToast("No se ha podido subir La Casa: " + ((res.error && res.error.message) || "error desconocido"), "warning");
+      try { localStorage.removeItem(HOUSE_IMPORT_FLAG); } catch(e){}
+      return;
+    }
+    try { localStorage.setItem(HOUSE_IMPORT_FLAG, "done"); } catch(e){}
+    if(typeof showToast === "function") showToast("La Casa ya está en la nube (" + res.data.rooms + " estancias, " + res.data.items + " objetos).", "success");
+
+    if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+      try { realtimeChannel.send({ type: "broadcast", event: "house_general_update", payload: {} }).catch(function(){}); } catch(e){}
+    }
+    await fetchHouseRemoteData();
+    if(houseState.active) renderHouseView();
+  } catch(err){
+    console.warn("Error preparando la subida de La Casa:", err);
+  } finally {
+    houseImportRunning = false;
+  }
 }
 
 function handleRemoteHouseRoomUpdate(payload){
