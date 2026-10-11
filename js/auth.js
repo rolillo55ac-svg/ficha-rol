@@ -23,27 +23,30 @@ function clearAuthAttempts(){
 }
 
 
+// Usuario cuyo rol se leyó de profiles (evita usar el rol de otra cuenta que entró antes en este navegador)
+var currentRoleUserId = null;
+
 function isGM(){
-  if(currentUser){
-    var em = (currentUser.email || '').toLowerCase().trim();
-    if(em === 'rolillo55ac@gmail.com' || em.startsWith('rolillo55ac') || currentUser.id === 'eaa97e7a-408d-476f-9774-55ec911833d8') return true;
-  }
+  // En modo local/offline sin usuario logueado en Supabase, quien usa la app tiene control de máster por defecto
+  if(!currentUser) return true;
+  // Con sesión: solo vale el rol leído de profiles para ESTE usuario al iniciar sesión
+  if(currentRoleUserId !== currentUser.id) return false;
   var r = (currentRole || '').toLowerCase();
-  if(r === 'master' || r === 'gm') return true;
-  if(state && state.campaignRole && (state.campaignRole.toLowerCase() === 'master' || state.campaignRole.toLowerCase() === 'gm')) return true;
-  if(currentUser && currentUser.user_metadata && currentUser.user_metadata.role){
-    var mr = currentUser.user_metadata.role.toLowerCase();
-    if(mr === 'master' || mr === 'gm') return true;
+  return r === 'gm' || r === 'master';
+}
+
+// Borra cualquier rol o pertenencia heredada de otra sesión (state se guarda entero en localStorage)
+function resetSessionRole(){
+  currentRole = 'player';
+  currentRoleUserId = null;
+  if(state){
+    delete state.campaignRole;
+    delete state.campaignMembers;
   }
   try {
-    var localRole = localStorage.getItem("krysalis_local_role") || localStorage.getItem("krysalis_role");
-    if(localRole && (localRole.toLowerCase() === 'master' || localRole.toLowerCase() === 'gm')) return true;
+    localStorage.removeItem("krysalis_role");
+    localStorage.removeItem("krysalis_local_role");
   } catch(e){}
-  // En modo local/offline sin usuario logueado en Supabase, quien usa la app tiene control de máster por defecto
-  if(!currentUser){
-    return true;
-  }
-  return false;
 }
 
 function isCharOwner(c, user){
@@ -101,29 +104,15 @@ function activeChar(){
 async function fetchUserProfile(){
   if(!supabaseClient || !currentUser) return;
   try{
-    var isKnownGM = (currentUser.email && (currentUser.email.toLowerCase().trim() === 'rolillo55ac@gmail.com' || currentUser.email.toLowerCase().startsWith('rolillo55ac'))) || currentUser.id === 'eaa97e7a-408d-476f-9774-55ec911833d8';
-    if(isKnownGM){
-      currentRole = 'master';
-      if(state) state.campaignRole = 'master';
-    }
+    var userId = currentUser.id;
+    // Solo al cambiar de cuenta: al renovar la sesión del mismo usuario se conserva el rol ya leído
+    if(currentRoleUserId !== userId) resetSessionRole();
 
-    var res = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
-    if(res.data && res.data.role){
-      currentRole = res.data.role;
-    } else if(isKnownGM){
-      try {
-        await supabaseClient.from('profiles').upsert({ id: currentUser.id, role: 'master', email: currentUser.email });
-      } catch(eUpsert){}
-    }
-
-    try{
-      var memRes = await supabaseClient.from('campaign_members').select('*').eq('user_id', currentUser.id);
-      if(memRes.data && memRes.data.length){
-        state.campaignMembers = memRes.data;
-        var gmMem = memRes.data.find(function(m){ var mr = (m.role || '').toLowerCase(); return mr === 'gm' || mr === 'master'; });
-        if(gmMem) { currentRole = 'master'; state.campaignRole = 'master'; }
-      }
-    }catch(errMem){}
+    // El rol solo se lee de profiles (lo cambia el máster en Supabase; los jugadores no pueden escribirlo)
+    var res = await supabaseClient.from('profiles').select('role').eq('id', userId).maybeSingle();
+    if(!currentUser || currentUser.id !== userId) return;
+    currentRole = (res.data && res.data.role) ? res.data.role : 'player';
+    currentRoleUserId = userId;
 
     pullAllFromSupabase();
     pullMapFromSupabase();
@@ -168,6 +157,6 @@ async function supabaseLogout(){
   } catch(e) {
     console.error('Supabase error:', e);
   }
-  currentUser=null; currentRole='player'; closeModals(); updateSyncBadge("local"); renderTopbar(); renderTabbar(); renderTab();
+  currentUser=null; resetSessionRole(); closeModals(); updateSyncBadge("local"); renderTopbar(); renderTabbar(); renderTab();
   showToast("Sesión cerrada", "info");
 }

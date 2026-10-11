@@ -120,8 +120,11 @@ function initSupabase(){
     }).catch(function(e){ console.error('Supabase error:', e); });
 
     supabaseClient.auth.onAuthStateChange(function(e, session){
+      var prevUserId = currentUser ? currentUser.id : null;
       currentUser = session ? session.user : null;
-      if(currentUser){ fetchUserProfile(); } else { currentRole='player'; updateSyncBadge("synced"); renderTopbar(); renderTab(); }
+      // Otra cuenta o sin sesión: fuera cualquier rol heredado hasta leer el perfil
+      if(!currentUser || currentUser.id !== prevUserId) resetSessionRole();
+      if(currentUser){ fetchUserProfile(); } else { updateSyncBadge("synced"); renderTopbar(); renderTab(); }
     });
   }catch(e){ console.error('Supabase error:', e); }
 }
