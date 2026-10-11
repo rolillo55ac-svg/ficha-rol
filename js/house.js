@@ -424,6 +424,7 @@ function loadHouseLocalData(){
       if(parsed && parsed.house && Array.isArray(parsed.rooms)){
         houseState.house = parsed.house;
         houseState.rooms = migrateRoomsTo16Cols(parsed.rooms);
+        normalizeAllRoomLayouts();
         houseState.upgrades = parsed.upgrades || [];
         houseState.events = parsed.events || [];
         ensureSeedBuffsRegistered();
@@ -437,6 +438,7 @@ function loadHouseLocalData(){
   var seed = getSeedHouseData();
   houseState.house = seed.house;
   houseState.rooms = seed.rooms;
+  normalizeAllRoomLayouts();
   houseState.upgrades = seed.upgrades;
   houseState.events = seed.events;
   ensureSeedBuffsRegistered();
@@ -513,6 +515,7 @@ async function fetchHouseRemoteData(){
     if(!roomsRes.error && roomsRes.data && roomsRes.data.length > 0){
       houseState.rooms = roomsRes.data;
     }
+    normalizeAllRoomLayouts();
     await fetchHouseItemsRemote();
 
     var upgRes = await supabaseClient.from("house_upgrades").select("*").eq("house_id", houseState.house.id);
@@ -1122,8 +1125,12 @@ function renderKonvaRooms(){
     // 2. Mobiliario: solo en modo Editar (en Ver se deja el suelo limpio)
     if(isEdit){
       var allItems = (r.furniture || []).concat(r.decor || []);
-      var roomCols = Math.max(2, r.width || Math.round(r.w / 40) || 6);
-      var roomRows = Math.max(2, r.height || Math.round(r.h / 40) || 4);
+      // Alfombras primero, para que queden debajo de los muebles
+      allItems = allItems.filter(function(it){ return getHouseItemLayer(it) === "suelo"; })
+        .concat(allItems.filter(function(it){ return getHouseItemLayer(it) !== "suelo"; }));
+      var konvaGrid = getRoomFurnitureGrid(r);
+      var roomCols = konvaGrid.cols;
+      var roomRows = konvaGrid.rows;
       var cellW = r.w / roomCols;
       var cellH = Math.max(14, (r.h - 36) / roomRows);
 
@@ -2090,6 +2097,7 @@ function handleRemoteHouseRoomUpdate(payload){
   if(payload.floor !== undefined) room.floor = payload.floor;
   if(payload.level !== undefined) room.level = payload.level;
   if(payload.room_type !== undefined) room.room_type = payload.room_type;
+  normalizeRoomLayout(room);
 
   saveHouseLocalData();
   if(houseState.active){
@@ -2308,56 +2316,56 @@ function getFurnitureIcon(type){
 // ============================================================================
 var CANVA_ASSET_LIBRARY = [
   // 1. PUERTAS Y ACCESOS
-  { id: "puerta_batiente", name: "Puerta Batiente con Arco", category: "puertas", icon: "🚪", isDoor: true, defaultType: "puerta", desc: "Puerta clásica con arco de giro de 90° (blueprint)" },
-  { id: "arco_paso", name: "Arco de Paso Abierto", category: "puertas", icon: "⛩️", isDoor: true, defaultType: "arco", desc: "Vano libre de mampostería para comunicar estancias" },
-  { id: "puerta_doble", name: "Puerta Doble Señorial", category: "puertas", icon: "🚪🚪", isDoor: true, defaultType: "puerta", desc: "Doble hoja batiente para grandes salones" },
-  { id: "ventana", name: "Ventana con Vano de Luz", category: "puertas", icon: "🪟", isDoor: true, defaultType: "ventana", desc: "Apertura exterior con marco de madera" },
-  { id: "escaleras_subir", name: "Escaleras (Subir Piso)", category: "puertas", icon: "🪜", isDoor: true, defaultType: "escaleras", desc: "Peldaños de madera que ascienden al piso superior" },
-  { id: "escaleras_bajar", name: "Escaleras (Bajar Piso)", category: "puertas", icon: "🪜", isDoor: true, defaultType: "escaleras", desc: "Peldaños que descienden a la planta inferior" },
-  { id: "entrada_porche", name: "Puerta Principal de Entrada", category: "puertas", icon: "🚪", isDoor: true, defaultType: "puerta", desc: "Umbral exterior de madera noble y herrajes" },
+  { id: "puerta_batiente", name: "Puerta Batiente con Arco", category: "puertas", icon: "🚪", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isDoor: true, defaultType: "puerta", desc: "Puerta clásica con arco de giro de 90° (blueprint)" },
+  { id: "arco_paso", name: "Arco de Paso Abierto", category: "puertas", icon: "⛩️", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isDoor: true, defaultType: "arco", desc: "Vano libre de mampostería para comunicar estancias" },
+  { id: "puerta_doble", name: "Puerta Doble Señorial", category: "puertas", icon: "🚪🚪", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isDoor: true, defaultType: "puerta", desc: "Doble hoja batiente para grandes salones" },
+  { id: "ventana", name: "Ventana con Vano de Luz", category: "puertas", icon: "🪟", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 1, isDoor: true, defaultType: "ventana", desc: "Apertura exterior con marco de madera" },
+  { id: "escaleras_subir", name: "Escaleras (Subir Piso)", category: "puertas", icon: "🪜", defaultW: 1, defaultH: 2, minW: 1, minH: 1, maxW: 2, maxH: 3, isDoor: true, defaultType: "escaleras", desc: "Peldaños de madera que ascienden al piso superior" },
+  { id: "escaleras_bajar", name: "Escaleras (Bajar Piso)", category: "puertas", icon: "🪜", defaultW: 1, defaultH: 2, minW: 1, minH: 1, maxW: 2, maxH: 3, isDoor: true, defaultType: "escaleras", desc: "Peldaños que descienden a la planta inferior" },
+  { id: "entrada_porche", name: "Puerta Principal de Entrada", category: "puertas", icon: "🚪", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isDoor: true, defaultType: "puerta", desc: "Umbral exterior de madera noble y herrajes" },
 
   // 2. DESCANSO Y HABITACIÓN
-  { id: "cama_individual", name: "Cama Individual", category: "descanso", icon: "🛏️", isFurniture: true, defaultType: "cama", desc: "Cama de roble con sábana doblada y almohada" },
-  { id: "cama_matrimonio", name: "Cama de Matrimonio / Dosel", category: "descanso", icon: "🛌", isFurniture: true, defaultType: "cama", desc: "Cama noble espaciosa con almohadas dobles" },
-  { id: "sillon_lectura", name: "Sillón Orejero de Reposo", category: "descanso", icon: "🛋️", isFurniture: true, defaultType: "sillon", desc: "Sillón mullido tapizado para descanso" },
+  { id: "cama_individual", name: "Cama Individual", category: "descanso", icon: "🛏️", defaultW: 1, defaultH: 2, minW: 1, minH: 2, maxW: 2, maxH: 3, isFurniture: true, defaultType: "cama", desc: "Cama de roble con sábana doblada y almohada" },
+  { id: "cama_matrimonio", name: "Cama de Matrimonio / Dosel", category: "descanso", icon: "🛌", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 3, maxH: 3, isFurniture: true, defaultType: "cama", desc: "Cama noble espaciosa con almohadas dobles" },
+  { id: "sillon_lectura", name: "Sillón Orejero de Reposo", category: "descanso", icon: "🛋️", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isFurniture: true, defaultType: "sillon", desc: "Sillón mullido tapizado para descanso" },
 
   // 3. MESAS Y ASIENTOS
-  { id: "mesa_comedor", name: "Mesa de Roble con 4 Sillas", category: "mesas", icon: "🪵", isFurniture: true, defaultType: "mesa", desc: "Mesa central para banquetes y reuniones" },
-  { id: "escritorio", name: "Escritorio de Estudio y Pergaminos", category: "mesas", icon: "📜", isFurniture: true, defaultType: "escritorio", desc: "Mesa de trabajo con tintero, pluma y silla" },
-  { id: "mesa_alquimia", name: "Mesa de Alquimia y Matraces", category: "mesas", icon: "🧪", isFurniture: true, defaultType: "mesa", desc: "Superficie de laboratorio con matraces y alambiques" },
+  { id: "mesa_comedor", name: "Mesa de Roble con 4 Sillas", category: "mesas", icon: "🪵", defaultW: 2, defaultH: 2, minW: 1, minH: 1, maxW: 4, maxH: 3, isFurniture: true, defaultType: "mesa", desc: "Mesa central para banquetes y reuniones" },
+  { id: "escritorio", name: "Escritorio de Estudio y Pergaminos", category: "mesas", icon: "📜", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isFurniture: true, defaultType: "escritorio", desc: "Mesa de trabajo con tintero, pluma y silla" },
+  { id: "mesa_alquimia", name: "Mesa de Alquimia y Matraces", category: "mesas", icon: "🧪", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isFurniture: true, defaultType: "mesa", desc: "Superficie de laboratorio con matraces y alambiques" },
 
   // 4. ALMACENAJE (CON INVENTARIO)
-  { id: "baul", name: "Baúl Reforzado de Viaje", category: "almacen", icon: "🧰", isFurniture: true, isStorage: true, defaultType: "baul", desc: "Cofre con herrajes metálicos para guardar pertenencias" },
-  { id: "alacena", name: "Alacena Despensa de Víveres", category: "almacen", icon: "🗄️", isFurniture: true, isStorage: true, defaultType: "alacena", desc: "Mueble de dos hojas para provisiones e ingredientes" },
-  { id: "armero", name: "Armero de Guardia y Panoplia", category: "almacen", icon: "⚔️", isFurniture: true, isStorage: true, defaultType: "armero", desc: "Soporte de armas, espadas y correajes" },
-  { id: "libreria", name: "Librería de Grimorios Sapientes", category: "almacen", icon: "📚", isFurniture: true, isStorage: true, defaultType: "libreria", desc: "Estantes repletos de tomos vivientes y crónicas" },
+  { id: "baul", name: "Baúl Reforzado de Viaje", category: "almacen", icon: "🧰", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 1, isFurniture: true, isStorage: true, defaultType: "baul", desc: "Cofre con herrajes metálicos para guardar pertenencias" },
+  { id: "alacena", name: "Alacena Despensa de Víveres", category: "almacen", icon: "🗄️", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isFurniture: true, isStorage: true, defaultType: "alacena", desc: "Mueble de dos hojas para provisiones e ingredientes" },
+  { id: "armero", name: "Armero de Guardia y Panoplia", category: "almacen", icon: "⚔️", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 1, isFurniture: true, isStorage: true, defaultType: "armero", desc: "Soporte de armas, espadas y correajes" },
+  { id: "libreria", name: "Librería de Grimorios Sapientes", category: "almacen", icon: "📚", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 4, maxH: 1, isFurniture: true, isStorage: true, defaultType: "libreria", desc: "Estantes repletos de tomos vivientes y crónicas" },
 
   // 5. COCINA Y FUEGO
-  { id: "fogon_caldero", name: "Fogón con Caldero Errante", category: "cocina", icon: "🍳", isFurniture: true, defaultType: "cocina", desc: "Hogar de cocción con caldero de hierro y fuego vivo" },
-  { id: "chimenea", name: "Chimenea de Piedra con Leña", category: "cocina", icon: "🔥", isFurniture: true, defaultType: "chimenea", desc: "Chimenea cálida con tiro de piedra y ascuas" },
-  { id: "banco_trabajo", name: "Banco de Trabajo y Forja", category: "cocina", icon: "🔨", isFurniture: true, defaultType: "banco", desc: "Mesa pesada con herramientas de artesanía" },
+  { id: "fogon_caldero", name: "Fogón con Caldero Errante", category: "cocina", icon: "🍳", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isFurniture: true, defaultType: "cocina", desc: "Hogar de cocción con caldero de hierro y fuego vivo" },
+  { id: "chimenea", name: "Chimenea de Piedra con Leña", category: "cocina", icon: "🔥", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isFurniture: true, defaultType: "chimenea", desc: "Chimenea cálida con tiro de piedra y ascuas" },
+  { id: "banco_trabajo", name: "Banco de Trabajo y Forja", category: "cocina", icon: "🔨", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isFurniture: true, defaultType: "banco", desc: "Mesa pesada con herramientas de artesanía" },
 
   // 6. DECORACIÓN Y ALFOMBRAS
-  { id: "alfombra_persa", name: "Alfombra Persa Granate", category: "decoracion", icon: "🧶", defaultW: 2, defaultH: 2, isDecor: true, defaultType: "alfombra_persa", desc: "Tapete noble con cenefas doradas y flecos" },
-  { id: "alfombra_runica", name: "Alfombra Rúnica Celestial", category: "decoracion", icon: "🔮", defaultW: 2, defaultH: 2, isDecor: true, defaultType: "alfombra_runica", desc: "Círculo místico de invocación bordado" },
-  { id: "piel_oso", name: "Piel de Oso Nórdico", category: "decoracion", icon: "🐻", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "piel_oso", desc: "Alfombra rústica de pelo grueso" },
-  { id: "tapiz_pared", name: "Tapiz Bordado del Mapa", category: "decoracion", icon: "🖼️", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "cuadro", desc: "Tapiz heráldico con las tierras de Krysalis" },
-  { id: "trofeo_caza", name: "Trofeo de Cráneo de Bestia", category: "decoracion", icon: "💀", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "trofeo", desc: "Cráneo grabado con runas de victoria" },
-  { id: "diana_tiro", name: "Diana con Flechas", category: "decoracion", icon: "🎯", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "diana", desc: "Diana de paja y madera para entrenamiento" },
-  { id: "barriles_reserva", name: "Barriles de Hidromiel Enana", category: "decoracion", icon: "🍺", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "barriles", desc: "Lote de barriles de roble con espita" },
-  { id: "planta_maceta", name: "Planta Frondosa en Maceta", category: "decoracion", icon: "🌿", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "planta", desc: "Follaje verde en maceta de barro cocido" },
-  { id: "setas_luminosas", name: "Setas Bioluminiscentes", category: "decoracion", icon: "🍄", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "setas", desc: "Hongos fosforescentes de caverna" },
-  { id: "bonsai_mistico", name: "Bonsái Arcano Viviente", category: "decoracion", icon: "🪴", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "bonsai", desc: "Árbol miniatura imbuido de éter" },
-  { id: "estante_pociones", name: "Anaquel de Pociones y Viales", category: "decoracion", icon: "🧪", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "pociones", desc: "Estante con reactivos y elixires brillantes" },
-  { id: "mesa_mapas", name: "Mesa Táctica de Cartografía", category: "decoracion", icon: "🗺️", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "mapas", desc: "Mesa con planos, compás y catalejo" },
-  { id: "reliquia_arcana", name: "Pedestal de Gema Radiante", category: "decoracion", icon: "💎", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "reliquia", desc: "Columna de piedra con cristal que levita" },
-  { id: "telarana", name: "Telaraña Ancestral de Rincón", category: "decoracion", icon: "🕸️", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "telarana", desc: "Sutil filamento de araña en esquina" },
+  { id: "alfombra_persa", name: "Alfombra Persa Granate", category: "decoracion", icon: "🧶", defaultW: 2, defaultH: 2, minW: 1, minH: 1, maxW: 99, maxH: 99, isDecor: true, defaultType: "alfombra_persa", desc: "Tapete noble con cenefas doradas y flecos" },
+  { id: "alfombra_runica", name: "Alfombra Rúnica Celestial", category: "decoracion", icon: "🔮", defaultW: 2, defaultH: 2, minW: 1, minH: 1, maxW: 99, maxH: 99, isDecor: true, defaultType: "alfombra_runica", desc: "Círculo místico de invocación bordado" },
+  { id: "piel_oso", name: "Piel de Oso Nórdico", category: "decoracion", icon: "🐻", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isDecor: true, defaultType: "piel_oso", desc: "Alfombra rústica de pelo grueso" },
+  { id: "tapiz_pared", name: "Tapiz Bordado del Mapa", category: "decoracion", icon: "🖼️", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 1, isDecor: true, defaultType: "cuadro", desc: "Tapiz heráldico con las tierras de Krysalis" },
+  { id: "trofeo_caza", name: "Trofeo de Cráneo de Bestia", category: "decoracion", icon: "💀", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "trofeo", desc: "Cráneo grabado con runas de victoria" },
+  { id: "diana_tiro", name: "Diana con Flechas", category: "decoracion", icon: "🎯", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "diana", desc: "Diana de paja y madera para entrenamiento" },
+  { id: "barriles_reserva", name: "Barriles de Hidromiel Enana", category: "decoracion", icon: "🍺", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isDecor: true, defaultType: "barriles", desc: "Lote de barriles de roble con espita" },
+  { id: "planta_maceta", name: "Planta Frondosa en Maceta", category: "decoracion", icon: "🌿", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isDecor: true, defaultType: "planta", desc: "Follaje verde en maceta de barro cocido" },
+  { id: "setas_luminosas", name: "Setas Bioluminiscentes", category: "decoracion", icon: "🍄", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 2, maxH: 2, isDecor: true, defaultType: "setas", desc: "Hongos fosforescentes de caverna" },
+  { id: "bonsai_mistico", name: "Bonsái Arcano Viviente", category: "decoracion", icon: "🪴", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "bonsai", desc: "Árbol miniatura imbuido de éter" },
+  { id: "estante_pociones", name: "Anaquel de Pociones y Viales", category: "decoracion", icon: "🧪", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 1, isDecor: true, defaultType: "pociones", desc: "Estante con reactivos y elixires brillantes" },
+  { id: "mesa_mapas", name: "Mesa Táctica de Cartografía", category: "decoracion", icon: "🗺️", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isDecor: true, defaultType: "mapas", desc: "Mesa con planos, compás y catalejo" },
+  { id: "reliquia_arcana", name: "Pedestal de Gema Radiante", category: "decoracion", icon: "💎", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "reliquia", desc: "Columna de piedra con cristal que levita" },
+  { id: "telarana", name: "Telaraña Ancestral de Rincón", category: "decoracion", icon: "🕸️", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "telarana", desc: "Sutil filamento de araña en esquina" },
 
   // 7. ILUMINACIÓN
-  { id: "candelabro", name: "Candelabro Alto de Forja", category: "luces", icon: "🕯️", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "candelabro", desc: "Lámpara de forja con 4 velas aromáticas" },
-  { id: "farol_pared", name: "Farol de Aceite de Pared", category: "luces", icon: "🏮", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "antorcha", desc: "Candil con cristal protector y luz tenue" },
-  { id: "brasero", name: "Brasero de Fuego Violeta", category: "luces", icon: "✨", defaultW: 1, defaultH: 1, isDecor: true, defaultType: "brasero", desc: "Recipiente con ascuas mágicas de resplandor arcano" },
-  { id: "chimenea_decor", name: "Gran Chimenea de Piedra", category: "luces", icon: "🪵", defaultW: 2, defaultH: 1, isDecor: true, defaultType: "chimenea", desc: "Hogar de leña con tiro de sillería y brasas" }
+  { id: "candelabro", name: "Candelabro Alto de Forja", category: "luces", icon: "🕯️", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "candelabro", desc: "Lámpara de forja con 4 velas aromáticas" },
+  { id: "farol_pared", name: "Farol de Aceite de Pared", category: "luces", icon: "🏮", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "antorcha", desc: "Candil con cristal protector y luz tenue" },
+  { id: "brasero", name: "Brasero de Fuego Violeta", category: "luces", icon: "✨", defaultW: 1, defaultH: 1, minW: 1, minH: 1, maxW: 1, maxH: 1, isDecor: true, defaultType: "brasero", desc: "Recipiente con ascuas mágicas de resplandor arcano" },
+  { id: "chimenea_decor", name: "Gran Chimenea de Piedra", category: "luces", icon: "🪵", defaultW: 2, defaultH: 1, minW: 1, minH: 1, maxW: 3, maxH: 2, isDecor: true, defaultType: "chimenea", desc: "Hogar de leña con tiro de sillería y brasas" }
 ];
 
 var HOUSE_DECOR_CATALOG = [
@@ -3147,7 +3155,7 @@ function rotateRoomFurniture(roomId, furnitureId){
   var fur = room.furniture.find(function(f){ return f.id === furnitureId; });
   if(!fur) return;
 
-  fur.rotation = ((fur.rotation || 0) + 90) % 360;
+  if(!rotateHouseItem(room, fur)){ houseLayoutWarn("No hay sitio para girarlo."); return; }
   saveRoomChangesToRemoteAndBroadcast(room, "furniture");
   renderHouseView();
 }
@@ -3159,7 +3167,7 @@ function rotateRoomDecor(roomId, decorId){
   var dec = room.decor.find(function(d){ return d.id === decorId; });
   if(!dec) return;
 
-  dec.rotation = ((dec.rotation || 0) + 90) % 360;
+  if(!rotateHouseItem(room, dec)){ houseLayoutWarn("No hay sitio para girarlo."); return; }
   saveRoomChangesToRemoteAndBroadcast(room, "decor");
   renderHouseView();
 }
@@ -3172,29 +3180,6 @@ function addRoomDecor(roomId, decorType){
   var cat = HOUSE_DECOR_CATALOG.find(function(c){ return c.type === decorType; });
   if(!cat) return;
 
-  var roomCols = Math.max(4, room.width || Math.round((room.w || 240) / 40) || 6);
-  var roomRows = Math.max(3, room.height || Math.round((room.h || 160) / 40) || 4);
-
-  // Buscar celda libre en sub-rejilla
-  var occupied = {};
-  (room.furniture || []).forEach(function(f){ occupied[(f.pos_x || 0) + "_" + (f.pos_y || 0)] = true; });
-  room.decor.forEach(function(d){ occupied[(d.pos_x || 0) + "_" + (d.pos_y || 0)] = true; });
-
-  var targetX = 0;
-  var targetY = 0;
-  var found = false;
-  for(var y = 0; y < roomRows; y++){
-    for(var x = 0; x < roomCols; x++){
-      if(!occupied[x + "_" + y]){
-        targetX = x;
-        targetY = y;
-        found = true;
-        break;
-      }
-    }
-    if(found) break;
-  }
-
   var newDec = {
     id: "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
     type: cat.type,
@@ -3202,10 +3187,12 @@ function addRoomDecor(roomId, decorType){
     label: cat.label,
     w: cat.defaultW || 1,
     h: cat.defaultH || 1,
-    pos_x: targetX,
-    pos_y: targetY,
+    pos_x: 0,
+    pos_y: 0,
     rotation: 0
   };
+
+  if(!placeNewHouseItem(room, newDec)){ houseLayoutWarn("No queda hueco libre en la estancia."); return; }
 
   room.decor.push(newDec);
   saveRoomChangesToRemoteAndBroadcast(room, "decor");
@@ -3226,6 +3213,161 @@ function deleteRoomDecor(roomId, decorId){
 }
 
 // ============================================================================
+// REJILLA DE MUEBLES: una sola para el Estudio, el inspector, el plano y el arrastre
+// ============================================================================
+function getRoomFurnitureGrid(room){
+  room = room || {};
+  return {
+    cols: Math.max(4, room.width || Math.round((room.w || 240) / 40) || 6),
+    rows: Math.max(3, room.height || Math.round((room.h || 160) / 40) || 4)
+  };
+}
+
+// Capas: alfombras y pieles van en el suelo y pueden quedar debajo de los muebles
+function getHouseItemLayer(item){
+  var t = String((item && (item.type || item.id)) || "").toLowerCase();
+  return (t.indexOf("alfombra") === 0 || t === "piel_oso") ? "suelo" : "muebles";
+}
+
+function getHouseItemSize(item){
+  return { w: Math.max(1, (item && item.w) || 1), h: Math.max(1, (item && item.h) || 1) };
+}
+
+function findRoomLayoutItem(room, itemId){
+  var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
+  if(f) return { item: f, field: "furniture" };
+  var d = (room.decor || []).find(function(x){ return x.id === itemId; });
+  if(d) return { item: d, field: "decor" };
+  return null;
+}
+
+// La huella completa (x, y, w, h) cabe en la estancia y no pisa otro elemento de su misma capa
+function canPlaceItem(room, item, x, y, w, h){
+  var grid = getRoomFurnitureGrid(room);
+  if(x < 0 || y < 0 || w < 1 || h < 1 || x + w > grid.cols || y + h > grid.rows) return false;
+  var layer = getHouseItemLayer(item);
+  var itemId = item && item.id;
+  return !(room.furniture || []).concat(room.decor || []).some(function(o){
+    if(!o || o === item || (itemId && o.id === itemId)) return false;
+    if(typeof o.pos_x !== "number" || typeof o.pos_y !== "number") return false;
+    if(getHouseItemLayer(o) !== layer) return false;
+    var s = getHouseItemSize(o);
+    return x < o.pos_x + s.w && o.pos_x < x + w && y < o.pos_y + s.h && o.pos_y < y + h;
+  });
+}
+
+// Hueco libre más cercano a (nearX, nearY); sin referencia, el primero de arriba abajo
+function findFreeItemSpot(room, item, w, h, nearX, nearY){
+  var grid = getRoomFurnitureGrid(room);
+  var useNear = (typeof nearX === "number" && typeof nearY === "number");
+  var best = null;
+  var bestD = Infinity;
+  for(var y = 0; y + h <= grid.rows; y++){
+    for(var x = 0; x + w <= grid.cols; x++){
+      if(!canPlaceItem(room, item, x, y, w, h)) continue;
+      if(!useNear) return { x: x, y: y };
+      var d = (x - nearX) * (x - nearX) + (y - nearY) * (y - nearY);
+      if(d < bestD){ bestD = d; best = { x: x, y: y }; }
+    }
+  }
+  return best;
+}
+
+function findCanvaAssetForItem(item){
+  if(!item) return null;
+  var lib = CANVA_ASSET_LIBRARY;
+  return (item.asset_id && lib.find(function(a){ return a.id === item.asset_id; }))
+    || lib.find(function(a){ return a.name === (item.name || item.label); })
+    || lib.find(function(a){ return a.defaultType === item.type; })
+    || null;
+}
+
+// Límites de tamaño del catálogo; con el mueble girado 90° o 270° también se giran
+function getHouseItemSizeLimits(item){
+  var asset = findCanvaAssetForItem(item);
+  var floor = getHouseItemLayer(item) === "suelo";
+  var lim = {
+    minW: (asset && asset.minW) || 1,
+    minH: (asset && asset.minH) || 1,
+    maxW: (asset && asset.maxW) || (floor ? 99 : 4),
+    maxH: (asset && asset.maxH) || (floor ? 99 : 4)
+  };
+  if(Math.abs(Math.round((item.rotation || 0) / 90)) % 2 === 1){
+    lim = { minW: lim.minH, minH: lim.minW, maxW: lim.maxH, maxH: lim.maxW };
+  }
+  return lim;
+}
+
+// Giro real: cambia ancho por alto sobre el centro; si no cabe, al hueco libre más cercano
+function rotateHouseItem(room, item){
+  var s = getHouseItemSize(item);
+  var nw = s.h;
+  var nh = s.w;
+  var nx = (item.pos_x || 0) + Math.round((s.w - nw) / 2);
+  var ny = (item.pos_y || 0) + Math.round((s.h - nh) / 2);
+  var spot = canPlaceItem(room, item, nx, ny, nw, nh) ? { x: nx, y: ny } : findFreeItemSpot(room, item, nw, nh, nx, ny);
+  if(!spot) return false;
+  item.rotation = ((item.rotation || 0) + 90) % 360;
+  item.w = nw;
+  item.h = nh;
+  item.pos_x = spot.x;
+  item.pos_y = spot.y;
+  return true;
+}
+
+// Coloca un elemento nuevo en el primer hueco libre; si no cabe así, lo prueba girado
+function placeNewHouseItem(room, item){
+  var s = getHouseItemSize(item);
+  var spot = findFreeItemSpot(room, item, s.w, s.h);
+  if(!spot && s.w !== s.h){
+    spot = findFreeItemSpot(room, item, s.h, s.w);
+    if(spot){
+      item.w = s.h;
+      item.h = s.w;
+      item.rotation = ((item.rotation || 0) + 90) % 360;
+    }
+  }
+  if(!spot) return false;
+  item.pos_x = spot.x;
+  item.pos_y = spot.y;
+  return true;
+}
+
+// Coloca los elementos que llegan sin posición (datos antiguos). Se hace al cargar, nunca al pintar.
+function normalizeRoomLayout(room){
+  if(!room) return;
+  ["furniture", "decor"].forEach(function(field){
+    if(!Array.isArray(room[field])) return;
+    room[field].forEach(function(it){
+      if(!it) return;
+      if(typeof it.rotation !== "number") it.rotation = 0;
+      if(typeof it.pos_x === "number" && typeof it.pos_y === "number"){
+        // Si la estancia se ha encogido, se mete dentro lo que quedaba fuera
+        var g = getRoomFurnitureGrid(room);
+        if((it.w || 1) > g.cols) it.w = g.cols;
+        if((it.h || 1) > g.rows) it.h = g.rows;
+        var sz = getHouseItemSize(it);
+        if(it.pos_x < 0 || it.pos_x + sz.w > g.cols) it.pos_x = Math.max(0, Math.min(g.cols - sz.w, it.pos_x));
+        if(it.pos_y < 0 || it.pos_y + sz.h > g.rows) it.pos_y = Math.max(0, Math.min(g.rows - sz.h, it.pos_y));
+        return;
+      }
+      var s = getHouseItemSize(it);
+      var spot = findFreeItemSpot(room, it, s.w, s.h);
+      it.pos_x = spot ? spot.x : 0;
+      it.pos_y = spot ? spot.y : 0;
+    });
+  });
+}
+
+function normalizeAllRoomLayouts(){
+  (houseState.rooms || []).forEach(normalizeRoomLayout);
+}
+
+function houseLayoutWarn(msg){
+  if(typeof showToast === "function") showToast(msg, "warning");
+}
+
+// ============================================================================
 // FUNCIONES DEL ESTUDIO CANVA (Diseño y Decoración Visual)
 // ============================================================================
 function renderRoomMiniLayout(r){
@@ -3233,51 +3375,35 @@ function renderRoomMiniLayout(r){
   var dec = Array.isArray(r.decor) ? r.decor : [];
   if(fur.length === 0 && dec.length === 0) return '';
 
-  var colW = 100 / 6; // ~16.666% por celda horizontal
-  var rowH = 100 / 4; // 25% por celda vertical
+  var grid = getRoomFurnitureGrid(r);
+  var colW = 100 / grid.cols;
+  var rowH = 100 / grid.rows;
+
+  // Clamp para asegurar que el elemento esté 100% contenido en la habitación
+  function miniBox(it){
+    var w = Math.min(grid.cols, Math.max(1, it.w || 1));
+    var h = Math.min(grid.rows, Math.max(1, it.h || 1));
+    var x = Math.max(0, Math.min(grid.cols - w, it.pos_x || 0));
+    var y = Math.max(0, Math.min(grid.rows - h, it.pos_y || 0));
+    return 'left:' + (x * colW).toFixed(2) + '%;top:' + (y * rowH).toFixed(2) + '%;width:' + (w * colW).toFixed(2) + '%;height:' + (h * rowH).toFixed(2) + '%;';
+  }
 
   var items = [];
-  fur.forEach(function(f, idx){
-    var fx = (typeof f.pos_x === "number") ? f.pos_x : (idx % 6);
-    var fy = (typeof f.pos_y === "number") ? f.pos_y : Math.floor(idx / 6);
-    var fw = Math.max(1, Math.min(6, f.w || 1));
-    var fh = Math.max(1, Math.min(4, f.h || 1));
-
-    // Clamp para asegurar que el elemento esté 100% contenido en la habitación
-    fx = Math.max(0, Math.min(6 - fw, fx));
-    fy = Math.max(0, Math.min(4 - fh, fy));
-
-    var leftPct = (fx * colW).toFixed(2);
-    var topPct = (fy * rowH).toFixed(2);
-    var widthPct = (fw * colW).toFixed(2);
-    var heightPct = (fh * rowH).toFixed(2);
-
+  fur.forEach(function(f){
     items.push(
-      '<div class="house-mini-item item-furniture" style="left:' + leftPct + '%;top:' + topPct + '%;width:' + widthPct + '%;height:' + heightPct + '%;" title="' + esc(f.name) + '">' +
+      '<div class="house-mini-item item-furniture" style="' + miniBox(f) + '" title="' + esc(f.name) + '">' +
         getCanvaSvg(f.type || f.id, f.rotation || 0) +
       '</div>'
     );
   });
 
+  // Alfombras primero, para que queden debajo de los muebles
   dec.forEach(function(d){
-    var dx = (typeof d.pos_x === "number") ? d.pos_x : 0;
-    var dy = (typeof d.pos_y === "number") ? d.pos_y : 0;
-    var dw = Math.max(1, Math.min(6, d.w || 1));
-    var dh = Math.max(1, Math.min(4, d.h || 1));
-
-    dx = Math.max(0, Math.min(6 - dw, dx));
-    dy = Math.max(0, Math.min(4 - dh, dy));
-
-    var leftPct = (dx * colW).toFixed(2);
-    var topPct = (dy * rowH).toFixed(2);
-    var widthPct = (dw * colW).toFixed(2);
-    var heightPct = (dh * rowH).toFixed(2);
-
-    items.push(
-      '<div class="house-mini-item item-decor" style="left:' + leftPct + '%;top:' + topPct + '%;width:' + widthPct + '%;height:' + heightPct + '%;" title="' + esc(d.label || d.type) + '">' +
+    var html = '<div class="house-mini-item item-decor" style="' + miniBox(d) + '" title="' + esc(d.label || d.type) + '">' +
         getCanvaSvg(d.type || d.id, d.rotation || 0) +
-      '</div>'
-    );
+      '</div>';
+    if(getHouseItemLayer(d) === "suelo") items.unshift(html);
+    else items.push(html);
   });
 
   return items.join('');
@@ -3293,26 +3419,6 @@ function canvaInsertAsset(roomId, assetId){
   room.furniture = room.furniture || [];
   room.decor = room.decor || [];
 
-  // Buscar celda libre en la cuadrícula 6x4
-  var occupied = {};
-  room.furniture.forEach(function(f){ occupied[(f.pos_x || 0) + "_" + (f.pos_y || 0)] = true; });
-  room.decor.forEach(function(d){ occupied[(d.pos_x || 0) + "_" + (d.pos_y || 0)] = true; });
-
-  var targetX = 0;
-  var targetY = 0;
-  var found = false;
-  for(var y = 0; y < 4; y++){
-    for(var x = 0; x < 6; x++){
-      if(!occupied[x + "_" + y]){
-        targetX = x;
-        targetY = y;
-        found = true;
-        break;
-      }
-    }
-    if(found) break;
-  }
-
   var isStorage = !!asset.isStorage;
   var isFurn = !!asset.isFurniture;
   var newItem = null;
@@ -3322,24 +3428,36 @@ function canvaInsertAsset(roomId, assetId){
       id: "fur_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
       name: asset.name,
       type: asset.defaultType || asset.id,
+      asset_id: asset.id,
       icon: asset.icon,
-      pos_x: targetX,
-      pos_y: targetY,
+      w: asset.defaultW || 1,
+      h: asset.defaultH || 1,
+      pos_x: 0,
+      pos_y: 0,
       rotation: 0,
       items: []
     };
-    room.furniture.push(newItem);
-    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
   } else {
     newItem = {
       id: "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
       type: asset.defaultType || asset.id,
+      asset_id: asset.id,
       label: asset.name,
       icon: asset.icon,
-      pos_x: targetX,
-      pos_y: targetY,
+      w: asset.defaultW || 1,
+      h: asset.defaultH || 1,
+      pos_x: 0,
+      pos_y: 0,
       rotation: 0
     };
+  }
+
+  if(!placeNewHouseItem(room, newItem)){ houseLayoutWarn("No queda hueco libre para " + asset.name + "."); return; }
+
+  if(isStorage || isFurn){
+    room.furniture.push(newItem);
+    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
+  } else {
     room.decor.push(newItem);
     saveRoomChangesToRemoteAndBroadcast(room, "decor");
   }
@@ -3356,71 +3474,36 @@ function canvaRotateItem(roomId, itemId){
   var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!room) return;
 
-  var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
-  if(f){
-    f.rotation = ((f.rotation || 0) + 90) % 360;
-    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
-    renderHouseView();
-    return;
-  }
-
-  var d = (room.decor || []).find(function(x){ return x.id === itemId; });
-  if(d){
-    d.rotation = ((d.rotation || 0) + 90) % 360;
-    saveRoomChangesToRemoteAndBroadcast(room, "decor");
-    renderHouseView();
-  }
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found) return;
+  if(!rotateHouseItem(room, found.item)){ houseLayoutWarn("No hay sitio para girarlo."); return; }
+  saveRoomChangesToRemoteAndBroadcast(room, found.field);
+  renderHouseView();
 }
 
 function canvaDuplicateItem(roomId, itemId){
   var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!room) return;
 
-  var occupied = {};
-  (room.furniture || []).forEach(function(x){ occupied[(x.pos_x || 0) + "_" + (x.pos_y || 0)] = true; });
-  (room.decor || []).forEach(function(x){ occupied[(x.pos_x || 0) + "_" + (x.pos_y || 0)] = true; });
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found) return;
+  var isFurn = (found.field === "furniture");
 
-  var targetX = 0;
-  var targetY = 0;
-  var found = false;
-  for(var y = 0; y < 4; y++){
-    for(var x = 0; x < 6; x++){
-      if(!occupied[x + "_" + y]){
-        targetX = x; targetY = y; found = true; break;
-      }
-    }
-    if(found) break;
-  }
+  var clone = JSON.parse(JSON.stringify(found.item));
+  clone.id = (isFurn ? "fur_" : "dec_") + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  if(isFurn) clone.items = []; // Duplicados empiezan vacíos
 
-  var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
-  if(f){
-    var cloneF = JSON.parse(JSON.stringify(f));
-    cloneF.id = "fur_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-    cloneF.pos_x = targetX;
-    cloneF.pos_y = targetY;
-    cloneF.items = []; // Duplicados empiezan vacíos
-    room.furniture.push(cloneF);
-    houseState.selectedItemId = cloneF.id;
+  var s = getHouseItemSize(clone);
+  var spot = findFreeItemSpot(room, clone, s.w, s.h, found.item.pos_x || 0, found.item.pos_y || 0);
+  if(!spot){ houseLayoutWarn("No queda hueco libre para duplicarlo."); return; }
+  clone.pos_x = spot.x;
+  clone.pos_y = spot.y;
 
-    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
-    renderHouseView();
-    if(typeof showToast === "function") showToast("Mueble duplicado.", "info");
-    return;
-  }
-
-  var d = (room.decor || []).find(function(x){ return x.id === itemId; });
-  if(d){
-    var cloneD = JSON.parse(JSON.stringify(d));
-    cloneD.id = "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-    cloneD.pos_x = targetX;
-    cloneD.pos_y = targetY;
-    room.decor.push(cloneD);
-    houseState.selectedItemId = cloneD.id;
-
-    saveRoomChangesToRemoteAndBroadcast(room, "decor");
-    renderHouseView();
-    if(typeof showToast === "function") showToast("Adorno duplicado.", "info");
-  }
+  room[found.field].push(clone);
+  houseState.selectedItemId = clone.id;
+  saveRoomChangesToRemoteAndBroadcast(room, found.field);
+  renderHouseView();
+  if(typeof showToast === "function") showToast(isFurn ? "Mueble duplicado." : "Adorno duplicado.", "info");
 }
 
 function canvaDeleteItem(roomId, itemId){
@@ -3451,80 +3534,48 @@ function canvaResizeItem(roomId, itemId, dw, dh){
   var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!room) return;
 
-  var maxCols = Math.max(4, room.width || Math.round((room.w || 240) / 40) || 6);
-  var maxRows = Math.max(3, room.height || Math.round((room.h || 160) / 40) || 4);
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found) return;
+  var it = found.item;
+  var s = getHouseItemSize(it);
+  var lim = getHouseItemSizeLimits(it);
+  var targetW = s.w + dw;
+  var targetH = s.h + dh;
 
-  var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
-  if(f){
-    var curW = Math.max(1, f.w || 1);
-    var curH = Math.max(1, f.h || 1);
-    var targetW = curW + dw;
-    var targetH = curH + dh;
+  if((dw < 0 && targetW < lim.minW) || (dh < 0 && targetH < lim.minH)){ houseLayoutWarn("Ya tiene el tamaño mínimo."); return; }
+  if((dw > 0 && targetW > lim.maxW) || (dh > 0 && targetH > lim.maxH)){ houseLayoutWarn("Ya tiene el tamaño máximo."); return; }
 
-    if(dw > 0 && (f.pos_x || 0) + targetW > maxCols && (f.pos_x || 0) > 0){
-      f.pos_x = Math.max(0, (f.pos_x || 0) - dw);
-    }
-    if(dh > 0 && (f.pos_y || 0) + targetH > maxRows && (f.pos_y || 0) > 0){
-      f.pos_y = Math.max(0, (f.pos_y || 0) - dh);
-    }
+  // Si crece contra la pared o contra otro mueble, se prueba desplazándolo hacia atrás
+  var x = it.pos_x || 0;
+  var y = it.pos_y || 0;
+  var tries = [{ x: x, y: y }, { x: x - Math.max(0, dw), y: y - Math.max(0, dh) }];
+  var spot = tries.find(function(p){ return canPlaceItem(room, it, p.x, p.y, targetW, targetH); });
+  if(!spot){ houseLayoutWarn("No cabe más grande ahí."); return; }
 
-    f.w = Math.max(1, Math.min(maxCols - (f.pos_x || 0), targetW));
-    f.h = Math.max(1, Math.min(maxRows - (f.pos_y || 0), targetH));
-
-    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
-    renderHouseView();
-    return;
-  }
-
-  var d = (room.decor || []).find(function(x){ return x.id === itemId; });
-  if(d){
-    var curDW = Math.max(1, d.w || 1);
-    var curDH = Math.max(1, d.h || 1);
-    var targetDW = curDW + dw;
-    var targetDH = curDH + dh;
-
-    if(dw > 0 && (d.pos_x || 0) + targetDW > maxCols && (d.pos_x || 0) > 0){
-      d.pos_x = Math.max(0, (d.pos_x || 0) - dw);
-    }
-    if(dh > 0 && (d.pos_y || 0) + targetDH > maxRows && (d.pos_y || 0) > 0){
-      d.pos_y = Math.max(0, (d.pos_y || 0) - dh);
-    }
-
-    d.w = Math.max(1, Math.min(maxCols - (d.pos_x || 0), targetDW));
-    d.h = Math.max(1, Math.min(maxRows - (d.pos_y || 0), targetDH));
-
-    saveRoomChangesToRemoteAndBroadcast(room, "decor");
-    renderHouseView();
-  }
+  it.w = targetW;
+  it.h = targetH;
+  it.pos_x = spot.x;
+  it.pos_y = spot.y;
+  saveRoomChangesToRemoteAndBroadcast(room, found.field);
+  renderHouseView();
 }
 
 function canvaNudgeItem(roomId, itemId, dx, dy){
   var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!room) return;
 
-  var maxCols = Math.max(4, room.width || Math.round((room.w || 240) / 40) || 6);
-  var maxRows = Math.max(3, room.height || Math.round((room.h || 160) / 40) || 4);
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found) return;
+  var it = found.item;
+  var s = getHouseItemSize(it);
+  var nx = (it.pos_x || 0) + dx;
+  var ny = (it.pos_y || 0) + dy;
+  if(!canPlaceItem(room, it, nx, ny, s.w, s.h)){ houseLayoutWarn("No cabe ahí."); return; }
 
-  var f = (room.furniture || []).find(function(x){ return x.id === itemId; });
-  if(f){
-    var curW = Math.max(1, f.w || 1);
-    var curH = Math.max(1, f.h || 1);
-    f.pos_x = Math.max(0, Math.min(maxCols - curW, (f.pos_x || 0) + dx));
-    f.pos_y = Math.max(0, Math.min(maxRows - curH, (f.pos_y || 0) + dy));
-    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
-    renderHouseView();
-    return;
-  }
-
-  var d = (room.decor || []).find(function(x){ return x.id === itemId; });
-  if(d){
-    var curDW = Math.max(1, d.w || 1);
-    var curDH = Math.max(1, d.h || 1);
-    d.pos_x = Math.max(0, Math.min(maxCols - curDW, (d.pos_x || 0) + dx));
-    d.pos_y = Math.max(0, Math.min(maxRows - curDH, (d.pos_y || 0) + dy));
-    saveRoomChangesToRemoteAndBroadcast(room, "decor");
-    renderHouseView();
-  }
+  it.pos_x = nx;
+  it.pos_y = ny;
+  saveRoomChangesToRemoteAndBroadcast(room, found.field);
+  renderHouseView();
 }
 
 function renderCanvaStudio(roomId){
@@ -3631,8 +3682,9 @@ function renderCanvaStudio(roomId){
   html += '  </div>'; // fin canva-assets-grid
   html += '</div>'; // fin canva-library-sidebar
 
-  var maxCols = Math.max(4, r.width || Math.round((r.w || 240) / 40) || 6);
-  var maxRows = Math.max(3, r.height || Math.round((r.h || 160) / 40) || 4);
+  var studioGrid = getRoomFurnitureGrid(r);
+  var maxCols = studioGrid.cols;
+  var maxRows = studioGrid.rows;
 
   // Columna Central: Lienzo de la Habitación (Stage)
   html += '<div class="canva-stage-wrap">';
@@ -3651,10 +3703,12 @@ function renderCanvaStudio(roomId){
 
   var texClass = "tex-" + (r.room_type || "salon");
   var stageCustomBg = r.color ? ('background: ' + getRoomCustomBackground(r.color) + ' !important;') : '';
-  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage" style="grid-template-columns:repeat(' + maxCols + ', 1fr);grid-template-rows:repeat(' + maxRows + ', minmax(70px, 95px));' + stageCustomBg + '">';
+  // Casillas cuadradas: el lienzo mantiene la proporción de la rejilla y no pasa del alto de la pantalla
+  var stageSize = 'width:100%;max-width:calc(72vh * ' + maxCols + ' / ' + maxRows + ');margin:0 auto;min-height:0;aspect-ratio:' + maxCols + ' / ' + maxRows + ';';
+  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage" style="' + stageSize + 'grid-template-columns:repeat(' + maxCols + ', minmax(0, 1fr));grid-template-rows:repeat(' + maxRows + ', minmax(0, 1fr));' + stageCustomBg + '">';
 
   // Celdas de guía de fondo
-  html += '    <div class="canva-stage-grid-lines" style="grid-template-columns:repeat(' + maxCols + ', 1fr);grid-template-rows:repeat(' + maxRows + ', 1fr);">';
+  html += '    <div class="canva-stage-grid-lines" style="grid-template-columns:repeat(' + maxCols + ', minmax(0, 1fr));grid-template-rows:repeat(' + maxRows + ', minmax(0, 1fr));">';
   for(var cellIdx = 0; cellIdx < (maxCols * maxRows); cellIdx++){
     html += '<div class="canva-stage-grid-cell"></div>';
   }
@@ -3717,7 +3771,8 @@ function renderCanvaStudio(roomId){
     var rot = d.rotation || 0;
     var gridSpan = 'grid-column:' + colStart + ' / span ' + itemW + ';grid-row:' + rowStart + ' / span ' + itemH + ';';
 
-    html += '<div class="canva-stage-item item-decor' + (isSel ? ' canva-selected' : '') + '" style="' + gridSpan + '" data-action="canva-select-item" data-item-id="' + d.id + '" data-room-id="' + r.id + '">';
+    var floorCls = (getHouseItemLayer(d) === "suelo") ? ' item-floor' : '';
+    html += '<div class="canva-stage-item item-decor' + floorCls + (isSel ? ' canva-selected' : '') + '" style="' + gridSpan + '" data-action="canva-select-item" data-item-id="' + d.id + '" data-room-id="' + r.id + '">';
 
     if(isSel && canEdit){
       html += '<div class="canva-floating-toolbar">';
@@ -3845,9 +3900,15 @@ function handleCanvaStagePointerDown(e){
   }
   if(!targetItem) return;
 
-  var stageRect = stageEl.getBoundingClientRect();
-  var cellW = stageRect.width / 6;
-  var cellH = stageRect.height / 4;
+  // Paso real de una casilla: ancho interior (sin borde ni relleno) más un hueco, entre columnas
+  var grid = getRoomFurnitureGrid(room);
+  var cs = window.getComputedStyle(stageEl);
+  var padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  var padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+  var gapX = parseFloat(cs.columnGap) || 0;
+  var gapY = parseFloat(cs.rowGap) || 0;
+  var cellW = Math.max(1, (stageEl.clientWidth - padX + gapX) / grid.cols);
+  var cellH = Math.max(1, (stageEl.clientHeight - padY + gapY) / grid.rows);
 
   canvaActiveDrag = {
     pointerId: e.pointerId,
@@ -3862,8 +3923,11 @@ function handleCanvaStagePointerDown(e){
     origPosY: targetItem.pos_y || 0,
     w: Math.max(1, targetItem.w || 1),
     h: Math.max(1, targetItem.h || 1),
+    cols: grid.cols,
+    rows: grid.rows,
     cellW: cellW,
     cellH: cellH,
+    canDrop: true,
     hasMoved: false,
     currentPosX: targetItem.pos_x || 0,
     currentPosY: targetItem.pos_y || 0
@@ -3892,11 +3956,17 @@ function handleCanvaStagePointerMove(e){
   var deltaCols = Math.round(dx / canvaActiveDrag.cellW);
   var deltaRows = Math.round(dy / canvaActiveDrag.cellH);
 
-  var newX = Math.max(0, Math.min(6 - canvaActiveDrag.w, canvaActiveDrag.origPosX + deltaCols));
-  var newY = Math.max(0, Math.min(4 - canvaActiveDrag.h, canvaActiveDrag.origPosY + deltaRows));
+  var newX = Math.max(0, Math.min(canvaActiveDrag.cols - canvaActiveDrag.w, canvaActiveDrag.origPosX + deltaCols));
+  var newY = Math.max(0, Math.min(canvaActiveDrag.rows - canvaActiveDrag.h, canvaActiveDrag.origPosY + deltaRows));
 
   canvaActiveDrag.currentPosX = newX;
   canvaActiveDrag.currentPosY = newY;
+
+  // Aviso en rojo mientras el sitio de destino choca con otro elemento
+  var dragRoom = (houseState.rooms || []).find(function(x){ return x.id === canvaActiveDrag.roomId; });
+  var dragFound = dragRoom ? findRoomLayoutItem(dragRoom, canvaActiveDrag.itemId) : null;
+  canvaActiveDrag.canDrop = !!dragFound && canPlaceItem(dragRoom, dragFound.item, newX, newY, canvaActiveDrag.w, canvaActiveDrag.h);
+  canvaActiveDrag.itemEl.classList.toggle("canva-drop-invalid", !canvaActiveDrag.canDrop);
 
   canvaActiveDrag.itemEl.style.transform = "translate3d(" + dx + "px, " + dy + "px, 0)";
 }
@@ -3912,6 +3982,7 @@ function handleCanvaStagePointerUp(e){
   } catch(err){}
 
   drag.itemEl.classList.remove("canva-dragging");
+  drag.itemEl.classList.remove("canva-drop-invalid");
   drag.itemEl.style.transform = "";
 
   if(!drag.hasMoved){
@@ -3930,6 +4001,12 @@ function handleCanvaStagePointerUp(e){
   if(!targetItem) return;
 
   var changed = (targetItem.pos_x !== drag.currentPosX || targetItem.pos_y !== drag.currentPosY);
+  if(changed && !canPlaceItem(room, targetItem, drag.currentPosX, drag.currentPosY, drag.w, drag.h)){
+    // No cabe: vuelve a su sitio
+    houseLayoutWarn("No cabe ahí: choca con otro mueble.");
+    renderHouseView();
+    return;
+  }
   if(changed){
     targetItem.pos_x = drag.currentPosX;
     targetItem.pos_y = drag.currentPosY;
@@ -4655,35 +4732,10 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
   var furnitureList = Array.isArray(r.furniture) ? r.furniture : [];
   var decorList = Array.isArray(r.decor) ? r.decor : [];
 
-  var maxCols = Math.max(4, r.width || Math.round((r.w || 240) / 40) || 6);
-  var maxRows = Math.max(3, r.height || Math.round((r.h || 160) / 40) || 4);
-
-  var occupied = {};
-  furnitureList.forEach(function(f, idx){
-    if(typeof f.pos_x !== "number") f.pos_x = idx % maxCols;
-    if(typeof f.pos_y !== "number") f.pos_y = Math.min(maxRows - 1, Math.floor(idx / maxCols));
-    if(typeof f.rotation !== "number") f.rotation = 0;
-    occupied[f.pos_x + "_" + f.pos_y] = true;
-  });
-
-  decorList.forEach(function(d){
-    if(typeof d.pos_x !== "number"){
-      for(var y = maxRows - 1; y >= 0; y--){
-        for(var x = maxCols - 1; x >= 0; x--){
-          if(!occupied[x + "_" + y]){
-            d.pos_x = x;
-            d.pos_y = y;
-            occupied[x + "_" + y] = true;
-            break;
-          }
-        }
-        if(d.pos_x !== undefined) break;
-      }
-      if(d.pos_x === undefined){ d.pos_x = 0; d.pos_y = 0; }
-    }
-    if(typeof d.rotation !== "number") d.rotation = 0;
-    occupied[d.pos_x + "_" + d.pos_y] = true;
-  });
+  // Las posiciones que falten se ponen al cargar (normalizeRoomLayout): pintar no cambia datos
+  var subGrid = getRoomFurnitureGrid(r);
+  var maxCols = subGrid.cols;
+  var maxRows = subGrid.rows;
 
   var html = '<div class="house-room-subgrid-wrap">';
   html += '  <div class="house-room-subgrid-toolbar">';
@@ -5174,8 +5226,15 @@ function confirmAddFurnitureAction(){
     id: "fur_" + Date.now(),
     name: nameEl.value.trim(),
     type: typeEl ? typeEl.value : "baul",
+    w: 1,
+    h: 1,
+    pos_x: 0,
+    pos_y: 0,
+    rotation: 0,
     items: []
   };
+
+  if(!placeNewHouseItem(r, newFur)){ houseLayoutWarn("No queda hueco libre en la estancia."); return; }
 
   r.furniture.push(newFur);
   saveRoomChangesToRemoteAndBroadcast(r, "furniture");
