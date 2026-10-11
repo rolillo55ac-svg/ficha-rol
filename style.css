@@ -9058,3 +9058,36 @@ textarea,
   #lapidaryModalOverlay { padding: 4px; }
   #lapidaryModal.lapidary-modal-box { width: 100% !important; max-width: 100% !important; max-height: 96vh; padding: 10px 8px !important; }
 }
+
+/* ==========================================================================
+   TALLER DE LAPIDARIO — Paso 3: Pulido de facetas
+   ========================================================================== */
+.lapidary-polish { display: flex; flex-direction: column; gap: 12px; }
+.lapidary-polish-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.lapidary-polish-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.15rem; color: var(--ink); }
+.lapidary-polish-score { font-family: var(--font-display); font-weight: 700; color: var(--gold-light); white-space: nowrap; }
+.lapidary-polish-gem { display: grid; place-items: center; padding-block: 4px; }
+.lapidary-polish-gem svg { width: 132px; height: 132px; overflow: visible; }
+.lapidary-polish-facet { transition: fill .35s ease, opacity .35s ease; }
+.lapidary-polish-track { position: relative; height: 64px; border-radius: 14px; background: #2a1e17; border: 1px solid var(--line-strong); overflow: hidden; touch-action: manipulation; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+.lapidary-polish-zone-good { position: absolute; top: 0; bottom: 0; background: rgba(124,196,164,.22); border-left: 1px solid rgba(124,196,164,.6); border-right: 1px solid rgba(124,196,164,.6); }
+.lapidary-polish-zone-perf { position: absolute; top: 0; bottom: 0; background: linear-gradient(180deg, rgba(222,195,146,.55), rgba(176,141,87,.35)); box-shadow: 0 0 16px rgba(222,195,146,.5); }
+.lapidary-polish-cursor { position: absolute; top: -2px; bottom: -2px; left: 0; width: 6px; margin-left: -3px; border-radius: 3px; background: #fff; box-shadow: 0 0 10px #fff; }
+.lapidary-polish-grade { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; text-shadow: 0 2px 6px #000; }
+.lapidary-polish-grade.p { color: var(--gold-light); }
+.lapidary-polish-grade.g { color: #7CC4A4; }
+.lapidary-polish-grade.f { color: #F07A84; }
+.lapidary-polish-grade.pop { animation: lapPolishPop .5s ease; }
+@keyframes lapPolishPop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.15); } }
+.lapidary-polish-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: .8rem; color: var(--ink-faint); }
+.lapidary-polish-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.lapidary-polish-legend i.perf { background: var(--gold-light); }
+.lapidary-polish-legend i.good { background: #7CC4A4; }
+.lapidary-polish-legend i.fail { background: #5a4434; }
+.lapidary-polish-passes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.lapidary-polish-pass { min-height: 34px; padding: 2px; border-radius: 9px; background: var(--bg-elev); border: 1px solid var(--line); display: grid; place-items: center; text-align: center; font-size: .7rem; font-weight: 600; color: var(--ink-faint); }
+.lapidary-polish-pass.now { border-color: var(--gold); color: var(--ink); }
+.lapidary-polish-pass.p { background: rgba(222,195,146,.2); border-color: var(--gold-light); color: var(--gold-light); }
+.lapidary-polish-pass.g { background: rgba(124,196,164,.15); border-color: #7CC4A4; color: #7CC4A4; }
+.lapidary-polish-pass.f { background: rgba(240,122,132,.12); border-color: #F07A84; color: #F07A84; }
+.lapidary-polish-btn { width: 100%; min-height: 72px; font-size: 1.2rem; }
