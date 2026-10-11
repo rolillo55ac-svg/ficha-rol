@@ -766,12 +766,46 @@ function addHouseFloor(name){
 var houseKonvaStage = null;
 var houseKonvaLayer = null;
 var houseKonvaTransformer = null;
-var houseKonvaGridSnap = 20;
+var houseKonvaGridSnap = 40;
 var houseKonvaZoom = 1.0;
 var houseKonvaSelectedGroup = null;
 var houseKonvaPanning = false;
 var houseKonvaPanStart = { x: 0, y: 0 };
 var houseKonvaStageStart = { x: 0, y: 0 };
+
+var HOUSE_CELL_PX = 40;
+
+// Posición y tamaño en píxeles calculados SIEMPRE desde las casillas guardadas (pos_x, pos_y, width, height),
+// para que todos los dispositivos vean el mismo plano y no haya solapes por tamaños mínimos.
+function syncRoomPixelRect(r){
+  r.x = (r.pos_x || 0) * HOUSE_CELL_PX + HOUSE_CELL_PX;
+  r.y = (r.pos_y || 0) * HOUSE_CELL_PX + HOUSE_CELL_PX;
+  r.w = Math.max(1, r.width || 2) * HOUSE_CELL_PX;
+  r.h = Math.max(1, r.height || 2) * HOUSE_CELL_PX;
+}
+
+function getHouseFloorBounds(){
+  var curFloor = houseState.activeFloor || 1;
+  var rooms = (houseState.rooms || []).filter(function(r){ return isRoomOnFloor(r, curFloor); });
+  if(rooms.length === 0) return null;
+  var b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  rooms.forEach(function(r){
+    syncRoomPixelRect(r);
+    b.minX = Math.min(b.minX, r.x); b.minY = Math.min(b.minY, r.y);
+    b.maxX = Math.max(b.maxX, r.x + r.w); b.maxY = Math.max(b.maxY, r.y + r.h);
+  });
+  return b;
+}
+
+// Alto del lienzo según la forma de la casa, para que en el móvil no quede hueco vacío
+function getHouseIdealStageHeight(width){
+  var b = getHouseFloorBounds();
+  if(!b) return 320;
+  var pad = 48;
+  var ratio = (b.maxY - b.minY + pad) / (b.maxX - b.minX + pad);
+  var minH = houseState.editMode ? 460 : 260;
+  return Math.round(Math.max(minH, Math.min(640, width * ratio)));
+}
 
 function initOrRenderHouseKonvaStage(){
   if(typeof Konva === "undefined"){
@@ -788,12 +822,14 @@ function initOrRenderHouseKonvaStage(){
   if(!wrap || !container) return;
 
   var containerWidth = wrap.clientWidth || 1000;
-  var containerHeight = Math.max(540, wrap.clientHeight || 640);
+  var containerHeight = getHouseIdealStageHeight(containerWidth);
+  container.style.height = containerHeight + "px";
 
   // Si el escenario ya existe y sigue vivo en el DOM
   if(houseKonvaStage && houseKonvaStage.container() && document.body.contains(houseKonvaStage.container())){
     houseKonvaStage.width(containerWidth);
     houseKonvaStage.height(containerHeight);
+    zoomFitHouse();
     renderKonvaRooms();
     return;
   }
@@ -835,14 +871,19 @@ function initOrRenderHouseKonvaStage(){
   // Observador de redimensionado responsivo
   if(window.ResizeObserver && !wrap._hasKonvaResizeObserver){
     wrap._hasKonvaResizeObserver = true;
+    wrap._lastKonvaWidth = containerWidth;
     new ResizeObserver(function(){
       if(houseKonvaStage && wrap){
         var w = wrap.clientWidth;
-        var h = Math.max(540, wrap.clientHeight || 640);
-        if(w > 0 && h > 0){
+        // Solo al cambiar el ancho (girar el móvil, redimensionar ventana)
+        if(w > 0 && w !== wrap._lastKonvaWidth){
+          wrap._lastKonvaWidth = w;
+          var h = getHouseIdealStageHeight(w);
+          container.style.height = h + "px";
           houseKonvaStage.width(w);
           houseKonvaStage.height(h);
-          if(houseKonvaLayer) houseKonvaLayer.batchDraw();
+          zoomFitHouse();
+          renderKonvaRooms();
         }
       }
     }).observe(wrap);
@@ -885,6 +926,7 @@ function initOrRenderHouseKonvaStage(){
     applyHouseKonvaZoom(newScale, ptr);
   });
 
+  zoomFitHouse();
   renderKonvaRooms();
 }
 
@@ -900,12 +942,7 @@ function renderKonvaRooms(){
   var isEdit = !!houseState.editMode;
 
   rooms.forEach(function(r){
-    if(typeof r.x !== "number" || typeof r.y !== "number"){
-      r.x = Math.max(20, (r.pos_x || 0) * 40 + 40);
-      r.y = Math.max(20, (r.pos_y || 0) * 40 + 40);
-      r.w = Math.max(120, (r.width || 4) * 40);
-      r.h = Math.max(90, (r.height || 3) * 40);
-    }
+    syncRoomPixelRect(r);
 
     var group = new Konva.Group({
       x: r.x,
@@ -1221,20 +1258,11 @@ function zoomFitHouse(){
     return;
   }
 
-  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  rooms.forEach(function(r){
-    var rx = (typeof r.x === "number") ? r.x : 40;
-    var ry = (typeof r.y === "number") ? r.y : 40;
-    var rw = (typeof r.w === "number") ? r.w : 220;
-    var rh = (typeof r.h === "number") ? r.h : 160;
-    minX = Math.min(minX, rx);
-    minY = Math.min(minY, ry);
-    maxX = Math.max(maxX, rx + rw);
-    maxY = Math.max(maxY, ry + rh);
-  });
+  var b = getHouseFloorBounds();
+  var minX = b.minX, minY = b.minY, maxX = b.maxX, maxY = b.maxY;
 
-  var boundW = maxX - minX + 80;
-  var boundH = maxY - minY + 80;
+  var boundW = maxX - minX + 48;
+  var boundH = maxY - minY + 48;
   var stageW = houseKonvaStage.width();
   var stageH = houseKonvaStage.height();
 
@@ -1360,10 +1388,10 @@ function quickDuplicateSelectedRoom(){
 }
 
 function toggleKonvaGridSnap(){
-  houseKonvaGridSnap = (houseKonvaGridSnap > 0) ? 0 : 20;
+  houseKonvaGridSnap = (houseKonvaGridSnap > 0) ? 0 : 40;
   var btn = document.getElementById("gridSnapBtn");
   if(btn){
-    btn.innerHTML = (houseKonvaGridSnap > 0) ? "🧲 Rejilla: 20px" : "🖐️ Rejilla: Libre";
+    btn.innerHTML = (houseKonvaGridSnap > 0) ? "🧲 Rejilla: casilla" : "🖐️ Rejilla: Libre";
     btn.classList.toggle("active", houseKonvaGridSnap > 0);
   }
   if(typeof showToast === "function"){
@@ -3835,7 +3863,7 @@ function renderHouseView(){
   html += '  <div class="house-action-row">';
   html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">➕ Añadir habitación</button>';
   html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>✕ Eliminar seleccionada</button>';
-  html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: 20px' : '🖐️ Rejilla: Libre') + '</button>';
+  html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: casilla' : '🖐️ Rejilla: Libre') + '</button>';
   html += '  </div>';
 
   // Barra de herramientas contextual de habitación seleccionada
