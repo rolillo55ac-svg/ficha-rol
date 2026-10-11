@@ -1,151 +1,802 @@
 // Taller de Lapidario y Piedras Mágicas — Krysalis
-// Web Audio procedimental + Minijuego de 4 Fases (Laja 2D Buscaminas, Cortes, Sweet Spot, Evaluación)
+// Web Audio procedimental + Minijuego de 4 Fases (Desbaste, Cortes, Pulido, Veredicto)
 
 /* ============================================================
-   FASE 1: LAJA DE GEODA 2D — Buscaminas hexagonal con vista completa del tablero
+   FASE 1: DESBASTE DE LA GEODA — Buscaminas cuadrado con silueta de gema
    ============================================================ */
 
-// Genera el tablero hexagonal de la geoda: 24 celdas en patrón colmena
-// 4 fisuras ocultas, el resto son costras de ganga a desbastar
-function buildGeodaSlabCells(){
-  // Definición de una cuadrícula hex offset (5 columnas x 5 filas = ~25 hexs, quitamos esquinas para dar forma ovalada)
-  // Usamos coordenadas axiales para adyacencia precisa
-  var hexSize = 30; // radio exterior del hex en px
-  var cols = 6;
-  var rows = 4;
-  var cells = [];
-  var id = 0;
-  // Generamos hexs en offset (q,r)
-  for(var r = 0; r < rows; r++){
-    var colsInRow = (r % 2 === 0) ? cols : cols - 1;
-    var offsetX = (r % 2 === 0) ? 0 : hexSize * 0.87;
-    for(var q = 0; q < colsInRow; q++){
-      cells.push({
-        id: id,
-        q: q, r: r,
-        type: 'gangue',
-        cleared: false,
-        flagged: false,
-        struck: false,
-        dangerCount: 0,
-        neighbors: []
-      });
-      id++;
-    }
-  }
-  // Posiciones fisuras ocultas: indices calculados para estar repartidas en la laja
-  var totalCells = cells.length;
-  // Fisuras en posiciones estrategicas (no en bordes, repartidas)
-  var fissurePositions = [
-    Math.floor(totalCells * 0.22),
-    Math.floor(totalCells * 0.45),
-    Math.floor(totalCells * 0.62),
-    Math.floor(totalCells * 0.80)
-  ];
-  fissurePositions.forEach(function(idx){
-    if(cells[idx]) cells[idx].type = 'fissure';
-  });
-  // Calcular vecinos por proximidad de celda en layout hex
-  for(var i = 0; i < cells.length; i++){
-    cells[i].neighbors = getHexNeighborIds(cells, i);
-  }
-  // Calcular dangerCount para cada celda ganga
-  for(var i = 0; i < cells.length; i++){
-    if(cells[i].type !== 'fissure'){
-      var count = 0;
-      cells[i].neighbors.forEach(function(nid){
-        if(cells[nid] && cells[nid].type === 'fissure') count++;
-      });
-      cells[i].dangerCount = count;
-    }
-  }
-  return cells;
+// Tabla de dificultad del desbaste (kit 0 = hierro … 5 = diamante; experiencia 1 … 10)
+var GEODE_DIFFICULTY_TABLE = {
+  densityBase: 0.21,
+  densityPerExp: 0.006,
+  densityPerKit: 0.005,
+  densityMin: 0.12,
+  densityMax: 0.20,
+  hearts: 3,
+  heartsBonusFromKit: 3,   // con kit de oro o superior, +1 corazón
+  probesByKit: [0, 1, 1, 2, 2, 3],
+  veins: 2,
+  veinsBonusFromExp: 6     // con experiencia 6 o más, +1 veta
+};
+
+var GEODE_COLS = 7;
+var GEODE_ROWS = 9;
+var GEODE_ROW_WIDTHS = [3, 5, 7, 7, 7, 7, 7, 5, 3];
+var GEODE_HOLD_MS = 350;
+var GEODE_TUTORIAL_KEY = "krysalisGeodeTutorialSeen";
+
+// Índice del kit de talla del personaje (0 = hierro … 5 = diamante)
+function getLapidaryKitIndex(c){
+  var idx = (typeof LAPIDARY_TIERS !== "undefined") ? LAPIDARY_TIERS.findIndex(function(t){ return t.id === (c && c.lapidaryTier); }) : -1;
+  return Math.max(0, idx);
 }
 
-function getHexNeighborIds(cells, idx){
-  // Para un layout offset hexagonal, vecinos son los 6 adyacentes
-  // Lo calculamos por posicion relativa en el array
-  var cell = cells[idx];
-  var cols = 6;
-  var r = cell.r;
-  var q = cell.q;
-  var isEvenRow = (r % 2 === 0);
-  // Dirección de offsets en coordenadas (q,r) para hex offset
-  var dirs;
-  if(isEvenRow){
-    dirs = [
-      {dq: -1, dr: 0}, {dq: 1, dr: 0},  // izquierda, derecha
-      {dq: -1, dr: -1},{dq: 0, dr: -1},  // arriba-izq, arriba-der
-      {dq: -1, dr: 1}, {dq: 0, dr: 1}    // abajo-izq, abajo-der
-    ];
-  } else {
-    dirs = [
-      {dq: -1, dr: 0}, {dq: 1, dr: 0},
-      {dq: 0, dr: -1}, {dq: 1, dr: -1},
-      {dq: 0, dr: 1},  {dq: 1, dr: 1}
-    ];
+// Experiencia de talla: nivel + habilidad "Piedras mágicas", entre 1 y 10
+function getLapidaryExperience(c){
+  var lvl = parseInt(c && c.nivel, 10) || 1;
+  var skill = (c && c.skillBonus) ? (parseInt(c.skillBonus["Piedras mágicas"], 10) || 0) : 0;
+  return Math.max(1, Math.min(10, lvl + skill));
+}
+
+function getGeodeDifficulty(c){
+  var T = GEODE_DIFFICULTY_TABLE;
+  var kit = getLapidaryKitIndex(c);
+  var exp = getLapidaryExperience(c);
+  var cellCount = GEODE_ROW_WIDTHS.reduce(function(a, b){ return a + b; }, 0);
+  var density = Math.max(T.densityMin, Math.min(T.densityMax, T.densityBase - exp * T.densityPerExp - kit * T.densityPerKit));
+  return {
+    kit: kit,
+    exp: exp,
+    fissures: Math.round(cellCount * density),
+    hearts: T.hearts + (kit >= T.heartsBonusFromKit ? 1 : 0),
+    probes: T.probesByKit[kit] || 0,
+    veins: T.veins + (exp >= T.veinsBonusFromExp ? 1 : 0)
+  };
+}
+
+// Mezcla dos colores hex (t = 0 → a, t = 1 → b)
+function mixLapidaryHex(a, b, t){
+  function parse(h){ h = String(h || "#000").replace("#", ""); if(h.length === 3) h = h.replace(/(.)/g, "$1$1"); var n = parseInt(h, 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  var x = parse(a), y = parse(b);
+  return "rgb(" + x.map(function(v, i){ return Math.round(v + (y[i] - v) * t); }).join(",") + ")";
+}
+
+// Temporizadores del minijuego: se cancelan todos al cerrar el modal
+function lapidaryTimeout(fn, ms){
+  var id = setTimeout(fn, ms);
+  lapidaryMinigameState.timers.push(id);
+  return id;
+}
+
+function clearLapidaryTimers(){
+  (lapidaryMinigameState.timers || []).forEach(function(id){ clearTimeout(id); });
+  lapidaryMinigameState.timers = [];
+}
+
+function createGeodeGame(c){
+  var d = getGeodeDifficulty(c);
+  var cells = [];
+  for(var r = 0; r < GEODE_ROWS; r++){
+    var w = GEODE_ROW_WIDTHS[r], start = (GEODE_COLS - w) / 2;
+    for(var col = 0; col < GEODE_COLS; col++){
+      cells.push({ r: r, c: col, exists: col >= start && col < start + w, mine: false, vein: false, n: 0, open: false, flag: false, cracked: false, showMine: false, wrong: false });
+    }
   }
-  var nids = [];
-  dirs.forEach(function(d){
-    var nq = q + d.dq;
-    var nr = r + d.dr;
-    // Buscar celda con esas coordenadas
-    for(var i = 0; i < cells.length; i++){
-      if(cells[i].q === nq && cells[i].r === nr){
-        nids.push(i);
-        break;
+  return { d: d, cells: cells, started: false, over: null, mode: "dig", probeArmed: false, hearts: d.hearts, probes: d.probes, streak: 0, maxStreak: 0, veinsFound: 0, fissuresHit: 0, fresh: {}, hintLockUntil: 0 };
+}
+
+function geodeNeighbors(G, i){
+  var cell = G.cells[i], out = [];
+  for(var dr = -1; dr <= 1; dr++){
+    for(var dc = -1; dc <= 1; dc++){
+      if(!dr && !dc) continue;
+      var rr = cell.r + dr, cc = cell.c + dc;
+      if(rr >= 0 && rr < GEODE_ROWS && cc >= 0 && cc < GEODE_COLS){
+        var j = rr * GEODE_COLS + cc;
+        if(G.cells[j].exists) out.push(j);
       }
     }
-  });
-  return nids;
+  }
+  return out;
 }
 
-// Cascada de revelación Buscaminas: si dangerCount===0 se propaga a vecinos
-function cascadeClearGeodaCells(startIdx){
-  var cells = lapidaryMinigameState.geodaCells || [];
-  if(startIdx < 0 || startIdx >= cells.length) return false;
-  var queue = [startIdx];
-  var visited = {};
-  visited[startIdx] = true;
-  var clearedAny = false;
-  while(queue.length > 0){
-    var cur = queue.shift();
-    var c = cells[cur];
-    if(!c || c.type === 'fissure' || c.flagged) continue;
-    if(!c.cleared){ c.cleared = true; clearedAny = true; }
-    if(c.dangerCount === 0){
-      c.neighbors.forEach(function(nid){
-        var nc = cells[nid];
-        if(nc && !nc.cleared && !nc.flagged && nc.type !== 'fissure' && !visited[nid]){
-          visited[nid] = true;
-          queue.push(nid);
-        }
-      });
+function shuffleLapidary(a){
+  for(var i = a.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+// Coloca fisuras y vetas tras el primer toque: esa casilla y sus 8 vecinas son siempre seguras
+function seedGeodeGame(G, safeIdx){
+  var safe = {};
+  safe[safeIdx] = true;
+  geodeNeighbors(G, safeIdx).forEach(function(j){ safe[j] = true; });
+  var pool = [];
+  G.cells.forEach(function(x, i){ if(x.exists && !safe[i]) pool.push(i); });
+  shuffleLapidary(pool);
+  pool.slice(0, G.d.fissures).forEach(function(i){ G.cells[i].mine = true; });
+  var rest = pool.slice(G.d.fissures);
+  shuffleLapidary(rest);
+  rest.slice(0, G.d.veins).forEach(function(i){ G.cells[i].vein = true; });
+  G.cells.forEach(function(x, i){
+    if(x.exists) x.n = geodeNeighbors(G, i).filter(function(j){ return G.cells[j].mine; }).length;
+  });
+  G.started = true;
+}
+
+// Abre casillas en cascada; guarda la distancia para animar en orden
+function floodGeode(G, start, base){
+  var q = [[start, base || 0]], opened = 0;
+  while(q.length){
+    var item = q.shift(), i = item[0], dist = item[1], x = G.cells[i];
+    if(x.open || x.flag || x.mine) continue;
+    x.open = true; opened++;
+    G.fresh[i] = dist * 22;
+    if(x.vein){
+      G.veinsFound++;
+      geodeFloatAt(i, "+ veta", false);
+      playGemSweetSpotHit();
+    }
+    if(x.n === 0) geodeNeighbors(G, i).forEach(function(j){ q.push([j, dist + 1]); });
+  }
+  return opened;
+}
+
+function geodeState(){ return lapidaryMinigameState.geode; }
+
+function geodeHitFissure(i){
+  var G = geodeState(), x = G.cells[i];
+  x.cracked = true; x.open = true;
+  G.hearts--; G.streak = 0; G.fissuresHit++;
+  lapidaryMinigameState.fragileHits = G.fissuresHit;
+  playGemFractureTick();
+  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("fumble");
+  geodeFloatAt(i, "−1 ♥", true);
+  var pos = geodeCellCenter(i);
+  if(pos && typeof spawnFlyingRockDebris === "function") spawnFlyingRockDebris(pos.x, pos.y);
+  var b = document.getElementById("lapidaryGeodeBoard");
+  if(b){ b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); }
+  geodeHintOnce("<b>¡Fisura!</b> Pierdes un corazón. Fíjate en los números de alrededor.");
+  if(G.hearts <= 0) endGeodeGame("broken");
+}
+
+function geodeBumpStreak(){
+  var G = geodeState();
+  G.streak++;
+  G.maxStreak = Math.max(G.maxStreak, G.streak);
+  if(G.streak === 5 || G.streak === 10){
+    var ch = document.getElementById("lapidaryGeodeStreakChip");
+    if(ch){ ch.classList.remove("bump"); void ch.offsetWidth; ch.classList.add("bump"); }
+    playGemSweetSpotHit();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("crit");
+  }
+}
+
+function geodeDig(i){
+  var G = geodeState(), x = G.cells[i];
+  if(!G.started) seedGeodeGame(G, i);
+  if(x.flag) return;
+  if(x.open){ geodeChord(i); return; }
+  if(x.mine){
+    geodeHitFissure(i);
+  } else {
+    floodGeode(G, i);
+    geodeBumpStreak();
+    playLapidaryChiselStrike();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("aim-tick");
+    var pos = geodeCellCenter(i);
+    if(pos && typeof spawnRockDustParticles === "function") spawnRockDustParticles(pos.x, pos.y);
+  }
+  geodeAfterMove();
+}
+
+// Tocar un número con todas sus banderas abre sus vecinas
+function geodeChord(i){
+  var G = geodeState(), x = G.cells[i];
+  if(!x.n || x.cracked) return;
+  var ns = geodeNeighbors(G, i);
+  var flags = ns.filter(function(j){ return G.cells[j].flag || G.cells[j].cracked; }).length;
+  var closed = ns.filter(function(j){ return !G.cells[j].open && !G.cells[j].flag; });
+  if(flags !== x.n || !closed.length){
+    if(closed.length){
+      geodePeek(i, 900);
+      geodeHintOnce("Para abrir alrededor de este <b>" + x.n + "</b>, primero marca sus " + x.n + " fisura" + (x.n > 1 ? "s" : "") + " con la bandera.");
+    }
+    return;
+  }
+  var hit = false;
+  closed.forEach(function(j){
+    if(G.over) return;
+    if(G.cells[j].mine){ hit = true; geodeHitFissure(j); }
+    else floodGeode(G, j);
+  });
+  if(!hit){
+    geodeBumpStreak();
+    playLapidaryChiselStrike();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("aim-tick");
+  }
+  geodeAfterMove();
+}
+
+function geodeToggleFlag(i){
+  var G = geodeState(), x = G.cells[i];
+  if(x.open || G.over) return;
+  x.flag = !x.flag;
+  playLapidaryScrape();
+  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("shake");
+  renderGeodeBoard();
+}
+
+// Sonda: revela una zona de 3×3 sin riesgo y marca sola sus fisuras
+function geodeProbe(i){
+  var G = geodeState();
+  if(!G.started) seedGeodeGame(G, i);
+  var zone = [i].concat(geodeNeighbors(G, i));
+  zone.forEach(function(j){ var y = G.cells[j]; if(!y.open && y.mine) y.flag = true; });
+  zone.forEach(function(j){ var y = G.cells[j]; if(!y.mine && !y.open){ y.flag = false; floodGeode(G, j, 1); } });
+  G.probes--; G.probeArmed = false;
+  playGemSweetSpotHit();
+  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("land");
+  geodeHintOnce("La sonda ha despejado la zona y ha marcado sus fisuras.");
+  geodeAfterMove();
+}
+
+function geodeAfterMove(){
+  var G = geodeState();
+  if(!G.over){
+    var safeLeft = G.cells.some(function(x){ return x.exists && !x.mine && !x.open; });
+    if(!safeLeft){ endGeodeGame("perfect"); return; }
+  }
+  renderGeodeBoard();
+}
+
+// Nota del desbaste (0-100): un único sitio
+function computeGeodeScore(G){
+  var safe = G.cells.filter(function(x){ return x.exists && !x.mine; });
+  var opened = safe.filter(function(x){ return x.open; }).length;
+  var crust = Math.round(opened / Math.max(1, safe.length) * 60);
+  var integ = Math.round(Math.max(0, G.hearts) / G.d.hearts * 25);
+  var veins = Math.round(G.veinsFound / Math.max(1, G.d.veins) * 10);
+  var streak = G.maxStreak >= 10 ? 5 : (G.maxStreak >= 5 ? 3 : (G.maxStreak >= 3 ? 1 : 0));
+  var total = crust + integ + veins + streak;
+  var broken = G.hearts <= 0;
+  if(broken) total = Math.round(total * 0.6);
+  return { crust: crust, integ: integ, veins: veins, streak: streak, broken: broken, total: Math.min(100, total), opened: opened, safeN: safe.length };
+}
+
+function endGeodeGame(kind){
+  var G = geodeState();
+  if(G.over) return;
+  G.over = kind;
+  G.probeArmed = false;
+  G.cells.forEach(function(x){
+    if(x.mine && !x.cracked && !x.flag) x.showMine = true;
+    if(x.flag && !x.mine) x.wrong = true;
+  });
+  var s = computeGeodeScore(G);
+  lapidaryMinigameState.phase1Score = s.total;
+  lapidaryMinigameState.cleanPct = Math.round(s.opened / Math.max(1, s.safeN) * 100);
+  renderGeodeBoard();
+  if(kind === "broken") playGemFracture(); else playSlideSuccess();
+  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic(kind === "broken" ? "fumble" : "crit");
+  lapidaryTimeout(function(){ openGeodeSheet("end"); }, kind === "broken" ? 650 : 350);
+}
+
+function geodeCellCenter(i){
+  var wrap = document.getElementById("lapidaryGeodeWrap");
+  var el = wrap ? wrap.querySelector('[data-i="' + i + '"]') : null;
+  if(!el) return null;
+  var a = el.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+  return { x: a.left - w.left + a.width / 2, y: a.top - w.top + a.height / 2 };
+}
+
+function geodeFloatAt(i, txt, bad){
+  var wrap = document.getElementById("lapidaryGeodeWrap");
+  var pos = geodeCellCenter(i);
+  if(!wrap || !pos) return;
+  var f = document.createElement("div");
+  f.className = "lapidary-geode-floater" + (bad ? " bad" : "");
+  f.textContent = txt;
+  f.style.left = (pos.x - 24) + "px";
+  f.style.top = (pos.y - 18) + "px";
+  wrap.appendChild(f);
+  lapidaryTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 950);
+}
+
+var GEODE_SVG_CRACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L10 8 L14 11 L9 16 L12 22" stroke="#F07A84" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11 L19 9 M10 8 L5 6 M9 16 L4 18" stroke="#F07A84" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
+var GEODE_SVG_MINE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 L11 9 L14 12 L10 17 L12 21" stroke="#C84B57" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/></svg>';
+var GEODE_SVG_GEM = '<svg class="lapidary-geode-gemmark" viewBox="0 0 40 40" aria-hidden="true"><polygon points="10,6 30,6 38,16 20,36 2,16" fill="#fff" opacity=".9"/><polygon points="2,16 38,16 20,36" fill="currentColor" opacity=".55"/></svg>';
+
+function geodeCellsHTML(G){
+  var h = "";
+  G.cells.forEach(function(x, i){
+    if(!x.exists){ h += '<div class="lapidary-geode-void"></div>'; return; }
+    var cls = "lapidary-geode-cell", inner = "", label;
+    if(x.cracked){ cls += " cracked"; inner = GEODE_SVG_CRACK; label = "Fisura golpeada"; }
+    else if(x.open){
+      cls += " open";
+      if(x.vein){ cls += " vein"; inner = GEODE_SVG_GEM; label = "Veta preciosa"; }
+      else if(x.n){
+        cls += " n" + Math.min(4, x.n); inner = x.n; label = x.n + " fisuras alrededor";
+        var ns = geodeNeighbors(G, i);
+        if(ns.filter(function(j){ return G.cells[j].flag || G.cells[j].cracked; }).length === x.n && ns.some(function(j){ return !G.cells[j].open && !G.cells[j].flag; })) cls += " chordable";
+      }
+      else label = "Limpia";
+    }
+    else if(x.showMine){ cls += " mine"; inner = GEODE_SVG_MINE; label = "Fisura"; }
+    else if(x.flag){ inner = '<span class="lapidary-geode-flag">⚑</span>'; label = "Marcada"; if(x.wrong) cls += " wrong"; }
+    else label = "Costra";
+    var st = "";
+    if(G.fresh[i] !== undefined){ cls += " new"; st = ' style="--d:' + G.fresh[i] + 'ms"'; }
+    h += '<button type="button" class="' + cls + '" data-i="' + i + '"' + st + ' aria-label="' + label + '">' + inner + '</button>';
+  });
+  G.fresh = {};
+  return h;
+}
+
+// Repinta solo el tablero y los marcadores (sin rehacer el modal ni perder los eventos)
+function renderGeodeBoard(){
+  var G = geodeState();
+  var board = document.getElementById("lapidaryGeodeBoard");
+  if(!G || !board) return;
+  board.innerHTML = geodeCellsHTML(G);
+
+  var flags = G.cells.filter(function(x){ return x.flag || x.cracked; }).length;
+  var hearts = "";
+  for(var k = 0; k < G.d.hearts; k++) hearts += (k < G.hearts ? "♥" : '<span class="off">♥</span>');
+  var setHTML = function(id, v){ var el = document.getElementById(id); if(el) el.innerHTML = v; };
+  setHTML("lapidaryGeodeHearts", hearts);
+  setHTML("lapidaryGeodeFissures", String(Math.max(0, G.d.fissures - flags)));
+  setHTML("lapidaryGeodeProbes", String(G.probes));
+  setHTML("lapidaryGeodeProbeCount", String(G.probes));
+  setHTML("lapidaryGeodeStreak", G.streak >= 10 ? "×2" : (G.streak >= 5 ? "×1,5" : "×1"));
+
+  var s = G.started ? computeGeodeScore(G) : { opened: 0, safeN: 1, total: 0 };
+  var pct = Math.round(s.opened / s.safeN * 100);
+  setHTML("lapidaryGeodePct", pct + "%");
+  var bar = document.getElementById("lapidaryGeodeBar");
+  if(bar) bar.style.width = pct + "%";
+
+  var canFinish = pct >= 70 && !G.over;
+  var fin = document.getElementById("lapidaryGeodeFinish");
+  if(fin){
+    fin.disabled = !canFinish && !G.over;
+    fin.classList.toggle("ready", canFinish || !!G.over);
+    fin.textContent = G.over ? "Ver resultado" : (canFinish ? "Terminar desbaste (" + s.total + " pts)" : "Terminar desbaste (desde el 70%)");
+  }
+  var probeBtn = document.getElementById("lapidaryGeodeProbeBtn");
+  if(probeBtn){
+    probeBtn.disabled = G.probes <= 0 || !!G.over;
+    probeBtn.setAttribute("aria-pressed", G.probeArmed ? "true" : "false");
+  }
+  var dig = document.getElementById("lapidaryGeodeModeDig");
+  var flag = document.getElementById("lapidaryGeodeModeFlag");
+  if(dig) dig.setAttribute("aria-pressed", G.mode === "dig" ? "true" : "false");
+  if(flag) flag.setAttribute("aria-pressed", G.mode === "flag" ? "true" : "false");
+  var wrap = document.getElementById("lapidaryGeodeWrap");
+  if(wrap) wrap.classList.toggle("probe", G.probeArmed);
+  if(Date.now() >= G.hintLockUntil) setGeodeHint(pct);
+}
+
+function geodeHintOnce(t){
+  var G = geodeState();
+  var el = document.getElementById("lapidaryGeodeHint");
+  if(el) el.innerHTML = t;
+  G.hintLockUntil = Date.now() + 2400;
+  lapidaryTimeout(function(){
+    var g = geodeState();
+    if(g && Date.now() >= g.hintLockUntil && lapidaryMinigameState.phase === 1) renderGeodeBoard();
+  }, 2500);
+}
+
+function setGeodeHint(pct){
+  var G = geodeState(), t;
+  if(G.over) t = "Desbaste terminado. Pulsa <b>Ver resultado</b> para seguir.";
+  else if(G.probeArmed) t = "<b>Sonda lista:</b> toca una casilla para examinar su zona de 3×3.";
+  else if(!G.started) t = "Toca cualquier casilla para empezar. <b>El primer golpe es seguro.</b>";
+  else if(G.mode === "flag") t = "<b>Modo marcar:</b> toca para poner o quitar una bandera.";
+  else if(pct >= 70) t = "Ya puedes <b>terminar</b>, o seguir para subir la nota.";
+  else t = "El número indica las fisuras de alrededor. <b>Mantén pulsado</b> para marcar.";
+  var el = document.getElementById("lapidaryGeodeHint");
+  if(el) el.innerHTML = t;
+}
+
+// Ilumina las 8 vecinas de un número
+function geodePeek(i, ms){
+  var G = geodeState();
+  var board = document.getElementById("lapidaryGeodeBoard");
+  if(!board) return;
+  geodeUnpeek();
+  board.classList.add("peeking");
+  var src = board.querySelector('[data-i="' + i + '"]');
+  if(src) src.classList.add("peek-src");
+  geodeNeighbors(G, i).forEach(function(j){
+    var el = board.querySelector('[data-i="' + j + '"]');
+    if(el) el.classList.add("peek");
+  });
+  var x = G.cells[i], ns = geodeNeighbors(G, i);
+  var fl = ns.filter(function(j){ return G.cells[j].flag || G.cells[j].cracked; }).length;
+  var cov = ns.filter(function(j){ return !G.cells[j].open && !G.cells[j].flag; }).length;
+  geodeHintOnce("Este <b>" + x.n + "</b> cuenta las casillas iluminadas: hay <b>" + x.n + " fisura" + (x.n > 1 ? "s" : "") + "</b> entre ellas. Marcadas: " + fl + " · Tapadas sin marcar: " + cov + ".");
+  if(ms) lapidaryTimeout(geodeUnpeek, ms);
+}
+
+function geodeUnpeek(){
+  var board = document.getElementById("lapidaryGeodeBoard");
+  if(!board) return;
+  board.classList.remove("peeking");
+  board.querySelectorAll(".peek,.peek-src").forEach(function(el){ el.classList.remove("peek", "peek-src"); });
+}
+
+// Toque, pulsación larga (bandera) y mantener sobre un número (ver vecinas)
+function initGeodeBoard(){
+  var board = document.getElementById("lapidaryGeodeBoard");
+  if(!board || board._geodeBound) return;
+  board._geodeBound = true;
+  var press = null;
+
+  function cancelPress(){
+    if(!press) return;
+    clearTimeout(press.t);
+    press.el.classList.remove("holding");
+    if(press.fired) geodeUnpeek();
+    press = null;
+  }
+
+  board.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+  board.addEventListener("pointerdown", function(e){
+    var G = geodeState();
+    var el = e.target.closest(".lapidary-geode-cell");
+    if(!el || !G || G.over) return;
+    var i = +el.getAttribute("data-i");
+    press = { i: i, x: e.clientX, y: e.clientY, fired: false, el: el };
+    var x = G.cells[i];
+    if(!x.open && !G.probeArmed){
+      el.classList.add("holding");
+      press.t = setTimeout(function(){
+        if(!press) return;
+        press.fired = true;
+        el.classList.remove("holding");
+        geodeToggleFlag(i);
+      }, GEODE_HOLD_MS);
+    } else if(x.open && x.n && !x.cracked){
+      press.t = setTimeout(function(){
+        if(!press) return;
+        press.fired = true;
+        geodePeek(i);
+        if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("aim-tick");
+      }, 220);
+    }
+  });
+  board.addEventListener("pointermove", function(e){
+    if(press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 12) cancelPress();
+  });
+  board.addEventListener("pointercancel", cancelPress);
+  board.addEventListener("pointerleave", cancelPress);
+  board.addEventListener("pointerup", function(){
+    if(!press) return;
+    var p = press;
+    cancelPress();
+    var G = geodeState();
+    if(p.fired || !G || G.over) return;
+    var x = G.cells[p.i];
+    if(G.probeArmed){ if(!x.open) geodeProbe(p.i); return; }
+    if(G.mode === "flag" && !x.open) geodeToggleFlag(p.i);
+    else geodeDig(p.i);
+  });
+}
+
+/* ---------- Hojas: ayuda, partida guiada y resultado ---------- */
+
+function openGeodeSheet(kind){
+  var host = document.getElementById("lapidaryGeodeSheet");
+  if(!host) return;
+  var G = geodeState();
+  var html = '<div class="lapidary-sheet-bg" data-action="geode-sheet-bg"><div class="lapidary-sheet" role="dialog" aria-modal="true">';
+
+  if(kind === "help"){
+    html += '<span class="lapidary-sheet-tag">Cómo se juega</span>' +
+      '<h3 class="lapidary-sheet-title">Quita la costra sin romper la piedra</h3>' +
+      '<div class="lapidary-help-cards">' +
+        '<div class="lapidary-help-card"><div class="ill n2">2</div><div><h4>Pica la costra</h4><p>Toca una casilla. El número dice cuántas <b>fisuras</b> hay en las 8 casillas de alrededor. El primer golpe siempre es seguro.</p></div></div>' +
+        '<div class="lapidary-help-card"><div class="ill flag">⚑</div><div><h4>Marca las fisuras</h4><p><b>Mantén pulsado</b> o usa el modo Marcar. Si tocas un número que ya tiene todas sus banderas, se abren las demás casillas de alrededor.</p></div></div>' +
+        '<div class="lapidary-help-card"><div class="ill probe">◎</div><div><h4>Ayudas y premios</h4><p>La <b>sonda</b> examina una zona de 3×3 sin riesgo. Las <b>vetas doradas</b> y la <b>racha</b> suben la nota. Cada fisura que picas cuesta un corazón.</p></div></div>' +
+      '</div>' +
+      '<div class="lapidary-sheet-actions">' +
+        '<button type="button" class="lapidary-ghost-btn" data-action="geode-open-tutorial">Partida guiada</button>' +
+        '<button type="button" class="lapidary-cta-btn" data-action="geode-close-sheet">Entendido</button>' +
+      '</div>';
+  } else if(kind === "end"){
+    var s = computeGeodeScore(G);
+    var title = G.over === "perfect" ? "Desbaste perfecto" : (G.over === "broken" ? "La piedra no aguanta más" : "Desbaste terminado");
+    var row = function(a, b, pen){ return '<div' + (pen ? ' class="pen"' : '') + '><span>' + a + '</span><span>' + b + '</span></div>'; };
+    html += '<span class="lapidary-sheet-tag">Resultado del desbaste</span>' +
+      '<h3 class="lapidary-sheet-title">' + title + '</h3>' +
+      '<div class="lapidary-sheet-score"><b>' + s.total + '</b><span>/ 100</span></div>' +
+      '<div class="lapidary-sheet-rows">' +
+        row("Costra retirada (" + s.opened + "/" + s.safeN + ")", s.crust + " / 60") +
+        row("Integridad (" + Math.max(0, G.hearts) + " de " + G.d.hearts + " ♥)", s.integ + " / 25") +
+        row("Vetas encontradas (" + G.veinsFound + " de " + G.d.veins + ")", s.veins + " / 10") +
+        row("Mejor racha (" + G.maxStreak + ")", s.streak + " / 5") +
+        (s.broken ? row("Sin corazones", "×0,6", true) : "") +
+      '</div>' +
+      '<div class="lapidary-sheet-actions">' +
+        '<button type="button" class="lapidary-ghost-btn" data-action="geode-close-sheet">Ver la piedra</button>' +
+        '<button type="button" class="lapidary-cta-btn" data-action="advance-to-slide-cuts">Pasar a los cortes</button>' +
+      '</div>';
+  }
+  html += '</div></div>';
+  host.innerHTML = html;
+}
+
+function closeGeodeSheet(){
+  var host = document.getElementById("lapidaryGeodeSheet");
+  if(host) host.innerHTML = "";
+  lapidaryMinigameState.geodeTutorial = null;
+}
+
+// Partida guiada: tablero fijo de 5×5
+var GEODE_TUT_COLS = 5;
+var GEODE_TUT_MINES = [0, 12, 23];
+var GEODE_TUT_OPEN = [1, 2, 3, 4, 6, 7, 8, 9, 13, 14, 18, 19];
+var GEODE_TUT_STEPS = [
+  { peek: 8, text: "Cada número cuenta las <b>8 casillas</b> que lo rodean. Este <b>1</b> dice: entre las casillas iluminadas hay <b>1 fisura</b>." },
+  { peek: 8, target: 12, act: "flag", text: "De todas ellas, solo queda <b>una tapada</b>. La fisura tiene que estar ahí. <b>Mantén el dedo</b> sobre ella hasta que salga la bandera." },
+  { peek: 7, target: 11, act: "dig", text: "Este otro <b>1</b> también toca esa fisura, y ya está marcada. Así que su otra casilla tapada es <b>segura</b>: tócala." },
+  { peek: 11, target: 11, act: "chord", text: "Ha salido otro <b>1</b>, y su fisura ya tiene bandera. <b>Toca el número</b> y se abren de golpe todas las casillas seguras de alrededor." },
+  { text: "<b>¡Así se juega!</b> Mira los números, deduce dónde están las fisuras y márcalas. Si dudas, mantén pulsado un número para ver qué casillas cuenta." }
+];
+
+function geodeTutNeighbors(i){
+  var r = Math.floor(i / GEODE_TUT_COLS), c = i % GEODE_TUT_COLS, o = [];
+  for(var a = -1; a <= 1; a++){
+    for(var b = -1; b <= 1; b++){
+      if(!a && !b) continue;
+      var rr = r + a, cc = c + b;
+      if(rr >= 0 && rr < GEODE_TUT_COLS && cc >= 0 && cc < GEODE_TUT_COLS) o.push(rr * GEODE_TUT_COLS + cc);
     }
   }
-  return clearedAny;
+  return o;
 }
 
+function openGeodeTutorial(){
+  var cells = [];
+  for(var i = 0; i < GEODE_TUT_COLS * GEODE_TUT_COLS; i++){
+    cells.push({ mine: GEODE_TUT_MINES.indexOf(i) !== -1, open: GEODE_TUT_OPEN.indexOf(i) !== -1, flag: false, n: 0 });
+  }
+  cells.forEach(function(x, i){ x.n = geodeTutNeighbors(i).filter(function(j){ return cells[j].mine; }).length; });
+  lapidaryMinigameState.geodeTutorial = { cells: cells, step: 0, fresh: {} };
 
-// Referencia heredada para compatibilidad (ya no se usa el icosaedro 3D)
-function getInitial3DGeodeFaces(){ return buildGeodaSlabCells(); }
+  var host = document.getElementById("lapidaryGeodeSheet");
+  if(!host) return;
+  host.innerHTML = '<div class="lapidary-sheet-bg"><div class="lapidary-sheet" role="dialog" aria-modal="true">' +
+    '<span class="lapidary-sheet-tag">Partida guiada · <span id="lapidaryTutStep">1</span> de 5</span>' +
+    '<h3 class="lapidary-sheet-title">Aprende a leer la piedra</h3>' +
+    '<div class="lapidary-geode-tboard" id="lapidaryTutBoard"></div>' +
+    '<div class="lapidary-tut-text" id="lapidaryTutText" aria-live="polite"></div>' +
+    '<div class="lapidary-tut-dots" id="lapidaryTutDots"></div>' +
+    '<div class="lapidary-sheet-actions">' +
+      '<button type="button" class="lapidary-link-btn" id="lapidaryTutSkip" data-action="geode-tutorial-skip">Saltar</button>' +
+      '<button type="button" class="lapidary-cta-btn" id="lapidaryTutNext" data-action="geode-tutorial-next">Siguiente</button>' +
+    '</div>' +
+  '</div></div>';
+  initGeodeTutorialBoard();
+  renderGeodeTutorial();
+}
+
+function geodeTutFlood(i, d){
+  var T = lapidaryMinigameState.geodeTutorial;
+  var q = [[i, d || 0]];
+  while(q.length){
+    var it = q.shift(), k = it[0], dd = it[1], x = T.cells[k];
+    if(x.open || x.mine || x.flag) continue;
+    x.open = true; T.fresh[k] = dd * 40;
+    if(!x.n) geodeTutNeighbors(k).forEach(function(j){ q.push([j, dd + 1]); });
+  }
+}
+
+function renderGeodeTutorial(){
+  var T = lapidaryMinigameState.geodeTutorial;
+  if(!T) return;
+  var s = GEODE_TUT_STEPS[T.step], h = "";
+  T.cells.forEach(function(x, i){
+    var cls = "lapidary-geode-cell", inner = "";
+    if(x.open){ cls += " open"; if(x.n){ cls += " n" + Math.min(4, x.n); inner = x.n; } }
+    else if(x.flag) inner = '<span class="lapidary-geode-flag">⚑</span>';
+    if(s.peek === i) cls += " peek-src";
+    else if(s.peek != null && geodeTutNeighbors(s.peek).indexOf(i) !== -1) cls += " peek";
+    if(s.target === i) cls += " target";
+    var st = "";
+    if(T.fresh[i] !== undefined){ cls += " new"; st = ' style="--d:' + T.fresh[i] + 'ms"'; }
+    h += '<button type="button" class="' + cls + '" data-t="' + i + '"' + st + ' aria-label="' + (x.open ? (x.n ? x.n + " fisuras alrededor" : "Limpia") : (x.flag ? "Marcada" : "Costra")) + '">' + inner + '</button>';
+  });
+  T.fresh = {};
+  var tb = document.getElementById("lapidaryTutBoard");
+  if(!tb) return;
+  tb.innerHTML = h;
+  tb.classList.toggle("focus", s.peek != null || s.target != null);
+  document.getElementById("lapidaryTutText").innerHTML = s.text;
+  document.getElementById("lapidaryTutStep").textContent = T.step + 1;
+  document.getElementById("lapidaryTutDots").innerHTML = GEODE_TUT_STEPS.map(function(_, k){ return '<i class="' + (k <= T.step ? "on" : "") + '"></i>'; }).join("");
+  var last = T.step === GEODE_TUT_STEPS.length - 1;
+  var next = document.getElementById("lapidaryTutNext");
+  next.hidden = s.target != null;
+  next.textContent = last ? "Empezar con la piedra" : "Siguiente";
+  document.getElementById("lapidaryTutSkip").hidden = last;
+}
+
+function initGeodeTutorialBoard(){
+  var tb = document.getElementById("lapidaryTutBoard");
+  if(!tb) return;
+  var tpress = null;
+  function tCancel(){ if(tpress){ clearTimeout(tpress.t); tpress.el.classList.remove("holding"); tpress = null; } }
+  tb.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+  tb.addEventListener("pointerdown", function(e){
+    var T = lapidaryMinigameState.geodeTutorial;
+    var el = e.target.closest(".lapidary-geode-cell");
+    if(!el || !T) return;
+    var i = +el.getAttribute("data-t"), s = GEODE_TUT_STEPS[T.step];
+    tpress = { i: i, el: el, x: e.clientX, y: e.clientY, fired: false };
+    if(s.act === "flag" && s.target === i){
+      el.classList.add("holding");
+      tpress.t = setTimeout(function(){
+        if(!tpress) return;
+        tpress.fired = true;
+        el.classList.remove("holding");
+        T.cells[i].flag = true;
+        playLapidaryScrape();
+        if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("shake");
+        renderGeodeTutorial();
+        T.step++;
+        lapidaryTimeout(renderGeodeTutorial, 250);
+      }, GEODE_HOLD_MS);
+    }
+  });
+  tb.addEventListener("pointermove", function(e){ if(tpress && Math.hypot(e.clientX - tpress.x, e.clientY - tpress.y) > 12) tCancel(); });
+  tb.addEventListener("pointercancel", tCancel);
+  tb.addEventListener("pointerleave", tCancel);
+  tb.addEventListener("pointerup", function(){
+    if(!tpress) return;
+    var p = tpress;
+    tCancel();
+    if(p.fired) return;
+    var T = lapidaryMinigameState.geodeTutorial;
+    if(!T) return;
+    var s = GEODE_TUT_STEPS[T.step], txt = document.getElementById("lapidaryTutText");
+    if(s.target !== p.i){
+      if(s.target != null && txt) txt.innerHTML = s.text + '<br><span class="lapidary-tut-nudge">Toca la casilla que parpadea.</span>';
+      return;
+    }
+    if(s.act === "flag"){
+      if(txt) txt.innerHTML = s.text + '<br><span class="lapidary-tut-nudge">Mantén el dedo apoyado un momento, no lo levantes enseguida.</span>';
+      return;
+    }
+    if(s.act === "dig"){
+      geodeTutFlood(p.i);
+      playLapidaryChiselStrike();
+      if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("aim-tick");
+      T.step++; renderGeodeTutorial(); return;
+    }
+    if(s.act === "chord"){
+      geodeTutNeighbors(p.i).forEach(function(j){ geodeTutFlood(j, 1); });
+      playGemSweetSpotHit();
+      if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("land");
+      T.step++; renderGeodeTutorial(); return;
+    }
+  });
+}
+
+function finishGeodeTutorial(){
+  try { localStorage.setItem(GEODE_TUTORIAL_KEY, "1"); } catch(e){}
+  closeGeodeSheet();
+}
+
+// Acciones propias del desbaste (botones del pulgar y de las hojas)
+document.addEventListener("click", function(e){
+  var btn = e.target.closest("[data-action]");
+  if(!btn || !lapidaryMinigameState.active) return;
+  var act = btn.getAttribute("data-action");
+  var G = geodeState();
+
+  if(act === "geode-sheet-bg"){
+    if(e.target === btn) closeGeodeSheet();
+  } else if(act === "geode-mode"){
+    if(!G || G.over) return;
+    G.mode = btn.getAttribute("data-mode") === "flag" ? "flag" : "dig";
+    G.probeArmed = false;
+    renderGeodeBoard();
+  } else if(act === "geode-probe"){
+    if(!G || G.over || G.probes <= 0) return;
+    G.probeArmed = !G.probeArmed;
+    renderGeodeBoard();
+  } else if(act === "geode-finish"){
+    if(!G) return;
+    if(G.over){ openGeodeSheet("end"); return; }
+    var s = G.started ? computeGeodeScore(G) : null;
+    if(s && s.opened / s.safeN >= 0.7) endGeodeGame("done");
+  } else if(act === "geode-help"){
+    openGeodeSheet("help");
+  } else if(act === "geode-close-sheet"){
+    try { localStorage.setItem(GEODE_TUTORIAL_KEY, "1"); } catch(err){}
+    closeGeodeSheet();
+  } else if(act === "geode-open-tutorial"){
+    openGeodeTutorial();
+  } else if(act === "geode-tutorial-next"){
+    var T = lapidaryMinigameState.geodeTutorial;
+    if(!T) return;
+    if(T.step === GEODE_TUT_STEPS.length - 1){ finishGeodeTutorial(); return; }
+    T.step++;
+    renderGeodeTutorial();
+  } else if(act === "geode-tutorial-skip"){
+    finishGeodeTutorial();
+  }
+});
+
+function renderGeodePhaseHTML(family){
+  var G = geodeState();
+  var famA = mixLapidaryHex("#6b5442", family.hex, 0.30);
+  var famB = mixLapidaryHex("#33251b", family.hex, 0.18);
+  var famGlow = mixLapidaryHex("#1A120D", family.hex, 0.14);
+  var famVein = mixLapidaryHex(family.hex, "#ffffff", 0.2);
+  var styleVars = '--geode-a:' + famA + ';--geode-b:' + famB + ';--geode-glow:' + famGlow + ';--geode-fam:' + family.hex + ';--geode-vein:' + famVein + ';';
+
+  return '<div class="lapidary-phase-body lapidary-geode" style="' + styleVars + '">' +
+    '<div class="lapidary-geode-titlebar">' +
+      '<div><h3>Desbaste de la Geoda</h3><span>Quita la costra sin golpear las fisuras</span></div>' +
+      '<button type="button" class="lapidary-icon-btn" data-action="geode-help" aria-label="Cómo se juega">?</button>' +
+    '</div>' +
+    '<div class="lapidary-geode-hud">' +
+      '<div class="lapidary-geode-chip"><span class="lbl">Integridad</span><span class="val hearts" id="lapidaryGeodeHearts"></span></div>' +
+      '<div class="lapidary-geode-chip"><span class="lbl">Fisuras</span><span class="val" id="lapidaryGeodeFissures">' + G.d.fissures + '</span></div>' +
+      '<div class="lapidary-geode-chip"><span class="lbl">Sonda</span><span class="val" id="lapidaryGeodeProbes">' + G.probes + '</span></div>' +
+      '<div class="lapidary-geode-chip streak" id="lapidaryGeodeStreakChip"><span class="lbl">Racha</span><span class="val" id="lapidaryGeodeStreak">×1</span></div>' +
+    '</div>' +
+    '<div class="lapidary-geode-prog">' +
+      '<div class="lapidary-geode-prog-row"><span>Costra retirada <b id="lapidaryGeodePct">0%</b></span><span>Puedes terminar al 70%</span></div>' +
+      '<div class="lapidary-geode-bar"><div class="lapidary-geode-bar-fill" id="lapidaryGeodeBar"></div><div class="lapidary-geode-bar-goal"></div></div>' +
+    '</div>' +
+    '<div class="lapidary-geode-wrap" id="lapidaryGeodeWrap">' +
+      '<div class="lapidary-geode-board" id="lapidaryGeodeBoard" role="grid" aria-label="Piedra en bruto"></div>' +
+      '<div class="lapidary-particles-container" id="lapidaryParticles"></div>' +
+    '</div>' +
+    '<div class="lapidary-geode-hint" id="lapidaryGeodeHint"></div>' +
+    '<div class="lapidary-geode-thumb">' +
+      '<div class="lapidary-geode-seg" role="group" aria-label="Acción al tocar">' +
+        '<button type="button" id="lapidaryGeodeModeDig" data-action="geode-mode" data-mode="dig" aria-pressed="true">⛏ Picar</button>' +
+        '<button type="button" id="lapidaryGeodeModeFlag" data-action="geode-mode" data-mode="flag" aria-pressed="false">⚑ Marcar</button>' +
+      '</div>' +
+      '<button type="button" class="lapidary-geode-tool" id="lapidaryGeodeProbeBtn" data-action="geode-probe" aria-pressed="false">◎ Sonda <span class="count" id="lapidaryGeodeProbeCount">' + G.probes + '</span></button>' +
+      '<button type="button" class="lapidary-geode-finish" id="lapidaryGeodeFinish" data-action="geode-finish" disabled>Terminar desbaste (desde el 70%)</button>' +
+    '</div>' +
+    '<div id="lapidaryGeodeSheet"></div>' +
+  '</div>';
+}
+
+// Arranca el tablero tras pintar el modal (y la partida guiada la primera vez)
+function startGeodePhase(){
+  initGeodeBoard();
+  renderGeodeBoard();
+  var seen = false;
+  try { seen = localStorage.getItem(GEODE_TUTORIAL_KEY) === "1"; } catch(e){}
+  if(!seen) openGeodeTutorial();
+}
 
 
 var lapidaryMinigameState = {
   active: false,
   charId: null,
   stoneId: null,
-  phase: 1, // 1: Laja 2D Buscaminas, 2: Sierra diamantada, 3: Sweet spot timing, 4: Resumen y rotura
+  phase: 1, // 1: Desbaste de la geoda, 2: Sierra diamantada, 3: Sweet spot timing, 4: Resumen y rotura
+  timers: [],          // setTimeout activos del minijuego (se cancelan al cerrar)
 
-  // Fase 1: Laja de Geoda 2D (Buscaminas hexagonal con tablero visible completo)
-  geodaCells: [],      // Array de celdas hexagonales
-  selectedTool: 'chisel', // 'chisel' | 'flag' | 'hammer'
+  // Fase 1: Desbaste de la Geoda (buscaminas con silueta de gema)
+  geode: null,         // Partida en curso (ver createGeodeGame)
+  geodeTutorial: null, // Partida guiada abierta
   cleanPct: 0,
   fragileHits: 0,
-  maxFragileHits: 4,
   phase1Score: 0,
-  geodeAnimId: null,
-  lastFissureHit: 0,
 
   // Fase 2: Sierra Diamantada de Alta Habilidad (Tacómetro, Calor de Fricción e Inclusiones)
   slidePass: 1,
@@ -711,13 +1362,13 @@ function openLapidaryMinigame(charId, stoneId){
   lapidaryMinigameState.stoneId = stoneId;
   lapidaryMinigameState.phase = 1;
 
-  // Reset Fase 1 (Laja de Geoda 2D Buscaminas)
-  lapidaryMinigameState.geodaCells = buildGeodaSlabCells();
-  lapidaryMinigameState.selectedTool = 'chisel';
+  // Reset Fase 1 (Desbaste de la Geoda)
+  clearLapidaryTimers();
+  lapidaryMinigameState.geode = createGeodeGame(c);
+  lapidaryMinigameState.geodeTutorial = null;
   lapidaryMinigameState.cleanPct = 0;
   lapidaryMinigameState.fragileHits = 0;
   lapidaryMinigameState.phase1Score = 0;
-  lapidaryMinigameState.lastFissureHit = 0;
 
   // Reset Fase 2 (Sierra Diamantada de Alta Habilidad)
   lapidaryMinigameState.slidePass = 1;
@@ -758,19 +1409,17 @@ function openLapidaryMinigame(charId, stoneId){
   overlay.classList.remove("hidden");
 
   requestAnimationFrame(function(){
-    initGeodaSlabCanvas();
+    startGeodePhase();
   });
 }
 
 function closeLapidaryMinigame(){
   lapidaryMinigameState.active = false;
+  clearLapidaryTimers();
+  lapidaryMinigameState.geodeTutorial = null;
   if(lapidaryMinigameState.animId){
     cancelAnimationFrame(lapidaryMinigameState.animId);
     lapidaryMinigameState.animId = null;
-  }
-  if(lapidaryMinigameState.geodeAnimId){
-    cancelAnimationFrame(lapidaryMinigameState.geodeAnimId);
-    lapidaryMinigameState.geodeAnimId = null;
   }
   var modal = document.getElementById("lapidaryModal");
   if(modal) modal.classList.remove("phase-2-fullscreen");
@@ -810,7 +1459,7 @@ function renderLapidaryModalContent(){
   html += '<div class="lapidary-phase-stepper">' +
     '<div class="lapidary-step ' + (lapidaryMinigameState.phase === 1 ? 'current' : (lapidaryMinigameState.phase > 1 ? 'completed' : '')) + '">' +
       '<div class="lapidary-step-num">1</div>' +
-      '<div class="lapidary-step-label">Limpieza</div>' +
+      '<div class="lapidary-step-label">Desbaste</div>' +
     '</div>' +
     '<div class="lapidary-step-line ' + (lapidaryMinigameState.phase > 1 ? 'active' : '') + '"></div>' +
     '<div class="lapidary-step ' + (lapidaryMinigameState.phase === 2 ? 'current' : (lapidaryMinigameState.phase > 2 ? 'completed' : '')) + '">' +
@@ -830,68 +1479,11 @@ function renderLapidaryModalContent(){
   '</div>';
 
   // ==========================================
-  // FASE 1: LAJA DE GEODA 2D (Buscaminas hexagonal con tablero visible)
+  // FASE 1: DESBASTE DE LA GEODA
   // ==========================================
   if(lapidaryMinigameState.phase === 1){
-    var cells = lapidaryMinigameState.geodaCells || [];
-    var gangCells = cells.filter(function(c){ return c.type === 'gangue'; });
-    var safeCleared = gangCells.filter(function(c){ return c.cleared; }).length;
-    var targetClears = Math.ceil(gangCells.length * 0.75);
-    var cleanPct = gangCells.length > 0 ? Math.min(100, Math.round((safeCleared / targetClears) * 100)) : 0;
-    var integrity = Math.max(0, 100 - (lapidaryMinigameState.fragileHits * 25));
-    var flaggedCount = cells.filter(function(c){ return c.flagged; }).length;
-    var correctlyFlagged = cells.filter(function(c){ return c.flagged && c.type === 'fissure'; }).length;
-    var minesweeperBonus = (correctlyFlagged === 4 && flaggedCount === 4) ? 15 : 0;
-    var p1Score = Math.max(0, Math.min(100, Math.round((cleanPct * 0.6) + (integrity * 0.4)) + minesweeperBonus));
-    lapidaryMinigameState.cleanPct = cleanPct;
-    lapidaryMinigameState.phase1Score = p1Score;
-
-    html += '<div class="lapidary-phase-body">' +
-      '<div class="lapidary-instructions">' +
-        '<b>Fase 1: Laja de Geoda — Deducción Mineralógica</b><br>' +
-        'Cada celda excavada muestra cuántas de sus celdas vecinas ocultan fisuras críticas. Usa la lógica para localizar las 4 fisuras sin dañarlas.<br>' +
-        '<span style="color:#34D399;font-weight:600;">0 = Zona segura (¡cascada!)</span> &bull; <span style="color:#FBBF24;font-weight:600;">1 = Falla próxima</span> &bull; <span style="color:#F87171;font-weight:600;">2-3 = Peligro</span>' +
-      '</div>' +
-
-      // HUD superior
-      '<div class="lapidary-live-hud">' +
-        '<div class="lapidary-hud-badge">' +
-          '<span class="hud-label">COSTRA RETIRADA</span>' +
-          '<b class="hud-val ' + (cleanPct >= 75 ? 'safe' : 'warning') + '" id="lapidaryHudClean">' + safeCleared + ' / ' + targetClears + ' (' + cleanPct + '%)</b>' +
-        '</div>' +
-        '<div class="lapidary-hud-badge">' +
-          '<span class="hud-label">INTEGRIDAD</span>' +
-          '<b class="hud-val ' + (integrity < 50 ? 'danger' : (integrity < 75 ? 'warning' : 'safe')) + '" id="lapidaryHudIntegrity">' + integrity + '%</b>' +
-        '</div>' +
-        '<div class="lapidary-hud-badge">' +
-          '<span class="hud-label">🚩 BANDERAS</span>' +
-          '<b class="hud-val" id="lapidaryHudFlags" style="color:#FCA5A5;">' + flaggedCount + ' / 4' + (minesweeperBonus > 0 ? ' ✨' : '') + '</b>' +
-        '</div>' +
-        '<div class="lapidary-hud-badge">' +
-          '<span class="hud-label">PUNTUACIÓN F1</span>' +
-          '<b class="hud-val" id="lapidaryHudPhase1Score">' + p1Score + ' pts</b>' +
-        '</div>' +
-      '</div>' +
-
-      // Barra de herramientas
-      '<div class="lapidary-geode-toolbar">' +
-        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'chisel' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="chisel">⛏️ Cincel</button>' +
-        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'flag' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="flag">🚩 Bandera</button>' +
-        '<button type="button" class="lapidary-tool-btn ' + (lapidaryMinigameState.selectedTool === 'hammer' ? 'active' : '') + '" data-action="select-lapidary-tool" data-tool="hammer">🔨 Sonar</button>' +
-      '</div>' +
-
-      // Canvas 2D de la laja de geoda
-      '<div class="lapidary-geoda-slab-wrap" id="lapidary2DStage">' +
-        '<canvas id="lapidaryGeodaCanvas" class="lapidary-geoda-canvas"></canvas>' +
-        '<div class="lapidary-particles-container" id="lapidaryParticles"></div>' +
-      '</div>' +
-
-      '<div class="lapidary-action-footer">' +
-        '<button type="button" class="btn-solid-gold lapidary-btn-advance ' + (cleanPct >= 75 ? 'pulse-glow' : '') + '" id="lapidaryBtnPhase2" data-action="advance-to-slide-cuts" ' + (cleanPct >= 75 ? '' : 'disabled') + '>' +
-          (cleanPct >= 75 ? '✨ Laja Desbastada (' + p1Score + ' pts) Avanzar a Sierra de Cortes ➡️' : 'Excava las celdas seguras (' + safeCleared + '/' + targetClears + ')...') +
-        '</button>' +
-      '</div>' +
-    '</div>';
+    if(!lapidaryMinigameState.geode) lapidaryMinigameState.geode = createGeodeGame(c);
+    html += renderGeodePhaseHTML(family);
   }
 
 
@@ -1091,881 +1683,8 @@ function renderLapidaryModalContent(){
 }
 
 /* ==========================================================================
-   4. CONTROL DE CANVAS 2D: FASE 1 (LAJA DE GEODA HEXAGONAL — BUSCAMINAS)
+   4. PARTÍCULAS Y TEXTOS FLOTANTES
    ========================================================================== */
-
-// Calcula la posición en pixels de cada celda hexagonal en el canvas
-function getHexCellPixelPos(cell, canvasW, canvasH){
-  var HEX_R = 28;          // Radio exterior del hexágono
-  var HEX_W = HEX_R * 2;
-  var HEX_H = Math.sqrt(3) * HEX_R;
-  var COLS = 6;
-  // Offset even/odd rows
-  var xOffset = (cell.r % 2 === 0) ? 0 : HEX_W * 0.75 / 2;
-  var totalW = COLS * HEX_W * 0.75 + HEX_W * 0.25;
-  var totalH = 4 * HEX_H + HEX_H * 0.5;
-  var startX = (canvasW - totalW) / 2 + HEX_R;
-  var startY = (canvasH - totalH) / 2 + HEX_H / 2;
-  return {
-    x: startX + cell.q * HEX_W * 0.75 + xOffset,
-    y: startY + cell.r * HEX_H
-  };
-}
-
-// Dibuja un hexágono regular centrado en (cx, cy) con radio R
-function drawHex(ctx, cx, cy, R){
-  ctx.beginPath();
-  for(var i = 0; i < 6; i++){
-    var ang = Math.PI / 180 * (60 * i - 30);
-    var x = cx + R * Math.cos(ang);
-    var y = cy + R * Math.sin(ang);
-    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-}
-
-// Renderiza la laja completa de geoda en el canvas 2D
-function drawGeodaSlab(ctx, canvasW, canvasH, familyHex, familyGlow){
-  ctx.clearRect(0, 0, canvasW, canvasH);
-  // Fondo oscuro con textura
-  var bg = ctx.createRadialGradient(canvasW/2, canvasH/2, 20, canvasW/2, canvasH/2, canvasW*0.7);
-  bg.addColorStop(0, '#1a120a');
-  bg.addColorStop(1, '#0d0906');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, canvasW, canvasH);
-
-  // Marco de laja con borde mineral
-  ctx.strokeStyle = familyGlow || '#b08d57';
-  ctx.lineWidth = 2;
-  ctx.shadowColor = familyGlow || '#b08d57';
-  ctx.shadowBlur = 10;
-  ctx.strokeRect(4, 4, canvasW - 8, canvasH - 8);
-  ctx.shadowBlur = 0;
-
-  var HEX_R = 28;
-  var cells = lapidaryMinigameState.geodaCells || [];
-
-  cells.forEach(function(cell){
-    var pos = getHexCellPixelPos(cell, canvasW, canvasH);
-    var cx = pos.x, cy = pos.y;
-
-    if(cell.cleared){
-      // Celda excavada: muestra el cristal interno con número de peligro
-      var grd = ctx.createRadialGradient(cx - 5, cy - 5, 2, cx, cy, HEX_R - 2);
-      if(cell.dangerCount === 0){
-        grd.addColorStop(0, '#e8fff5');
-        grd.addColorStop(0.4, familyHex || '#34d399');
-        grd.addColorStop(1, '#0d4a2a');
-      } else if(cell.dangerCount === 1){
-        grd.addColorStop(0, '#fffbe8');
-        grd.addColorStop(0.4, '#fbbf24');
-        grd.addColorStop(1, '#3a2a00');
-      } else {
-        grd.addColorStop(0, '#fff0f0');
-        grd.addColorStop(0.4, '#f87171');
-        grd.addColorStop(1, '#450c0c');
-      }
-      drawHex(ctx, cx, cy, HEX_R - 1);
-      ctx.fillStyle = grd;
-      ctx.fill();
-      ctx.strokeStyle = cell.dangerCount === 0 ? '#6ee7b7' : (cell.dangerCount === 1 ? '#fde68a' : '#fca5a5');
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Número de peligro centralizado
-      if(cell.dangerCount > 0){
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 15px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(cell.dangerCount, cx, cy);
-      } else {
-        // Punto elegante para zona segura
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-    } else if(cell.struck){
-      // Fisura revelada por error (cincel golpeó fisura)
-      drawHex(ctx, cx, cy, HEX_R - 1);
-      var fissGrd = ctx.createRadialGradient(cx, cy, 3, cx, cy, HEX_R);
-      fissGrd.addColorStop(0, 'rgba(239,68,68,0.95)');
-      fissGrd.addColorStop(1, '#1c0000');
-      ctx.fillStyle = fissGrd;
-      ctx.fill();
-      ctx.strokeStyle = '#fca5a5';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-      // Icono de rotura
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('💥', cx, cy);
-
-    } else if(cell.flagged){
-      // Marcada con bandera
-      drawHex(ctx, cx, cy, HEX_R - 1);
-      ctx.fillStyle = '#2c1010';
-      ctx.fill();
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.font = '15px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('🚩', cx, cy);
-
-    } else {
-      // Celda no excavada: ganga basáltica
-      var tone = 0.35 + Math.sin(cell.id * 2.1) * 0.15;
-      drawHex(ctx, cx, cy, HEX_R - 1);
-      var ganGrd = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, HEX_R);
-      var r = Math.round(88 * tone + 22);
-      var g = Math.round(72 * tone + 14);
-      var b = Math.round(52 * tone + 10);
-      ganGrd.addColorStop(0, 'rgba(' + (r + 30) + ',' + (g + 20) + ',' + (b + 15) + ',1)');
-      ganGrd.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',1)');
-      ctx.fillStyle = ganGrd;
-      ctx.fill();
-
-      // Arista mineral con brillo sutil
-      ctx.strokeStyle = 'rgba(176,141,87,0.4)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Textura de roca: marcas internas leves
-      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-      ctx.lineWidth = 0.5;
-      drawHex(ctx, cx, cy, HEX_R - 5);
-      ctx.stroke();
-    }
-  });
-}
-
-// Maneja clic/toque en el canvas de la laja 2D
-function handleGeodaClick(clientX, clientY){
-  if(!lapidaryMinigameState.active || lapidaryMinigameState.phase !== 1) return;
-  var canvas = document.getElementById('lapidaryGeodaCanvas');
-  if(!canvas) return;
-  var rect = canvas.getBoundingClientRect();
-  var scaleX = canvas.width / rect.width;
-  var scaleY = canvas.height / rect.height;
-  var canvasX = (clientX - rect.left) * scaleX;
-  var canvasY = (clientY - rect.top) * scaleY;
-
-  var cells = lapidaryMinigameState.geodaCells || [];
-  var HEX_R = 28;
-  var hitCell = null;
-  var hitIdx = -1;
-
-  // Buscar qué celda se ha pulsado (hit test por distancia al centro)
-  for(var i = 0; i < cells.length; i++){
-    var pos = getHexCellPixelPos(cells[i], canvas.width, canvas.height);
-    var dist = Math.hypot(canvasX - pos.x, canvasY - pos.y);
-    if(dist < HEX_R * 0.9){
-      hitCell = cells[i];
-      hitIdx = i;
-      break;
-    }
-  }
-  if(!hitCell) return;
-
-  var tool = lapidaryMinigameState.selectedTool || 'chisel';
-  var stageEl = document.getElementById('lapidary2DStage');
-
-  if(tool === 'flag'){
-    if(hitCell.cleared){ showToast('Esta celda ya está excavada.', 'info'); return; }
-    hitCell.flagged = !hitCell.flagged;
-    if(hitCell.flagged){
-      playGemFractureTick();
-      if(typeof triggerBg3Haptic === 'function') triggerBg3Haptic('light');
-    }
-    updateGeodaHUD();
-    redrawGeodaSlab();
-    return;
-  }
-
-  if(tool === 'hammer'){
-    if(hitCell.cleared){ showToast('Celda limpia. Nada que auscultar.', 'info'); return; }
-    playLapidaryHeavyHammer();
-    if(typeof triggerBg3Haptic === 'function') triggerBg3Haptic('light');
-    if(hitCell.type === 'fissure'){
-      showToast('🔨 Sonar: ¡Vibración fracturaria aguda! Fisura crítica bajo esta celda.', 'warning');
-    } else if(hitCell.dangerCount === 0){
-      showToast('🔨 Sonar: Resonancia pura y cristalina. Zona 100% segura.', 'info');
-    } else if(hitCell.dangerCount === 1){
-      showToast('🔨 Sonar: Eco apagado. Hay 1 fisura vecina en este sector.', 'warning');
-    } else {
-      showToast('🔨 Sonar: ¡Resonancia hueca! ' + hitCell.dangerCount + ' fisuras vecinas detectadas.', 'danger');
-    }
-    return;
-  }
-
-  // Herramienta Cincel (por defecto)
-  if(hitCell.flagged){
-    showToast('🚫 Celda protegida con bandera. Desmárcala para excavar.', 'warning');
-    return;
-  }
-  if(hitCell.cleared) return;
-
-  if(hitCell.type === 'fissure'){
-    var now = Date.now();
-    if(now - (lapidaryMinigameState.lastFissureHit || 0) > 300){
-      lapidaryMinigameState.lastFissureHit = now;
-      lapidaryMinigameState.fragileHits++;
-      hitCell.struck = true;
-      playGemFractureTick();
-      if(typeof triggerBg3Haptic === 'function') triggerBg3Haptic('fumble');
-      if(stageEl){ stageEl.classList.add('danger-flash'); setTimeout(function(){ if(stageEl) stageEl.classList.remove('danger-flash'); }, 250); }
-      updateGeodaHUD();
-      redrawGeodaSlab();
-      showToast('💥 ¡Cincel sobre fisura! -25% integridad.', 'danger');
-    }
-    return;
-  }
-
-  // Ganga normal
-  playLapidaryChiselStrike();
-  if(typeof triggerBg3Haptic === 'function') triggerBg3Haptic('light');
-  spawnRockDustParticles(clientX - document.getElementById('lapidary2DStage').getBoundingClientRect().left, clientY - document.getElementById('lapidary2DStage').getBoundingClientRect().top);
-
-  if(hitCell.dangerCount === 0){
-    cascadeClearGeodaCells(hitIdx);
-    playGemSweetSpotHit();
-  } else {
-    hitCell.cleared = true;
-  }
-  updateGeodaHUD();
-  redrawGeodaSlab();
-}
-
-function redrawGeodaSlab(){
-  var canvas = document.getElementById('lapidaryGeodaCanvas');
-  if(!canvas) return;
-  var ctx = canvas.getContext('2d');
-  if(!ctx) return;
-  var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
-  var stone = c ? (c.stones || []).find(function(st){ return st.id === lapidaryMinigameState.stoneId; }) : null;
-  var family = getStoneFamily(stone ? stone.color : 'blanca');
-  drawGeodaSlab(ctx, canvas.width, canvas.height, family.hex, family.glow);
-}
-
-function updateGeodaHUD(){
-  var cells = lapidaryMinigameState.geodaCells || [];
-  var gangCells = cells.filter(function(c){ return c.type === 'gangue'; });
-  var safeCleared = gangCells.filter(function(c){ return c.cleared; }).length;
-  var targetClears = Math.ceil(gangCells.length * 0.75);
-  var cleanPct = gangCells.length > 0 ? Math.min(100, Math.round((safeCleared / targetClears) * 100)) : 0;
-  var integrity = Math.max(0, 100 - (lapidaryMinigameState.fragileHits * 25));
-  var flaggedCount = cells.filter(function(c){ return c.flagged; }).length;
-  var correctlyFlagged = cells.filter(function(c){ return c.flagged && c.type === 'fissure'; }).length;
-  var minesweeperBonus = (correctlyFlagged === 4 && flaggedCount === 4) ? 15 : 0;
-  var p1Score = Math.max(0, Math.min(100, Math.round((cleanPct * 0.6) + (integrity * 0.4)) + minesweeperBonus));
-
-  lapidaryMinigameState.cleanPct = cleanPct;
-  lapidaryMinigameState.phase1Score = p1Score;
-
-  var hudClean = document.getElementById('lapidaryHudClean');
-  var hudIntegrity = document.getElementById('lapidaryHudIntegrity');
-  var hudFlags = document.getElementById('lapidaryHudFlags');
-  var hudP1 = document.getElementById('lapidaryHudPhase1Score');
-  var btn = document.getElementById('lapidaryBtnPhase2');
-
-  if(hudClean){ hudClean.textContent = safeCleared + ' / ' + targetClears + ' (' + cleanPct + '%)'; hudClean.className = 'hud-val ' + (cleanPct >= 75 ? 'safe' : 'warning'); }
-  if(hudIntegrity){ hudIntegrity.textContent = integrity + '%'; hudIntegrity.className = 'hud-val ' + (integrity < 50 ? 'danger' : (integrity < 75 ? 'warning' : 'safe')); }
-  if(hudFlags){ hudFlags.textContent = flaggedCount + ' / 4' + (minesweeperBonus > 0 ? ' ✨ (+15)' : ''); hudFlags.style.color = minesweeperBonus > 0 ? '#34D399' : '#FCA5A5'; }
-  if(hudP1){ hudP1.textContent = p1Score + ' pts'; }
-
-  if(cleanPct >= 75 && btn && btn.disabled){
-    btn.disabled = false;
-    btn.textContent = '✨ Laja Desbastada (' + p1Score + ' pts' + (minesweeperBonus > 0 ? ' +15 Bono Lógico' : '') + ') Avanzar a Sierra de Cortes ➡️';
-    btn.classList.add('pulse-glow');
-    playGemSweetSpotHit();
-    if(typeof triggerBg3Haptic === 'function') triggerBg3Haptic('crit');
-  }
-}
-
-function initGeodaSlabCanvas(){
-  var canvas = document.getElementById('lapidaryGeodaCanvas');
-  if(!canvas) return;
-  var ctx = canvas.getContext('2d');
-  if(!ctx) return;
-
-  // Dimensiones responsivas: llena el contenedor
-  var wrap = document.getElementById('lapidary2DStage');
-  var wrapW = wrap ? wrap.clientWidth : 340;
-  var wrapH = Math.min(wrapW, 320);
-  canvas.width = Math.max(300, wrapW);
-  canvas.height = Math.max(260, wrapH);
-
-  var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
-  var stone = c ? (c.stones || []).find(function(st){ return st.id === lapidaryMinigameState.stoneId; }) : null;
-  var family = getStoneFamily(stone ? stone.color : 'blanca');
-
-  drawGeodaSlab(ctx, canvas.width, canvas.height, family.hex, family.glow);
-  updateGeodaHUD();
-
-  // Eventos mouse
-  canvas.onclick = function(e){
-    handleGeodaClick(e.clientX, e.clientY);
-  };
-
-  // Eventos táctiles
-  canvas.addEventListener('touchend', function(e){
-    e.preventDefault();
-    if(e.changedTouches && e.changedTouches[0]){
-      handleGeodaClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-    }
-  }, { passive: false });
-}
-
-
-
-function draw3DGeode(ctx, w, h, familyHex, familyGlow){
-  ctx.clearRect(0, 0, w, h);
-
-  // Fondo sutil de cámara oscura
-  var bgGrad = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, w/2);
-  bgGrad.addColorStop(0, "rgba(28, 22, 16, 0.95)");
-  bgGrad.addColorStop(1, "rgba(10, 8, 6, 0.98)");
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, w, h);
-
-  var verts = get3DGeodeVertices();
-  var cosX = Math.cos(lapidaryMinigameState.geodeRotX);
-  var sinX = Math.sin(lapidaryMinigameState.geodeRotX);
-  var cosY = Math.cos(lapidaryMinigameState.geodeRotY);
-  var sinY = Math.sin(lapidaryMinigameState.geodeRotY);
-  var fov = 340;
-  var camDist = 330;
-  var cx = w / 2;
-  var cy = h / 2;
-
-  // Rotar y proyectar los 12 vértices
-  var rotVerts = verts.map(function(v){
-    // Rotación eje X (pitch)
-    var y1 = v.y * cosX - v.z * sinX;
-    var z1 = v.y * sinX + v.z * cosX;
-    // Rotación eje Y (yaw)
-    var x2 = v.x * cosY + z1 * sinY;
-    var z2 = -v.x * sinY + z1 * cosY;
-    var scale = fov / (camDist - z2);
-    return {
-      x: x2, y: y1, z: z2,
-      px: cx + x2 * scale,
-      py: cy + y1 * scale,
-      scale: scale
-    };
-  });
-
-  // Vector de luz direccional (arriba-derecha-frontal)
-  var lx = 0.42, ly = -0.65, lz = 0.63;
-  var lLen = Math.hypot(lx, ly, lz);
-  lx /= lLen; ly /= lLen; lz /= lLen;
-
-  var faces = lapidaryMinigameState.geodeFaces || [];
-  var visibleFaces = [];
-
-  for(var i = 0; i < faces.length; i++){
-    var face = faces[i];
-    var v0 = rotVerts[face.indices[0]];
-    var v1 = rotVerts[face.indices[1]];
-    var v2 = rotVerts[face.indices[2]];
-
-    // Centroide de la cara en 3D
-    var faceCx = (v0.x + v1.x + v2.x) / 3;
-    var faceCy = (v0.y + v1.y + v2.y) / 3;
-    var faceCz = (v0.z + v1.z + v2.z) / 3;
-
-    // Normal en 3D: (v1 - v0) x (v2 - v0)
-    var ax = v1.x - v0.x, ay = v1.y - v0.y, az = v1.z - v0.z;
-    var bx = v2.x - v0.x, by = v2.y - v0.y, bz = v2.z - v0.z;
-    var nx = ay * bz - az * by;
-    var ny = az * bx - ax * bz;
-    var nz = ax * by - ay * bx;
-
-    // Alinear vector normal para que apunte hacia el exterior de la geoda
-    var dotC = nx * faceCx + ny * faceCy + nz * faceCz;
-    if(dotC < 0){ nx = -nx; ny = -ny; nz = -nz; }
-    var nLen = Math.hypot(nx, ny, nz) || 1;
-    nx /= nLen; ny /= nLen; nz /= nLen;
-
-    // Backface culling: solo caras orientadas hacia la cámara (nz > 0)
-    if(nz > 0.05){
-      var dotL = nx * lx + ny * ly + nz * lz;
-      var light = Math.max(0.18, Math.min(1.0, 0.32 + 0.68 * dotL));
-      visibleFaces.push({
-        face: face,
-        v0: v0, v1: v1, v2: v2,
-        avgZ: faceCz,
-        light: light,
-        normZ: nz,
-        screenCx: (v0.px + v1.px + v2.px) / 3,
-        screenCy: (v0.py + v1.py + v2.py) / 3
-      });
-    }
-  }
-
-  // Ordenar de fondo a frente (Painter's algorithm)
-  visibleFaces.sort(function(a, b){ return a.avgZ - b.avgZ; });
-
-  // Guardar caras visibles proyectadas para raycasting de clics
-  lapidaryMinigameState._visibleFaces2D = visibleFaces;
-
-  // Dibujar cada cara poligonal
-  for(var f = 0; f < visibleFaces.length; f++){
-    var vf = visibleFaces[f];
-    var fData = vf.face;
-    var p0 = vf.v0, p1 = vf.v1, p2 = vf.v2;
-
-    ctx.beginPath();
-    ctx.moveTo(p0.px, p0.py);
-    ctx.lineTo(p1.px, p1.py);
-    ctx.lineTo(p2.px, p2.py);
-    ctx.closePath();
-
-    if(fData.cleared){
-      // Faceta de cristal mágica expuesta (Luminosa y facetada)
-      var fGrad = ctx.createRadialGradient(vf.screenCx - 6, vf.screenCy - 6, 2, vf.screenCx, vf.screenCy, 40);
-      fGrad.addColorStop(0, "#FFFFFF");
-      fGrad.addColorStop(0.3, familyHex || "#DEC392");
-      fGrad.addColorStop(1, "rgba(18, 14, 10, 0.95)");
-      ctx.fillStyle = fGrad;
-      ctx.fill();
-
-      // Bisel reflectante dorado/cristalino
-      ctx.strokeStyle = familyHex || "#FDE047";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Brillo interno en arista
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(p0.px, p0.py);
-      ctx.lineTo(p1.px, p1.py);
-      ctx.stroke();
-
-      // Placa central con indicador numérico Buscaminas (Peligro de 0 a 2)
-      var dCount = fData.dangerCount || 0;
-      ctx.beginPath();
-      ctx.arc(vf.screenCx, vf.screenCy, 9, 0, Math.PI * 2);
-      if(dCount === 0){
-        ctx.fillStyle = "rgba(16, 185, 129, 0.9)";
-        ctx.strokeStyle = "#A7F3D0";
-      } else if(dCount === 1){
-        ctx.fillStyle = "rgba(245, 158, 11, 0.92)";
-        ctx.strokeStyle = "#FEF08A";
-      } else {
-        ctx.fillStyle = "rgba(239, 68, 68, 0.95)";
-        ctx.strokeStyle = "#FECACA";
-      }
-      ctx.lineWidth = 1.5;
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 10px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(dCount === 0 ? "·" : dCount, vf.screenCx, vf.screenCy);
-    } else {
-      if(fData.flagged){
-        // Faceta protegida con bandera 🚩
-        var l = vf.light;
-        var r = Math.round(55 * l + 20);
-        var g = Math.round(45 * l + 15);
-        var b = Math.round(40 * l + 12);
-        ctx.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
-        ctx.fill();
-
-        ctx.strokeStyle = "#EF4444";
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        // Placa roja carmesí con bandera
-        ctx.beginPath();
-        ctx.arc(vf.screenCx, vf.screenCy, 12, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(185, 28, 28, 0.92)";
-        ctx.strokeStyle = "#FCA5A5";
-        ctx.lineWidth = 2;
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("🚩", vf.screenCx, vf.screenCy);
-      } else if(fData.struck){
-        // Fisura fracturada revelada tras el golpe erróneo
-        var fissGrad = ctx.createRadialGradient(vf.screenCx, vf.screenCy, 4, vf.screenCx, vf.screenCy, 36);
-        fissGrad.addColorStop(0, "rgba(239, 68, 68, 0.95)");
-        fissGrad.addColorStop(0.6, "rgba(185, 28, 28, 0.85)");
-        fissGrad.addColorStop(1, "#280A0A");
-        ctx.fillStyle = fissGrad;
-        ctx.fill();
-
-        ctx.strokeStyle = "#FCA5A5";
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        ctx.strokeStyle = "#FEE2E2";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(vf.screenCx - 14, vf.screenCy - 8);
-        ctx.lineTo(vf.screenCx - 2, vf.screenCy + 4);
-        ctx.lineTo(vf.screenCx + 12, vf.screenCy - 6);
-        ctx.lineTo(vf.screenCx + 16, vf.screenCy + 10);
-        ctx.stroke();
-
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 9px monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("⚠️ ROTURA", vf.screenCx, vf.screenCy);
-      } else {
-        // Ganga basáltica rugosa con sombreado de luz 3D
-        var l = vf.light;
-        var r = Math.round(74 * l + 22);
-        var g = Math.round(62 * l + 18);
-        var b = Math.round(50 * l + 14);
-        ctx.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
-        ctx.fill();
-
-        // Aristas de roca con relieve
-        ctx.strokeStyle = "rgba(18, 13, 9, 0.85)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Relieve e incisión mineral
-        ctx.strokeStyle = "rgba(176, 141, 87, " + (0.35 * vf.normZ).toFixed(2) + ")";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(p0.px, p0.py);
-        ctx.lineTo(vf.screenCx, vf.screenCy);
-        ctx.stroke();
-
-        // Icono interactivo según herramienta geológica activa
-        var tool = lapidaryMinigameState.selectedTool || 'chisel';
-        var toolIcon = (tool === 'flag') ? "🚩" : ((tool === 'hammer') ? "🔨" : "⛏️");
-        var toolColor = (tool === 'flag') ? "rgba(239, 68, 68, 0.6)" : ((tool === 'hammer') ? "rgba(147, 197, 253, 0.7)" : "rgba(222, 195, 146, 0.7)");
-        ctx.fillStyle = toolColor;
-        ctx.font = "bold 10px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(toolIcon, vf.screenCx, vf.screenCy);
-      }
-    }
-  }
-
-  // Resplandor central de energía mágica interna si hay caras despejadas
-  var safeCleared = (lapidaryMinigameState.geodeFaces || []).filter(function(f){ return f.cleared; }).length;
-  if(safeCleared > 0){
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    var aura = ctx.createRadialGradient(cx, cy, 10, cx, cy, 95);
-    aura.addColorStop(0, familyGlow || "rgba(222, 195, 146, 0.4)");
-    aura.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = aura;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 95, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-function handle3DGeodeClick(clientX, clientY){
-  var canvas = document.getElementById("lapidary3DCanvas");
-  if(!canvas) return;
-  var rect = canvas.getBoundingClientRect();
-  var scaleX = canvas.width / rect.width;
-  var scaleY = canvas.height / rect.height;
-  var px = (clientX - rect.left) * scaleX;
-  var py = (clientY - rect.top) * scaleY;
-  var stageX = clientX - rect.left;
-  var stageY = clientY - rect.top;
-
-  var visibleFaces = lapidaryMinigameState._visibleFaces2D || [];
-  // Raycast de adelante hacia atrás (últimos dibujados son los más cercanos)
-  var hitFace = null;
-  for(var i = visibleFaces.length - 1; i >= 0; i--){
-    var vf = visibleFaces[i];
-    if(pointInTriangle(px, py, vf.v0, vf.v1, vf.v2)){
-      hitFace = vf;
-      break;
-    }
-  }
-
-  if(!hitFace) return;
-
-  var face = hitFace.face;
-  var tool = lapidaryMinigameState.selectedTool || 'chisel';
-
-  // 1. HERRAMIENTA: 🚩 BANDERA (Proteger o desproteger faceta)
-  if(tool === 'flag'){
-    if(face.cleared){
-      showToast("Esta faceta ya ha sido tallada y pulida.", "info");
-      return;
-    }
-    face.flagged = !face.flagged;
-    if(face.flagged){
-      playGemFractureTick();
-      if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("light");
-      spawnFloatingScore(stageX, stageY, "🚩 MARCADA", false);
-    } else {
-      spawnFloatingScore(stageX, stageY, "🏳️ DESMARCADA", false);
-    }
-    update3DGeodeHUD();
-    return;
-  }
-
-  // 2. HERRAMIENTA: 🔨 SONAR ACÚSTICO (Auscultación sin riesgo de rotura)
-  if(tool === 'hammer'){
-    if(face.cleared){
-      showToast("Faceta limpia. No hay ganga para auscultar.", "info");
-      return;
-    }
-    playLapidaryHeavyHammer();
-    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("light");
-    spawnRockDustParticles(stageX, stageY);
-
-    if(face.type === 'fissure'){
-      spawnDangerParticles(stageX, stageY);
-      spawnFloatingScore(stageX, stageY, "🚨 ¡ECO DISONANTE! (FALLA)", true);
-      showToast("🔨 Sonar: ¡Vibración fracturaria aguda! Falla crítica oculta bajo este basalto.", "warning");
-    } else if(face.dangerCount === 0){
-      spawnFloatingScore(stageX, stageY, "🎶 RESONANCIA PURA (0 FALLAS)", false);
-      showToast("🔨 Sonar: Tono armónico puro y cristalino. La roca circundante es 100% segura.", "info");
-    } else if(face.dangerCount === 1){
-      spawnFloatingScore(stageX, stageY, "⚠️ ECO OPACO (1 FALLA)", true);
-      showToast("🔨 Sonar: Tono seco y apagado. Hay 1 fisura vecina oculta en el sector.", "warning");
-    } else {
-      spawnFloatingScore(stageX, stageY, "🚨 ECO HUECO (2 FALLAS)", true);
-      showToast("🔨 Sonar: Resonancia hueca y vibrante. ¡Zona peligrosa con 2 fisuras vecinas!", "danger");
-    }
-    return;
-  }
-
-  // 3. HERRAMIENTA: ⛏️ CINCEL (Revelar Faceta / Desbastar)
-  if(face.flagged){
-    showToast("🚫 Faceta protegida con bandera 🚩. Desmárcala si deseas cincelarla.", "warning");
-    spawnFloatingScore(stageX, stageY, "PROTEGIDA 🚩", false);
-    return;
-  }
-  if(face.cleared) return;
-
-  if(face.type === 'fissure'){
-    // Golpe accidental en fisura crítica
-    var now = Date.now();
-    if(now - (lapidaryMinigameState.lastFissureHit || 0) > 280){
-      lapidaryMinigameState.lastFissureHit = now;
-      lapidaryMinigameState.fragileHits++;
-      face.struck = true;
-      playGemFractureTick();
-      if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("fumble");
-      spawnDangerParticles(stageX, stageY);
-      spawnFloatingScore(stageX, stageY, "-25% INTEGRIDAD", true);
-
-      var stageEl = document.getElementById("lapidary3DStage");
-      if(stageEl){
-        stageEl.classList.add("danger-flash");
-        setTimeout(function(){ if(stageEl) stageEl.classList.remove("danger-flash"); }, 240);
-      }
-      update3DGeodeHUD();
-    }
-    return;
-  }
-
-  // Ganga basáltica sana
-  playLapidaryChiselStrike();
-  if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("light");
-  spawnRockDustParticles(stageX, stageY);
-  spawnFlyingRockDebris(stageX, stageY);
-
-  if(face.dangerCount === 0){
-    // Cascada de despeje seguro (Minesweeper cascade)
-    cascadeClearSafeFaces(face.id - 1);
-    playGemSweetSpotHit();
-    spawnFloatingScore(stageX, stageY, "✨ ¡CASCADA CRISTALINA!", false);
-  } else {
-    face.cleared = true;
-    spawnFloatingScore(stageX, stageY, "+10 pts [Peligro: " + face.dangerCount + "]", false);
-  }
-
-  update3DGeodeHUD();
-}
-
-function update3DGeodeHUD(){
-  var faces = lapidaryMinigameState.geodeFaces || [];
-  var gangueFaces = faces.filter(function(f){ return f.type === 'gangue'; });
-  var safeCleared = gangueFaces.filter(function(f){ return f.cleared; }).length;
-  var targetClears = 12; // 75%
-  var cleanPct = Math.min(100, Math.round((safeCleared / targetClears) * 100));
-  var integrity = Math.max(0, 100 - (lapidaryMinigameState.fragileHits * 25));
-
-  var flaggedCount = faces.filter(function(f){ return f.flagged; }).length;
-  var correctlyFlagged = faces.filter(function(f){ return f.flagged && f.type === 'fissure'; }).length;
-  var minesweeperBonus = (correctlyFlagged === 4 && flaggedCount === 4) ? 15 : 0;
-
-  var p1Score = Math.max(0, Math.min(100, Math.round((cleanPct * 0.6) + (integrity * 0.4)) + minesweeperBonus));
-
-  lapidaryMinigameState.cleanPct = cleanPct;
-  lapidaryMinigameState.phase1Score = p1Score;
-
-  var hudClean = document.getElementById("lapidaryHudClean");
-  var hudIntegrity = document.getElementById("lapidaryHudIntegrity");
-  var hudFlags = document.getElementById("lapidaryHudFlags");
-  var hudPhase1Score = document.getElementById("lapidaryHudPhase1Score");
-  var cleanBar = document.getElementById("lapidaryCleanBar");
-  var integBar = document.getElementById("lapidaryIntegrityBar");
-  var integTxt = document.getElementById("lapidaryIntegrityText");
-  var btn = document.getElementById("lapidaryBtnPhase2");
-
-  if(hudClean){
-    hudClean.textContent = safeCleared + " / " + targetClears + " (" + cleanPct + "%)";
-    hudClean.className = "hud-val " + (cleanPct >= 75 ? "safe" : "warning");
-  }
-  if(hudIntegrity){
-    hudIntegrity.textContent = integrity + "% (" + integrity + " pts)";
-    hudIntegrity.className = "hud-val " + (integrity < 50 ? "danger" : (integrity < 75 ? "warning" : "safe"));
-  }
-  if(hudFlags){
-    hudFlags.textContent = flaggedCount + " / 4" + (minesweeperBonus > 0 ? " ✨ (+15)" : "");
-    hudFlags.style.color = (minesweeperBonus > 0) ? "#34D399" : "#FCA5A5";
-  }
-  if(hudPhase1Score){
-    hudPhase1Score.textContent = p1Score + " pts";
-  }
-  if(cleanBar){
-    cleanBar.style.width = cleanPct + "%";
-  }
-  if(integBar){
-    integBar.style.width = integrity + "%";
-    integBar.className = "lapidary-meter-fill integrity " + (integrity < 50 ? "danger" : (integrity < 75 ? "warning" : ""));
-  }
-  if(integTxt){
-    integTxt.innerHTML = integrity + "% (" + integrity + " pts)";
-  }
-
-  if(cleanPct >= 75 && btn && btn.disabled){
-    btn.disabled = false;
-    btn.textContent = "✨ Geoda Desbastada (" + p1Score + " pts" + (minesweeperBonus > 0 ? " +15 Bono Lógico" : "") + ") Avanzar a Sierra de Cortes ➡️";
-    btn.classList.add("pulse-glow");
-    playGemSweetSpotHit();
-    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("crit");
-  }
-}
-
-function initLapidary3DGeodeStage(){
-  var canvas = document.getElementById("lapidary3DCanvas");
-  if(!canvas) return;
-  var ctx = canvas.getContext("2d");
-  if(!ctx) return;
-
-  var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
-  var stone = c ? (c.stones || []).find(function(st){ return st.id === lapidaryMinigameState.stoneId; }) : null;
-  var family = getStoneFamily(stone ? stone.color : "blanca");
-
-  var isPointerDown = false;
-  var startX = 0, startY = 0;
-  var lastX = 0, lastY = 0;
-  var totalDragDist = 0;
-  var lastUserInteractTime = 0;
-
-  function renderLoop(){
-    if(!lapidaryMinigameState.active || lapidaryMinigameState.phase !== 1){
-      return;
-    }
-
-    // Auto-rotación sutil pausada cuando el usuario está pensando o interactuando
-    if(!isPointerDown && Date.now() - lastUserInteractTime > 3200){
-      lapidaryMinigameState.geodeRotY += 0.0022;
-    }
-
-    draw3DGeode(ctx, canvas.width, canvas.height, family.hex, family.glow);
-    lapidaryMinigameState.geodeAnimId = requestAnimationFrame(renderLoop);
-  }
-
-  if(lapidaryMinigameState.geodeAnimId){
-    cancelAnimationFrame(lapidaryMinigameState.geodeAnimId);
-  }
-  lapidaryMinigameState.geodeAnimId = requestAnimationFrame(renderLoop);
-  update3DGeodeHUD();
-
-  // Gestión de Arrastre 3D vs Clic / Toque
-  canvas.onmousedown = function(e){
-    isPointerDown = true;
-    lastUserInteractTime = Date.now();
-    startX = e.clientX; startY = e.clientY;
-    lastX = e.clientX;  lastY = e.clientY;
-    totalDragDist = 0;
-  };
-
-  window.onmousemove = function(e){
-    if(!isPointerDown || !lapidaryMinigameState.active || lapidaryMinigameState.phase !== 1) return;
-    lastUserInteractTime = Date.now();
-    var dx = e.clientX - lastX;
-    var dy = e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    totalDragDist += Math.hypot(dx, dy);
-
-    // Órbita 3D suave
-    lapidaryMinigameState.geodeRotY += dx * 0.013;
-    lapidaryMinigameState.geodeRotX += dy * 0.013;
-  };
-
-  window.onmouseup = function(e){
-    if(!isPointerDown) return;
-    isPointerDown = false;
-    lastUserInteractTime = Date.now();
-    // Si el movimiento total fue mínimo (< 8px), es un clic de herramienta
-    if(totalDragDist < 8 && e){
-      handle3DGeodeClick(startX, startY);
-    }
-  };
-
-  // Soporte táctil móvil (Touch) optimizado para pantallas táctiles
-  canvas.ontouchstart = function(e){
-    if(e.touches && e.touches[0]){
-      isPointerDown = true;
-      lastUserInteractTime = Date.now();
-      startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-      lastX = e.touches[0].clientX;  lastY = e.touches[0].clientY;
-      totalDragDist = 0;
-    }
-    e.preventDefault();
-  };
-
-  canvas.ontouchmove = function(e){
-    if(!isPointerDown || !e.touches || !e.touches[0]) return;
-    lastUserInteractTime = Date.now();
-    var dx = e.touches[0].clientX - lastX;
-    var dy = e.touches[0].clientY - lastY;
-    lastX = e.touches[0].clientX;
-    lastY = e.touches[0].clientY;
-    totalDragDist += Math.hypot(dx, dy);
-
-    lapidaryMinigameState.geodeRotY += dx * 0.013;
-    lapidaryMinigameState.geodeRotX += dy * 0.013;
-    e.preventDefault();
-  };
-
-  canvas.ontouchend = function(e){
-    if(!isPointerDown) return;
-    isPointerDown = false;
-    lastUserInteractTime = Date.now();
-    // Umbral de 14px adaptado al área de contacto del dedo móvil
-    if(totalDragDist < 14){
-      handle3DGeodeClick(startX, startY);
-    }
-  };
-}
 
 function spawnFloatingScore(x, y, text, isDanger){
   var stage = document.getElementById("lapidary3DStage") || document.getElementById("lapidarySlideStage");
@@ -2318,10 +2037,6 @@ function updateLiveSlideHUD(precision, progress, sawSpeed, frictionHeat){
 
 function initLapidarySlideStage(){
   // Detener cualquier animación 3D previa
-  if(lapidaryMinigameState.geodeAnimId){
-    cancelAnimationFrame(lapidaryMinigameState.geodeAnimId);
-    lapidaryMinigameState.geodeAnimId = null;
-  }
 
   var canvas = document.getElementById("lapidarySlideCanvas");
   if(!canvas) return;
