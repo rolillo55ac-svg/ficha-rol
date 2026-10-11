@@ -1,6 +1,6 @@
 {
-  "version": "1.4.4.0",
-  "build": "2026.10.11.03",
-  "updatedAt": "2026-10-11T22:30:00Z",
-  "changelog": "Seguridad: el rol de máster solo se toma del perfil de la cuenta, y al cambiar de cuenta en el mismo navegador ya no se hereda el rol anterior."
+  "version": "1.4.5.0",
+  "build": "2026.10.12.01",
+  "updatedAt": "2026-10-12T12:00:00Z",
+  "changelog": "La Casa: los baúles se preparan para guardarse en la nube. El máster usa todos; en las estancias comunes, cualquier jugador; en cada habitación, solo su dueño."
 }
