@@ -117,7 +117,9 @@ function renderTabbar(){
   }
   document.getElementById("tabbar").innerHTML = tabs.map(function(t){
     var isActive = state.activeTab===t.id;
-    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+'"><span>'+t.label+'</span></button>';
+    // Contador de veredictos de talla pendientes para el máster
+    var count = (t.id === "lapidario" && isGM() && typeof getPendingLapidaryVerdicts === "function") ? getPendingLapidaryVerdicts().length : 0;
+    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+(count ? ' ('+count+' pendientes)' : '')+'"><span>'+t.label+'</span>'+(count ? '<span class="tab-count">'+count+'</span>' : '')+'</button>';
   }).join('');
 }
 
@@ -197,6 +199,10 @@ function tplFicha(c){
   var canEdit = canEditChar(c);
   var ro = !canEdit;
 
+  // Aviso de gemas talladas que esperan el veredicto del máster
+  var pendingStones = (c.stones || []).filter(function(st){ return st.pendienteMaster; });
+  var stoneNotice = pendingStones.length ? '<div class="lapidary-verdict-status wait" style="margin-bottom:12px;"><span class="ic">⏳</span><span><b>' + (pendingStones.length === 1 ? 'Una gema tallada espera' : pendingStones.length + ' gemas talladas esperan') + ' al máster</b>: decidirá si aguanta' + (pendingStones.length === 1 ? '' : 'n') + '. Lo verás en la pestaña Piedras.</span></div>' : '';
+
   var sound = c.charSound;
   if(!sound && (c.id === "char_ink" || (c.name && c.name.toLowerCase().includes("ink")))){
     sound = { name: "Ruido murciélago", type: "bat", icon: "🦇", url: "sounds/ruido_murcielago.wav" };
@@ -230,6 +236,7 @@ function tplFicha(c){
       '<span>'+(c.isNPC?'Ficha de NPC (Solo GM)':(canEdit ? 'Datos del Personaje' : 'Datos del Personaje (Solo Lectura)'))+'</span>'+
       soundHtml+
     '</div>'+
+    stoneNotice+
     (!canEdit && currentUser ?
       '<div class="tr-spectator-banner" style="margin-bottom:12px;">'+
         '<span style="font-size:1.15rem;flex:none;">👁️</span>'+
@@ -1236,6 +1243,9 @@ function renderLapidaryWorkshop(c, canEdit){
 
   var html = '';
 
+  // 0. Veredictos de talla pendientes (solo el máster)
+  if(typeof renderLapidaryVerdictPanel === "function") html += renderLapidaryVerdictPanel();
+
   // 1. Panel Superior: Banco de Trabajo, Herramientas y Resumen
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + ' lapidary-bench-section">' +
     '<div class="section-title"><span>💎 Taller de Lapidario y Talla Arcana</span></div>' +
@@ -1350,6 +1360,7 @@ function renderLapidaryWorkshop(c, canEdit){
             (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Eliminar gema" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '') +
           '</div>' +
         '</div>' +
+        (typeof renderLapidaryStoneStatus === "function" ? renderLapidaryStoneStatus(st) : '') +
 
         // Stepper de Progresión de Descubrimiento (Mismo patrón de 3 pasos)
         '<div class="lapidary-discovery-box">' +

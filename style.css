@@ -9090,3 +9090,52 @@ textarea,
 #lapidaryCutHint { min-height: 4.2em; display: flex; align-items: center; justify-content: center; }
 .lapidary-cuts-stars { height: 1.25em; line-height: 1.25em; }
 #lapidaryModal { scrollbar-gutter: stable; }
+
+/* ==========================================================================
+   TALLER DE LAPIDARIO — Paso 4: Veredicto del máster
+   ========================================================================== */
+.lapidary-verdict { display: flex; flex-direction: column; gap: 12px; }
+.lapidary-verdict-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--bg-elev); }
+.lapidary-verdict-row { display: grid; grid-template-columns: 5.6em 1fr 2.4em; align-items: center; gap: 10px; font-size: .9rem; color: var(--ink-dim); }
+.lapidary-verdict-row span:last-child { text-align: right; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.lapidary-verdict-meter { height: 8px; border-radius: 5px; background: #2c2018; overflow: hidden; }
+.lapidary-verdict-meter div { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+.lapidary-verdict-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; border-top: 1px solid var(--line); color: var(--ink-dim); }
+.lapidary-verdict-total b { font-family: var(--font-display); font-size: 1.7rem; color: var(--gold-light); }
+.lapidary-verdict-risk { display: flex; align-items: center; gap: 12px; }
+.lapidary-verdict-risk .num { min-width: 2.6em; font-family: var(--font-display); font-size: 2rem; font-weight: 700; }
+.lapidary-verdict-risk .txt { font-size: .88rem; line-height: 1.4; color: var(--ink-dim); }
+.lapidary-verdict-risk.low .num { color: #7CC4A4; }
+.lapidary-verdict-risk.mid .num { color: #E8B85A; }
+.lapidary-verdict-risk.high .num { color: #F07A84; }
+.lapidary-verdict-mods { display: flex; flex-wrap: wrap; gap: 6px; }
+.lapidary-verdict-mod { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-card); font-size: .8rem; color: var(--ink-dim); }
+.lapidary-verdict-mod b { color: var(--ink); }
+
+/* Aviso en las piedras del jugador */
+.lapidary-verdict-status { display: flex; align-items: center; gap: 10px; margin: 8px 0; padding: 12px; border-radius: 12px; font-size: .9rem; line-height: 1.4; }
+.lapidary-verdict-status .ic { font-size: 1.4rem; flex: none; }
+.lapidary-verdict-status.wait { background: rgba(210,105,30,.12); border: 1px solid rgba(210,105,30,.55); color: #F0C49A; }
+.lapidary-verdict-status.okk { background: rgba(124,196,164,.12); border: 1px solid #7CC4A4; color: #7CC4A4; }
+.lapidary-verdict-status.brk { background: rgba(200,75,87,.14); border: 1px solid var(--blood-light); color: #F07A84; }
+
+/* Panel del máster */
+.lapidary-verdict-panel { border-color: rgba(210,105,30,.6) !important; }
+.lapidary-verdict-gmcard { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding: 14px; border-radius: 14px; border: 1px solid rgba(210,105,30,.6); background: linear-gradient(180deg, rgba(210,105,30,.08), transparent), var(--bg-elev); }
+.lapidary-verdict-gmtag { font-size: .7rem; letter-spacing: .09em; text-transform: uppercase; color: #F0A868; }
+.lapidary-verdict-gmcard h4 { margin: 0; font-family: var(--font-display); font-size: 1.1rem; color: var(--ink); }
+.lapidary-verdict-gminfo { font-size: .9rem; line-height: 1.4; color: var(--ink-dim); }
+.lapidary-verdict-d100 { min-height: 1.4em; text-align: center; font-size: .9rem; color: var(--ink-dim); }
+.lapidary-verdict-d100 b { color: var(--ink); }
+.lapidary-verdict-d100 .bad { color: #F07A84; }
+.lapidary-verdict-d100 .ok { color: #7CC4A4; }
+.lapidary-verdict-gmgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lapidary-verdict-gmgrid .full { grid-column: 1 / -1; }
+.lapidary-verdict-ok, .lapidary-verdict-brk { min-height: 52px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; }
+.lapidary-verdict-ok { border: 1px solid #7CC4A4; background: rgba(124,196,164,.14); color: #7CC4A4; }
+.lapidary-verdict-brk { border: 1px solid var(--blood-light); background: rgba(200,75,87,.14); color: #F07A84; }
+.lapidary-verdict-ok:disabled, .lapidary-verdict-brk:disabled { opacity: .5; cursor: wait; }
+.lapidary-verdict-note { margin: 10px 0 0; font-size: .8rem; line-height: 1.4; text-align: center; color: var(--ink-faint); }
+
+/* Contador en la pestaña Piedras (máster) */
+.tab-btn .tab-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: #D2691E; color: #fff; font-size: .7rem; font-weight: 700; line-height: 1; vertical-align: middle; }

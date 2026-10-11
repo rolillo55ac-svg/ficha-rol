@@ -1396,7 +1396,7 @@ function renderLapidaryModalContent(){
     '<div class="lapidary-step-line ' + (lapidaryMinigameState.phase > 3 ? 'active' : '') + '"></div>' +
     '<div class="lapidary-step ' + (lapidaryMinigameState.phase === 4 ? 'current' : '') + '">' +
       '<div class="lapidary-step-num">4</div>' +
-      '<div class="lapidary-step-label">Riesgo & Tirada</div>' +
+      '<div class="lapidary-step-label">Veredicto</div>' +
     '</div>' +
   '</div>';
 
@@ -1424,65 +1424,10 @@ function renderLapidaryModalContent(){
   }
 
   // ==========================================
-  // FASE 4: RESUMEN, PROBABILIDAD DE ROTURA Y TIRADA
+  // FASE 4: VEREDICTO (nota, riesgo y tirada de calidad; el máster decide la rotura)
   // ==========================================
   else if(lapidaryMinigameState.phase === 4){
-    computeArtisanMasteryAndRisk(c);
-
-    var riskClass = (lapidaryMinigameState.breakRisk <= 10) ? 'safe' : ((lapidaryMinigameState.breakRisk <= 25) ? 'moderate' : 'high-danger');
-    var riskLabel = (lapidaryMinigameState.breakRisk <= 10) ? 'Bajo Riesgo (Estructura Estable)' : ((lapidaryMinigameState.breakRisk <= 25) ? 'Riesgo Moderado' : '¡Alto Peligro de Fractura!');
-
-    html += '<div class="lapidary-phase-body">' +
-      '<div class="lapidary-instructions">' +
-        '<b>Fase 4: Evaluación de Talla y Riesgo de Fractura</b><br>' +
-        'Tus 3 fases de artesanía determinan la calidad del facetado y el riesgo de que la gema se rompa.' +
-      '</div>' +
-
-      // Grid de Puntuación de las 3 fases
-      '<div class="lapidary-score-breakdown-grid">' +
-        '<div class="lapidary-score-card">' +
-          '<div class="lapidary-score-header"><span>🧹 Desbaste Ganga</span><b>' + lapidaryMinigameState.phase1Score + '% (' + lapidaryMinigameState.phase1Score + ' pts)</b></div>' +
-          '<div class="lapidary-mini-meter"><div class="lapidary-mini-meter-fill" style="width:' + lapidaryMinigameState.phase1Score + '%;"></div></div>' +
-          '<div class="lapidary-score-sub">Aporte al Balance: +' + Math.round(lapidaryMinigameState.phase1Score * 0.35) + ' pts &bull; ' + (lapidaryMinigameState.fragileHits > 0 ? lapidaryMinigameState.fragileHits + ' fisuras tocadas' : '0 fisuras') + '</div>' +
-        '</div>' +
-
-        '<div class="lapidary-score-card">' +
-          '<div class="lapidary-score-header"><span>〰️ Cortes de Pulso</span><b>' + lapidaryMinigameState.phase2Score + '% (' + lapidaryMinigameState.phase2Score + ' pts)</b></div>' +
-          '<div class="lapidary-mini-meter"><div class="lapidary-mini-meter-fill" style="width:' + lapidaryMinigameState.phase2Score + '%;"></div></div>' +
-          '<div class="lapidary-score-sub">Aporte al Balance: +' + Math.round(lapidaryMinigameState.phase2Score * 0.35) + ' pts &bull; Media 3 curvas</div>' +
-        '</div>' +
-
-        '<div class="lapidary-score-card">' +
-          '<div class="lapidary-score-header"><span>✨ Pulido</span><b>' + lapidaryMinigameState.phase3Score + '% (' + lapidaryMinigameState.phase3Score + ' pts)</b></div>' +
-          '<div class="lapidary-mini-meter"><div class="lapidary-mini-meter-fill" style="width:' + lapidaryMinigameState.phase3Score + '%;"></div></div>' +
-          '<div class="lapidary-score-sub">Aporte al Balance: +' + Math.round(lapidaryMinigameState.phase3Score * 0.30) + ' pts &bull; ' + lapidaryMinigameState.timingHits + ' de ' + lapidaryMinigameState.maxPasses + ' perfectas</div>' +
-        '</div>' +
-      '</div>' +
-
-      // Tarjeta de Riesgo de Rotura (Punto 3 del usuario)
-      '<div class="lapidary-risk-card ' + riskClass + '">' +
-        '<div class="lapidary-risk-header">' +
-          '<span class="lapidary-risk-title">💥 PROBABILIDAD DE ROTURA DE LA GEMA:</span>' +
-          '<span class="lapidary-risk-val">' + lapidaryMinigameState.breakRisk + '%</span>' +
-        '</div>' +
-        '<div class="lapidary-risk-track">' +
-          '<div class="lapidary-risk-fill" style="width:' + lapidaryMinigameState.breakRisk + '%;"></div>' +
-        '</div>' +
-        '<div class="lapidary-risk-desc">' +
-          '<b>' + riskLabel + '</b> &bull; Herramienta: ' + esc(tier.name) + ' &bull; Puntuación Total: <b>' + lapidaryMinigameState.totalArtisanScore + ' / 100 pts</b>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="lapidary-roll-bonus-badge">' +
-        '✨ Bono de Maestría a la Tirada: <b>+' + lapidaryMinigameState.rollBonus + '</b>' +
-      '</div>' +
-
-      '<div class="lapidary-action-footer" style="margin-top:14px;">' +
-        '<button type="button" class="btn-solid-gold lapidary-btn-roll pulse-glow" data-action="lapidary-launch-roll">' +
-          '🎲 Realizar Tirada Final (1d100 Riesgo: ' + lapidaryMinigameState.breakRisk + '% &bull; Tirada D10: +' + (num(c.attrs.inteligencia,1) + (c.skillBonus && c.skillBonus["Piedras mágicas"] ? num(c.skillBonus["Piedras mágicas"],0) : 0) + (tier.bonusRoll || 0) + lapidaryMinigameState.rollBonus) + ')' +
-        '</button>' +
-      '</div>' +
-    '</div>';
+    html += renderVerdictPhaseHTML(c);
   }
 
   modal.innerHTML = html;
@@ -2512,7 +2457,7 @@ function handleLapidaryCutTrigger(){
 }
 
 /* ==========================================================================
-   7. FASE 4: BALANCE, RIESGO DE ROTURA Y TIRADA FINAL (Requisito 3)
+   7. FASE 4: VEREDICTO — el jugador tira la calidad y el máster decide la rotura
    ========================================================================== */
 
 function computeArtisanMasteryAndRisk(c){
@@ -2557,94 +2502,291 @@ function computeArtisanMasteryAndRisk(c){
   lapidaryMinigameState.rollBonus = bonus;
 }
 
+function getLapidaryRiskLevel(risk){
+  return risk <= 10 ? "low" : (risk <= 25 ? "mid" : "high");
+}
+
+// Bonos de la tirada de calidad (1d10 + bonos)
+function getLapidaryRollModifiers(c){
+  var tier = getLapidaryTier(c.lapidaryTier);
+  var intVal = num(c.attrs.inteligencia, 1);
+  var skillBonus = (c.skillBonus && c.skillBonus["Piedras mágicas"]) ? num(c.skillBonus["Piedras mágicas"], 0) : 0;
+  var mods = [{ label: "Inteligencia", val: intVal, icon: "inteligencia", type: "attr" }];
+  if(skillBonus !== 0) mods.push({ label: "Habilidad Piedras Mágicas", val: skillBonus, icon: "rune", type: "skill" });
+  if(tier.bonusRoll) mods.push({ label: tier.name, val: tier.bonusRoll, icon: "gem", type: "tier" });
+  if(lapidaryMinigameState.rollBonus) mods.push({ label: "Maestría " + lapidaryMinigameState.totalArtisanScore, val: lapidaryMinigameState.rollBonus, icon: "sparkle", type: "timing" });
+  return mods;
+}
+
+function renderVerdictPhaseHTML(c){
+  computeArtisanMasteryAndRisk(c);
+  var S = lapidaryMinigameState;
+  var risk = S.breakRisk, lvl = getLapidaryRiskLevel(risk);
+  var riskWord = lvl === "low" ? "bajo" : (lvl === "mid" ? "moderado" : "alto");
+  var mods = getLapidaryRollModifiers(c);
+  var modSum = mods.reduce(function(a, m){ return a + m.val; }, 0);
+  var row = function(label, v){
+    return '<div class="lapidary-verdict-row"><span>' + label + '</span><div class="lapidary-verdict-meter"><div style="width:' + v + '%"></div></div><span>' + v + '</span></div>';
+  };
+  return '<div class="lapidary-phase-body lapidary-verdict">' +
+    '<div class="lapidary-verdict-card">' +
+      '<div class="lapidary-polish-head"><h3>Tu trabajo</h3><span class="lapidary-sheet-tag">Nota de cada paso</span></div>' +
+      row("Desbaste", S.phase1Score) + row("Cortes", S.phase2Score) + row("Pulido", S.phase3Score) +
+      '<div class="lapidary-verdict-total"><span>Maestría</span><b>' + S.totalArtisanScore + ' / 100</b></div>' +
+    '</div>' +
+    '<div class="lapidary-verdict-card">' +
+      '<div class="lapidary-verdict-risk ' + lvl + '"><div class="num">' + risk + '%</div>' +
+      '<div class="txt"><b>Riesgo de rotura ' + riskWord + '.</b> Lo resuelve el máster al final. Tu nota y tu kit lo bajan.</div></div>' +
+    '</div>' +
+    '<div class="lapidary-verdict-card">' +
+      '<div class="lapidary-polish-head"><h3>Tirada de calidad</h3><span class="lapidary-sheet-tag">1d10 + bonos</span></div>' +
+      '<div class="lapidary-verdict-mods">' + mods.map(function(m){ return '<span class="lapidary-verdict-mod">' + esc(m.label) + ' <b>' + (m.val >= 0 ? "+" : "") + m.val + '</b></span>'; }).join("") + '</div>' +
+      '<button type="button" class="lapidary-cta-btn" data-action="lapidary-launch-roll">Tirar 1d10 + ' + modSum + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
 function launchLapidaryRollModal(){
   var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
   var stone = c ? (c.stones || []).find(function(st){ return st.id === lapidaryMinigameState.stoneId; }) : null;
   if(!c || !stone) return;
 
+  computeArtisanMasteryAndRisk(c);
   var family = getStoneFamily(stone.color);
-  var tier = getLapidaryTier(c.lapidaryTier);
-
-  var intVal = num(c.attrs.inteligencia, 1);
-  var skillBonus = (c.skillBonus && c.skillBonus["Piedras mágicas"]) ? num(c.skillBonus["Piedras mágicas"], 0) : 0;
-  var tierBonus = tier.bonusRoll || 0;
-  var timingHits = lapidaryMinigameState.rollBonus || 0;
-
-  // Comprobar prueba de rotura con el riesgo acumulado de los minijuegos (Requisito 3)
-  var rollD100 = Math.floor(Math.random() * 100) + 1;
-  var didBreak = (rollD100 <= lapidaryMinigameState.breakRisk);
-
-  // Desglose explícito de modificadores requeridos en Punto 6
-  var modifiers = [
-    { label: "Inteligencia", val: intVal, icon: "inteligencia", type: "attr" }
-  ];
-
-  if(skillBonus !== 0){
-    modifiers.push({ label: "Habilidad Piedras Mágicas", val: skillBonus, icon: "rune", type: "skill" });
-  }
-
-  if(tierBonus !== 0){
-    modifiers.push({ label: tier.name, val: tierBonus, icon: "gem", type: "tier" });
-  }
-
-  if(timingHits !== 0){
-    modifiers.push({ label: "Maestría en Minijuegos (" + lapidaryMinigameState.totalArtisanScore + "/100)", val: timingHits, icon: "sparkle", type: "timing" });
-  }
+  var modifiers = getLapidaryRollModifiers(c);
+  var modSum = modifiers.reduce(function(a, m){ return a + m.val; }, 0);
+  var verdict = { risk: lapidaryMinigameState.breakRisk, mastery: lapidaryMinigameState.totalArtisanScore };
 
   closeLapidaryMinigame();
 
   if(typeof openBg3RollModal === "function"){
     openBg3RollModal({
       title: "Talla de Lapidario",
-      subtitle: "Corte de " + family.gema + " (Riesgo: " + lapidaryMinigameState.breakRisk + "%)",
+      subtitle: "Calidad de la " + family.gema + " (el máster decidirá si aguanta)",
       sides: 10,
       qty: 1,
       charName: c.name,
       modifiers: modifiers,
       onResolve: function(rollState){
-        resolveLapidaryCraft(c, stone, rollState, didBreak, rollD100);
+        resolveLapidaryCraft(c, stone, rollState, verdict);
       }
     });
   } else {
     var d10 = Math.floor(Math.random() * 10) + 1;
-    var total = d10 + intVal + skillBonus + tierBonus + timingHits;
-    resolveLapidaryCraft(c, stone, { total: total, r1: d10 }, didBreak, rollD100);
+    resolveLapidaryCraft(c, stone, { total: d10 + modSum, r1: d10 }, verdict);
   }
 }
 
-function resolveLapidaryCraft(c, stone, rollState, didBreak, rollD100){
-  var grandTotal = rollState.total;
+// Guarda la calidad tirada y deja la piedra "Esperando al máster" (la rotura ya no se decide con un d100 oculto)
+function resolveLapidaryCraft(c, stone, rollState, verdict){
+  var grandTotal = parseInt(rollState && rollState.total, 10) || 0;
+  var quality = getStoneQualityByRoll(grandTotal);
+  verdict = verdict || { risk: lapidaryMinigameState.breakRisk, mastery: lapidaryMinigameState.totalArtisanScore };
 
   stone.estado = "pulida";
+  stone.calidad = quality.id;
+  stone.calidadTirada = quality.id;
+  stone.totalTirada = grandTotal;
+  stone.riesgoRotura = verdict.risk;
+  stone.maestria = verdict.mastery;
+  stone.talladoEn = new Date().toISOString();
+  delete stone.veredictoMaster;
 
-  if(didBreak){
-    // La gema se rompe debido al riesgo acumulado de los minijuegos
-    stone.calidad = "arruinada";
+  if(quality.id === "arruinada"){
+    // Una tirada arruinada no necesita veredicto: la gema ya no sirve
+    stone.pendienteMaster = false;
     playGemFracture();
-    stone.notasInvestigacion = (stone.notasInvestigacion ? stone.notasInvestigacion + " " : "") + "[FRACTURADA: Falló prueba de rotura (" + rollD100 + "% vs Riesgo " + lapidaryMinigameState.breakRisk + "%)].";
-    showToast("💥 ¡FRACTURA! La gema se ha roto durante el corte (Rotura: " + rollD100 + "% vs Riesgo " + lapidaryMinigameState.breakRisk + "%). Calidad: Arruinada.", "error");
+    showToast("⚠️ Corte irregular. Calidad: Arruinada (Tirada: " + grandTotal + ").", "warning");
   } else {
-    var quality = getStoneQualityByRoll(grandTotal);
-    stone.calidad = quality.id;
-    if(quality.id === "arruinada"){
-      playGemFracture();
-      showToast("⚠️ Corte irregular. Calidad: Arruinada (Tirada: " + grandTotal + ").", "warning");
-    } else {
-      playGemChime(quality.id);
-      showToast("💎 ¡Talla completada sin fractura! Calidad: " + quality.label + " (Total: " + grandTotal + ").", "success");
-    }
+    stone.pendienteMaster = true;
+    playGemChime(quality.id);
+    showToast("💎 Talla terminada con calidad " + quality.label + " (" + grandTotal + "). Esperando al máster: decidirá si la piedra aguanta.", "success");
   }
 
   saveState(false);
   if(typeof manageListItemRPC === "function"){
     manageListItemRPC(c, 'stones', 'update_item', stone, stone.id);
-  }
-  if(typeof pushCharacterPatch === "function"){
+  } else if(typeof pushCharacterPatch === "function"){
     pushCharacterPatch(c.id, { stones: c.stones });
   }
+  if(stone.pendienteMaster) broadcastLapidaryVerdict("lapidary_verdict_request", c, stone);
 
+  if(typeof renderTabbar === "function") renderTabbar();
   renderTab();
 }
+
+/* ---------- Veredicto del máster: avisos en directo y decisión ---------- */
+
+function getPendingLapidaryVerdicts(){
+  var out = [];
+  (state.characters || []).forEach(function(c){
+    (c.stones || []).forEach(function(st){ if(st.pendienteMaster) out.push({ c: c, stone: st }); });
+  });
+  return out;
+}
+
+function broadcastLapidaryVerdict(event, c, stone){
+  if(typeof realtimeChannel === "undefined" || !realtimeChannel || typeof realtimeChannel.send !== "function") return;
+  try {
+    realtimeChannel.send({
+      type: "broadcast",
+      event: event,
+      payload: { charId: c.db_id || c.id, localId: c.id, charName: c.name, stone: stone, ts: Date.now() }
+    }).catch(function(){});
+  } catch(e){}
+}
+
+function findCharForLapidaryPayload(p){
+  return (state.characters || []).find(function(x){ return x.id === p.localId || x.db_id === p.charId || x.id === p.charId; });
+}
+
+function handleRemoteLapidaryVerdict(event, p){
+  if(!p || !p.stone) return;
+  var c = findCharForLapidaryPayload(p);
+  if(!c) return;
+  var list = c.stones || (c.stones = []);
+  var idx = list.findIndex(function(st){ return st.id === p.stone.id; });
+  if(idx === -1) list.push(p.stone); else list[idx] = p.stone;
+  if(typeof snapshotCharacterSynced === "function") snapshotCharacterSynced(c);
+  if(typeof saveState === "function") saveState(true);
+
+  var fam = getStoneFamily(p.stone.color);
+  var q = getStoneQuality(p.stone.calidadTirada || p.stone.calidad);
+  if(event === "lapidary_verdict_request" && typeof isGM === "function" && isGM()){
+    showToast("⚖️ " + (p.charName || c.name) + " ha tallado una " + fam.gema + " · Calidad " + q.label + " (" + p.stone.totalTirada + ") · Riesgo " + p.stone.riesgoRotura + "%. Decide en la pestaña Piedras.", "info");
+  } else if(event === "lapidary_verdict_resolved" && typeof canEditChar === "function" && canEditChar(c) && !(typeof isGM === "function" && isGM())){
+    if(p.stone.veredictoMaster === "rota"){
+      playGemFracture();
+      showToast("💥 El máster decide que tu " + fam.gema + " se rompe. Calidad: Arruinada.", "error");
+    } else {
+      playGemChime(p.stone.calidad);
+      showToast("◆ ¡Tu " + fam.gema + " aguanta! Calidad " + q.label + ".", "success");
+    }
+  }
+  if(typeof renderTabbar === "function") renderTabbar();
+  if(typeof state !== "undefined" && (state.activeTab === "lapidario" || state.activeTab === "ficha") && typeof renderTab === "function") renderTab();
+}
+
+// Los oyentes se enganchan cuando existe el canal de tiempo real (y se vuelven a enganchar si se recrea)
+var lapidaryVerdictChannel = null;
+setInterval(function(){
+  if(typeof realtimeChannel === "undefined" || !realtimeChannel || realtimeChannel === lapidaryVerdictChannel) return;
+  lapidaryVerdictChannel = realtimeChannel;
+  try {
+    realtimeChannel.on("broadcast", { event: "lapidary_verdict_request" }, function(msg){ handleRemoteLapidaryVerdict("lapidary_verdict_request", msg && msg.payload); });
+    realtimeChannel.on("broadcast", { event: "lapidary_verdict_resolved" }, function(msg){ handleRemoteLapidaryVerdict("lapidary_verdict_resolved", msg && msg.payload); });
+  } catch(e){ console.warn("No se pudo escuchar el veredicto del lapidario:", e); }
+}, 2000);
+
+// El máster decide: lee la ficha fresca de la base de datos y cambia solo esa piedra (no pisa otros cambios del jugador)
+async function resolveLapidaryVerdict(charId, stoneId, decision){
+  if(typeof isGM !== "function" || !isGM()) return;
+  var c = (state.characters || []).find(function(x){ return x.id === charId; });
+  if(!c) return;
+  var applyDecision = function(st){
+    st.pendienteMaster = false;
+    st.veredictoMaster = decision === "rota" ? "rota" : "aguanta";
+    st.resueltoEn = new Date().toISOString();
+    if(decision === "rota") st.calidad = "arruinada";
+  };
+
+  var resolvedStone = null;
+  if(typeof supabaseClient !== "undefined" && supabaseClient && c.db_id){
+    try {
+      var res = await supabaseClient.from("characters").select("data").eq("id", c.db_id).single();
+      if(res.error || !res.data) throw (res.error || new Error("Ficha no encontrada"));
+      var freshStones = JSON.parse(JSON.stringify((res.data.data && res.data.data.stones) || []));
+      var st = freshStones.find(function(x){ return x.id === stoneId; });
+      if(!st){ showToast("Esa piedra ya no existe en la ficha.", "warning"); return; }
+      if(!st.pendienteMaster){
+        showToast("Esa piedra ya estaba resuelta.", "info");
+        c.stones = freshStones;
+        if(typeof snapshotCharacterSynced === "function") snapshotCharacterSynced(c);
+        saveState(true); renderTabbar(); renderTab();
+        return;
+      }
+      applyDecision(st);
+      var rpc = await supabaseClient.rpc("update_character_data", { char_id: c.db_id, patch: { stones: freshStones } });
+      if(rpc.error) throw rpc.error;
+      c.stones = freshStones;
+      if(typeof snapshotCharacterSynced === "function") snapshotCharacterSynced(c);
+      saveState(true);
+      resolvedStone = st;
+    } catch(err){
+      console.warn("No se pudo guardar el veredicto:", err);
+      showToast("No se ha podido guardar el veredicto. La piedra sigue pendiente; inténtalo de nuevo.", "error");
+      return;
+    }
+  } else {
+    var local = (c.stones || []).find(function(x){ return x.id === stoneId; });
+    if(!local || !local.pendienteMaster) return;
+    applyDecision(local);
+    saveState(false);
+    resolvedStone = local;
+  }
+
+  delete lapidaryVerdictD100[stoneId];
+  if(decision === "rota") playGemFracture(); else playGemChime(resolvedStone.calidad);
+  showToast(decision === "rota" ? "Decidido: la piedra se rompe. El jugador ya lo ve." : "Decidido: la piedra aguanta. El jugador ya lo ve.", decision === "rota" ? "warning" : "success");
+  broadcastLapidaryVerdict("lapidary_verdict_resolved", c, resolvedStone);
+  renderTabbar();
+  renderTab();
+}
+
+// Tirada de ayuda del máster: solo sugiere y no se guarda en ningún sitio que vea el jugador
+var lapidaryVerdictD100 = {};
+
+function renderLapidaryVerdictPanel(){
+  if(typeof isGM !== "function" || !isGM()) return "";
+  var pending = getPendingLapidaryVerdicts();
+  if(!pending.length) return "";
+  var html = '<div class="section lapidary-verdict-panel">' +
+    '<div class="section-title"><span>⚖️ Veredictos pendientes (' + pending.length + ')</span></div>';
+  pending.forEach(function(it){
+    var st = it.stone, fam = getStoneFamily(st.color), q = getStoneQuality(st.calidadTirada || st.calidad);
+    var d = lapidaryVerdictD100[st.id];
+    var dTxt = d ? 'd100: <b>' + d + '</b> contra riesgo ' + st.riesgoRotura + ' → sugiere que <b class="' + (d <= st.riesgoRotura ? "bad" : "ok") + '">' + (d <= st.riesgoRotura ? "se rompe" : "aguanta") + '</b>. Tú decides.' : "Decide tú, o tira un d100 de ayuda.";
+    html += '<div class="lapidary-verdict-gmcard">' +
+      '<span class="lapidary-verdict-gmtag">Aviso para el máster</span>' +
+      '<h4>' + esc(it.c.name) + ' ha tallado una ' + esc(fam.gema) + '</h4>' +
+      '<div class="lapidary-verdict-gminfo">Calidad <b style="color:' + q.color + '">' + esc(q.label) + '</b> (' + (st.totalTirada != null ? st.totalTirada : "?") + ') · Maestría ' + (st.maestria != null ? st.maestria : "?") + ' · <b>Riesgo ' + (st.riesgoRotura != null ? st.riesgoRotura : "?") + '%</b></div>' +
+      '<div class="lapidary-verdict-d100">' + dTxt + '</div>' +
+      '<div class="lapidary-verdict-gmgrid">' +
+        '<button type="button" class="lapidary-ghost-btn full" data-action="lapidary-verdict-d100" data-stone-id="' + st.id + '">Tirar d100 de ayuda</button>' +
+        '<button type="button" class="lapidary-verdict-ok" data-action="lapidary-verdict-decide" data-decision="aguanta" data-char-id="' + it.c.id + '" data-stone-id="' + st.id + '">Aguanta</button>' +
+        '<button type="button" class="lapidary-verdict-brk" data-action="lapidary-verdict-decide" data-decision="rota" data-char-id="' + it.c.id + '" data-stone-id="' + st.id + '">Se rompe</button>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '<p class="lapidary-verdict-note">El jugador ve "Esperando al máster" hasta que eliges. Tu decisión le llega al momento.</p></div>';
+  return html;
+}
+
+// Aviso naranja en las tarjetas de piedra del jugador
+function renderLapidaryStoneStatus(st){
+  if(st.pendienteMaster){
+    return '<div class="lapidary-verdict-status wait"><span class="ic">⏳</span><span>Calidad <b>' + esc(getStoneQuality(st.calidadTirada || st.calidad).label) + '</b>. <b>Esperando al máster</b>: decidirá si la piedra aguanta (riesgo ' + (st.riesgoRotura != null ? st.riesgoRotura : "?") + '%).</span></div>';
+  }
+  if(st.veredictoMaster === "rota") return '<div class="lapidary-verdict-status brk"><span class="ic">✕</span><span>El máster decidió que la piedra <b>se rompió</b> al tallarla.</span></div>';
+  if(st.veredictoMaster === "aguanta") return '<div class="lapidary-verdict-status okk"><span class="ic">◆</span><span>La piedra aguantó la talla.</span></div>';
+  return "";
+}
+
+document.addEventListener("click", function(e){
+  var btn = e.target.closest("[data-action]");
+  if(!btn) return;
+  var act = btn.getAttribute("data-action");
+  if(act === "lapidary-verdict-d100"){
+    if(typeof isGM !== "function" || !isGM()) return;
+    lapidaryVerdictD100[btn.getAttribute("data-stone-id")] = 1 + Math.floor(Math.random() * 100);
+    playGemFractureTick();
+    renderTab();
+  } else if(act === "lapidary-verdict-decide"){
+    if(btn.disabled) return;
+    btn.disabled = true;
+    resolveLapidaryVerdict(btn.getAttribute("data-char-id"), btn.getAttribute("data-stone-id"), btn.getAttribute("data-decision"));
+  }
+});
 
 /* ==========================================================================
    8. ADQUISICIÓN DE PIEDRAS EN BRUTO (MODAL)
