@@ -3331,3 +3331,19 @@
   background: var(--teal-light, #76AC9D);
   box-shadow: 0 0 8px var(--teal-light, #76AC9D);
 }
+
+/* ===== Plano en modo Ver: tablero sobre fondo oscuro ===== */
+.canvas-wrap {
+  min-height: 0;
+  background-color: #0C0907;
+  border: 1px solid rgba(176,141,87,0.35);
+}
+
+.canvas-wrap.is-view {
+  /* Permite desplazar la página con el dedo sobre el plano */
+  touch-action: pan-y pinch-zoom;
+}
+
+#stage-container {
+  height: auto;
+}

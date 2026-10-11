@@ -582,6 +582,7 @@ function resolveRoomColor(color){
 
 var HOUSE_TEXTURES = [
   { id: "madera", name: "Madera / Parquet", icon: "🪵", desc: "Tablones de roble cálido con veta" },
+  { id: "ladrillo", name: "Ladrillo", icon: "🧱", desc: "Ladrillo cocido, cálido y hogareño" },
   { id: "piedra", name: "Piedra / Losas", icon: "🪨", desc: "Losas de cantería y granito ancestral" },
   { id: "baldosas", name: "Baldosas", icon: "🟩", desc: "Suelo cerámico ajedrezado artesanal" },
   { id: "musgo", name: "Musgo / Tierra", icon: "🌿", desc: "Tierra fértil con brotes y líquenes" },
@@ -609,94 +610,115 @@ var _houseTextureCache = {};
 
 function getRoomTexturePattern(texId, colorKey){
   texId = texId || "madera";
-  var key = texId + "_" + (colorKey || "def");
+  var key = texId + "_v2";
   if(_houseTextureCache[key]) return _houseTextureCache[key];
 
   var cv = document.createElement("canvas");
   var ctx = cv.getContext("2d");
+  // Aleatorio con semilla fija: la textura sale igual en todos los dispositivos
+  var seed = 7;
+  function rnd(){ seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
 
   if(texId === "madera"){
-    cv.width = 64; cv.height = 64;
-    ctx.fillStyle = "#271B12"; ctx.fillRect(0, 0, 64, 64);
-    ctx.fillStyle = "rgba(176,141,87,0.12)"; ctx.fillRect(0, 0, 64, 64);
-    for(var y = 0; y < 64; y += 16){
-      ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(64, y); ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, y + 1); ctx.lineTo(64, y + 1); ctx.stroke();
-      ctx.strokeStyle = "rgba(0,0,0,0.15)";
-      ctx.beginPath(); ctx.moveTo(0, y + 8); ctx.lineTo(64, y + 8); ctx.stroke();
+    cv.width = 128; cv.height = 64;
+    var woods = ["#7A4A27", "#6E4223", "#83522E", "#744727"];
+    for(var row = 0; row < 4; row++){
+      var py = row * 16;
+      var joint = (row % 2) ? 40 : 88;
+      [[0, joint], [joint, 128 - joint]].forEach(function(seg, k){
+        ctx.fillStyle = woods[(row + k) % woods.length];
+        ctx.fillRect(seg[0], py, seg[1], 16);
+      });
+      ctx.strokeStyle = "rgba(40,22,10,0.35)"; ctx.lineWidth = 1;
+      for(var g = 0; g < 3; g++){
+        var gy = py + 4 + g * 4 + rnd() * 2;
+        ctx.beginPath(); ctx.moveTo(0, gy);
+        ctx.bezierCurveTo(40, gy + rnd() * 3 - 1.5, 80, gy + rnd() * 3 - 1.5, 128, gy);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(25,12,5,0.75)";
+      ctx.fillRect(0, py + 15, 128, 1.5);
+      ctx.fillRect(joint, py, 1.5, 16);
+      ctx.fillStyle = "rgba(255,220,170,0.08)";
+      ctx.fillRect(0, py, 128, 1);
     }
-    ctx.strokeStyle = "rgba(0,0,0,0.45)"; ctx.lineWidth = 1.5;
+
+  } else if(texId === "ladrillo"){
+    cv.width = 64; cv.height = 32;
+    ctx.fillStyle = "#3A2620"; ctx.fillRect(0, 0, 64, 32);
+    var bricks = ["#8C3B2A", "#7C3324", "#97452F", "#843828"];
+    for(var br = 0; br < 2; br++){
+      var off = br ? 16 : 0;
+      for(var bx = -32; bx < 64; bx += 32){
+        var x0 = bx + off;
+        ctx.fillStyle = bricks[(br * 3 + (bx + 32) / 32) % bricks.length];
+        ctx.fillRect(x0 + 1, br * 16 + 1, 30, 14);
+        ctx.fillStyle = "rgba(255,200,160,0.10)";
+        ctx.fillRect(x0 + 1, br * 16 + 1, 30, 2);
+        ctx.fillStyle = "rgba(0,0,0,0.18)";
+        ctx.fillRect(x0 + 1, br * 16 + 13, 30, 2);
+      }
+    }
+
+  } else if(texId === "baldosas"){
+    cv.width = 48; cv.height = 48;
+    ctx.fillStyle = "#D6CFC0"; ctx.fillRect(0, 0, 48, 48);
+    ctx.fillStyle = "#8E897F";
+    ctx.fillRect(0, 0, 24, 24); ctx.fillRect(24, 24, 24, 24);
+    ctx.strokeStyle = "rgba(40,30,20,0.35)"; ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, 23, 23); ctx.strokeRect(24.5, 0.5, 23, 23);
+    ctx.strokeRect(0.5, 24.5, 23, 23); ctx.strokeRect(24.5, 24.5, 23, 23);
+
+  } else if(texId === "musgo"){
+    cv.width = 64; cv.height = 64;
+    ctx.fillStyle = "#2E5A2B"; ctx.fillRect(0, 0, 64, 64);
+    var greens = ["#3C6E35", "#264A23", "#4A7F3F", "#1F3D1D", "#35652F"];
+    for(var m = 0; m < 70; m++){
+      ctx.fillStyle = greens[m % greens.length];
+      ctx.beginPath();
+      ctx.arc(rnd() * 64, rnd() * 64, 1.5 + rnd() * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(190,230,140,0.25)";
+    for(var d = 0; d < 25; d++) ctx.fillRect(rnd() * 64, rnd() * 64, 1.5, 1.5);
+
+  } else if(texId === "alfombra"){
+    cv.width = 48; cv.height = 48;
+    ctx.fillStyle = "#8A3A46"; ctx.fillRect(0, 0, 48, 48);
+    ctx.strokeStyle = "rgba(255,215,170,0.16)"; ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(32, 0); ctx.lineTo(32, 16);
-    ctx.moveTo(16, 16); ctx.lineTo(16, 32);
-    ctx.moveTo(48, 16); ctx.lineTo(48, 32);
-    ctx.moveTo(32, 32); ctx.lineTo(32, 48);
-    ctx.moveTo(16, 48); ctx.lineTo(16, 64);
-    ctx.moveTo(48, 48); ctx.lineTo(48, 64);
+    ctx.moveTo(24, 0); ctx.lineTo(48, 24); ctx.lineTo(24, 48); ctx.lineTo(0, 24); ctx.closePath();
     ctx.stroke();
+    ctx.fillStyle = "rgba(255,215,170,0.14)";
+    ctx.beginPath(); ctx.arc(24, 24, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.06)";
+    for(var f = 0; f < 48; f += 3) ctx.fillRect(0, f, 48, 1);
 
   } else if(texId === "piedra"){
     cv.width = 64; cv.height = 64;
-    ctx.fillStyle = "#1B1F24"; ctx.fillRect(0, 0, 64, 64);
-    for(var py = 0; py < 64; py += 16){
-      ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(64, py); ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, py + 1); ctx.lineTo(64, py + 1); ctx.stroke();
+    ctx.fillStyle = "#2E2E2E"; ctx.fillRect(0, 0, 64, 64);
+    var stones = ["#6A6A68", "#5E5E5C", "#737270", "#646361"];
+    for(var sr = 0; sr < 2; sr++){
+      for(var sx = -32; sx < 64; sx += 32){
+        var x1 = sx + (sr ? 16 : 0);
+        ctx.fillStyle = stones[(sr + (sx + 32) / 32) % stones.length];
+        ctx.fillRect(x1 + 1.5, sr * 32 + 1.5, 29, 29);
+      }
     }
-    var offset = 0;
-    for(var py2 = 0; py2 < 64; py2 += 16){
-      ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(offset, py2); ctx.lineTo(offset, py2 + 16);
-      ctx.moveTo(offset + 32, py2); ctx.lineTo(offset + 32, py2 + 16);
-      ctx.stroke();
-      offset = (offset === 0 ? 16 : 0);
-    }
-    ctx.fillStyle = "rgba(255,255,255,0.04)";
-    for(var i = 0; i < 30; i++) ctx.fillRect((i * 17) % 64, (i * 23) % 64, 2, 2);
-
-  } else if(texId === "baldosas"){
-    cv.width = 40; cv.height = 40;
-    ctx.fillStyle = "#221711"; ctx.fillRect(0, 0, 40, 40);
-    ctx.fillStyle = "#19110B";
-    ctx.fillRect(0, 0, 20, 20); ctx.fillRect(20, 20, 20, 20);
-    ctx.strokeStyle = "rgba(176,141,87,0.22)"; ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, 40, 40); ctx.strokeRect(0, 0, 20, 20); ctx.strokeRect(20, 20, 20, 20);
-    ctx.fillStyle = "rgba(176,141,87,0.4)"; ctx.fillRect(19, 19, 2, 2);
-
-  } else if(texId === "musgo"){
-    cv.width = 48; cv.height = 48;
-    ctx.fillStyle = "#122216"; ctx.fillRect(0, 0, 48, 48);
-    var greens = ["#1A3622", "#275033", "#0E1A11", "#376E46", "#172E1E"];
-    for(var m = 0; m < 45; m++){
-      ctx.fillStyle = greens[m % greens.length];
-      var rx = (m * 13) % 48, ry = (m * 29) % 48;
-      ctx.fillRect(rx, ry, 2 + (m % 3), 2 + ((m + 1) % 3));
-    }
-
-  } else if(texId === "alfombra"){
-    cv.width = 32; cv.height = 32;
-    ctx.fillStyle = "#2D1017"; ctx.fillRect(0, 0, 32, 32);
-    ctx.strokeStyle = "rgba(176,141,87,0.18)"; ctx.lineWidth = 1;
-    for(var d = -32; d < 64; d += 8){ ctx.beginPath(); ctx.moveTo(d, 0); ctx.lineTo(d + 32, 32); ctx.stroke(); }
-    ctx.strokeStyle = "rgba(200,75,87,0.2)";
-    for(var d2 = 0; d2 < 64; d2 += 8){ ctx.beginPath(); ctx.moveTo(d2, 0); ctx.lineTo(d2 - 32, 32); ctx.stroke(); }
+    ctx.fillStyle = "rgba(255,255,255,0.07)";
+    for(var sp = 0; sp < 40; sp++) ctx.fillRect(rnd() * 64, rnd() * 64, 1.5, 1.5);
 
   } else if(texId === "arcano"){
     cv.width = 64; cv.height = 64;
-    ctx.fillStyle = "#141124"; ctx.fillRect(0, 0, 64, 64);
-    ctx.strokeStyle = "rgba(167,139,250,0.18)"; ctx.lineWidth = 1;
+    ctx.fillStyle = "#29224C"; ctx.fillRect(0, 0, 64, 64);
+    ctx.strokeStyle = "rgba(190,170,255,0.25)"; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(32, 32, 24, 0, Math.PI * 2); ctx.stroke();
     ctx.beginPath(); ctx.arc(32, 32, 14, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(32, 4); ctx.lineTo(32, 60); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(4, 32); ctx.lineTo(60, 32); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(32, 4); ctx.lineTo(32, 60); ctx.moveTo(4, 32); ctx.lineTo(60, 32); ctx.stroke();
 
   } else {
     cv.width = 32; cv.height = 32;
-    ctx.fillStyle = "#231812"; ctx.fillRect(0, 0, 32, 32);
+    ctx.fillStyle = "#3A2E26"; ctx.fillRect(0, 0, 32, 32);
   }
 
   _houseTextureCache[key] = cv;
@@ -715,6 +737,7 @@ function inferRoomTexture(r){
   if(type === "bodega" || name.includes("bodega") || name.includes("veneno") || name.includes("sótano") || type === "taller" || name.includes("armería")) return "piedra";
   if(name.includes("scarleth") || name.includes("derek") || type === "habitacion_personal" || name.includes("aposentos")) return "alfombra";
   if(type === "escaleras") return "piedra";
+  if(type === "salon" || name.includes("salón") || name.includes("hogar")) return "ladrillo";
   return "madera";
 }
 
@@ -891,7 +914,8 @@ function initOrRenderHouseKonvaStage(){
 
   // Paneo (pan) arrastrando el fondo
   houseKonvaStage.on("mousedown touchstart", function(e){
-    if(e.target === houseKonvaStage){
+    if(e.target === houseKonvaStage || (e.target && !e.target.listening())){
+      if(!houseState.editMode){ deselectKonvaRoom(); return; }
       houseKonvaPanning = true;
       var pos = houseKonvaStage.getPointerPosition();
       if(pos){
@@ -940,6 +964,20 @@ function renderKonvaRooms(){
   var curFloor = houseState.activeFloor || 1;
   var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
   var isEdit = !!houseState.editMode && canUserEditPlan();
+
+  // Tablero con marco bajo las estancias
+  var bounds = getHouseFloorBounds();
+  if(bounds){
+    houseKonvaLayer.add(new Konva.Rect({
+      x: bounds.minX - 14, y: bounds.minY - 14,
+      width: bounds.maxX - bounds.minX + 28, height: bounds.maxY - bounds.minY + 28,
+      cornerRadius: 8,
+      fill: "#3B342E",
+      stroke: "#1A120D", strokeWidth: 6,
+      shadowColor: "black", shadowBlur: 24, shadowOpacity: 0.6, shadowOffsetY: 8,
+      listening: false
+    }));
+  }
 
   rooms.forEach(function(r){
     syncRoomPixelRect(r);
@@ -1111,6 +1149,8 @@ function renderKonvaRooms(){
 
     houseKonvaLayer.add(group);
   });
+
+  houseKonvaTransformer.moveToTop();
 
   // Re-adjuntar transformador si había selección
   if(houseState.selectedRoomId){
@@ -3987,7 +4027,7 @@ function renderHouseView(){
     html += renderCanvaStudio(houseState.studioRoomId);
   } else {
     // Lienzo Konva 2D
-    html += '<div class="canvas-wrap" id="canvasWrap">';
+    html += '<div class="canvas-wrap' + (houseState.editMode ? '' : ' is-view') + '" id="canvasWrap">';
     html += '  <div id="stage-container"></div>';
     html += '</div>';
 
