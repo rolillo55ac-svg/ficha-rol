@@ -3268,3 +3268,66 @@
   font-size: 0.68rem;
   color: var(--ink-faint, #8F7D65);
 }
+
+/* ===== Modo Ver / Editar y permiso de edición de jugadores ===== */
+.house-mode-switch {
+  display: inline-flex;
+  flex: none;
+  border: 1.5px solid var(--gold, #B08D57);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #0F0B08;
+}
+
+.house-mode-btn {
+  min-height: 44px;
+  min-width: 72px;
+  padding: 0 18px;
+  border: none;
+  background: transparent;
+  color: var(--gold-light, #DEC392);
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.house-mode-btn.active {
+  background: linear-gradient(180deg, #E2C285, #C9A15F);
+  color: #1A120D;
+}
+
+.house-players-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong, rgba(176,141,87,0.52));
+  border-radius: 10px;
+  background: #0F0B08;
+  color: var(--ink-dim, #C2B196);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.house-players-edit-btn .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink-faint, #8F7D65);
+  flex: none;
+}
+
+.house-players-edit-btn.on {
+  border-color: var(--teal-light, #76AC9D);
+  color: var(--teal-light, #76AC9D);
+}
+
+.house-players-edit-btn.on .dot {
+  background: var(--teal-light, #76AC9D);
+  box-shadow: 0 0 8px var(--teal-light, #76AC9D);
+}

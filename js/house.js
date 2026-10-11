@@ -18,7 +18,7 @@ var houseState = {
   rooms: [],
   upgrades: [],
   events: [],
-  editMode: true,
+  editMode: false,
   zoom: 1.0,
   studioRoomId: null,
   studioCategory: "todas",
@@ -939,15 +939,16 @@ function renderKonvaRooms(){
   var allRooms = houseState.rooms || [];
   var curFloor = houseState.activeFloor || 1;
   var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
-  var isEdit = !!houseState.editMode;
+  var isEdit = !!houseState.editMode && canUserEditPlan();
 
   rooms.forEach(function(r){
     syncRoomPixelRect(r);
+    var canGeom = isEdit && canUserEditRoomGeometry(r);
 
     var group = new Konva.Group({
       x: r.x,
       y: r.y,
-      draggable: isEdit
+      draggable: canGeom
     });
 
     var texCanvas = getRoomTexturePattern(r.texture || inferRoomTexture(r), r.color);
@@ -1051,7 +1052,7 @@ function renderKonvaRooms(){
       cornerRadius: 2,
       stroke: "rgba(176,141,87,0.65)",
       strokeWidth: 1.5,
-      visible: isEdit
+      visible: canGeom
     });
 
     group.add(bgRect, veil, label, badge, resizeHint);
@@ -1082,7 +1083,7 @@ function renderKonvaRooms(){
     // Doble clic / toque para renombrar
     group.on("dblclick dbltap", function(e){
       e.cancelBubble = true;
-      startKonvaRename(group, r);
+      if(canGeom) startKonvaRename(group, r);
     });
 
     // Transformación de tamaño libre y fluido con Transformer
@@ -1132,12 +1133,18 @@ function renderKonvaRooms(){
 function selectKonvaRoom(group, r){
   houseKonvaSelectedGroup = group;
   houseState.selectedRoomId = r.id;
-  if(houseKonvaTransformer) houseKonvaTransformer.nodes([group]);
+  var canGeom = !!houseState.editMode && canUserEditRoomGeometry(r);
+  if(houseKonvaTransformer) houseKonvaTransformer.nodes(canGeom ? [group] : []);
 
   var delBtn = document.getElementById("delRoomBtn");
   if(delBtn) delBtn.disabled = false;
 
-  updateQuickRoomBar(r);
+  if(canGeom){
+    updateQuickRoomBar(r);
+  } else {
+    var qBar = document.getElementById("roomQuickBar");
+    if(qBar) qBar.classList.remove("visible");
+  }
 
   var insp = document.getElementById("houseInspectorContainer");
   if(insp){
@@ -1688,6 +1695,16 @@ function initHouseRealtimeSync(){
           handleRemoteHouseRoomUpdate(msg.payload);
         }
       });
+      if(!houseState._settingsListener){
+        houseState._settingsListener = true;
+        realtimeChannel.on("broadcast", { event: "house_settings_update" }, function(msg){
+          if(!msg || !msg.payload || !houseState.house) return;
+          houseState.house.players_can_edit = !!msg.payload.players_can_edit;
+          if(!canUserEditPlan()) houseState.editMode = false;
+          saveHouseLocalData();
+          if(houseState.active) renderHouseView();
+        });
+      }
       realtimeChannel.on("broadcast", { event: "house_general_update" }, function(msg){
         fetchHouseRemoteData().then(function(){
           if(houseState.active) renderHouseView();
@@ -1760,6 +1777,53 @@ function canUserEditRoom(room){
     }
   }
   return false;
+}
+
+// Permisos del plano: el máster siempre puede editar; los jugadores solo si el máster lo activa
+// (house.players_can_edit) y únicamente su propia habitación. Es control de interfaz: la protección real va en RLS.
+function housePlayersCanEdit(){
+  return !!(houseState.house && houseState.house.players_can_edit);
+}
+
+function canUserEditPlan(){
+  if(typeof isGM === "function" && isGM()) return true;
+  return housePlayersCanEdit();
+}
+
+function canUserEditRoomGeometry(room){
+  if(typeof isGM === "function" && isGM()) return true;
+  return housePlayersCanEdit() && canUserEditRoom(room);
+}
+
+function setHousePlayersCanEdit(val){
+  if(!houseState.house) return;
+  houseState.house.players_can_edit = !!val;
+  saveHouseLocalData();
+
+  if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+    try {
+      realtimeChannel.send({
+        type: "broadcast",
+        event: "house_settings_update",
+        payload: { players_can_edit: !!val }
+      }).catch(function(){});
+    } catch(e){}
+  }
+
+  if(typeof supabaseClient !== "undefined" && supabaseClient && houseState.house.id && navigator.onLine){
+    supabaseClient.from("house")
+      .update({ players_can_edit: !!val })
+      .eq("id", houseState.house.id)
+      .then(function(res){
+        if(res && res.error){
+          console.warn("Aviso guardando permiso de edición de La Casa:", res.error.message || res.error);
+          if(typeof showToast === "function") showToast("Permiso aplicado en directo, pero no se ha guardado (falta la migración 018).", "warning");
+        }
+      });
+  }
+
+  if(typeof showToast === "function") showToast(val ? "Los jugadores ya pueden editar su habitación." : "Los jugadores ya no pueden editar.", "info");
+  renderHouseView();
 }
 
 function getRoomTypeIcon(type){
@@ -3043,7 +3107,7 @@ function renderCanvaStudio(roomId){
   }
 
   var isGm = (typeof isGM === "function" && isGM());
-  var canEdit = canUserEditRoom(r);
+  var canEdit = canUserEditRoomGeometry(r);
   var curCategory = houseState.studioCategory || "todas";
   var search = (houseState.studioSearch || "").toLowerCase().trim();
   var owner = getRoomOwnerInfo(r.owner_character_id);
@@ -3766,6 +3830,8 @@ function renderHouseView(){
   }
 
   var gmMode = (typeof isGM === "function" && isGM());
+  var canEditPlan = canUserEditPlan();
+  if(!canEditPlan) houseState.editMode = false;
   var lvlPct = Math.min(100, Math.round(((h.progress_current || 0) / Math.max(1, h.progress_max || 100)) * 100));
   var curFloor = houseState.activeFloor || 1;
 
@@ -3831,11 +3897,19 @@ function renderHouseView(){
   html += '      <div class="t1">Plano Cenital · ' + esc(h.name || "La Casa Andante") + '</div>';
   html += '      <div class="t2">Lienzo 2D Interactivo · Texturas de Suelo y Escalabilidad</div>';
   html += '    </div>';
-  html += '    <button class="house-edit-toggle' + (houseState.editMode ? ' on' : '') + '" data-action="toggle-house-edit-mode">';
-  html += '      <span class="dot"></span>';
-  html += '      <span id="editLabel">Edición: ' + (houseState.editMode ? 'ON' : 'OFF') + '</span>';
-  html += '    </button>';
+  if(canEditPlan){
+    html += '    <div class="house-mode-switch" role="group" aria-label="Modo del plano">';
+    html += '      <button class="house-mode-btn' + (!houseState.editMode ? ' active' : '') + '" data-action="set-house-mode" data-mode="ver">Ver</button>';
+    html += '      <button class="house-mode-btn' + (houseState.editMode ? ' active' : '') + '" data-action="set-house-mode" data-mode="editar">Editar</button>';
+    html += '    </div>';
+  }
   html += '  </div>';
+  if(gmMode){
+    var pce = housePlayersCanEdit();
+    html += '  <button class="house-players-edit-btn' + (pce ? ' on' : '') + '" data-action="toggle-house-players-edit">';
+    html += '    <span class="dot"></span> Jugadores: ' + (pce ? 'pueden editar su habitación' : 'solo ver');
+    html += '  </button>';
+  }
 
   // Toolbar con selector de plantas y controles de zoom
   html += '  <div class="house-toolbar">';
@@ -3847,7 +3921,9 @@ function renderHouseView(){
     html += '      <div class="fsub">' + esc(fl.sub || "") + '</div>';
     html += '    </button>';
   });
-  html += '    <button class="house-add-floor-btn" data-action="open-add-floor-modal" title="Crear nueva planta">+ Nueva Planta</button>';
+  if(gmMode && houseState.editMode){
+    html += '    <button class="house-add-floor-btn" data-action="open-add-floor-modal" title="Crear nueva planta">+ Nueva Planta</button>';
+  }
 
   html += '    <div class="house-toolbar-spacer"></div>';
 
@@ -3859,16 +3935,20 @@ function renderHouseView(){
   html += '    </div>';
   html += '  </div>';
 
-  // Fila de acciones principales
+  // Fila de acciones principales (solo en modo Editar; crear y borrar estancias solo el máster)
+  if(houseState.editMode){
   html += '  <div class="house-action-row">';
+  if(gmMode){
   html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">➕ Añadir habitación</button>';
   html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>✕ Eliminar seleccionada</button>';
+  }
   html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: casilla' : '🖐️ Rejilla: Libre') + '</button>';
   html += '  </div>';
+  }
 
   // Barra de herramientas contextual de habitación seleccionada
   var selRoom = houseState.selectedRoomId ? (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; }) : null;
-  var selBarVis = selRoom ? ' visible' : '';
+  var selBarVis = (selRoom && houseState.editMode && canUserEditRoomGeometry(selRoom)) ? ' visible' : '';
   var selTexName = selRoom ? (HOUSE_TEXTURES.find(function(t){ return t.id === (selRoom.texture || inferRoomTexture(selRoom)); })?.name || "Madera") : "Madera";
   var selIconName = selRoom ? ((selRoom.icon ? selRoom.icon + " " : "") + selRoom.name) : "Habitación";
 
@@ -3892,9 +3972,11 @@ function renderHouseView(){
   html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
   html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">🎨 Decorar Interior</button>';
+  if(gmMode){
   html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
   html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">🗑️</button>';
+  }
   html += '    </div>';
   html += '  </div>';
 
@@ -3909,10 +3991,12 @@ function renderHouseView(){
     html += '  <div id="stage-container"></div>';
     html += '</div>';
 
-    // Barra de consejos interactiva
+    // Barra de consejos interactiva (solo en modo Editar)
+    if(houseState.editMode){
     html += '<div class="house-hint-bar">';
     html += '  Con <b>Edición: ON</b> — Arrastra una habitación para moverla (ajuste a 20px), tira de cualquiera de sus 8 esquinas y bordes o usa ➖/➕ en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
     html += '</div>';
+    }
 
     // Popovers de texturas, color, icono, plantas
     html += '<div class="popover-menu house-popover-menu" id="popoverTexture" style="display:none;">';
@@ -4262,6 +4346,7 @@ function renderRoomInspector(roomId){
 
   var owner = getRoomOwnerInfo(r.owner_character_id);
   var canEdit = canUserEditRoom(r);
+  var canDecor = canUserEditRoomGeometry(r);
   var isGm = (typeof isGM === "function" && isGM());
   var isEditMode = (isGm && houseState.editMode);
   var roomUpgrades = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id; });
@@ -4285,16 +4370,20 @@ function renderRoomInspector(roomId){
     pHtml += '    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">';
     pHtml += '      <span style="font-size:0.8rem;color:var(--ink-dim);">Los pasillos comunican estancias. Puedes cambiar su nombre, tono arquitectónico o redimensionarlo.</span>';
     pHtml += '      <div style="display:flex;gap:6px;">';
-    pHtml += '        <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ Editar</button>';
+    if(canDecor){
+      pHtml += '        <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ Editar</button>';
+    }
     if(isGm){
       pHtml += '        <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);">🗑️ Eliminar</button>';
     }
     pHtml += '      </div>';
     pHtml += '    </div>';
-    pHtml += '    <div class="house-inspector-color-row">';
-    pHtml += '      <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Tono de la Galería:</span>';
-    pHtml += '      ' + renderColorPaletteBar(r.id, r.color);
-    pHtml += '    </div>';
+    if(canDecor){
+      pHtml += '    <div class="house-inspector-color-row">';
+      pHtml += '      <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Tono de la Galería:</span>';
+      pHtml += '      ' + renderColorPaletteBar(r.id, r.color);
+      pHtml += '    </div>';
+    }
     pHtml += '  </div>';
     pHtml += '</div>';
     return pHtml;
@@ -4329,14 +4418,16 @@ function renderRoomInspector(roomId){
   if(currentTab === "estancia"){
     html += '  <div class="house-inspector-desc">' + (r.description ? esc(r.description) : '<i>Sin descripción ni detalles decorativos.</i>') + '</div>';
 
-    html += '  <div class="house-inspector-color-row" style="margin-top:10px;">';
-    html += '    <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Color de la Estancia:</span>';
-    html += '    ' + renderColorPaletteBar(r.id, r.color);
-    html += '  </div>';
+    if(canDecor){
+      html += '  <div class="house-inspector-color-row" style="margin-top:10px;">';
+      html += '    <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Color de la Estancia:</span>';
+      html += '    ' + renderColorPaletteBar(r.id, r.color);
+      html += '  </div>';
+    }
 
     html += '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;">';
     html += '    <button class="btn-solid-gold" data-action="open-canva-studio" data-room-id="' + r.id + '" style="font-size:0.8rem;padding:5px 12px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-color:#a78bfa;box-shadow:0 2px 10px rgba(139,92,246,0.35);">🎨 Diseñar en Estudio Canva</button>';
-    if(canEdit){
+    if(canDecor){
       html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
     }
     if(isGm){
@@ -5192,6 +5283,9 @@ function backFromHouseView(){
   if(typeof renderTab === "function") renderTab();
 }
 
+var HOUSE_GM_ONLY_ACTIONS = ["quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit"];
+var HOUSE_ROOM_EDIT_ACTIONS = ["quick-rename-selected-room", "quick-step-room-size", "quick-toggle-texture-menu", "quick-toggle-color-menu", "quick-toggle-icon-menu", "nudge-room", "resize-room", "set-room-color", "open-edit-room-modal"];
+
 // ============================================================================
 // 11. GESTOR DE EVENTOS DELEGADOS PARA LA CASA
 // ============================================================================
@@ -5200,6 +5294,25 @@ document.addEventListener("click", function(e){
   if(!btn) return;
 
   var act = btn.getAttribute("data-action");
+
+  // Permisos de edición del plano (ver canUserEditRoomGeometry)
+  var houseIsGm = (typeof isGM === "function" && isGM());
+  if(HOUSE_GM_ONLY_ACTIONS.indexOf(act) !== -1 && !houseIsGm) return;
+  if(HOUSE_ROOM_EDIT_ACTIONS.indexOf(act) !== -1){
+    var guardRoomId = btn.getAttribute("data-room-id") || houseState.selectedRoomId;
+    var guardRoom = (houseState.rooms || []).find(function(x){ return x.id === guardRoomId; });
+    if(!guardRoom || !canUserEditRoomGeometry(guardRoom)) return;
+  }
+
+  if(act === "set-house-mode"){
+    houseState.editMode = (btn.getAttribute("data-mode") === "editar") && canUserEditPlan();
+    houseState.selectedRoomId = null;
+    renderHouseView();
+    return;
+  } else if(act === "toggle-house-players-edit"){
+    setHousePlayersCanEdit(!housePlayersCanEdit());
+    return;
+  }
 
   if(act === "open-house-view"){
     e.preventDefault();
@@ -5521,7 +5634,8 @@ document.addEventListener("click", function(e){
 document.addEventListener("input", function(e){
   if(e.target && e.target.getAttribute("data-action") === "canva-custom-color-input"){
     var cciRId = e.target.getAttribute("data-room-id");
-    setRoomColor(cciRId, e.target.value);
+    var cciRoom = (houseState.rooms || []).find(function(x){ return x.id === cciRId; });
+    if(cciRoom && canUserEditRoomGeometry(cciRoom)) setRoomColor(cciRId, e.target.value);
   } else if(e.target && e.target.getAttribute("data-action") === "modal-custom-color"){
     var hiddenInp2 = document.getElementById("editRoomColorValue");
     if(hiddenInp2) hiddenInp2.value = e.target.value;
