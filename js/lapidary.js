@@ -877,17 +877,17 @@ var lapidaryMinigameState = {
   lastSlidePos: null,
   phase2Score: 0,
 
-  // Fase 3: Facetado Sweet Spot (Timing oscilante)
+  // Fase 3: Pulido (barra con zona dorada que cambia de sitio en cada pasada)
   timingPass: 1,
-  maxPasses: 3,
-  timingHits: 0,
-  cursorPos: 0.5,
+  maxPasses: 5,
+  timingHits: 0,       // pasadas con nota Perfecto
+  cursorPos: 0,
   cursorDir: 1,
-  cursorSpeed: 0.024,
-  sweetSpotStart: 0.38,
-  sweetSpotEnd: 0.62,
+  polishCenter: 0.5,   // centro de la zona de la pasada actual
+  polishLock: false,   // pausa de 750 ms tras cada pulsación
+  polishLastT: 0,
   animId: null,
-  passResults: [],
+  passResults: [],     // "p" (Perfecto) | "g" (Bien) | "f" (Fallo)
   phase3Score: 0,
 
   // Fase 4: Resumen, Riesgo de Rotura y Tirada
@@ -1391,9 +1391,10 @@ function openLapidaryMinigame(charId, stoneId){
   lapidaryMinigameState.timingPass = 1;
   lapidaryMinigameState.timingHits = 0;
   lapidaryMinigameState.passResults = [];
-  lapidaryMinigameState.cursorPos = 0.5;
+  lapidaryMinigameState.cursorPos = 0;
   lapidaryMinigameState.cursorDir = 1;
-  lapidaryMinigameState.cursorSpeed = 0.024;
+  lapidaryMinigameState.polishCenter = 0.5;
+  lapidaryMinigameState.polishLock = false;
   lapidaryMinigameState.phase3Score = 0;
 
   // Reset Fase 4
@@ -1469,7 +1470,7 @@ function renderLapidaryModalContent(){
     '<div class="lapidary-step-line ' + (lapidaryMinigameState.phase > 2 ? 'active' : '') + '"></div>' +
     '<div class="lapidary-step ' + (lapidaryMinigameState.phase === 3 ? 'current' : (lapidaryMinigameState.phase > 3 ? 'completed' : '')) + '">' +
       '<div class="lapidary-step-num">3</div>' +
-      '<div class="lapidary-step-label">Sweet Spot</div>' +
+      '<div class="lapidary-step-label">Pulido</div>' +
     '</div>' +
     '<div class="lapidary-step-line ' + (lapidaryMinigameState.phase > 3 ? 'active' : '') + '"></div>' +
     '<div class="lapidary-step ' + (lapidaryMinigameState.phase === 4 ? 'current' : '') + '">' +
@@ -1562,7 +1563,7 @@ function renderLapidaryModalContent(){
 
       '<div class="lapidary-action-footer" style="margin-top:14px;">' +
         (lapidaryMinigameState.slidePass > lapidaryMinigameState.maxSlidePasses ?
-          '<button type="button" class="btn-solid-gold lapidary-btn-advance pulse-glow" data-action="advance-to-facetting">💎 ¡3 Cortes Concluidos! (' + lapidaryMinigameState.phase2Score + ' pts) Avanzar a Sweet Spot ➡️</button>' :
+          '<button type="button" class="btn-solid-gold lapidary-btn-advance pulse-glow" data-action="advance-to-facetting">💎 ¡3 Cortes Concluidos! (' + lapidaryMinigameState.phase2Score + ' pts) Avanzar al Pulido ➡️</button>' :
           '<button type="button" class="btn-compact" disabled style="width:100%;padding:9px;">Conduce la sierra diamantada con pulso y velocidad...</button>'
         ) +
       '</div>' +
@@ -1570,51 +1571,10 @@ function renderLapidaryModalContent(){
   }
 
   // ==========================================
-  // FASE 3: SWEET SPOT TIMING (Facetado Fino)
+  // FASE 3: PULIDO DE FACETAS
   // ==========================================
   else if(lapidaryMinigameState.phase === 3){
-    var passTitles = [
-      "Paso 1: Desbastado de Cintura y Culet",
-      "Paso 2: Facetado de Corona y Aristas",
-      "Paso 3: Pulido Fino de la Tabla Superior"
-    ];
-    var curPassTitle = passTitles[lapidaryMinigameState.timingPass - 1] || "Facetado";
-
-    html += '<div class="lapidary-phase-body">' +
-      '<div class="lapidary-instructions">' +
-        '<b>Fase 3: Presión y Ritmo en el Sweet Spot</b><br>' +
-        'Presiona el gatillo de corte cuando el cursor oscilante cruce la <b>Zona Dorada Central</b>.' +
-      '</div>' +
-
-      '<div class="lapidary-timing-stage">' +
-        '<div class="lapidary-pass-indicator">' +
-          '<span class="lapidary-pass-tag">' + curPassTitle + '</span>' +
-          '<span class="lapidary-pass-badge">Paso ' + lapidaryMinigameState.timingPass + ' de ' + lapidaryMinigameState.maxPasses + '</span>' +
-        '</div>' +
-
-        '<div class="lapidary-gauge-track" id="lapidaryGaugeTrack">' +
-          '<div class="lapidary-sweet-spot" style="left:' + (lapidaryMinigameState.sweetSpotStart * 100) + '%;width:' + ((lapidaryMinigameState.sweetSpotEnd - lapidaryMinigameState.sweetSpotStart) * 100) + '%;">' +
-            '<span class="lapidary-sweet-label">SWEET SPOT</span>' +
-          '</div>' +
-          '<div class="lapidary-gauge-cursor" id="lapidaryGaugeCursor" style="left:' + (lapidaryMinigameState.cursorPos * 100) + '%;"></div>' +
-        '</div>' +
-
-        '<div class="lapidary-timing-feedback" id="lapidaryTimingFeedback">Apunta con ritmo...</div>' +
-
-        '<div class="lapidary-hits-summary">' +
-          '<div class="lapidary-hit-slot ' + (lapidaryMinigameState.passResults[0] === true ? 'hit' : (lapidaryMinigameState.passResults[0] === false ? 'miss' : '')) + '">Paso 1</div>' +
-          '<div class="lapidary-hit-slot ' + (lapidaryMinigameState.passResults[1] === true ? 'hit' : (lapidaryMinigameState.passResults[1] === false ? 'miss' : '')) + '">Paso 2</div>' +
-          '<div class="lapidary-hit-slot ' + (lapidaryMinigameState.passResults[2] === true ? 'hit' : (lapidaryMinigameState.passResults[2] === false ? 'miss' : '')) + '">Paso 3</div>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="lapidary-action-footer">' +
-        (lapidaryMinigameState.timingPass <= lapidaryMinigameState.maxPasses ?
-          '<button type="button" class="btn-solid-gold lapidary-btn-cut" data-action="lapidary-trigger-cut">⚡ CORTAR FACETA (' + lapidaryMinigameState.timingPass + '/' + lapidaryMinigameState.maxPasses + ')</button>' :
-          '<button type="button" class="btn-solid-gold lapidary-btn-advance pulse-glow" data-action="advance-to-verdict">⚖️ Evaluar Riesgo y Balance de Rotura (Fase 4) ➡️</button>'
-        ) +
-      '</div>' +
-    '</div>';
+    html += renderPolishPhaseHTML(family);
   }
 
   // ==========================================
@@ -1647,9 +1607,9 @@ function renderLapidaryModalContent(){
         '</div>' +
 
         '<div class="lapidary-score-card">' +
-          '<div class="lapidary-score-header"><span>⏱️ Sweet Spot</span><b>' + lapidaryMinigameState.phase3Score + '% (' + lapidaryMinigameState.phase3Score + ' pts)</b></div>' +
+          '<div class="lapidary-score-header"><span>✨ Pulido</span><b>' + lapidaryMinigameState.phase3Score + '% (' + lapidaryMinigameState.phase3Score + ' pts)</b></div>' +
           '<div class="lapidary-mini-meter"><div class="lapidary-mini-meter-fill" style="width:' + lapidaryMinigameState.phase3Score + '%;"></div></div>' +
-          '<div class="lapidary-score-sub">Aporte al Balance: +' + Math.round(lapidaryMinigameState.phase3Score * 0.30) + ' pts &bull; ' + lapidaryMinigameState.timingHits + ' de 3 aciertos</div>' +
+          '<div class="lapidary-score-sub">Aporte al Balance: +' + Math.round(lapidaryMinigameState.phase3Score * 0.30) + ' pts &bull; ' + lapidaryMinigameState.timingHits + ' de ' + lapidaryMinigameState.maxPasses + ' perfectas</div>' +
         '</div>' +
       '</div>' +
 
@@ -2346,82 +2306,192 @@ function finishCurrentSlide(ctx, slide){
 
 
 /* ==========================================================================
-   6. CONTROL DE TIMING: FASE 3 (SWEET SPOT OSCILANTE)
+   6. FASE 3: PULIDO DE FACETAS
    ========================================================================== */
+
+// Cada pasada: velocidad del cursor (anchos de barra por segundo) y ancho de la zona "Perfecto"
+var POLISH_PASSES = [
+  { speed: 0.55, perf: 0.11 },
+  { speed: 0.70, perf: 0.10 },
+  { speed: 0.85, perf: 0.09 },
+  { speed: 1.00, perf: 0.08 },
+  { speed: 1.15, perf: 0.07 }
+];
+var POLISH_GOOD_FACTOR = 2.6;   // la zona "Bien" mide 2,6 veces la de "Perfecto"
+var POLISH_GRADE_POINTS = { p: 100, g: 60, f: 0 };
+var POLISH_FACETS = ["60,10 85,30 60,42 35,30", "35,30 60,42 30,62 12,40", "85,30 108,40 90,62 60,42", "30,62 60,42 60,110", "90,62 60,110 60,42"];
+
+function computePolishScore(){
+  var res = lapidaryMinigameState.passResults || [];
+  if(!res.length) return 0;
+  return Math.round(res.reduce(function(a, r){ return a + (POLISH_GRADE_POINTS[r] || 0); }, 0) / POLISH_PASSES.length);
+}
+
+function getPolishFamily(){
+  var c = (state.characters || []).find(function(ch){ return ch.id === lapidaryMinigameState.charId; });
+  var stone = c ? (c.stones || []).find(function(st){ return st.id === lapidaryMinigameState.stoneId; }) : null;
+  return getStoneFamily(stone ? stone.color : null);
+}
+
+function polishGemSVG(family){
+  var res = lapidaryMinigameState.passResults || [];
+  var cur = lapidaryMinigameState.timingPass - 1;
+  var lit = mixLapidaryHex(family.hex, "#ffffff", 0.35);
+  var dim = mixLapidaryHex(family.hex, "#1a0e0e", 0.62);
+  var s = '<defs><radialGradient id="lapPolishShine" cx="40%" cy="30%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>';
+  s += '<polygon points="12,40 35,30 60,10 85,30 108,40 60,110" fill="' + mixLapidaryHex(family.hex, "#120808", 0.78) + '" stroke="#5a3a33" stroke-width="1.5"/>';
+  POLISH_FACETS.forEach(function(f, i){
+    var r = res[i];
+    var fill = r === "p" ? lit : (r === "g" ? family.hex : (r === "f" ? "#3a1c20" : dim));
+    s += '<polygon class="lapidary-polish-facet" points="' + f + '" fill="' + fill + '" stroke="' + (r === "p" ? "#ffe3c4" : "#2a1214") + '" stroke-width="1"/>';
+    if(r === "f") s += '<polyline points="' + f.split(" ").slice(0, 3).join(" ") + '" fill="none" stroke="#F07A84" stroke-width="1.4" opacity=".85"/>';
+  });
+  var perf = res.filter(function(r){ return r === "p"; }).length;
+  if(perf) s += '<ellipse cx="50" cy="35" rx="' + (10 + perf * 4) + '" ry="' + (6 + perf * 2) + '" fill="url(#lapPolishShine)" opacity="' + (0.15 + perf * 0.13).toFixed(2) + '"/>';
+  if(cur < POLISH_PASSES.length) s += '<polygon points="' + POLISH_FACETS[cur] + '" fill="none" stroke="#DEC392" stroke-width="2.2" stroke-dasharray="4 3"/>';
+  return s;
+}
+
+function polishPassesHTML(){
+  var res = lapidaryMinigameState.passResults || [];
+  var cur = lapidaryMinigameState.timingPass - 1;
+  return POLISH_PASSES.map(function(_, i){
+    var r = res[i];
+    var label = r === "p" ? "Perfecto" : (r === "g" ? "Bien" : (r === "f" ? "Fallo" : "Faceta " + (i + 1)));
+    return '<div class="lapidary-polish-pass ' + (r || "") + (i === cur && !r ? " now" : "") + '">' + label + '</div>';
+  }).join("");
+}
+
+function renderPolishPhaseHTML(family){
+  var done = lapidaryMinigameState.timingPass > POLISH_PASSES.length;
+  var score = computePolishScore();
+  return '<div class="lapidary-phase-body lapidary-polish">' +
+    '<div class="lapidary-polish-head">' +
+      '<div><span class="lapidary-sheet-tag" id="lapidaryPolishTag">' + (done ? "Pulido terminado" : "Pasada " + lapidaryMinigameState.timingPass + " de " + POLISH_PASSES.length) + '</span>' +
+      '<h3>Pulido de facetas</h3></div>' +
+      '<span class="lapidary-polish-score" id="lapidaryPolishScore">' + (lapidaryMinigameState.passResults.length ? score + " / 100" : "") + '</span>' +
+    '</div>' +
+    '<div class="lapidary-polish-gem"><svg viewBox="0 0 120 120" id="lapidaryPolishGem" aria-hidden="true">' + polishGemSVG(family) + '</svg></div>' +
+    '<div class="lapidary-polish-track" id="lapidaryPolishTrack">' +
+      '<div class="lapidary-polish-zone-good" id="lapidaryPolishZoneGood"></div>' +
+      '<div class="lapidary-polish-zone-perf" id="lapidaryPolishZonePerf"></div>' +
+      '<div class="lapidary-polish-cursor" id="lapidaryGaugeCursor"></div>' +
+      '<div class="lapidary-polish-grade" id="lapidaryPolishGrade"></div>' +
+    '</div>' +
+    '<div class="lapidary-polish-legend"><span><i class="perf"></i>Perfecto</span><span><i class="good"></i>Bien</span><span><i class="fail"></i>Fallo</span></div>' +
+    '<div class="lapidary-polish-passes" id="lapidaryPolishPasses">' + polishPassesHTML() + '</div>' +
+    '<div class="lapidary-geode-hint" id="lapidaryTimingFeedback">' + (done ? "Pulido terminado: <b>" + score + " / 100</b>." : "Pulsa <b>Pulir</b> cuando la línea blanca pase por la zona dorada. Cada pasada va más rápido.") + '</div>' +
+    (done ?
+      '<button type="button" class="lapidary-cta-btn lapidary-polish-btn" data-action="advance-to-verdict">Ver el veredicto</button>' :
+      '<button type="button" class="lapidary-cta-btn lapidary-polish-btn" id="lapidaryPolishBtn" data-action="lapidary-trigger-cut">Pulir</button>') +
+  '</div>';
+}
+
+// Coloca la zona de la pasada actual (centro al azar entre el 25 % y el 75 %)
+function layoutPolishZone(){
+  var pass = POLISH_PASSES[Math.min(lapidaryMinigameState.timingPass - 1, POLISH_PASSES.length - 1)];
+  var good = pass.perf * POLISH_GOOD_FACTOR;
+  lapidaryMinigameState.polishCenter = 0.25 + Math.random() * 0.5;
+  var c = lapidaryMinigameState.polishCenter;
+  var zg = document.getElementById("lapidaryPolishZoneGood");
+  var zp = document.getElementById("lapidaryPolishZonePerf");
+  if(zg){ zg.style.left = ((c - good / 2) * 100) + "%"; zg.style.width = (good * 100) + "%"; }
+  if(zp){ zp.style.left = ((c - pass.perf / 2) * 100) + "%"; zp.style.width = (pass.perf * 100) + "%"; }
+}
 
 function startLapidaryTimingLoop(){
   if(lapidaryMinigameState.animId){
     cancelAnimationFrame(lapidaryMinigameState.animId);
+    lapidaryMinigameState.animId = null;
   }
+  if(lapidaryMinigameState.timingPass > POLISH_PASSES.length) return;
 
-  function loop(){
+  // Tocar la propia barra también pule
+  var track = document.getElementById("lapidaryPolishTrack");
+  if(track && !track._polishBound){
+    track._polishBound = true;
+    track.addEventListener("pointerdown", function(e){ e.preventDefault(); handleLapidaryCutTrigger(); });
+  }
+  if(!lapidaryMinigameState.polishLock) layoutPolishZone();
+  lapidaryMinigameState.polishLastT = performance.now();
+
+  function loop(t){
     if(!lapidaryMinigameState.active || lapidaryMinigameState.phase !== 3){
+      lapidaryMinigameState.animId = null;
       return;
     }
-
-    lapidaryMinigameState.cursorPos += lapidaryMinigameState.cursorSpeed * lapidaryMinigameState.cursorDir;
-    if(lapidaryMinigameState.cursorPos >= 0.98){
-      lapidaryMinigameState.cursorPos = 0.98;
-      lapidaryMinigameState.cursorDir = -1;
-    } else if(lapidaryMinigameState.cursorPos <= 0.02){
-      lapidaryMinigameState.cursorPos = 0.02;
-      lapidaryMinigameState.cursorDir = 1;
+    // dt real entre fotogramas: la velocidad no depende de los fps del móvil
+    var dt = Math.min(0.1, Math.max(0, (t - lapidaryMinigameState.polishLastT) / 1000));
+    lapidaryMinigameState.polishLastT = t;
+    var pass = POLISH_PASSES[lapidaryMinigameState.timingPass - 1];
+    if(pass && !lapidaryMinigameState.polishLock){
+      lapidaryMinigameState.cursorPos += lapidaryMinigameState.cursorDir * pass.speed * dt;
+      if(lapidaryMinigameState.cursorPos >= 1){ lapidaryMinigameState.cursorPos = 1; lapidaryMinigameState.cursorDir = -1; }
+      else if(lapidaryMinigameState.cursorPos <= 0){ lapidaryMinigameState.cursorPos = 0; lapidaryMinigameState.cursorDir = 1; }
+      var cursorEl = document.getElementById("lapidaryGaugeCursor");
+      if(cursorEl) cursorEl.style.left = (lapidaryMinigameState.cursorPos * 100) + "%";
     }
-
-    var cursorEl = document.getElementById("lapidaryGaugeCursor");
-    if(cursorEl){
-      cursorEl.style.left = (lapidaryMinigameState.cursorPos * 100) + "%";
-    }
-
     lapidaryMinigameState.animId = requestAnimationFrame(loop);
   }
-
   lapidaryMinigameState.animId = requestAnimationFrame(loop);
 }
 
 function handleLapidaryCutTrigger(){
-  if(lapidaryMinigameState.phase !== 3) return;
-  if(lapidaryMinigameState.timingPass > lapidaryMinigameState.maxPasses) return;
+  if(lapidaryMinigameState.phase !== 3 || lapidaryMinigameState.polishLock) return;
+  if(lapidaryMinigameState.timingPass > POLISH_PASSES.length) return;
 
-  var pos = lapidaryMinigameState.cursorPos;
-  var isHit = (pos >= lapidaryMinigameState.sweetSpotStart && pos <= lapidaryMinigameState.sweetSpotEnd);
+  var pass = POLISH_PASSES[lapidaryMinigameState.timingPass - 1];
+  var d = Math.abs(lapidaryMinigameState.cursorPos - lapidaryMinigameState.polishCenter);
+  var grade = d <= pass.perf / 2 ? "p" : (d <= pass.perf * POLISH_GOOD_FACTOR / 2 ? "g" : "f");
+  lapidaryMinigameState.passResults.push(grade);
+  if(grade === "p") lapidaryMinigameState.timingHits++;
+  lapidaryMinigameState.polishLock = true;
 
-  var feedback = document.getElementById("lapidaryTimingFeedback");
-
-  if(isHit){
-    lapidaryMinigameState.timingHits++;
-    lapidaryMinigameState.passResults.push(true);
+  if(grade === "p"){
     playGemSweetSpotHit();
     if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("crit");
-    if(feedback){
-      feedback.textContent = "¡Corte Impecable! (+1 Acierto de Facetado)";
-      feedback.className = "lapidary-timing-feedback success";
-    }
+  } else if(grade === "g"){
+    playLapidaryChiselStrike();
+    if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("land");
   } else {
-    lapidaryMinigameState.passResults.push(false);
     playGemSweetSpotMiss();
     if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("fumble");
-    if(feedback){
-      feedback.textContent = "Corte Desviado (+0)";
-      feedback.className = "lapidary-timing-feedback miss";
-    }
+  }
+
+  var gr = document.getElementById("lapidaryPolishGrade");
+  if(gr){
+    gr.textContent = grade === "p" ? "¡Perfecto!" : (grade === "g" ? "Bien" : "Fallo");
+    gr.className = "lapidary-polish-grade " + grade;
+    void gr.offsetWidth;
+    gr.classList.add("pop");
   }
 
   lapidaryMinigameState.timingPass++;
-  lapidaryMinigameState.cursorSpeed = 0.024 + (lapidaryMinigameState.timingPass * 0.007);
+  var family = getPolishFamily();
+  var gem = document.getElementById("lapidaryPolishGem");
+  if(gem) gem.innerHTML = polishGemSVG(family);
+  var passes = document.getElementById("lapidaryPolishPasses");
+  if(passes) passes.innerHTML = polishPassesHTML();
+  var scoreEl = document.getElementById("lapidaryPolishScore");
+  if(scoreEl) scoreEl.textContent = computePolishScore() + " / 100";
 
-  renderLapidaryModalContent();
-  if(lapidaryMinigameState.timingPass <= lapidaryMinigameState.maxPasses){
-    startLapidaryTimingLoop();
-  } else {
-    lapidaryMinigameState.phase3Score = Math.round((lapidaryMinigameState.timingHits / 3) * 100);
-    playLapidaryGrind();
-    var fbFinal = document.getElementById("lapidaryTimingFeedback");
-    if(fbFinal){
-      fbFinal.textContent = "¡Facetado Completado! " + lapidaryMinigameState.timingHits + " / 3 Aciertos (" + lapidaryMinigameState.phase3Score + "%)";
-      fbFinal.className = "lapidary-timing-feedback success";
+  lapidaryTimeout(function(){
+    if(!lapidaryMinigameState.active || lapidaryMinigameState.phase !== 3) return;
+    lapidaryMinigameState.polishLock = false;
+    if(gr){ gr.textContent = ""; gr.className = "lapidary-polish-grade"; }
+    var hint = document.getElementById("lapidaryTimingFeedback");
+    if(lapidaryMinigameState.timingPass <= POLISH_PASSES.length){
+      var tag = document.getElementById("lapidaryPolishTag");
+      if(tag) tag.textContent = "Pasada " + lapidaryMinigameState.timingPass + " de " + POLISH_PASSES.length;
+      layoutPolishZone();
+      if(hint) hint.innerHTML = lapidaryMinigameState.timingPass === POLISH_PASSES.length ? "Última pasada: <b>la más rápida</b>." : "La zona cambia de sitio en cada pasada. Atento.";
+    } else {
+      lapidaryMinigameState.phase3Score = computePolishScore();
+      if(lapidaryMinigameState.animId){ cancelAnimationFrame(lapidaryMinigameState.animId); lapidaryMinigameState.animId = null; }
+      playLapidaryGrind();
+      renderLapidaryModalContent();
     }
-  }
+  }, 750);
 }
 
 /* ==========================================================================
