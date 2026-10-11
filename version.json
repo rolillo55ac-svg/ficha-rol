@@ -1,6 +1,6 @@
 {
-  "version": "1.4.1.0",
-  "build": "2026.10.05.01",
-  "updatedAt": "2026-10-05T18:50:00Z",
-  "changelog": "Taller de Lapidario v1.4.1.0: Piedras Mágicas por color puro (eliminados cuarzo/diamante/rubí), Geoda Buscaminas 3D con deducción lógica, banderas protectoras y sonar acústico, corte diamantado táctil elevado sin obstrucción de dedo en móvil y pantalla completa adaptativa."
+  "version": "1.4.2.0",
+  "build": "2026.10.11.01",
+  "updatedAt": "2026-10-11T12:00:00Z",
+  "changelog": "Taller de Lapidario y Piedras Mágicas ahora tiene pestaña propia (💎 Piedras) en la barra superior, separada de Magia."
 }
