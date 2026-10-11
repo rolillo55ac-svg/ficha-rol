@@ -263,6 +263,7 @@ var TOPBAR_AUDIO_MAP = {
   inventario: 'sounds/backpack_open.mp3',
   magia: 'sounds/magia_destello.mp3',
   alquimia: 'sounds/alquimia_poción.mp3',
+  lapidario: 'sounds/lapidario_gem.mp3',
   invocaciones: 'sounds/invocaciones_eco.mp3',
   bestiario: 'sounds/bestiario_paginas.mp3',
   extra: 'sounds/extra_dados.mp3',
@@ -306,7 +307,7 @@ function playProceduralTabFallback(tabId){
     var ctx = getAudioCtx(); if(!ctx) return;
     if(tabId === "ficha" || tabId === "bestiario") playBg3Parchment();
     else if(tabId === "mision" || tabId === "habilidades") playBg3Click();
-    else if(tabId === "magia" || tabId === "estados" || tabId === "invocaciones") playBg3RuneActivate();
+    else if(tabId === "magia" || tabId === "estados" || tabId === "invocaciones" || tabId === "lapidario") playBg3RuneActivate();
     else if(tabId === "extra") playBg3DiceRoll(0.5);
     else playBg3Click();
   } catch(err){}

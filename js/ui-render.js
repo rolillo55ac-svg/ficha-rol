@@ -98,12 +98,14 @@ function renderTopbar(){
 var PLAYER_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
+  {id:"lapidario",label:"Piedras"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}, {id:"casa",label:"Casa"}
 ];
 
 var GM_TABS = [
   {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
+  {id:"lapidario",label:"Piedras"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
   {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}, {id:"casa",label:"Casa"}
 ];
@@ -140,6 +142,7 @@ function renderTab(){
   else if(state.activeTab==="inventario") main.innerHTML = tplInventario(c);
   else if(state.activeTab==="magia") main.innerHTML = tplMagia(c);
   else if(state.activeTab==="alquimia") main.innerHTML = tplAlquimia(c);
+  else if(state.activeTab==="lapidario") main.innerHTML = tplLapidario(c);
   else if(state.activeTab==="invocaciones") main.innerHTML = tplInvocaciones(c);
   else if(state.activeTab==="bestiario") main.innerHTML = tplBestiario(state);
   else if(state.activeTab==="extra") main.innerHTML = tplExtra(c);
@@ -151,6 +154,22 @@ function renderTab(){
   if(typeof autoResizeAllTextareas === "function"){
     autoResizeAllTextareas();
   }
+}
+
+function tplLapidario(c){
+  var canEdit = canEditChar(c);
+  var html = '';
+  if(!canEdit && currentUser){
+    html += '<div class="spectator-banner">'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes tallar ni modificar las piedras en esta ficha.</span>'+
+    '</div>';
+  }
+  if(typeof renderLapidaryWorkshop === 'function'){
+    html += renderLapidaryWorkshop(c, canEdit);
+  } else {
+    html += '<div style="padding:32px;text-align:center;color:var(--ink-faint);">⚙️ Taller de Lapidario cargando...</div>';
+  }
+  return html;
 }
 
 function tplFicha(c){
@@ -1143,25 +1162,10 @@ function tplMagia(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes lanzar hechizos, gastar maná ni modificar el taller en esta ficha.</span>'+
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes lanzar hechizos ni gastar maná en esta ficha.</span>'+
     '</div>';
   }
-
-  // Subpestañas consistentes con el patrón de píldoras de Mundo (Punto 5)
-  var sub = (typeof currentMagicSubtab !== "undefined") ? currentMagicSubtab : "hechizos";
-  html += '<div class="filter-section" style="margin-bottom:14px;">' +
-    '<div class="filter-pills">' +
-      '<button type="button" class="f-pill ' + (sub === 'hechizos' ? 'active' : '') + '" data-action="set-magic-subtab" data-val="hechizos">⚡ Grimorio de Hechizos</button>' +
-      '<button type="button" class="f-pill ' + (sub === 'lapidario' ? 'active' : '') + '" data-action="set-magic-subtab" data-val="lapidario">💎 Taller de Lapidario y Piedras</button>' +
-    '</div>' +
-  '</div>';
-
-  if(sub === "lapidario"){
-    html += renderLapidaryWorkshop(c, canEdit);
-  } else {
-    html += renderSpellsGrimoire(c, canEdit);
-  }
-
+  html += renderSpellsGrimoire(c, canEdit);
   return html;
 }
 
