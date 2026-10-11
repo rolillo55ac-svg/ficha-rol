@@ -896,6 +896,8 @@ function initOrRenderHouseKonvaStage(){
     wrap._hasKonvaResizeObserver = true;
     wrap._lastKonvaWidth = containerWidth;
     new ResizeObserver(function(){
+      // En el siguiente fotograma: cambiar el alto dentro del observador provoca avisos de bucle
+      requestAnimationFrame(function(){
       if(houseKonvaStage && wrap){
         var w = wrap.clientWidth;
         // Solo al cambiar el ancho (girar el móvil, redimensionar ventana)
@@ -909,13 +911,14 @@ function initOrRenderHouseKonvaStage(){
           renderKonvaRooms();
         }
       }
+      });
     }).observe(wrap);
   }
 
   // Paneo (pan) arrastrando el fondo
   houseKonvaStage.on("mousedown touchstart", function(e){
     if(e.target === houseKonvaStage || (e.target && !e.target.listening())){
-      if(!houseState.editMode){ deselectKonvaRoom(); return; }
+      if(!houseState.editMode) return;
       houseKonvaPanning = true;
       var pos = houseKonvaStage.getPointerPosition();
       if(pos){
@@ -940,6 +943,18 @@ function initOrRenderHouseKonvaStage(){
     houseKonvaPanning = false;
   });
 
+  // Distinguir un toque de un deslizamiento del dedo (para no seleccionar al desplazar la página)
+  houseKonvaStage.on("touchstart", function(e){
+    var t = e.evt && e.evt.touches && e.evt.touches[0];
+    houseKonvaTapStart = t ? { x: t.clientX, y: t.clientY } : null;
+  });
+
+  // En modo Ver, tocar fuera de las estancias cierra el panel
+  houseKonvaStage.on("click tap", function(e){
+    if(houseState.editMode || e.target !== houseKonvaStage || houseKonvaTapMoved(e)) return;
+    deselectKonvaRoom();
+  });
+
   // Zoom con rueda del ratón
   houseKonvaStage.on("wheel", function(e){
     e.evt.preventDefault();
@@ -955,6 +970,14 @@ function initOrRenderHouseKonvaStage(){
 }
 
 var houseKonvaDoorsGroup = null;
+var houseKonvaTapStart = null;
+
+function houseKonvaTapMoved(e){
+  if(!e || e.type !== "tap" || !houseKonvaTapStart) return false;
+  var t = e.evt && e.evt.changedTouches && e.evt.changedTouches[0];
+  if(!t) return false;
+  return Math.abs(t.clientX - houseKonvaTapStart.x) > 10 || Math.abs(t.clientY - houseKonvaTapStart.y) > 10;
+}
 var HOUSE_TOKEN_COLORS = ["#4FB3A9", "#E8879B", "#8E7CC3", "#E9C46A", "#6FA8DC", "#E07A5F", "#81B29A"];
 var HOUSE_PASSAGE_TYPES = ["pasillo", "escaleras", "entrada"];
 
@@ -1028,6 +1051,8 @@ function drawHouseDoors(rooms){
 function renderKonvaRooms(){
   if(!houseKonvaLayer || !houseKonvaStage) return;
 
+  // Sacar el transformador antes de vaciar la capa: si se destruye pierde sus tiradores de tamaño
+  houseKonvaTransformer.remove();
   houseKonvaLayer.destroyChildren();
   houseKonvaLayer.add(houseKonvaTransformer);
 
@@ -1150,7 +1175,7 @@ function renderKonvaRooms(){
       text: iconOnly ? (icon || "•") : fullText,
       fontFamily: "Georgia, serif",
       fontStyle: "bold",
-      fontSize: fs,
+      fontSize: vertical ? fs * 0.86 : fs,
       lineHeight: 1.15,
       fill: "#F3EADB",
       padding: 6 * u
@@ -1256,6 +1281,7 @@ function renderKonvaRooms(){
     // Clic / Tap
     group.on("click tap", function(e){
       e.cancelBubble = true;
+      if(houseKonvaTapMoved(e)) return;
       selectKonvaRoom(group, r);
     });
 
@@ -1370,7 +1396,7 @@ function deselectKonvaRoom(){
 
   var insp = document.getElementById("houseInspectorContainer");
   if(insp){
-    insp.innerHTML = '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:12px;font-style:italic;">💡 Toca cualquier habitación del plano para ver sus detalles, muebles o activar sus buffs.</div>';
+    insp.innerHTML = '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl, sus buffos y de quién es.</div>';
   }
 
   if(houseKonvaLayer) houseKonvaLayer.draw();
@@ -4096,7 +4122,8 @@ function renderHouseView(){
   html += '    <div class="house-crest">🏠</div>';
   html += '    <div class="house-topbar-title">';
   html += '      <div class="t1">Plano Cenital · ' + esc(h.name || "La Casa Andante") + '</div>';
-  html += '      <div class="t2">Lienzo 2D Interactivo · Texturas de Suelo y Escalabilidad</div>';
+  var floorRoomCount = (houseState.rooms || []).filter(function(r){ return isRoomOnFloor(r, curFloor); }).length;
+  html += '      <div class="t2">' + floorRoomCount + (floorRoomCount === 1 ? ' estancia' : ' estancias') + (houseState.editMode ? ' · Modo Editar' : '') + '</div>';
   html += '    </div>';
   if(canEditPlan){
     html += '    <div class="house-mode-switch" role="group" aria-label="Modo del plano">';
@@ -4153,6 +4180,8 @@ function renderHouseView(){
   var selTexName = selRoom ? (HOUSE_TEXTURES.find(function(t){ return t.id === (selRoom.texture || inferRoomTexture(selRoom)); })?.name || "Madera") : "Madera";
   var selIconName = selRoom ? ((selRoom.icon ? selRoom.icon + " " : "") + selRoom.name) : "Habitación";
 
+  // La barra de herramientas de estancia solo existe en modo Editar
+  if(houseState.editMode){
   html += '  <div class="house-quick-tools' + selBarVis + '" id="roomQuickBar">';
   html += '    <div class="house-quick-tools-title">🎯 <b id="rqRoomName">' + esc(selIconName) + '</b></div>';
   html += '    <div class="house-quick-tools-group">';
@@ -4181,6 +4210,8 @@ function renderHouseView(){
   html += '    </div>';
   html += '  </div>';
 
+  }
+
   html += '</div>'; // Fin house-topbar
 
   // Si el usuario está dentro del Estudio Canva interior de una habitación
@@ -4195,7 +4226,7 @@ function renderHouseView(){
     // Barra de consejos interactiva (solo en modo Editar)
     if(houseState.editMode){
     html += '<div class="house-hint-bar">';
-    html += '  Con <b>Edición: ON</b> — Arrastra una habitación para moverla (ajuste a 20px), tira de cualquiera de sus 8 esquinas y bordes o usa ➖/➕ en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
+    html += '  En <b>modo Editar</b>: arrastra una habitación para moverla (se ajusta a la casilla), tira de cualquiera de sus 8 esquinas y bordes o usa ➖/➕ en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
     html += '</div>';
     }
 
@@ -4225,7 +4256,7 @@ function renderHouseView(){
     if(houseState.selectedRoomId){
       html += renderRoomPanel(houseState.selectedRoomId);
     } else {
-      html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:12px;font-style:italic;">💡 Toca cualquier habitación del plano para ver sus detalles, muebles o activar sus buffs.</div>';
+      html += '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl, sus buffos y de quién es.</div>';
     }
     html += '</div>';
   }
