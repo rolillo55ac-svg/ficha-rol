@@ -263,7 +263,7 @@ var TOPBAR_AUDIO_MAP = {
   inventario: 'sounds/backpack_open.mp3',
   magia: 'sounds/magia_destello.mp3',
   alquimia: 'sounds/alquimia_poción.mp3',
-  lapidario: 'sounds/lapidario_gem.mp3',
+  lapidario: 'sounds/magia_destello.mp3',
   invocaciones: 'sounds/invocaciones_eco.mp3',
   bestiario: 'sounds/bestiario_paginas.mp3',
   extra: 'sounds/extra_dados.mp3',
