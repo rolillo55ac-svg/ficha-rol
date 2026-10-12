@@ -9238,6 +9238,8 @@ textarea,
 .alq-tag { font-size: .74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); white-space: nowrap; }
 .alq-tag.e { border-color: rgba(200,75,87,.5); color: #E8949C; }
 .alq-tag.s { border-color: rgba(118,172,157,.5); color: #9FD0C2; }
+.alq-tag.wait { border-color: rgba(224,144,74,.5); color: #F2B47E; }
+.alq-tag.ready { border-color: var(--gold); color: var(--gold-light); }
 .alq-dose { flex: none; min-width: 44px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--gold-light); }
 .alq-dose small { display: block; font-family: var(--font-body); font-weight: 400; font-size: .66rem; color: var(--ink-faint); }
 .alq-chev { flex: none; color: var(--ink-faint); transition: transform .2s; }
@@ -9250,6 +9252,10 @@ textarea,
 .alq-next { border-radius: 12px; padding: 12px; background: linear-gradient(180deg, rgba(176,141,87,.14), rgba(176,141,87,.05)); border: 1px solid var(--line-strong); display: flex; flex-direction: column; gap: 8px; }
 .alq-k { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--gold); }
 .alq-next p { margin: 0; line-height: 1.4; color: var(--ink); }
+.alq-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,.35); overflow: hidden; }
+.alq-bar div { height: 100%; background: linear-gradient(90deg, #a8834c, #e8c35a); }
+.alq-hours { display: grid; grid-template-columns: 1fr 96px; gap: 8px 10px; align-items: center; }
+.alq-hours-input { min-height: 44px; width: 100%; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink); padding: 0 10px; font-size: 16px; }
 
 .alq-path { display: flex; flex-direction: column; }
 .alq-step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; padding: 0 0 10px; position: relative; width: 100%; min-height: 44px; background: none; border: 0; text-align: left; color: var(--ink); }
