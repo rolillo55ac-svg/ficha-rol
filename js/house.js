@@ -1900,20 +1900,38 @@ function saveRoomChangesToRemoteAndBroadcast(room, fieldName, keepItemsCopy){
       .then(function(res){
         if(res.error){
           console.warn("Aviso al guardar habitacion en Supabase:", res.error.message || res.error);
-          supabaseClient.from("house_rooms")
+          return supabaseClient.from("house_rooms")
             .update(payload)
             .eq("id", room.id)
-            .then(function(){});
+            .select()
+            .then(function(res2){
+              if(res2.error || !res2.data || !res2.data.length) notifyHouseSaveFailed();
+            });
         }
       })
       .catch(function(err){
         console.warn("Error de conexión al persistir estancia:", err);
+        notifyHouseSaveFailed();
       });
   }
 }
 
 // Baúles: en Supabase los objetos van en la tabla house_items (por estancia y mueble), no dentro
 // de los muebles, para que mover o cambiar muebles no pise lo guardado.
+// Si la nube rechaza un guardado de La Casa, el cambio solo queda en este dispositivo: avisar
+var lastHouseSaveFailToast = 0;
+function notifyHouseSaveFailed(){
+  if(!houseState.remote) return;
+  var el = document.getElementById("canvaSaveState");
+  if(el){
+    el.className = "cs-save is-error";
+    el.textContent = "✕ Sin guardar";
+  }
+  if(Date.now() - lastHouseSaveFailToast < 5000) return;
+  lastHouseSaveFailToast = Date.now();
+  if(typeof showToast === "function") showToast("La Casa: el cambio no se ha guardado en la nube, solo en este dispositivo.", "error");
+}
+
 function isHouseRemote(){
   return !!(houseState.remote && typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine);
 }
@@ -2491,9 +2509,11 @@ async function addHouseProgress(amount, statName){
         if(typeof showToast === "function") showToast("Progreso sincronizado en la nube.", "success");
         return;
       }
+      if(rpcRes && rpcRes.error) console.warn("Fallo RPC add_house_progress, aplicando cálculo local:", rpcRes.error.message || rpcRes.error);
     } catch(errRpc){
       console.warn("Fallo RPC add_house_progress, aplicando cálculo local:", errRpc);
     }
+    notifyHouseSaveFailed();
   }
 
   // Fallback local
@@ -2618,17 +2638,22 @@ async function toggleHouseUpgrade(upgradeId, newStatus){
   }
 
   if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
+    var toggleOk = false;
     try {
-      await supabaseClient.rpc("toggle_house_upgrade", {
+      var toggleRes = await supabaseClient.rpc("toggle_house_upgrade", {
         p_upgrade_id: upgradeId,
         p_unlocked: upg.unlocked,
         p_actor_id: actorId
       });
-    } catch(e){
+      toggleOk = !toggleRes.error;
+    } catch(e){}
+    if(!toggleOk){
       try {
-        await supabaseClient.from("house_upgrades").update({ unlocked: upg.unlocked, updated_at: new Date().toISOString() }).eq("id", upgradeId);
+        var updRes = await supabaseClient.from("house_upgrades").update({ unlocked: upg.unlocked, updated_at: new Date().toISOString() }).eq("id", upgradeId).select();
+        toggleOk = !updRes.error && updRes.data && updRes.data.length > 0;
       } catch(e2){}
     }
+    if(!toggleOk) notifyHouseSaveFailed();
   }
 }
 
@@ -2675,12 +2700,15 @@ async function levelUpHouseUpgrade(upgradeId){
 
   if(typeof supabaseClient !== "undefined" && supabaseClient && upg.id){
     try {
-      await supabaseClient.from("house_upgrades").update({
+      var lvlRes = await supabaseClient.from("house_upgrades").update({
         level: upg.level,
         bonus_value: upg.bonus_value,
         updated_at: new Date().toISOString()
-      }).eq("id", upg.id);
-    } catch(e){}
+      }).eq("id", upg.id).select();
+      if(lvlRes.error || !lvlRes.data || !lvlRes.data.length) notifyHouseSaveFailed();
+    } catch(e){
+      notifyHouseSaveFailed();
+    }
   }
 }
 
