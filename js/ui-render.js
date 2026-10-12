@@ -1496,6 +1496,48 @@ function findAlchemyCatalogItem(p){
   }) : null;
 }
 
+var alchemyHoursOpen = false;
+
+// Destilado en curso: distillUntil/distillFrom son horas del reloj de la partida
+function alchemyDistillState(p){
+  if(p.distillUntil === undefined || p.distillUntil === null || p.distillUntil === "") return null;
+  var until = num(p.distillUntil, 0);
+  var from = num(p.distillFrom, until);
+  var now = typeof getGameClockHours === "function" ? getGameClockHours() : null;
+  var ready = now === null || now >= until;
+  var total = Math.max(1, until - from);
+  var done = now === null ? total : Math.max(0, Math.min(total, now - from));
+  return { until: until, ready: ready, left: ready ? 0 : until - now, pct: Math.max(4, Math.round(done / total * 100)) };
+}
+
+function alchemyRarityOf(p){
+  var cat = findAlchemyCatalogItem(p);
+  return p.rarity || (cat ? cat.rarity : 'Común');
+}
+
+// Al mover el reloj (o cambiar las horas), repinta Alquimia salvo si se está escribiendo
+document.addEventListener("gameclockchange", function(){
+  if(!state || state.activeTab !== "alquimia") return;
+  var ae = document.activeElement;
+  if(ae && (ae.tagName === "TEXTAREA" || ae.tagName === "INPUT" || ae.tagName === "SELECT")) return;
+  renderTab();
+});
+
+function tplAlquimiaHoras(){
+  var rows = Object.keys(DISTILL_HOURS_DEFAULT).map(function(r, i){
+    return '<label class="alq-note" for="alq-hours-' + i + '">' + esc(r) + '</label>' +
+      '<input type="number" class="alq-hours-input" id="alq-hours-' + i + '" data-rarity="' + esc(r) + '" min="0" max="999" inputmode="numeric" value="' + getDistillHours(r) + '">';
+  }).join('');
+  return '<div class="alq-sheet-bg" data-action="alchemy-close-hours">' +
+    '<div class="alq-sheet" role="dialog" aria-label="Horas de destilado">' +
+      '<div class="alq-sheet-head"><h3>Horas de destilado</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-hours" aria-label="Cerrar">✕</button></div>' +
+      '<p class="alq-note">Horas de juego que tarda una dosis según la rareza. Avanzan cuando mueves el reloj de la partida.</p>' +
+      '<div class="alq-hours">' + rows + '</div>' +
+      '<div class="alq-btnrow"><button type="button" class="alq-btn gold" data-action="alchemy-save-hours">Guardar</button></div>' +
+    '</div>' +
+  '</div>';
+}
+
 function alchemyActiveFilterCount(){
   return (alchemyFilterType !== "Todos" ? 1 : 0) + (alchemyFilterProg !== "todos" ? 1 : 0) + (alchemyFilterTerrain !== "Todos" ? 1 : 0);
 }
@@ -1566,9 +1608,11 @@ function tplAlquimiaRecetario(c, canEdit){
     html += '<div class="alq-btnrow alq-top-actions">' +
       '<button type="button" class="alq-btn gold" data-action="open-alchemy-catalog-modal">📖 Añadir del catálogo</button>' +
       '<button type="button" class="alq-btn" data-action="add-poison">+ Fórmula propia</button>' +
+      (isMaster && typeof getGameClockHours === "function" && getGameClockHours() !== null ? '<button type="button" class="alq-btn gm" data-action="alchemy-open-hours">⏳ Horas de destilado</button>' : '') +
     '</div>';
   }
   if(alchemyFiltersOpen) html += tplAlquimiaFiltros();
+  if(alchemyHoursOpen && isMaster) html += tplAlquimiaHoras();
 
   var sText = alchemySearch.trim().toLowerCase();
   var filtered = (c.poisons || []).filter(function(p){
@@ -1625,6 +1669,8 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
   var tags = '<span class="alq-tag e">⚔️ ' + alchemyStageText(eIdx) + '</span>';
   if(showCherk) tags += '<span class="alq-tag s">🛡️ ' + alchemyStageText(cIdx) + '</span>';
   if(base < 2) tags += '<span class="alq-tag">🌿 ' + (base === 1 ? 'Solo muestra' : 'Sin muestra') + '</span>';
+  var dist = alchemyDistillState(p);
+  if(dist) tags += dist.ready ? '<span class="alq-tag ready">✓ Lista</span>' : '<span class="alq-tag wait">⏳ faltan ' + dist.left + ' h</span>';
 
   var html = '<div class="alq-card ' + rClass + (open ? ' open' : '') + '" id="alchemy-card-' + p.id + '">' +
     '<button type="button" class="alq-row" data-action="toggle-alchemy-card" data-id="' + p.id + '" aria-expanded="' + open + '">' +
@@ -1639,10 +1685,10 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
     '<div class="alq-meta"><span>' + esc(p.type || 'Veneno') + '</span><span>· ' + esc(rarity) + '</span><span>· ' + esc(terrain) + '</span>' +
       (loreTitle ? '<button type="button" class="alq-link" data-action="alchemy-jump-lore" data-lore-title="' + esc(loreTitle) + '">Ver en Lore ↗</button>' : '') +
     '</div>' +
-    tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx, dosis) +
+    tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx, dosis, isMaster, rarity, dist) +
     '<div class="alq-path">' +
       tplAlquimiaStep(p, 1, base, "identificado", "Muestra", rawMat ? "Materia prima: " + rawMat + "." : "Materia prima recogida.", canEdit) +
-      tplAlquimiaStep(p, 2, base, "extraido", "Extraído", "Destilada en un frasco.", canEdit) +
+      tplAlquimiaStep(p, 2, base, "extraido", "Extraído", "Destilada en un frasco. Tarda según la rareza.", canEdit) +
     '</div>' +
     '<div class="alq-split">' +
       tplAlquimiaBranch(p, "progEnemigo", "efectoEnemigo", "⚔️ En enemigos", "e", eIdx, canEdit, isMaster, cat && cat.efectoEnemigo) +
@@ -1691,19 +1737,32 @@ function tplAlquimiaBranch(p, axis, field, label, cls, idx, canEdit, isMaster, s
   return html + '</div>';
 }
 
-function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx, dosis){
-  var k = 'Siguiente paso', txt = '', btns = '';
+function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx, dosis, isMaster, rarity, dist){
+  var k = 'Siguiente paso', txt = '', btns = '', bar = '';
   var cd = cat ? cat.dificultadExtraccion : 10;
-  var distill = '<button type="button" class="alq-btn gold" data-action="alchemy-craft-single" data-id="' + p.id + '">⚗️ Destilar (+1 dosis)</button>' +
+  var timed = typeof getGameClockHours === "function" && getGameClockHours() !== null;
+  var hrs = timed ? getDistillHours(rarity) : 0;
+  var distill = '<button type="button" class="alq-btn gold" data-action="alchemy-craft-single" data-id="' + p.id + '">' +
+      (timed && hrs > 0 ? '⚗️ Empezar a destilar (' + hrs + ' h)' : '⚗️ Destilar (+1 dosis)') + '</button>' +
     '<button type="button" class="alq-btn" data-action="alchemy-roll-herbalism" data-id="' + p.id + '" data-cd="' + cd + '">🎲 Herboristería (CD ' + cd + ')</button>';
-  if(base < 1){
+  var lasts = timed && hrs > 0 ? ' Tarda <b>' + hrs + ' h de juego</b> (' + esc(rarity) + ').' : '';
+  if(dist && !dist.ready){
+    k = 'Destilando';
+    txt = 'Estará lista a las <b>' + formatGameClock(dist.until) + '</b> (faltan ' + dist.left + ' h de juego).';
+    bar = '<div class="alq-bar"><div style="width:' + dist.pct + '%"></div></div>';
+    if(isMaster) btns = '<button type="button" class="alq-btn gm" data-action="alchemy-finish-distill" data-id="' + p.id + '">Terminar ya</button>';
+  } else if(dist){
+    k = 'Destilado listo';
+    txt = 'Ya tienes una dosis nueva en el frasco.';
+    btns = '<button type="button" class="alq-btn gold" data-action="alchemy-collect-distill" data-id="' + p.id + '">Guardar dosis (+1)</button>';
+  } else if(base < 1){
     txt = 'Aún no tenéis la muestra' + (rawMat ? ' (' + esc(rawMat) + ')' : '') + '. Cuando la recojáis, márcala.';
     btns = '<button type="button" class="alq-btn gold" data-action="alchemy-set-base" data-id="' + p.id + '" data-stage="identificado">🌿 Ya tengo la muestra</button>';
   } else if(base < 2){
-    txt = 'Tienes la <b>muestra</b>' + (rawMat ? ' (' + esc(rawMat) + ')' : '') + '. Destílala para poder usarla.';
+    txt = 'Tienes la <b>muestra</b>' + (rawMat ? ' (' + esc(rawMat) + ')' : '') + '. Destílala para poder usarla.' + lasts;
     btns = distill;
   } else if(dosis < 1){
-    txt = 'No te quedan dosis. Destila otra.';
+    txt = 'No te quedan dosis. Destila otra.' + lasts;
     btns = distill;
   } else {
     txt = (eIdx < 3 ? 'Pruébala en un enemigo para descubrir qué hace.' : 'Ya sabéis lo que hace en enemigos.') +
@@ -1711,8 +1770,8 @@ function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx
     btns = '<button type="button" class="alq-btn e" data-action="alchemy-apply-weapon" data-id="' + p.id + '">⚔️ Usar en arma (−1)</button>' +
       (showCherk ? '<button type="button" class="alq-btn s" data-action="alchemy-consume-dose" data-id="' + p.id + '">🛡️ Tomarla (−1)</button>' : '');
   }
-  return '<div class="alq-next"><span class="alq-k">' + k + '</span><p>' + txt + '</p>' +
-    (canEdit ? '<div class="alq-btnrow">' + btns + '</div>' : '') + '</div>';
+  return '<div class="alq-next"><span class="alq-k">' + k + '</span><p>' + txt + '</p>' + bar +
+    (canEdit && btns ? '<div class="alq-btnrow">' + btns + '</div>' : '') + '</div>';
 }
 
 function tplAlquimiaTaller(c, canEdit){

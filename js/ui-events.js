@@ -215,6 +215,23 @@ function clampCurrentVitalsToEffectiveMax(c){
   return changed;
 }
 
+// Destilado terminado: +1 dosis y la sustancia queda Extraída
+function alchemyCollectDistill(c, pItem){
+  var dState = alchemyDistillState(pItem);
+  if(!dState || !dState.ready) return;
+  delete pItem.distillUntil;
+  delete pItem.distillFrom;
+  pItem.dosis = num(pItem.dosis, 0) + 1;
+  ["progEnemigo", "progCherk"].forEach(function(ax){
+    if(getAlchemyStageIndex(pItem[ax]) < 2) pItem[ax] = "extraido";
+  });
+  markCharDirty(c.id, "poisons");
+  saveState(false);
+  manageListItemRPC(c, 'poisons', 'update_item', pItem, pItem.id);
+  renderTab();
+  showToast("⚗️ +1 dosis de '" + pItem.name + "'. Viales listos: " + pItem.dosis, "success");
+}
+
 function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
@@ -1548,6 +1565,53 @@ function handleClick(e){
     renderTab();
     return;
   }
+  if(action==="alchemy-open-hours"){
+    if(!isGM()) return;
+    alchemyHoursOpen = true;
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-close-hours"){
+    if(btn.classList.contains("alq-sheet-bg") && e.target !== btn) return;
+    alchemyHoursOpen = false;
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-save-hours"){
+    if(!isGM()) return;
+    var hoursObj = {};
+    document.querySelectorAll(".alq-hours-input").forEach(function(inp){
+      hoursObj[inp.getAttribute("data-rarity")] = Math.max(0, Math.min(999, parseInt(inp.value, 10) || 0));
+    });
+    saveDistillHours(hoursObj).then(function(ok){
+      if(!ok) return;
+      alchemyHoursOpen = false;
+      renderTab();
+      showToast("⏳ Horas de destilado guardadas.", "success");
+    });
+    return;
+  }
+  if(action==="alchemy-finish-distill"){
+    if(!c || !isGM()) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    var nowH = getGameClockHours();
+    if(pItem && pItem.distillUntil != null && nowH !== null){
+      pItem.distillUntil = Math.min(num(pItem.distillUntil, nowH), nowH);
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="alchemy-collect-distill"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem) alchemyCollectDistill(c, pItem);
+    return;
+  }
   if(action==="alchemy-clear-filters"){
     alchemyFilterType = "Todos";
     alchemyFilterProg = "todos";
@@ -1648,6 +1712,15 @@ function handleClick(e){
     var psId = btn.getAttribute("data-id");
     var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
     if(pItem){
+      // Con el reloj de la partida, destilar lleva horas de juego según la rareza
+      var dCur = alchemyDistillState(pItem);
+      if(dCur){
+        if(!dCur.ready){ showToast("⏳ '" + pItem.name + "' ya se está destilando: lista a las " + formatGameClock(dCur.until) + ".", "info"); return; }
+        alchemyCollectDistill(c, pItem);
+        return;
+      }
+      var nowClock = typeof getGameClockHours === "function" ? getGameClockHours() : null;
+      var dHours = nowClock !== null ? getDistillHours(alchemyRarityOf(pItem)) : 0;
       var basesIdx = (c.inventory||[]).findIndex(function(it){
         var n = (it.name||'').toLowerCase();
         return n.includes("base de veneno") || n.includes("bases de veneno");
@@ -1658,6 +1731,16 @@ function handleClick(e){
         if(c.inventory[basesIdx].qty === 0){ c.inventory.splice(basesIdx, 1); }
         markCharDirty(c.id, "inventory");
         if(typeof manageListItemRPC === 'function') manageListItemRPC(c, 'inventory', 'update_item', baseItem, baseItem.id);
+      }
+      if(dHours > 0){
+        pItem.distillFrom = nowClock;
+        pItem.distillUntil = nowClock + dHours;
+        markCharDirty(c.id, "poisons");
+        saveState(false);
+        manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
+        renderTab();
+        showToast("⚗️ Destilando '" + pItem.name + "': lista a las " + formatGameClock(pItem.distillUntil) + ".", "success");
+        return;
       }
       pItem.dosis = num(pItem.dosis, 0) + 1;
       // Destilar deja la sustancia como Extraída en los dos ejes

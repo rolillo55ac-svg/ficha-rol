@@ -3,6 +3,9 @@ var GAME_CLOCK_CAMPAIGN_ID = "c0000000-0000-0000-0000-000000000001";
 var gameClockTotal = null; // horas de juego desde Día 1, 00:00 (null = sin leer de la nube)
 var gameClockChannel = null;
 var gameClockBusy = false;
+// Horas de juego que tarda un destilado según la rareza; el máster las cambia (game_clock.distill_hours)
+var DISTILL_HOURS_DEFAULT = { "Común": 2, "Rara": 4, "Muy rara": 8, "Legendaria": 24 };
+var gameDistillHours = null;
 
 function gameClockParts(total){
   var t = Math.max(0, Math.floor(Number(total) || 0));
@@ -17,6 +20,34 @@ function formatGameClock(total){
 // Horas de juego actuales (para destilados y otros temporizadores); null si no se conoce
 function getGameClockHours(){
   return gameClockTotal;
+}
+
+function getDistillHours(rarity){
+  var src = gameDistillHours || {};
+  var h = Number(src[rarity]);
+  if(!isFinite(h) || h < 0) h = DISTILL_HOURS_DEFAULT[rarity];
+  return isFinite(h) ? Math.floor(h) : 2;
+}
+
+function setGameDistillHours(obj){
+  gameDistillHours = (obj && typeof obj === "object") ? obj : null;
+  try { document.dispatchEvent(new CustomEvent("gameclockchange", { detail: { total: gameClockTotal } })); } catch(e){}
+}
+
+// Solo el máster: guarda las horas por rareza en la fila del reloj
+async function saveDistillHours(obj){
+  if(!supabaseClient || !currentUser || !isGM()) return false;
+  try {
+    var res = await supabaseClient.from("game_clock").update({ distill_hours: obj }).eq("campaign_id", GAME_CLOCK_CAMPAIGN_ID).select("distill_hours");
+    if(res.error) throw res.error;
+    if(!res.data || !res.data.length) throw new Error("no se guardó");
+    setGameDistillHours(res.data[0].distill_hours);
+    return true;
+  } catch(e){
+    console.error("No se pudieron guardar las horas de destilado:", e);
+    showToast("⚠️ No se pudieron guardar las horas: " + ((e && e.message) || "error"), "error");
+    return false;
+  }
 }
 
 function gameClockPillHtml(){
@@ -45,9 +76,12 @@ function setGameClockTotal(total){
 async function loadGameClock(){
   if(!supabaseClient || !currentUser) return;
   try {
-    var res = await supabaseClient.from("game_clock").select("total_hours").eq("campaign_id", GAME_CLOCK_CAMPAIGN_ID).maybeSingle();
+    var res = await supabaseClient.from("game_clock").select("total_hours, distill_hours").eq("campaign_id", GAME_CLOCK_CAMPAIGN_ID).maybeSingle();
     if(res.error){ console.warn("No se pudo leer el reloj de la partida:", res.error.message); return; }
-    if(res.data) setGameClockTotal(res.data.total_hours);
+    if(res.data){
+      gameDistillHours = res.data.distill_hours || null;
+      setGameClockTotal(res.data.total_hours);
+    }
   } catch(e){
     console.warn("No se pudo leer el reloj de la partida:", e);
     return;
@@ -60,7 +94,9 @@ function subscribeGameClock(){
   try {
     gameClockChannel = supabaseClient.channel("realtime_game_clock")
       .on("postgres_changes", { event: "*", schema: "public", table: "game_clock", filter: "campaign_id=eq." + GAME_CLOCK_CAMPAIGN_ID }, function(payload){
-        if(payload && payload.new && payload.new.total_hours !== undefined) setGameClockTotal(payload.new.total_hours);
+        if(!payload || !payload.new) return;
+        if(payload.new.distill_hours !== undefined && JSON.stringify(payload.new.distill_hours) !== JSON.stringify(gameDistillHours)) setGameDistillHours(payload.new.distill_hours);
+        if(payload.new.total_hours !== undefined) setGameClockTotal(payload.new.total_hours);
       })
       .subscribe();
   } catch(e){
