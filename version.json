@@ -1,6 +1,6 @@
 {
-  "version": "1.4.25.0",
-  "build": "2026.10.13.19",
-  "updatedAt": "2026-10-13T20:10:00Z",
-  "changelog": "Se deshace el cambio de la 1.4.24.0 que agrandaba botones y cajas en toda la web: la interfaz del móvil vuelve a verse como en la 1.4.23.0."
+  "version": "1.4.26.0",
+  "build": "2026.10.13.20",
+  "updatedAt": "2026-10-13T20:40:00Z",
+  "changelog": "Los botones de arriba (buzón y ajustes) y la cruz de cerrar las ventanas vuelven a su tamaño de antes; los botones más grandes quedan solo en Piedras y La Casa."
 }
