@@ -1,6 +1,6 @@
 {
-  "version": "1.4.24.0",
-  "build": "2026.10.13.18",
-  "updatedAt": "2026-10-13T18:30:00Z",
-  "changelog": "Toda la web se maneja mejor con el dedo: en las pestañas y en las ventanas (personaje, ajustes, dados, sonido, tickets, alquimia) los botones y campos miden al menos 44 px, los botones de vida, escudo y maná de la cabecera son más altos y, con el móvil en horizontal, la cabecera se va al desplazar para dejar sitio."
+  "version": "1.4.23.0",
+  "build": "2026.10.13.16",
+  "updatedAt": "2026-10-13T17:00:00Z",
+  "changelog": "La Casa se maneja mejor con el dedo: todos los botones del plano, la barra de estancia, los menús de suelo, color, icono y planta, el detalle de la estancia y las ventanas miden al menos 44 px; los menús ya no se salen de la pantalla ni quedan debajo del dado, las mejoras ya no se salen por la derecha y los nombres largos del editor de muebles se ven en dos líneas."
 }
