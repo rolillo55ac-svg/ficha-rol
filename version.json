@@ -1,6 +1,6 @@
 {
-  "version": "1.4.14.0",
-  "build": "2026.10.13.07",
-  "updatedAt": "2026-10-13T08:00:00Z",
-  "changelog": "Mapas: si un marcador no se puede guardar en la nube, ahora se avisa (los jugadores ven que queda solo en su dispositivo; al máster le sale un aviso si falla la conexión)."
+  "version": "1.4.15.0",
+  "build": "2026.10.13.08",
+  "updatedAt": "2026-10-13T09:00:00Z",
+  "changelog": "Piedras: el tutorial de la geoda ya no vuelve a salir después de cada actualización de la web."
 }
