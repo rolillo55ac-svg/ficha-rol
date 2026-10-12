@@ -204,7 +204,7 @@ function pushSharedData(patch){
         data: dataPatch,
         updated_at: new Date().toISOString()
       }).then(function(upRes){
-        if(upRes.error) console.error('Error en upsert campaign_map:', upRes.error);
+        if(upRes.error){ console.error('Error en upsert campaign_map:', upRes.error); notifyCloudSaveFailed(); }
         else updateSyncBadge("synced");
       }).catch(function(e){ console.error('Error en upsert directo:', e); });
       return;

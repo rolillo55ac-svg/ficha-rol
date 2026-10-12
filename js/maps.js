@@ -176,7 +176,7 @@ function pushMapsData(forceAllow){
         data: mapData,
         updated_at: new Date().toISOString()
       }).then(function(upRes){
-        if(upRes.error) console.error('Error en upsert campaign_map (main_map):', upRes.error);
+        if(upRes.error){ console.error('Error en upsert campaign_map (main_map):', upRes.error); notifyCloudSaveFailed(); }
         else updateSyncBadge("synced");
       }).catch(function(e){ console.error('Error en upsert main_map:', e); });
       return;
