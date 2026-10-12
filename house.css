@@ -4318,3 +4318,95 @@ body:has(#canvaStudio) .fab-dice {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Móvil y tablet: todo lo que se toca mide al menos 44 px y nada se sale
+   --------------------------------------------------------------------------- */
+@media (max-width: 900px), (pointer: coarse) {
+  .house-back-btn,
+  .house-container .btn-compact,
+  .house-prog-btn,
+  .house-stat-mod-btn,
+  .house-floor-tab-btn,
+  .house-add-floor-btn,
+  .house-act-btn,
+  .house-tool-btn,
+  .house-inspector-tab-btn,
+  .house-popover-menu button,
+  .house-custom-color-input,
+  [id^="house"][id$="ModalOverlay"] button,
+  #housePresetModalBackdrop button,
+  [id^="house"][id$="ModalOverlay"] select,
+  [id^="house"][id$="ModalOverlay"] input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 44px;
+  }
+
+  .house-container .btn-compact,
+  .house-zoom-group button,
+  .house-tool-subbtn,
+  .house-tool-btn,
+  .house-color-chip,
+  .house-popover-menu button,
+  .house-custom-color-input,
+  [id^="house"][id$="ModalOverlay"] button,
+  #housePresetModalBackdrop button,
+  [id^="house"][id$="ModalOverlay"] input[type="color"] {
+    min-width: 44px;
+  }
+
+  .house-zoom-group button {
+    width: auto;
+    height: 44px;
+    padding: 0 8px;
+  }
+
+  .house-tool-subbtn {
+    min-height: 44px;
+  }
+
+  .house-color-chip {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Menú de iconos: los botones los crea house.js con 34 px en línea */
+  .house-popover-menu .icon-chip {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  /* Los menús desplegables no pasan del alto de la pantalla y quedan por encima del dado */
+  .house-popover-menu {
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    z-index: 10000;
+  }
+
+  /* Mejoras del detalle de estancia: los botones bajan debajo del texto */
+  .house-upgrade-item {
+    flex-wrap: wrap;
+  }
+
+  .house-upgrade-item > div:last-child {
+    flex: 1 1 100%;
+    align-items: stretch !important;
+  }
+
+  .house-upgrade-item > div:last-child > div {
+    flex-wrap: wrap;
+  }
+
+  /* Editor de muebles: el nombre de la estancia y del mueble pasan a dos líneas en vez de cortarse */
+  .cs-title h2,
+  .cs-dock-name > span:first-child {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .cs-dock-name {
+    white-space: normal;
+  }
+}
