@@ -1,6 +1,6 @@
 {
-  "version": "1.4.17.0",
-  "build": "2026.10.13.10",
-  "updatedAt": "2026-10-13T11:00:00Z",
-  "changelog": "Personajes: al borrar una ficha se quita de la lista al momento, solo se borra esa ficha en la nube y, si la nube no la borra, sale un aviso."
+  "version": "1.4.18.0",
+  "build": "2026.10.13.11",
+  "updatedAt": "2026-10-13T12:00:00Z",
+  "changelog": "Lapidario: los cortes de las piedras se hacen con dos joysticks debajo de la piedra (izquierdo para los lados, derecho para arriba y abajo). Hay un botón para volver al modo dedo. En el PC, también con las flechas o WASD."
 }
