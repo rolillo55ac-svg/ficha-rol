@@ -6350,7 +6350,7 @@ document.addEventListener("click", function(e){
       renderHouseView();
       var csEl = document.getElementById("canvaStudio");
       var csTop = document.getElementById("topbar");
-      if(csEl) window.scrollTo(0, Math.max(0, csEl.getBoundingClientRect().top + window.scrollY - (csTop ? csTop.offsetHeight : 0) - 8));
+      if(csEl) window.scrollTo({ top: Math.max(0, csEl.getBoundingClientRect().top + window.scrollY - (csTop ? csTop.offsetHeight : 0) - 8), behavior: "instant" });
     }
   } else if(act === "close-canva-studio"){
     flushCanvaStudioSave();
