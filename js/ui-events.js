@@ -1536,6 +1536,73 @@ function handleClick(e){
     renderTab();
     return;
   }
+  if(action==="alchemy-open-filters"){
+    alchemyFiltersOpen = true;
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-close-filters"){
+    // El fondo de la hoja también lleva esta acción: solo cierra si se toca el fondo, no la hoja
+    if(btn.classList.contains("alq-sheet-bg") && e.target !== btn) return;
+    alchemyFiltersOpen = false;
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-clear-filters"){
+    alchemyFilterType = "Todos";
+    alchemyFilterProg = "todos";
+    alchemyFilterTerrain = "Todos";
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-set-base"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(!pItem) return;
+    var target = btn.getAttribute("data-stage") === "extraido" ? 2 : 1;
+    var curBase = getAlchemyBaseIndex(pItem);
+    // Tocar la fase en la que ya está la deshace (si nada de las ramas depende de ella)
+    var nextBase = curBase === target ? target - 1 : target;
+    if(nextBase < curBase && (getAlchemyStageIndex(pItem.progEnemigo) >= 3 || getAlchemyStageIndex(pItem.progCherk) >= 3)){
+      showToast("Ya está probada: no se puede volver atrás de " + (curBase === 2 ? "Extraído" : "Muestra") + ".", "warning");
+      return;
+    }
+    var stageIds = ["desconocido", "identificado", "extraido"];
+    ["progEnemigo", "progCherk"].forEach(function(ax){
+      if(getAlchemyStageIndex(pItem[ax]) < 3) pItem[ax] = stageIds[nextBase];
+    });
+    markCharDirty(c.id, "poisons");
+    saveState(false);
+    manageListItemRPC(c, 'poisons', 'update_item', { progEnemigo: pItem.progEnemigo, progCherk: pItem.progCherk }, psId);
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-set-branch"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    var axis = btn.getAttribute("data-axis");
+    var stage = btn.getAttribute("data-stage");
+    if(axis !== "progEnemigo" && axis !== "progCherk") return;
+    if(stage !== "probado" && stage !== "confirmado") return;
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(!pItem) return;
+    // Volver a tocar la marcada la quita (queda en Extraído)
+    pItem[axis] = pItem[axis] === stage ? "extraido" : stage;
+    // Solo el máster rellena el efecto con la nota del catálogo
+    if(pItem[axis] === "confirmado" && isGM()){
+      var cat = findAlchemyCatalogItem(pItem);
+      if(cat){
+        if(axis === "progEnemigo" && !pItem.efectoEnemigo) pItem.efectoEnemigo = cat.efectoEnemigo;
+        if(axis === "progCherk" && !pItem.efectoCherk) pItem.efectoCherk = cat.efectoCherk;
+      }
+    }
+    markCharDirty(c.id, "poisons");
+    saveState(false);
+    manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
+    renderTab();
+    return;
+  }
   if(action==="set-alchemy-stage"){
     if(!c || !canEditChar(c)) return;
     var psId = btn.getAttribute("data-id");
@@ -1593,6 +1660,10 @@ function handleClick(e){
         if(typeof manageListItemRPC === 'function') manageListItemRPC(c, 'inventory', 'update_item', baseItem, baseItem.id);
       }
       pItem.dosis = num(pItem.dosis, 0) + 1;
+      // Destilar deja la sustancia como Extraída en los dos ejes
+      ["progEnemigo", "progCherk"].forEach(function(ax){
+        if(getAlchemyStageIndex(pItem[ax]) < 2) pItem[ax] = "extraido";
+      });
       markCharDirty(c.id, "poisons");
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
@@ -1602,32 +1673,32 @@ function handleClick(e){
     return;
   }
   if(action==="alchemy-apply-weapon"){
-    if(!c) return;
+    if(!c || !canEditChar(c)) return;
     var psId = btn.getAttribute("data-id");
     var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
     if(pItem && num(pItem.dosis, 0) > 0){
       pItem.dosis = num(pItem.dosis, 0) - 1;
+      if(getAlchemyStageIndex(pItem.progEnemigo) < 3) pItem.progEnemigo = "probado";
       markCharDirty(c.id, "poisons");
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
-      var eff = pItem.efectoEnemigo ? pItem.efectoEnemigo : "Toxina activa en punta";
-      showToast("🎯 Arma untada con '" + pItem.name + "'. Efecto al impactar: " + eff, "info");
+      showToast("⚔️ Dosis de '" + pItem.name + "' usada en el arma. Anota qué le pasó al enemigo.", "info");
     }
     return;
   }
   if(action==="alchemy-consume-dose"){
-    if(!c) return;
+    if(!c || !canEditChar(c)) return;
     var psId = btn.getAttribute("data-id");
     var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
     if(pItem && num(pItem.dosis, 0) > 0){
       pItem.dosis = num(pItem.dosis, 0) - 1;
+      if(getAlchemyStageIndex(pItem.progCherk) < 3) pItem.progCherk = "probado";
       markCharDirty(c.id, "poisons");
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
-      var eff = pItem.efectoCherk ? pItem.efectoCherk : "Asimilación orgánica en cuerpo";
-      showToast("💉 Inoculación realizada con '" + pItem.name + "'. Efecto asimilado: " + eff, "success");
+      showToast("🛡️ " + c.name + " se toma '" + pItem.name + "'. Anota qué notó.", "success");
     }
     return;
   }

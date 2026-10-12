@@ -9205,3 +9205,99 @@ textarea,
 
 /* Contador en la pestaña Piedras (máster) */
 .tab-btn .tab-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: #D2691E; color: #fff; font-size: .7rem; font-weight: 700; line-height: 1; vertical-align: middle; }
+
+/* ===== Alquimia: lista de sustancias con "Siguiente paso" y fases (Muestra → Extraído → En enemigos / En Cherk) ===== */
+.alq-views { margin-bottom: 10px; }
+.alq-search { display: flex; gap: 8px; margin-bottom: 8px; }
+.alq-search .alchemy-search-input { flex: 1; min-width: 0; min-height: 44px; font-size: 0.95rem; padding: 0 12px; border-color: var(--line-strong); border-radius: 12px; }
+.alq-btn { flex: 1 1 140px; min-height: 48px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--bg-card); color: var(--ink); font-weight: 600; font-size: 0.92rem; cursor: pointer; }
+.alq-btn.gold { background: linear-gradient(180deg, #d4b178, #a8834c); color: #1a120d; border-color: var(--gold); }
+.alq-btn.e { border-color: var(--blood-light); color: #F0A3AA; background: rgba(200,75,87,.12); }
+.alq-btn.s { border-color: var(--teal-light); color: #A9DCCD; background: rgba(118,172,157,.12); }
+.alq-btn.gm { border-color: #E0904A; color: #F2B47E; background: rgba(224,144,74,.1); }
+.alq-btn:disabled { opacity: .4; cursor: default; }
+.alq-filter-btn { flex: none; min-height: 44px; color: var(--ink-dim); }
+.alq-filter-btn.on { border-color: var(--gold); color: var(--gold-light); }
+.alq-btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.alq-top-actions { margin-bottom: 12px; }
+.alq-top-actions .alq-btn { min-height: 44px; }
+.alq-list { display: flex; flex-direction: column; gap: 10px; }
+.alq-empty { text-align: center; padding: 26px 10px; color: var(--ink-faint); background: rgba(0,0,0,.25); border-radius: 12px; border: 1px dashed var(--line); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.alq-empty .alq-btn { flex: none; }
+
+.alq-card { --rc: #B9A98F; background: var(--bg-elev); border: 1px solid var(--line); border-left: 4px solid var(--rc); border-radius: 14px; overflow: hidden; }
+.alq-card.alq-r-rara { --rc: #6FA8DC; }
+.alq-card.alq-r-muyrara { --rc: #B48AE0; }
+.alq-card.alq-r-legendaria { --rc: #E8C35A; }
+.alq-row { display: flex; align-items: center; gap: 10px; padding: 12px; min-height: 64px; width: 100%; background: none; border: 0; text-align: left; color: var(--ink); cursor: pointer; }
+.alq-ico { width: 40px; height: 40px; flex: none; border-radius: 10px; display: grid; place-items: center; font-size: 1.3rem; background: var(--bg-card); }
+.alq-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.alq-nm { font-family: var(--font-display); font-weight: 700; font-size: 1.08rem; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
+.alq-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.alq-tag { font-size: .74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); white-space: nowrap; }
+.alq-tag.e { border-color: rgba(200,75,87,.5); color: #E8949C; }
+.alq-tag.s { border-color: rgba(118,172,157,.5); color: #9FD0C2; }
+.alq-dose { flex: none; min-width: 44px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--gold-light); }
+.alq-dose small { display: block; font-family: var(--font-body); font-weight: 400; font-size: .66rem; color: var(--ink-faint); }
+.alq-chev { flex: none; color: var(--ink-faint); transition: transform .2s; }
+.alq-card.open .alq-chev { transform: rotate(90deg); }
+.alq-body { padding: 0 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+.alq-meta { font-size: .84rem; color: var(--ink-dim); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.alq-link { background: none; border: 0; padding: 0 4px; min-height: 44px; color: var(--gold-light); text-decoration: underline; font-size: .84rem; cursor: pointer; }
+.alq-note { font-size: .82rem; color: var(--ink-faint); line-height: 1.4; }
+
+.alq-next { border-radius: 12px; padding: 12px; background: linear-gradient(180deg, rgba(176,141,87,.14), rgba(176,141,87,.05)); border: 1px solid var(--line-strong); display: flex; flex-direction: column; gap: 8px; }
+.alq-k { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--gold); }
+.alq-next p { margin: 0; line-height: 1.4; color: var(--ink); }
+
+.alq-path { display: flex; flex-direction: column; }
+.alq-step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; padding: 0 0 10px; position: relative; width: 100%; min-height: 44px; background: none; border: 0; text-align: left; color: var(--ink); }
+button.alq-step { cursor: pointer; }
+.alq-step:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--line); }
+.alq-step.done:not(:last-child)::before { background: var(--gold); }
+.alq-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 700; border: 2px solid var(--line-strong); background: var(--bg-card); color: var(--ink-faint); position: relative; z-index: 1; }
+.alq-step.done .alq-dot { background: var(--gold); border-color: var(--gold); color: #1a120d; }
+.alq-step.now .alq-dot { border-color: var(--gold-light); color: var(--gold-light); box-shadow: 0 0 0 4px rgba(222,195,146,.15); }
+.alq-step-txt b { display: block; font-size: .95rem; }
+.alq-step-txt span { font-size: .82rem; color: var(--ink-faint); line-height: 1.35; }
+
+.alq-split { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 700px) { .alq-split { grid-template-columns: 1fr 1fr; } }
+.alq-branch { border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.alq-branch.e { background: rgba(200,75,87,.12); border: 1px solid rgba(200,75,87,.35); }
+.alq-branch.s { background: rgba(118,172,157,.12); border: 1px solid rgba(118,172,157,.35); }
+.alq-branch h4 { margin: 0; font-size: .95rem; }
+.alq-branch.e h4 { color: #F0A3AA; }
+.alq-branch.s h4 { color: #A9DCCD; }
+.alq-minis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.alq-mini { min-height: 48px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.2); color: var(--ink-dim); font-size: .88rem; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; cursor: pointer; }
+.alq-mini small { font-size: .68rem; color: var(--ink-faint); }
+.alq-mini[aria-pressed="true"] { color: var(--ink); background: rgba(255,255,255,.06); }
+.alq-branch.e .alq-mini[aria-pressed="true"] { border-color: var(--blood-light); }
+.alq-branch.s .alq-mini[aria-pressed="true"] { border-color: var(--teal-light); }
+.alq-mini:disabled { cursor: default; }
+.alq-branch textarea { width: 100%; min-height: 64px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.25); color: var(--ink); padding: 8px 10px; resize: vertical; line-height: 1.4; font-family: var(--font-body); font-size: .92rem; }
+.alq-fog { font-size: .86rem; color: var(--ink-faint); font-style: italic; }
+.alq-secret { border: 1px dashed #E0904A; border-radius: 10px; padding: 4px 10px 8px; font-size: .86rem; background: rgba(224,144,74,.06); }
+.alq-secret summary { cursor: pointer; color: #F2B47E; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.alq-secret p { margin: 4px 0 8px; color: var(--ink); }
+.alq-secret .alq-btn { width: 100%; }
+
+.alq-dosebar { display: flex; align-items: center; gap: 8px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 10px; }
+.alq-stepper { display: flex; align-items: center; gap: 4px; }
+.alq-stepper button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--bg-card); font-size: 1.2rem; color: var(--gold-light); cursor: pointer; }
+.alq-stepper b { min-width: 2ch; text-align: center; font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); }
+.alq-namefield { display: flex; align-items: center; gap: 8px; }
+.alq-namefield input { flex: 1; min-width: 0; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink); padding: 0 10px; font-family: var(--font-display); font-size: 1rem; }
+.alq-del { flex: none; align-self: flex-start; min-height: 44px; font-weight: 400; color: var(--ink-dim); background: none; }
+
+.alq-sheet-bg { position: fixed; inset: 0; z-index: 10020; background: rgba(8,5,3,.65); display: flex; align-items: flex-end; justify-content: center; }
+.alq-sheet { width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; background: var(--bg-elev); border: 1px solid var(--line-strong); border-bottom: 0; border-radius: 20px 20px 0 0; padding: 14px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; }
+.alq-sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.alq-sheet-head h3 { margin: 0; font-family: var(--font-display); color: var(--gold-light); font-size: 1.15rem; }
+.alq-sheet-x { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--bg-card); color: var(--ink); cursor: pointer; }
+.alq-sheet-lbl { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-top: 4px; }
+.alq-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.alq-pill { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink-dim); font-size: .88rem; cursor: pointer; }
+.alq-pill.active { border-color: var(--gold); color: var(--gold-light); background: #2c2017; }
+.alq-sheet .alq-btnrow { margin-top: 6px; }
