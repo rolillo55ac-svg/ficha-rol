@@ -1159,16 +1159,17 @@ function renderKonvaRooms(){
           strokeWidth: 1
         });
 
-        var itemIcon = item.icon || getFurnitureIcon(item.type) || "📦";
-        var itemLabel = new Konva.Text({
-          text: itemIcon,
-          x: px, y: py + Math.max(0, (ph - 13) / 2),
-          width: pw,
-          align: "center",
-          fontSize: Math.min(15, Math.max(10, ph - 3))
+        // El dibujo encaja en la caja sin deformarse
+        var artScale = Math.min(pw / iw, ph / ih);
+        var aw = iw * artScale, ah = ih * artScale;
+        var itemArt = new Konva.Image({
+          x: px + (pw - aw) / 2, y: py + (ph - ah) / 2,
+          width: aw, height: ah,
+          image: getHouseItemArtImage(r, item, iw, ih, Math.min(cellW, cellH)),
+          listening: false
         });
 
-        group.add(itemBox, itemLabel);
+        group.add(itemBox, itemArt);
       });
     }
 
@@ -2407,209 +2408,50 @@ var HOUSE_DECOR_CATALOG = [
   { type: "cofre", icon: "📦", label: "Cofre decorativo", defaultW: 1, defaultH: 1 }
 ];
 
-function getCanvaSvg(typeOrId, rotation){
-  var rot = (typeof rotation === "number") ? rotation : 0;
-  var key = (typeOrId || "").toLowerCase();
-
-  var inner = '';
-
-  if(key.includes("escaleras") || key.includes("stair")){
-    var isDown = key.includes("bajar");
-    var arrow = isDown ? '▼' : '▲';
-    var label = isDown ? 'BAJAR' : 'SUBIR';
-    inner = '<rect x="4" y="4" width="32" height="32" rx="2" fill="#292524" stroke="#EAB308" stroke-width="1.5"/>' +
-      '<line x1="4" y1="9" x2="36" y2="9" stroke="#78716C" stroke-width="1.5"/>' +
-      '<line x1="4" y1="14" x2="36" y2="14" stroke="#78716C" stroke-width="1.5"/>' +
-      '<line x1="4" y1="19" x2="36" y2="19" stroke="#78716C" stroke-width="1.5"/>' +
-      '<line x1="4" y1="24" x2="36" y2="24" stroke="#78716C" stroke-width="1.5"/>' +
-      '<line x1="4" y1="29" x2="36" y2="29" stroke="#78716C" stroke-width="1.5"/>' +
-      '<rect x="10" y="8" width="20" height="24" rx="3" fill="#1C1917" stroke="#FACC15" stroke-width="1"/>' +
-      '<text x="20" y="22" text-anchor="middle" font-size="10" font-weight="bold" fill="#FACC15">' + arrow + '</text>' +
-      '<text x="20" y="29" text-anchor="middle" font-size="5.5" font-weight="bold" fill="#E7E5E4">' + label + '</text>';
-  } else if(key.includes("entrada") || key.includes("porche")){
-    inner = '<rect x="4" y="6" width="32" height="28" rx="2" fill="#14532D" stroke="#22C55E" stroke-width="1.5"/>' +
-      '<rect x="8" y="10" width="24" height="20" rx="1" fill="#15803D" stroke="#4ADE80" stroke-width="1"/>' +
-      '<line x1="20" y1="10" x2="20" y2="30" stroke="#86EFAC" stroke-width="1.5"/>' +
-      '<circle cx="17" cy="20" r="1.5" fill="#FACC15"/>' +
-      '<circle cx="23" cy="20" r="1.5" fill="#FACC15"/>' +
-      '<rect x="12" y="31" width="16" height="5" rx="1" fill="#78350F" stroke="#D97706" stroke-width="1"/>' +
-      '<text x="20" y="34.5" text-anchor="middle" font-size="3.8" font-weight="bold" fill="#FEF3C7">ENTRADA</text>';
-  } else if(key.includes("puerta_doble")){
-    inner = '<rect x="2" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
-      '<rect x="32" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
-      '<path d="M 8 5 A 12 12 0 0 1 20 17" fill="none" stroke="#D97706" stroke-width="1.2" stroke-dasharray="2,2"/>' +
-      '<path d="M 32 5 A 12 12 0 0 0 20 17" fill="none" stroke="#D97706" stroke-width="1.2" stroke-dasharray="2,2"/>' +
-      '<line x1="8" y1="5" x2="8" y2="17" stroke="#B45309" stroke-width="2.5" stroke-linecap="round"/>' +
-      '<line x1="32" y1="5" x2="32" y2="17" stroke="#B45309" stroke-width="2.5" stroke-linecap="round"/>';
-  } else if(key.includes("puerta") || key === "door"){
-    inner = '<rect x="2" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
-      '<rect x="32" y="2" width="6" height="6" rx="1" fill="#4B5563" stroke="#9CA3AF" stroke-width="1"/>' +
-      '<path d="M 8 5 A 27 27 0 0 1 35 32" fill="none" stroke="#D97706" stroke-width="1.5" stroke-dasharray="3,3"/>' +
-      '<line x1="8" y1="5" x2="8" y2="32" stroke="#B45309" stroke-width="3" stroke-linecap="round"/>' +
-      '<circle cx="9" cy="22" r="1.5" fill="#FCD34D"/>';
-  } else if(key.includes("arco")){
-    inner = '<rect x="2" y="10" width="8" height="20" rx="1" fill="#374151" stroke="#9CA3AF" stroke-width="1.5"/>' +
-      '<rect x="30" y="10" width="8" height="20" rx="1" fill="#374151" stroke="#9CA3AF" stroke-width="1.5"/>' +
-      '<line x1="10" y1="12" x2="30" y2="12" stroke="#60A5FA" stroke-width="1.5" stroke-dasharray="2,2"/>' +
-      '<line x1="10" y1="28" x2="30" y2="28" stroke="#60A5FA" stroke-width="1.5" stroke-dasharray="2,2"/>' +
-      '<path d="M 16 16 L 24 20 L 16 24" fill="none" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/>';
-  } else if(key.includes("ventana")){
-    inner = '<rect x="2" y="14" width="36" height="12" rx="1" fill="#1E293B" stroke="#60A5FA" stroke-width="1.5"/>' +
-      '<line x1="20" y1="14" x2="20" y2="26" stroke="#93C5FD" stroke-width="1.5"/>' +
-      '<line x1="2" y1="20" x2="38" y2="20" stroke="#93C5FD" stroke-width="1.5"/>' +
-      '<polygon points="6,26 14,36 26,36 34,26" fill="rgba(96,165,250,0.15)"/>';
-  } else if(key.includes("cama_matrimonio") || key.includes("dosel")){
-    inner = '<rect x="4" y="3" width="32" height="34" rx="3" fill="#1E293B" stroke="#C5A059" stroke-width="1.5"/>' +
-      '<rect x="4" y="3" width="32" height="5" rx="1" fill="#92400E"/>' +
-      '<rect x="7" y="9" width="11" height="7" rx="2" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>' +
-      '<rect x="22" y="9" width="11" height="7" rx="2" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>' +
-      '<path d="M 6 18 L 34 18 L 34 35 L 6 35 Z" fill="#7C2D12" rx="2"/>' +
-      '<line x1="6" y1="18" x2="34" y2="18" stroke="#FDE68A" stroke-width="2"/>' +
-      '<circle cx="20" cy="27" r="3" fill="#B45309"/>';
-  } else if(key.includes("cama")){
-    inner = '<rect x="6" y="3" width="28" height="34" rx="3" fill="#1E293B" stroke="#94A3B8" stroke-width="1.5"/>' +
-      '<rect x="6" y="3" width="28" height="4" rx="1" fill="#78350F"/>' +
-      '<rect x="10" y="9" width="20" height="7" rx="2" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>' +
-      '<path d="M 8 18 L 32 18 L 32 35 L 8 35 Z" fill="#2563EB" rx="2"/>' +
-      '<line x1="8" y1="18" x2="32" y2="18" stroke="#DBEAFE" stroke-width="2"/>';
-  } else if(key.includes("sillon")){
-    inner = '<rect x="8" y="8" width="24" height="24" rx="4" fill="#3B0764" stroke="#A855F7" stroke-width="1.5"/>' +
-      '<rect x="4" y="12" width="6" height="18" rx="2" fill="#581C87"/>' +
-      '<rect x="30" y="12" width="6" height="18" rx="2" fill="#581C87"/>' +
-      '<rect x="8" y="26" width="24" height="8" rx="2" fill="#2E1065"/>' +
-      '<circle cx="20" cy="18" r="3" fill="#C084FC"/>';
-  } else if(key.includes("mesa_comedor") || key.includes("mesa")){
-    inner = '<rect x="13" y="2" width="14" height="5" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
-      '<rect x="13" y="33" width="14" height="5" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
-      '<rect x="2" y="13" width="5" height="14" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
-      '<rect x="33" y="13" width="5" height="14" rx="1.5" fill="#475569" stroke="#94A3B8" stroke-width="1"/>' +
-      '<rect x="9" y="9" width="22" height="22" rx="3" fill="#78350F" stroke="#D97706" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="20" r="3" fill="#B45309"/>';
-  } else if(key.includes("escritorio")){
-    inner = '<rect x="5" y="6" width="30" height="18" rx="2" fill="#451A03" stroke="#B45309" stroke-width="1.5"/>' +
-      '<rect x="13" y="27" width="14" height="8" rx="2" fill="#334155" stroke="#94A3B8" stroke-width="1"/>' +
-      '<rect x="9" y="9" width="10" height="12" rx="1" fill="#FEF3C7"/>' +
-      '<circle cx="28" cy="14" r="2.5" fill="#1E293B"/>' +
-      '<line x1="28" y1="14" x2="32" y2="9" stroke="#E2E8F0" stroke-width="1.5"/>';
-  } else if(key.includes("baul") || key.includes("cofre")){
-    inner = '<rect x="5" y="9" width="30" height="22" rx="3" fill="#78350F" stroke="#F59E0B" stroke-width="1.5"/>' +
-      '<line x1="5" y1="16" x2="35" y2="16" stroke="#F59E0B" stroke-width="2"/>' +
-      '<line x1="13" y1="9" x2="13" y2="31" stroke="#94A3B8" stroke-width="2.5"/>' +
-      '<line x1="27" y1="9" x2="27" y2="31" stroke="#94A3B8" stroke-width="2.5"/>' +
-      '<rect x="18" y="15" width="4" height="6" rx="1" fill="#FCD34D" stroke="#B45309" stroke-width="1"/>';
-  } else if(key.includes("alacena")){
-    inner = '<rect x="4" y="6" width="32" height="28" rx="2" fill="#3E2723" stroke="#A1887F" stroke-width="1.5"/>' +
-      '<line x1="20" y1="6" x2="20" y2="34" stroke="#D7CCC8" stroke-width="1.5"/>' +
-      '<line x1="4" y1="20" x2="36" y2="20" stroke="#8D6E63" stroke-width="1" stroke-dasharray="2,2"/>' +
-      '<circle cx="16" cy="20" r="1.8" fill="#F59E0B"/>' +
-      '<circle cx="24" cy="20" r="1.8" fill="#F59E0B"/>';
-  } else if(key.includes("libreria") || key.includes("estanteria")){
-    inner = '<rect x="4" y="6" width="32" height="28" rx="2" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>' +
-      '<rect x="7" y="8" width="4" height="10" fill="#DC2626" rx="1"/>' +
-      '<rect x="12" y="7" width="5" height="11" fill="#2563EB" rx="1"/>' +
-      '<rect x="18" y="8" width="4" height="10" fill="#D97706" rx="1"/>' +
-      '<rect x="23" y="7" width="6" height="11" fill="#16A34A" rx="1"/>' +
-      '<rect x="30" y="8" width="3" height="10" fill="#9333EA" rx="1"/>' +
-      '<line x1="4" y1="20" x2="36" y2="20" stroke="#475569" stroke-width="2"/>' +
-      '<rect x="7" y="22" width="6" height="10" fill="#0284C7" rx="1"/>' +
-      '<rect x="14" y="23" width="5" height="9" fill="#EA580C" rx="1"/>' +
-      '<rect x="20" y="22" width="7" height="10" fill="#4B5563" rx="1"/>';
-  } else if(key.includes("fogon") || key.includes("cocina")){
-    inner = '<rect x="5" y="5" width="30" height="30" rx="3" fill="#18181B" stroke="#71717A" stroke-width="1.5"/>' +
-      '<circle cx="13" cy="13" r="5" fill="#27272A" stroke="#EF4444" stroke-width="1.5"/>' +
-      '<circle cx="27" cy="13" r="4" fill="#27272A" stroke="#F97316" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="26" r="7" fill="#09090B" stroke="#F59E0B" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="26" r="4" fill="#B45309"/>' +
-      '<circle cx="18" cy="24" r="1.5" fill="#FEF3C7"/>';
-  } else if(key.includes("chimenea")){
-    inner = '<path d="M 4 8 L 36 8 L 36 32 L 28 32 L 28 16 L 12 16 L 12 32 L 4 32 Z" fill="#334155" stroke="#94A3B8" stroke-width="1.5"/>' +
-      '<ellipse cx="20" cy="24" rx="7" ry="5" fill="#EA580C"/>' +
-      '<polygon points="20,18 16,26 24,26" fill="#FACC15"/>' +
-      '<line x1="14" y1="26" x2="26" y2="26" stroke="#451A03" stroke-width="2"/>';
-  } else if(key.includes("armero")){
-    inner = '<rect x="4" y="8" width="32" height="24" rx="2" fill="#262626" stroke="#A3A3A3" stroke-width="1.5"/>' +
-      '<line x1="10" y1="10" x2="10" y2="30" stroke="#E5E5E5" stroke-width="2"/>' +
-      '<line x1="20" y1="10" x2="20" y2="30" stroke="#E5E5E5" stroke-width="2"/>' +
-      '<line x1="30" y1="10" x2="30" y2="30" stroke="#E5E5E5" stroke-width="2"/>' +
-      '<circle cx="10" cy="12" r="2" fill="#F59E0B"/>' +
-      '<circle cx="20" cy="12" r="2" fill="#F59E0B"/>' +
-      '<circle cx="30" cy="12" r="2" fill="#F59E0B"/>';
-  } else if(key.includes("alfombra")){
-    inner = '<rect x="4" y="5" width="32" height="30" rx="2" fill="#831843" stroke="#F59E0B" stroke-width="1.5"/>' +
-      '<rect x="8" y="9" width="24" height="22" rx="1" fill="none" stroke="#FDE68A" stroke-width="1" stroke-dasharray="2,2"/>' +
-      '<polygon points="20,14 26,20 20,26 14,20" fill="#9D174D" stroke="#F59E0B" stroke-width="1"/>' +
-      '<line x1="2" y1="7" x2="2" y2="33" stroke="#FEF3C7" stroke-width="1.5" stroke-dasharray="2,1"/>' +
-      '<line x1="38" y1="7" x2="38" y2="33" stroke="#FEF3C7" stroke-width="1.5" stroke-dasharray="2,1"/>';
-  } else if(key.includes("planta")){
-    inner = '<circle cx="20" cy="20" r="8" fill="#78350F" stroke="#B45309" stroke-width="1.5"/>' +
-      '<ellipse cx="20" cy="11" rx="4.5" ry="8" fill="#15803D"/>' +
-      '<ellipse cx="20" cy="29" rx="4.5" ry="8" fill="#16A34A"/>' +
-      '<ellipse cx="11" cy="20" rx="8" ry="4.5" fill="#22C55E"/>' +
-      '<ellipse cx="29" cy="20" rx="8" ry="4.5" fill="#4ADE80"/>' +
-      '<circle cx="20" cy="20" r="3.5" fill="#14532D"/>';
-  } else if(key.includes("candelabro") || key.includes("vela")){
-    inner = '<circle cx="20" cy="20" r="14" fill="none" stroke="#F59E0B" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="3,3"/>' +
-      '<circle cx="20" cy="20" r="5" fill="#D97706" stroke="#FDE68A" stroke-width="1.5"/>' +
-      '<line x1="20" y1="7" x2="20" y2="33" stroke="#B45309" stroke-width="2"/>' +
-      '<line x1="7" y1="20" x2="33" y2="20" stroke="#B45309" stroke-width="2"/>' +
-      '<circle cx="20" cy="7" r="3" fill="#FEF08A"/>' +
-      '<circle cx="20" cy="33" r="3" fill="#FEF08A"/>' +
-      '<circle cx="7" cy="20" r="3" fill="#FEF08A"/>' +
-      '<circle cx="33" cy="20" r="3" fill="#FEF08A"/>';
-  } else if(key.includes("diana")){
-    inner = '<circle cx="20" cy="20" r="15" fill="#DC2626" stroke="#FEF08A" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="20" r="10" fill="#F8FAFC" stroke="#DC2626" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="20" r="5" fill="#DC2626"/>' +
-      '<line x1="12" y1="12" x2="28" y2="28" stroke="#FDE047" stroke-width="1.5"/>';
-  } else if(key.includes("barril")){
-    inner = '<ellipse cx="14" cy="20" rx="9" ry="12" fill="#78350F" stroke="#D97706" stroke-width="1.5"/>' +
-      '<ellipse cx="26" cy="20" rx="9" ry="12" fill="#92400E" stroke="#D97706" stroke-width="1.5"/>' +
-      '<circle cx="26" cy="20" r="2" fill="#FCD34D"/>';
-  } else if(key.includes("setas")){
-    inner = '<ellipse cx="16" cy="22" rx="7" ry="5" fill="#9333EA" stroke="#C084FC" stroke-width="1.5"/>' +
-      '<ellipse cx="26" cy="18" rx="8" ry="6" fill="#A855F7" stroke="#E9D5FF" stroke-width="1.5"/>' +
-      '<circle cx="24" cy="16" r="1.5" fill="#FFFFFF"/>' +
-      '<circle cx="28" cy="20" r="1.2" fill="#FFFFFF"/>';
-  } else if(key.includes("brasero")){
-    inner = '<circle cx="20" cy="20" r="13" fill="#18181B" stroke="#7C3AED" stroke-width="2"/>' +
-      '<circle cx="20" cy="20" r="8" fill="#581C87"/>' +
-      '<polygon points="20,13 16,23 24,23" fill="#C084FC"/>';
-  } else if(key.includes("pocion")){
-    inner = '<rect x="4" y="10" width="32" height="20" rx="2" fill="#1E293B" stroke="#64748B" stroke-width="1.5"/>' +
-      '<circle cx="10" cy="20" r="3.5" fill="#22C55E"/>' +
-      '<circle cx="20" cy="20" r="3.5" fill="#3B82F6"/>' +
-      '<circle cx="30" cy="20" r="3.5" fill="#EC4899"/>';
-  } else if(key.includes("mapa")){
-    inner = '<rect x="4" y="6" width="32" height="28" rx="2" fill="#78350F" stroke="#D97706" stroke-width="1.5"/>' +
-      '<rect x="8" y="10" width="24" height="20" rx="1" fill="#FEF3C7" stroke="#B45309" stroke-width="1"/>' +
-      '<line x1="12" y1="18" x2="28" y2="18" stroke="#D97706" stroke-width="1" stroke-dasharray="2,2"/>' +
-      '<circle cx="20" cy="20" r="2" fill="#DC2626"/>';
-  } else if(key.includes("reliquia") || key.includes("gema")){
-    inner = '<polygon points="20,6 30,20 20,34 10,20" fill="#0284C7" stroke="#38BDF8" stroke-width="2"/>' +
-      '<circle cx="20" cy="20" r="4" fill="#E0F2FE"/>';
-  } else if(key.includes("oso")){
-    inner = '<path d="M 6 12 Q 10 20 6 28 Q 20 24 34 28 Q 30 20 34 12 Q 20 16 6 12 Z" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="20" r="4" fill="#CBD5E1"/>';
-  } else if(key.includes("runic")){
-    inner = '<circle cx="20" cy="20" r="14" fill="#312E81" stroke="#818CF8" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="20" r="9" fill="none" stroke="#C7D2FE" stroke-width="1" stroke-dasharray="2,2"/>' +
-      '<polygon points="20,12 27,24 13,24" fill="none" stroke="#FDE047" stroke-width="1"/>';
-  } else if(key.includes("trofeo")){
-    inner = '<circle cx="20" cy="20" r="8" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5"/>' +
-      '<circle cx="17" cy="18" r="2" fill="#0F172A"/>' +
-      '<circle cx="23" cy="18" r="2" fill="#0F172A"/>' +
-      '<path d="M 12 12 Q 8 6 4 10" fill="none" stroke="#CBD5E1" stroke-width="2"/>' +
-      '<path d="M 28 12 Q 32 6 36 10" fill="none" stroke="#CBD5E1" stroke-width="2"/>';
-  } else {
-    // Genérico / Caja de almacenamiento
-    inner = '<rect x="6" y="6" width="28" height="28" rx="3" fill="#374151" stroke="#9CA3AF" stroke-width="1.5"/>' +
-      '<circle cx="20" cy="20" r="6" fill="#4B5563"/>' +
-      '<text x="20" y="24" text-anchor="middle" font-size="12" fill="#E5E7EB">' + (getFurnitureIcon(key) || '📦') + '</text>';
+// Dibujo del mueble como imagen para el plano (Konva). Se guarda en caché por tipo, tamaño y giro.
+var houseItemArtImageCache = {};
+function getHouseItemArtImage(room, it, w, h, cellPx){
+  var svg = drawHouseItemArt(room, it, w, h, it.rotation || 0, cellPx);
+  var key = svg.length + ":" + getHouseItemArtType(it) + ":" + w + "x" + h + ":" + (it.rotation || 0) + ":" + (cellPx < 14 ? "s" : "d") + ":" + (it.id || "");
+  var img = houseItemArtImageCache[key];
+  if(!img){
+    img = new Image();
+    img.onload = function(){ if(houseKonvaStage) houseKonvaStage.batchDraw(); };
+    // Con ancho y alto propios para que el navegador lo pinte nítido
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace("<svg ", '<svg width="' + (w * 40) + '" height="' + (h * 40) + '" '));
+    houseItemArtImageCache[key] = img;
   }
+  return img;
+}
 
-  return '<svg viewBox="0 0 40 40" class="canva-svg canva-svg-' + esc(key) + '" xmlns="http://www.w3.org/2000/svg">' +
-    '<g transform="rotate(' + rot + ' 20 20)">' + inner + '</g>' +
-    '</svg>';
+// Envoltorio antiguo: dibujo de 1×1 casilla (lo usan las puertas del plano)
+function getCanvaSvg(typeOrId, rotation){
+  return drawHouseItemSVG(typeOrId, 1, 1, { rotation: rotation });
+}
+
+// Tipo para el dibujo: el id del catálogo distingue, p. ej., la mesa de alquimia de la mesa normal
+function getHouseItemArtType(it){
+  return (it && (it.asset_id || it.type || it.id)) || "";
+}
+
+// Color de la manta de las camas según el dueño de la habitación (fijo para cada dueño)
+var HOUSE_OWNER_ART_COLORS = ["#3D6E60", "#8C252F", "#4A5A78", "#7A5F35", "#6B3A2A", "#2F5148", "#5E1820"];
+function getRoomOwnerArtColor(room){
+  var id = room && room.owner_character_id;
+  if(!id) return null;
+  var h = 0;
+  for(var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return HOUSE_OWNER_ART_COLORS[Math.abs(h) % HOUSE_OWNER_ART_COLORS.length];
+}
+
+function drawHouseItemArt(room, it, w, h, rotation, cellPx){
+  return drawHouseItemSVG(getHouseItemArtType(it), w, h, {
+    rotation: rotation,
+    cellPx: cellPx,
+    ownerColor: getRoomOwnerArtColor(room),
+    seed: it.id || getHouseItemArtType(it),
+    label: it.name || it.label || ""
+  });
 }
 
 // ============================================================================
@@ -3456,7 +3298,7 @@ function houseLayoutWarn(msg){
 // ============================================================================
 // FUNCIONES DEL ESTUDIO CANVA (Diseño y Decoración Visual)
 // ============================================================================
-function renderRoomMiniLayout(r){
+function renderRoomMiniLayout(r, cellPx){
   var fur = Array.isArray(r.furniture) ? r.furniture : [];
   var dec = Array.isArray(r.decor) ? r.decor : [];
   if(fur.length === 0 && dec.length === 0) return '';
@@ -3466,19 +3308,26 @@ function renderRoomMiniLayout(r){
   var rowH = 100 / grid.rows;
 
   // Clamp para asegurar que el elemento esté 100% contenido en la habitación
+  function miniSize(it){
+    return { w: Math.min(grid.cols, Math.max(1, it.w || 1)), h: Math.min(grid.rows, Math.max(1, it.h || 1)) };
+  }
   function miniBox(it){
-    var w = Math.min(grid.cols, Math.max(1, it.w || 1));
-    var h = Math.min(grid.rows, Math.max(1, it.h || 1));
+    var sz = miniSize(it);
+    var w = sz.w, h = sz.h;
     var x = Math.max(0, Math.min(grid.cols - w, it.pos_x || 0));
     var y = Math.max(0, Math.min(grid.rows - h, it.pos_y || 0));
     return 'left:' + (x * colW).toFixed(2) + '%;top:' + (y * rowH).toFixed(2) + '%;width:' + (w * colW).toFixed(2) + '%;height:' + (h * rowH).toFixed(2) + '%;';
+  }
+  function miniArt(it){
+    var sz = miniSize(it);
+    return drawHouseItemArt(r, it, sz.w, sz.h, it.rotation || 0, cellPx);
   }
 
   var items = [];
   fur.forEach(function(f){
     items.push(
       '<div class="house-mini-item item-furniture" style="' + miniBox(f) + '" title="' + esc(f.name) + '">' +
-        getCanvaSvg(f.type || f.id, f.rotation || 0) +
+        miniArt(f) +
       '</div>'
     );
   });
@@ -3486,7 +3335,7 @@ function renderRoomMiniLayout(r){
   // Alfombras primero, para que queden debajo de los muebles
   dec.forEach(function(d){
     var html = '<div class="house-mini-item item-decor" style="' + miniBox(d) + '" title="' + esc(d.label || d.type) + '">' +
-        getCanvaSvg(d.type || d.id, d.rotation || 0) +
+        miniArt(d) +
       '</div>';
     if(getHouseItemLayer(d) === "suelo") items.unshift(html);
     else items.push(html);
@@ -4017,7 +3866,7 @@ function renderCanvaStudioInner(r){
     var n = canvaItemCount(it);
     var cls = 'canva-stage-item cs-item' + (getHouseItemLayer(it) === "suelo" ? ' is-floor' : '') + (isSel ? ' is-sel' : '');
     html += '<div class="' + cls + '" data-item-id="' + esc(it.id) + '" data-room-id="' + rid + '" style="' + canvaBoxStyle(v, cell) + '" role="button" aria-label="' + esc(canvaItemName(it)) + '">';
-    html += '  <div class="canva-stage-item-svg">' + getCanvaSvg(it.type || it.id, ((it.rotation || 0) + (rot ? 90 : 0)) % 360) + '</div>';
+    html += '  <div class="canva-stage-item-svg">' + drawHouseItemArt(r, it, v.w, v.h, ((it.rotation || 0) + (rot ? 90 : 0)) % 360, cell) + '</div>';
     if(n > 0 && canvaItemIsStorage(entry)) html += '  <span class="cs-badge">' + n + '</span>';
     if(isSel){
       html += '  <span class="cs-name">' + esc(canvaItemName(it)) + '</span>';
@@ -4129,7 +3978,7 @@ function renderCanvaCatalogSheet(r){
   list.forEach(function(a){
     var floor = getHouseItemLayer({ type: a.defaultType || a.id }) === "suelo";
     html += '<button type="button" class="cs-card" data-action="canva-insert-asset" data-room-id="' + rid + '" data-asset-id="' + a.id + '">';
-    html += '  <span class="cs-card-pv">' + getCanvaSvg(a.id, 0) + '</span>';
+    html += '  <span class="cs-card-pv">' + drawHouseItemSVG(a.id, a.defaultW || 1, a.defaultH || 1, { seed: a.id, label: a.name }) + '</span>';
     html += '  <span class="cs-card-tx"><b>' + esc(a.name) + '</b><small>' + (a.defaultW || 1) + '×' + (a.defaultH || 1) + ' casillas</small>';
     if(a.isStorage) html += '<small class="is-store">Guarda objetos</small>';
     if(floor) html += '<small>Va en el suelo</small>';

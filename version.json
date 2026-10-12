@@ -1,6 +1,6 @@
 {
-  "version": "1.4.9.0",
-  "build": "2026.10.13.02",
-  "updatedAt": "2026-10-13T03:00:00Z",
-  "changelog": "La Casa: editor de muebles nuevo. Un solo panel abajo con botones grandes, deshacer y rehacer, tirador dorado para cambiar el tamaño, vista girada en el móvil, catálogo en cajón, zona de paso libre delante de las puertas y guardado automático."
+  "version": "1.4.10.0",
+  "build": "2026.10.13.03",
+  "updatedAt": "2026-10-13T04:00:00Z",
+  "changelog": "La Casa: dibujos de muebles nuevos, vistos desde arriba, que se rehacen al cambiar el tamaño (más almohadas, sillas o libros) sin deformarse. Se ven en el editor, el catálogo, la miniatura y el plano."
 }

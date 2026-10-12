@@ -4247,3 +4247,26 @@ body:has(#canvaStudio) .fab-dice {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Dibujos de muebles (js/house-art.js): llevan su propia sombra y un brillo suave en las llamas
+   --------------------------------------------------------------------------- */
+.cs-room .canva-stage-item-svg svg.hart,
+.cs-card-pv svg.hart {
+  filter: none;
+}
+
+.hart-glow {
+  animation: hartGlow 2.8s ease-in-out infinite alternate;
+}
+
+@keyframes hartGlow {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hart-glow {
+    animation: none;
+  }
+}
