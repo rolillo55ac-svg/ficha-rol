@@ -43,6 +43,7 @@ function resetSessionRole(){
     delete state.campaignRole;
     delete state.campaignMembers;
   }
+  if(typeof ALCHEMY_CATALOG !== "undefined") ALCHEMY_CATALOG.forEach(function(s){ delete s.efectoEnemigo; delete s.efectoCherk; });
   try {
     localStorage.removeItem("krysalis_role");
     localStorage.removeItem("krysalis_local_role");
@@ -118,6 +119,7 @@ async function fetchUserProfile(){
     pullMapFromSupabase();
     pullSharedDataFromSupabase();
     if(typeof loadGameClock === "function") loadGameClock();
+    if(typeof loadAlchemySecrets === "function") loadAlchemySecrets();
     // Si este dispositivo tiene una Casa guardada y la nube no, se ofrece subirla (solo el máster)
     if(typeof maybeOfferHouseImport === "function") setTimeout(maybeOfferHouseImport, 1500);
     // Copia semanal en la nube cuando ya se conoce el rol y han llegado los datos

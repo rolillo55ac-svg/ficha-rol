@@ -212,3 +212,28 @@ function pushSharedData(patch){
     updateSyncBadge("synced");
   }).catch(function(e){ console.error('Supabase error:', e); });
 }
+
+// Notas secretas del catálogo de Alquimia (efecto real en enemigos y en Cherk): están en la base y solo las lee el máster
+async function loadAlchemySecrets(){
+  if(typeof ALCHEMY_CATALOG === "undefined") return;
+  ALCHEMY_CATALOG.forEach(function(s){ delete s.efectoEnemigo; delete s.efectoCherk; });
+  if(!supabaseClient || !currentUser || !isGM()) return;
+  try {
+    var res = await supabaseClient.from("alchemy_secrets").select("substance_id, efecto_enemigo, efecto_cherk");
+    if(res.error){ console.warn("No se pudieron leer las notas secretas de Alquimia:", res.error.message); return; }
+    if(!isGM()) return;
+    (res.data || []).forEach(function(r){
+      var s = ALCHEMY_CATALOG.find(function(x){ return x.id === r.substance_id; });
+      if(!s) return;
+      s.efectoEnemigo = r.efecto_enemigo || "";
+      s.efectoCherk = r.efecto_cherk || "";
+    });
+  } catch(e){
+    console.warn("No se pudieron leer las notas secretas de Alquimia:", e);
+    return;
+  }
+  if(state && state.activeTab === "alquimia"){
+    var ae = document.activeElement;
+    if(!(ae && (ae.tagName === "TEXTAREA" || ae.tagName === "INPUT" || ae.tagName === "SELECT"))) renderTab();
+  }
+}
