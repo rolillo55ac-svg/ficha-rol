@@ -1788,16 +1788,18 @@ function toggleFloorPopover(btn){
 function positionHousePopover(pop, btn){
   if(!pop || !btn) return;
   var rect = btn.getBoundingClientRect();
-  var popW = 280;
+  pop.style.display = "flex";
+  pop.classList.add("visible");
+  // Medidas reales del menú (en el móvil es más alto por los botones de 44 px)
+  var popW = Math.min(pop.offsetWidth || 280, window.innerWidth - 24);
+  var popH = pop.offsetHeight || 280;
   var left = Math.min(window.innerWidth - popW - 12, Math.max(12, rect.left));
   var top = rect.bottom + 8;
-  if(top + 280 > window.innerHeight){
-    top = Math.max(10, rect.top - 280);
+  if(top + popH > window.innerHeight - 10){
+    top = (rect.top - popH - 8 >= 10) ? rect.top - popH - 8 : Math.max(10, window.innerHeight - popH - 10);
   }
   pop.style.top = top + "px";
   pop.style.left = left + "px";
-  pop.style.display = "flex";
-  pop.classList.add("visible");
 }
 
 function closeAllHousePopovers(){
