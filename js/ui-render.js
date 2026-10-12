@@ -1357,7 +1357,7 @@ function renderLapidaryWorkshop(c, canEdit){
           '<div class="lapidary-card-badges">' +
             '<span class="item-badge badge-' + qId + '" title="' + esc(qInfo.desc) + '">Calidad: ' + esc(qInfo.label) + '</span>' +
             '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? "⛏️ " : "🪙 ") + esc(st.origen) + '</span>' +
-            (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Eliminar gema" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '') +
+            (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Eliminar gema">✕</button>' : '') +
           '</div>' +
         '</div>' +
         (typeof renderLapidaryStoneStatus === "function" ? renderLapidaryStoneStatus(st) : '') +
