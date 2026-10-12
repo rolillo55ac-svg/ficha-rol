@@ -1,6 +1,6 @@
 {
-  "version": "1.4.12.0",
-  "build": "2026.10.13.05",
-  "updatedAt": "2026-10-13T06:00:00Z",
-  "changelog": "Más seguridad al guardar: al cerrar o esconder la app ya no se intenta reenviar la ficha entera por una vía antigua; los cambios se guardan por la vía normal y, si no da tiempo, al volver a abrir."
+  "version": "1.4.13.0",
+  "build": "2026.10.13.06",
+  "updatedAt": "2026-10-13T07:00:00Z",
+  "changelog": "Más seguridad: la copia semanal en la nube ya solo la hace el máster después de entrar; antes se intentaba al abrir la app en cualquier móvil, también en el de los jugadores."
 }

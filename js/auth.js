@@ -119,6 +119,8 @@ async function fetchUserProfile(){
     pullSharedDataFromSupabase();
     // Si este dispositivo tiene una Casa guardada y la nube no, se ofrece subirla (solo el máster)
     if(typeof maybeOfferHouseImport === "function") setTimeout(maybeOfferHouseImport, 1500);
+    // Copia semanal en la nube cuando ya se conoce el rol y han llegado los datos
+    if(typeof checkWeeklyBackup === "function") setTimeout(checkWeeklyBackup, 5000);
   }catch(e){ console.error('Supabase error:', e); }
   renderTopbar();
   renderTabbar();

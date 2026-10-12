@@ -289,7 +289,6 @@ function init(){
 
     updateLoadingProgress(85, "Conectando con la partida...");
     initSupabase();
-    checkWeeklyBackup();
     setTimeout(function(){
       if(typeof syncPlayerTicketsWithSupabase === "function") syncPlayerTicketsWithSupabase();
       if(typeof syncAdminTicketsWithSupabase === "function" && typeof isGM === "function" && isGM()) syncAdminTicketsWithSupabase();
