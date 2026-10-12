@@ -406,7 +406,7 @@ async function migrateLocalImagesToSupabase(){
 
   // Limpiar también claves residuales de versiones viejas en localStorage
   var cleanedKeys = 0;
-  var knownPrefixes = [STORAGE_KEY, "krysalis_", "sb-", "supabase.auth."];
+  var knownPrefixes = [STORAGE_KEY, "krysalis_", "krysalisGeode", "sb-", "supabase.auth."];
   try {
     for(var k in localStorage){
       if(localStorage.hasOwnProperty(k)){
@@ -478,7 +478,7 @@ async function migrateLocalImagesToSupabase(){
 
 function cleanOrphanStorage(silent){
   var cleaned = 0;
-  var knownPrefixes = [STORAGE_KEY, "krysalis_", "sb-", "supabase.auth."];
+  var knownPrefixes = [STORAGE_KEY, "krysalis_", "krysalisGeode", "sb-", "supabase.auth."];
   try {
     for(var k in localStorage){
       if(localStorage.hasOwnProperty(k)){
