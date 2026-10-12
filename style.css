@@ -9204,15 +9204,18 @@ textarea,
 
 /* Móvil: en las pestañas todo lo que se toca mide al menos 44 px */
 @media (max-width: 900px), (pointer: coarse) {
-  #main button,
-  #main select,
-  #main summary,
-  #main input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]),
-  .gauge-adjust button {
+  /* :where() no suma prioridad: solo sube lo que no tiene ya su propio mínimo (nunca rebaja los grandes) */
+  :where(#main, .modal:not(.lapidary-modal-box)) :where(button, select, summary, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden])) {
     min-height: 44px;
   }
-  #main button,
-  #main select {
+  :where(#main, .modal:not(.lapidary-modal-box)) :where(button, select) {
+    min-width: 44px;
+  }
+  .gauge-adjust button,
+  :is(#main, .modal:not(.lapidary-modal-box)) :is(.btn-compact, .btn-solid-gold, .f-pill, .subnav-pill, .dice-btn, .mini-roll, .tame-btn, .row-del, .qty-btn, .qty-chip, .mod-chip, .dmode-pill, .dice-num-input, .feedback-nav-tab, .money-field input, .gm-skill-btn, .creature-field input, .creature-name-input) {
+    min-height: 44px;
+  }
+  :is(#main, .modal:not(.lapidary-modal-box)) :is(.dice-btn, .mini-roll, .row-del, .qty-btn, .qty-chip, .mod-chip, .gm-skill-btn) {
     min-width: 44px;
   }
   /* Habilidades: la columna del bono cabe con los botones grandes; el nombre baja de línea */
@@ -9253,15 +9256,13 @@ textarea,
   .quest-task-num-input {
     width: 48px;
   }
-  /* Ventanas (menos el taller del lapidario, que tiene las suyas): lo mismo */
-  .modal:not(.lapidary-modal-box) button,
-  .modal:not(.lapidary-modal-box) select,
-  .modal:not(.lapidary-modal-box) summary,
-  .modal:not(.lapidary-modal-box) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]) {
+  /* Estos traen su tamaño en línea o con !important */
+  .modal:not(.lapidary-modal-box) .row-del {
+    min-width: 44px !important;
     min-height: 44px !important;
   }
-  .modal:not(.lapidary-modal-box) button {
-    min-width: 44px !important;
+  .data-modal-logout-btn {
+    min-height: 44px !important;
   }
   .char-list-item .cli-main-select {
     min-height: 44px;
