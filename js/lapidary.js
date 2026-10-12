@@ -1560,13 +1560,17 @@ var CUT_TOUCH_OFFSET = 46;   // px: la sierra se dibuja por encima del dedo
 var CUT_START_RADIUS = 44;   // px: radio para empezar o seguir tocando la sierra
 var CUT_MAX_GEMS = 3;
 
-// Joysticks (telesketch): el izquierdo mueve la sierra en horizontal y el derecho en vertical
+// Joystick único y flotante: aparece donde pones el pulgar y mueve la sierra en cualquier dirección
 var CUT_JOY = {
   maxSpeed: 0.32,      // anchos de lienzo por segundo con el joystick a tope
   keySpeed: 0.6,       // teclado: fracción del tope (con Mayúsculas, a tope)
   accel: 9,            // inercia suave: cuánto tarda en llegar a la velocidad pedida
-  travel: 36,          // px que se mueve el mando desde el centro
-  band: 1.25,          // con joysticks, algo más de margen…
+  travel: 50,          // px que se mueve el mando desde el centro
+  size: 140,           // px del círculo del joystick
+  awayFactor: 0.6,     // ayuda de puntería: lo que aleja de la línea se frena un 40 %…
+  forwardFactor: 1.2,  // … lo que avanza a lo largo de la línea se ayuda…
+  pull: 2.5,           // … y la sierra tiende hacia la línea (por segundo, mientras empujas)
+  band: 1.25,          // con joystick, algo más de margen…
   hardSpeed: 1.15,     // … más velocidad permitida en los tramos ◆
   drift: 0.7,          // … menos deriva
   heat: 0.8            // … y se calienta algo más despacio
@@ -1733,9 +1737,11 @@ function renderCutsPhaseHTML(family){
     '</div>' +
     '<div class="lapidary-cut-stage" id="lapidaryCutStage"><canvas id="lapidaryCutCanvas" aria-label="Piedra para cortar"></canvas></div>' +
     '<div class="lapidary-cut-joys" id="lapidaryCutJoys">' +
-      '<div class="lapidary-joy is-x" id="lapidaryJoyX" data-axis="x" role="slider" aria-label="Joystick izquierdo: sierra a izquierda y derecha"><i class="lapidary-joy-track"></i><i class="lapidary-joy-knob"></i></div>' +
+      '<div class="lapidary-joy-pad" id="lapidaryJoyPad" role="application" aria-label="Joystick: pon el pulgar y empuja hacia donde quieras llevar la sierra">' +
+        '<div class="lapidary-joy" id="lapidaryJoy"><i class="lapidary-joy-knob"></i></div>' +
+        '<span class="lapidary-joy-tip">Pon el pulgar aquí</span>' +
+      '</div>' +
       '<button type="button" class="lapidary-joy-mode" id="lapidaryCutMode" data-action="cut-mode"></button>' +
-      '<div class="lapidary-joy is-y" id="lapidaryJoyY" data-axis="y" role="slider" aria-label="Joystick derecho: sierra arriba y abajo"><i class="lapidary-joy-track"></i><i class="lapidary-joy-knob"></i></div>' +
     '</div>' +
     '<div class="lapidary-geode-hint" id="lapidaryCutHint"></div>' +
     '<div class="lapidary-polish-legend"><span><i class="perf"></i>Sierra bien</span><span><i class="warn"></i>Rozando el borde</span><span><i class="bad"></i>Fuera o muy rápido</span></div>' +
@@ -1790,8 +1796,8 @@ function defaultCutHint(){
       "Corte terminado: <b class=\"lapidary-cuts-stars\">" + cutStarsHTML(cutStarsFor(CG.results[CG.idx])) + "</b>. Puedes repetirlo o seguir.";
   }
   if(CG.mode === "joy"){
-    if(!S.started) return cut.hint + " Joystick <b>izquierdo ↔</b>, <b>derecho ↕</b>: cuanto más empujas, más rápido. En los <b>◆</b> ve despacio, pero sin pararte.";
-    if(!S.active) return "Pausa. Mueve un joystick para seguir.";
+    if(!S.started) return cut.hint + " Pon el <b>pulgar abajo</b> y empuja hacia donde quieras: cuanto más empujas, más rápido. En los <b>◆</b> ve despacio, pero sin pararte.";
+    if(!S.active) return "Pausa. Vuelve a empujar el joystick para seguir.";
     return "";
   }
   if(!S.started) return cut.hint + " <b>Pon el dedo en la sierra</b> y arrastra. En los tramos <b>◆</b> ve despacio, pero sin pararte.";
@@ -2132,15 +2138,31 @@ function handleCutMove(p, now){
   if(S.prog >= S.total - 0.012) finishCurrentCut(false);
 }
 
-// Empuje pedido en cada eje (-1..1): joysticks o teclado (flechas / WASD)
+// Empuje pedido (vector de longitud 0..1): joystick o teclado (flechas / WASD)
 function cutJoyInput(){
   var CG = cutState(), k = CG.keys;
   var kx = (k.right ? 1 : 0) - (k.left ? 1 : 0), ky = (k.down ? 1 : 0) - (k.up ? 1 : 0);
-  var ks = k.fast ? 1 : CUT_JOY.keySpeed;
-  return [kx ? kx * ks : CG.joy.x, ky ? ky * ks : CG.joy.y];
+  if(kx || ky){
+    var ks = (k.fast ? 1 : CUT_JOY.keySpeed) / Math.hypot(kx, ky);
+    return [kx * ks, ky * ks];
+  }
+  return [CG.joy.x, CG.joy.y];
 }
 
-// Telesketch: cada fotograma la sierra avanza según los joysticks, con un pelín de inercia
+// Ayuda de puntería: frena lo que aleja de la línea, ayuda a avanzar por ella y tira suavemente hacia ella
+function cutAimAssist(tx, ty){
+  var CG = cutState(), S = CG.S;
+  var n = cutNormalAt(S.prog), t = [n[1], -n[0]];
+  var line = cutPx(cutPointAt(S.prog)), saw = S.saw || line;
+  var err = (line[0] - saw[0]) * n[0] + (line[1] - saw[1]) * n[1];
+  var along = tx * t[0] + ty * t[1], perp = tx * n[0] + ty * n[1];
+  if(along > 0) along *= CUT_JOY.forwardFactor;
+  if(perp * err <= 0) perp *= CUT_JOY.awayFactor;
+  perp += err * CUT_JOY.pull;
+  return [t[0] * along + n[0] * perp, t[1] * along + n[1] * perp];
+}
+
+// Cada fotograma la sierra avanza según el joystick, con un pelín de inercia
 function stepCutJoystick(now, dt){
   var CG = cutState(), S = CG.S;
   if(!S || S.done || CG.sheetOpen || !CG.W) return;
@@ -2159,11 +2181,15 @@ function stepCutJoystick(now, dt){
     updateCutPanel();
   }
   // Curva suave: cerca del centro, más precisión
-  var tx = Math.sign(inp[0]) * Math.pow(Math.abs(inp[0]), 1.5) * CUT_JOY.maxSpeed * CG.W;
-  var ty = Math.sign(inp[1]) * Math.pow(Math.abs(inp[1]), 1.5) * CUT_JOY.maxSpeed * CG.W;
+  var mag = Math.min(1, Math.hypot(inp[0], inp[1])), tx = 0, ty = 0;
+  if(mag > 0){
+    var sp = Math.pow(mag, 1.5) * CUT_JOY.maxSpeed * CG.W / mag;
+    var aim = cutAimAssist(inp[0] * sp, inp[1] * sp);
+    tx = aim[0]; ty = aim[1];
+  }
   var a = Math.min(1, dt * CUT_JOY.accel);
   CG.vel = [CG.vel[0] + (tx - CG.vel[0]) * a, CG.vel[1] + (ty - CG.vel[1]) * a];
-  // Soltando los dos joysticks la sierra se para: pausa, como al levantar el dedo
+  // Soltando el joystick la sierra se para: pausa, como al levantar el dedo
   if(!pushing && Math.hypot(CG.vel[0], CG.vel[1]) < CG.W * 0.004){
     S.active = false; S.joyDrive = false; S.state = "ok"; S.pauseStart = now;
     CG.vel = [0, 0];
@@ -2181,57 +2207,62 @@ function applyCutModeUI(){
   if(!CG || !box) return;
   box.classList.toggle("is-dedo", CG.mode !== "joy");
   var b = document.getElementById("lapidaryCutMode");
-  if(b) b.innerHTML = CG.mode === "joy" ? '✋<span>Modo dedo</span>' : '🕹️<span>Joysticks</span>';
+  if(b) b.innerHTML = CG.mode === "joy" ? '✋<span>Modo dedo</span>' : '🕹️<span>Joystick</span>';
 }
 
 function bindCutJoysticks(){
-  ["lapidaryJoyX", "lapidaryJoyY"].forEach(function(id){
-    var el = document.getElementById(id);
-    if(!el || el._joyBound) return;
-    el._joyBound = true;
-    var axis = el.getAttribute("data-axis"), knob = el.querySelector(".lapidary-joy-knob");
-    var pid = null, atEdge = false;
-    function set(v){
-      var CG = cutState();
-      if(CG) CG.joy[axis] = v;
-      var off = v * CUT_JOY.travel;
-      knob.style.transform = axis === "x" ? "translate(" + off + "px, 0)" : "translate(0, " + off + "px)";
-    }
-    function read(e){
-      var r = el.getBoundingClientRect();
-      var d = axis === "x" ? e.clientX - (r.left + r.width / 2) : e.clientY - (r.top + r.height / 2);
-      var v = Math.max(-1, Math.min(1, d / CUT_JOY.travel));
-      if(Math.abs(v) < 0.08) v = 0;
-      // Vibración suave al llegar al tope
-      var edge = Math.abs(v) >= 1;
-      if(edge && !atEdge){ try { if(navigator.vibrate) navigator.vibrate(8); } catch(err){} }
-      atEdge = edge;
-      set(v);
-    }
-    function release(e){
-      if(e.pointerId !== pid) return;
-      pid = null; atEdge = false;
-      el.classList.remove("is-held");
-      set(0);
-    }
-    el.addEventListener("pointerdown", function(e){
-      if(pid !== null) return;
-      e.preventDefault();
-      pid = e.pointerId;
-      try { el.setPointerCapture(pid); } catch(err){}
-      el.classList.add("is-held");
-      read(e);
-    });
-    el.addEventListener("pointermove", function(e){
-      if(e.pointerId !== pid) return;
-      e.preventDefault();
-      read(e);
-    });
-    el.addEventListener("pointerup", release);
-    el.addEventListener("pointercancel", release);
-    el.addEventListener("lostpointercapture", release);
-    el.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+  var pad = document.getElementById("lapidaryJoyPad");
+  if(!pad || pad._joyBound) return;
+  pad._joyBound = true;
+  var base = document.getElementById("lapidaryJoy"), knob = base.querySelector(".lapidary-joy-knob");
+  var pid = null, cx = 0, cy = 0, atEdge = false;
+  function set(x, y){
+    var CG = cutState();
+    if(CG) CG.joy = { x: x, y: y };
+    knob.style.transform = "translate(" + (x * CUT_JOY.travel) + "px, " + (y * CUT_JOY.travel) + "px)";
+  }
+  function read(e){
+    var dx = (e.clientX - cx) / CUT_JOY.travel, dy = (e.clientY - cy) / CUT_JOY.travel;
+    var m = Math.hypot(dx, dy);
+    if(m > 1){ dx /= m; dy /= m; }
+    if(m < 0.08){ dx = 0; dy = 0; }
+    // Vibración suave al llegar al tope
+    var edge = m >= 1;
+    if(edge && !atEdge){ try { if(navigator.vibrate) navigator.vibrate(8); } catch(err){} }
+    atEdge = edge;
+    set(dx, dy);
+  }
+  function release(e){
+    if(e.pointerId !== pid) return;
+    pid = null; atEdge = false;
+    pad.classList.remove("is-held");
+    base.style.left = ""; base.style.top = "";
+    set(0, 0);
+  }
+  pad.addEventListener("pointerdown", function(e){
+    if(pid !== null) return;
+    e.preventDefault();
+    pid = e.pointerId;
+    try { pad.setPointerCapture(pid); } catch(err){}
+    // El joystick aparece donde pones el pulgar (sin salirse de la zona)
+    var r = pad.getBoundingClientRect(), h = CUT_JOY.size / 2;
+    var lx = Math.max(h, Math.min(r.width - h, e.clientX - r.left));
+    var hy = Math.min(h, r.height / 2);
+    var ly = Math.max(hy, Math.min(r.height - hy, e.clientY - r.top));
+    base.style.left = lx + "px"; base.style.top = ly + "px";
+    cx = r.left + lx; cy = r.top + ly;
+    pad.classList.add("is-held");
+    read(e);
   });
+  pad.addEventListener("pointermove", function(e){
+    if(e.pointerId !== pid) return;
+    e.preventDefault();
+    read(e);
+  });
+  pad.addEventListener("pointerup", release);
+  pad.addEventListener("pointercancel", release);
+  pad.addEventListener("lostpointercapture", release);
+  pad.addEventListener("contextmenu", function(e){ e.preventDefault(); });
 }
 
 // Teclado en el PC: flechas o WASD (Mayúsculas: a tope)
@@ -2298,7 +2329,7 @@ function bindCutCanvas(){
   cv.addEventListener("pointerdown", function(e){
     var CG = cutState(), S = CG && CG.S;
     if(!S || S.done || CG.sheetOpen || S.joyDrive) return;
-    if(CG.mode === "joy"){ setCutHint("Usa los <b>joysticks</b> de abajo (o pasa a <b>modo dedo</b>)."); return; }
+    if(CG.mode === "joy"){ setCutHint("Usa el <b>joystick</b> de abajo (o pasa a <b>modo dedo</b>)."); return; }
     var p = cutLocalPoint(e);
     var sp = S.saw || cutPx(cutPointAt(S.prog));
     if(!S.started) sp = cutPx(cutPointAt(S.prog));
@@ -2386,7 +2417,7 @@ function initLapidarySlideStage(){
   if(!lapidaryMinigameState.cut) lapidaryMinigameState.cut = createCutGame(c);
   if(!sizeCutCanvas()) return;
   bindCutCanvas();
-  if(!(document.getElementById("lapidaryJoyX") || {})._joyBound) cutState().joy = { x: 0, y: 0 };
+  if(!(document.getElementById("lapidaryJoyPad") || {})._joyBound) cutState().joy = { x: 0, y: 0 };
   bindCutJoysticks();
   applyCutModeUI();
   if(!cutState().S) startCurrentCut();

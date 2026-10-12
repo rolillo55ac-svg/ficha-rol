@@ -9075,21 +9075,21 @@ textarea,
 .lapidary-cuts-stars .off { color: #4a3329; }
 .lapidary-cut-stage { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid var(--line); background: var(--bg-elev); }
 .lapidary-cut-stage canvas { display: block; width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-/* Joysticks del corte: izquierdo ↔, derecho ↕, debajo del lienzo */
-.lapidary-cut-joys { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.lapidary-cut-joys.is-dedo { justify-content: center; }
-.lapidary-cut-joys.is-dedo .lapidary-joy { display: none; }
-.lapidary-joy { position: relative; flex: 0 0 auto; width: 120px; height: 120px; border-radius: 50%; border: 1px solid var(--line); background: radial-gradient(circle, var(--bg-card) 0%, var(--bg-elev) 70%); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
-.lapidary-joy-track { position: absolute; left: 50%; top: 50%; border-radius: 999px; background: rgba(222,195,146,.16); border: 1px solid rgba(222,195,146,.28); }
-.lapidary-joy.is-x .lapidary-joy-track { width: 96px; height: 14px; margin: -7px 0 0 -48px; }
-.lapidary-joy.is-y .lapidary-joy-track { width: 14px; height: 96px; margin: -48px 0 0 -7px; }
-.lapidary-joy-knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 65%); box-shadow: 0 3px 10px rgba(0,0,0,.5); transition: transform .16s ease-out; pointer-events: none; }
-.lapidary-joy.is-held { cursor: grabbing; border-color: var(--gold); }
-.lapidary-joy.is-held .lapidary-joy-knob { transition: none; }
-.lapidary-joy-mode { flex: 0 1 auto; min-width: 44px; min-height: 44px; padding: 4px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-elev); color: var(--ink-faint); font-size: .72rem; line-height: 1.15; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+/* Joystick del corte: uno solo, flotante, en la zona de debajo del lienzo */
+.lapidary-cut-joys { position: relative; }
+.lapidary-cut-joys.is-dedo { display: flex; justify-content: center; }
+.lapidary-cut-joys.is-dedo .lapidary-joy-pad { display: none; }
+.lapidary-joy-pad { position: relative; height: 190px; border-radius: 20px; border: 1px dashed var(--line); background: rgba(255,255,255,.02); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.lapidary-joy { position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 50%; border: 1px solid var(--line); background: radial-gradient(circle, var(--bg-card) 0%, var(--bg-elev) 70%); opacity: .55; pointer-events: none; }
+.lapidary-joy-knob { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 65%); box-shadow: 0 3px 10px rgba(0,0,0,.5); transition: transform .16s ease-out; pointer-events: none; }
+.lapidary-joy-pad.is-held { cursor: grabbing; border-color: var(--gold); }
+.lapidary-joy-pad.is-held .lapidary-joy { opacity: 1; border-color: var(--gold); }
+.lapidary-joy-pad.is-held .lapidary-joy-knob { transition: none; }
+.lapidary-joy-tip { position: absolute; left: 12px; top: 10px; font-size: .8rem; color: var(--ink-faint); pointer-events: none; }
+.lapidary-joy-pad.is-held .lapidary-joy-tip { visibility: hidden; }
+.lapidary-joy-mode { position: absolute; top: 6px; right: 6px; z-index: 1; min-width: 44px; min-height: 44px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-elev); color: var(--ink-faint); font-size: .72rem; line-height: 1.15; display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .lapidary-joy-mode span { white-space: nowrap; }
-.lapidary-cut-joys.is-dedo .lapidary-joy-mode { flex-direction: row; gap: 6px; padding: 4px 14px; }
-@media (max-width: 340px) { .lapidary-joy { width: 104px; height: 104px; } }
+.lapidary-cut-joys.is-dedo .lapidary-joy-mode { position: static; padding: 4px 14px; }
 #lapidaryCutHint .bad { color: #F07A84; }
 .lapidary-polish-legend i.warn { background: #E8B85A; }
 .lapidary-polish-legend i.bad { background: #F07A84; }
