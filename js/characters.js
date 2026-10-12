@@ -852,42 +852,6 @@ async function pullAllFromSupabase(){
   }
 }
 
-function sendKeepalivePush(c){
-  if(!c || !c.name || c.id==="empty") return;
-  if(!canEditChar(c)) return;
-  try{
-    var n = (c.name||"").trim().toLowerCase();
-    var dbId = c.db_id;
-    if(!dbId){
-      if(n === "derek") dbId = "d9dee50e-051d-4058-b4a5-d46c809fbb25";
-      else if(n.includes("scarleth") || n.includes("winter")) dbId = "5e9c545e-176a-4e99-a3e7-299f89fa0779";
-      else if(n.includes("bucky") || n.includes("baky")) dbId = "4d8dd9b1-b5aa-430e-ae19-79c35b6c3c5e";
-      else if(n.includes("cherk")) dbId = "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3";
-      else if(n.includes("ink")) dbId = "ece1cdb6-f8c6-4010-b3e8-045887dc92a3";
-    }
-    var cleanData = JSON.parse(JSON.stringify(c));
-    delete cleanData._isDirty;
-    delete cleanData._lastLocalEdit;
-    delete cleanData._serverUpdatedAt;
-
-    var payload = { name: c.name, data: cleanData, updated_at: new Date().toISOString() };
-    if(dbId) payload.id = dbId;
-    
-    var url = SUPABASE_URL + "/rest/v1/characters";
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "apikey": SUPABASE_ANON,
-        "Authorization": "Bearer " + SUPABASE_ANON,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates"
-      },
-      body: JSON.stringify(payload),
-      keepalive: true
-    }).catch(function(){});
-  }catch(e){}
-}
-
 async function pushCharacterById(charId, forceOverwrite, explicitPatch){
   if(!supabaseClient) return;
   var c = (state.characters||[]).find(function(x){ return x.id === charId || x.db_id === charId; });

@@ -270,22 +270,13 @@ function init(){
         try { document.activeElement.blur(); } catch(e){}
       }
       flushPendingSync();
-      (state.characters || []).forEach(function(c){
-        if(c && c._isDirty && canEditChar(c)) sendKeepalivePush(c);
-      });
     });
     window.addEventListener("pagehide", function(){
       flushPendingSync();
-      (state.characters || []).forEach(function(c){
-        if(c && c._isDirty && canEditChar(c)) sendKeepalivePush(c);
-      });
     });
     document.addEventListener("visibilitychange", function(){
       if(document.visibilityState === "hidden"){
         flushPendingSync();
-        (state.characters || []).forEach(function(c){
-          if(c && c._isDirty && canEditChar(c)) sendKeepalivePush(c);
-        });
       } else if(document.visibilityState === "visible"){
         if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
         if(typeof navigator !== "undefined" && "serviceWorker" in navigator){
