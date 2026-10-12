@@ -1,7 +1,7 @@
 // ============================================================================
 // DIBUJOS DE MUEBLES DE LA CASA (vista cenital, estilo mapa de rol pintado)
 // drawHouseItemSVG(tipo, ancho, alto, opciones) devuelve un SVG que se rehace con el
-// tamaño (en casillas) en lugar de estirarse. Luz desde arriba a la izquierda.
+// tamaño (en casillas, admite medias casillas) en lugar de estirarse. Luz desde arriba a la izquierda.
 // opciones: { rotation, cellPx, ownerColor, simple, seed, label }
 // ============================================================================
 var HART_U = 40; // unidades SVG por casilla
@@ -806,10 +806,10 @@ HART_DRAW.barriles = function(L){
   // Un barril por casilla, con pequeños desplazamientos fijos
   var s = "";
   var n = Math.max(1, L.cw * L.ch);
-  var R = HART_U / 2 - 5;
+  var R = Math.min(L.w / L.cw, L.h / L.ch) / 2 - 5;
   for(var j = 0; j < L.ch; j++){
     for(var i = 0; i < L.cw; i++){
-      var cx = (i + 0.5) * HART_U + (L.rnd() - 0.5) * 3, cy = (j + 0.5) * HART_U + (L.rnd() - 0.5) * 3;
+      var cx = (i + 0.5) * L.w / L.cw + (L.rnd() - 0.5) * 3, cy = (j + 0.5) * L.h / L.ch + (L.rnd() - 0.5) * 3;
       s += hartRoundBlock(cx, cy, R, HART_WOOD);
       s += hartCircle(cx, cy, R - 1.6, "none", { stroke: HART.ironD, sw: 1.8 });
       s += hartCircle(cx, cy, R * 0.55, "none", { stroke: HART.woodD, sw: 0.8, op: 0.7 });
@@ -1000,8 +1000,8 @@ HART_DRAW.generico = function(L){
 // ---------------------------------------------------------------------------
 function drawHouseItemSVG(type, w, h, opts){
   opts = opts || {};
-  var cw = Math.max(1, Math.round(w || 1));
-  var ch = Math.max(1, Math.round(h || 1));
+  var cw = Math.max(0.5, Math.round((w || 1) * 2) / 2);
+  var ch = Math.max(0.5, Math.round((h || 1) * 2) / 2);
   var key = String(type || "").toLowerCase();
   var kind = getHouseArtKind(key);
   // La caja genérica lleva su nombre escrito: no se gira para que se pueda leer
@@ -1017,7 +1017,7 @@ function drawHouseItemSVG(type, w, h, opts){
     inner = hartDrawSimple(kind, Lw, Lh);
   } else {
     var L = {
-      w: Lw, h: Lh, cw: lcw, ch: lch, key: key,
+      w: Lw, h: Lh, cw: Math.max(1, Math.round(lcw)), ch: Math.max(1, Math.round(lch)), key: key,
       rnd: hartRng((opts.seed || key) + ":" + lcw + "x" + lch),
       owner: hartHexToRgb(opts.ownerColor) ? opts.ownerColor : null,
       label: opts.label || ""
