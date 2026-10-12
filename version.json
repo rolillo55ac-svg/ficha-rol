@@ -1,6 +1,6 @@
 {
-  "version": "1.4.19.0",
-  "build": "2026.10.13.12",
-  "updatedAt": "2026-10-13T13:00:00Z",
-  "changelog": "La Casa: los muebles tienen nombres cortos y normales (Cama, Baúl, Librería, Fogón...). Los muebles a los que se había puesto otro nombre no cambian."
+  "version": "1.4.20.0",
+  "build": "2026.10.13.13",
+  "updatedAt": "2026-10-13T14:00:00Z",
+  "changelog": "Piedras: los cortes se hacen con un solo joystick que aparece donde pones el pulgar, y la sierra tiende a seguir la línea. El modo dedo sigue disponible."
 }
