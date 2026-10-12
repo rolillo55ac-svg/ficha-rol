@@ -1,6 +1,6 @@
 {
-  "version": "1.4.18.0",
-  "build": "2026.10.13.11",
-  "updatedAt": "2026-10-13T12:00:00Z",
-  "changelog": "Lapidario: los cortes de las piedras se hacen con dos joysticks debajo de la piedra (izquierdo para los lados, derecho para arriba y abajo). Hay un botón para volver al modo dedo. En el PC, también con las flechas o WASD."
+  "version": "1.4.19.0",
+  "build": "2026.10.13.12",
+  "updatedAt": "2026-10-13T13:00:00Z",
+  "changelog": "La Casa: los muebles tienen nombres cortos y normales (Cama, Baúl, Librería, Fogón...). Los muebles a los que se había puesto otro nombre no cambian."
 }

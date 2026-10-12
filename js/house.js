@@ -162,7 +162,7 @@ function getSeedHouseData(){
         furniture: [
           {
             id: "fur_cherk_cama",
-            name: "Cama Individual",
+            name: "Cama",
             type: "cama",
             pos_x: 1, pos_y: 1, rotation: 0, w: 2, h: 2,
             items: []
@@ -203,7 +203,7 @@ function getSeedHouseData(){
         furniture: [
           {
             id: "fur_scarleth_cama",
-            name: "Cama Individual",
+            name: "Cama",
             type: "cama",
             pos_x: 4, pos_y: 1, rotation: 0, w: 2, h: 2,
             items: []
@@ -2351,80 +2351,80 @@ function getFurnitureIcon(type){
 // ============================================================================
 var CANVA_ASSET_LIBRARY = [
   // 1. PUERTAS Y ACCESOS
-  { id: "puerta_batiente", name: "Puerta Batiente con Arco", category: "puertas", icon: "🚪", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "puerta", desc: "Puerta clásica con arco de giro de 90° (blueprint)" },
-  { id: "arco_paso", name: "Arco de Paso Abierto", category: "puertas", icon: "⛩️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "arco", desc: "Vano libre de mampostería para comunicar estancias" },
-  { id: "puerta_doble", name: "Puerta Doble Señorial", category: "puertas", icon: "🚪🚪", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "puerta", desc: "Doble hoja batiente para grandes salones" },
-  { id: "ventana", name: "Ventana con Vano de Luz", category: "puertas", icon: "🪟", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 2, isDoor: true, defaultType: "ventana", desc: "Apertura exterior con marco de madera" },
-  { id: "escaleras_subir", name: "Escaleras (Subir Piso)", category: "puertas", icon: "🪜", defaultW: 2, defaultH: 4, minW: 2, minH: 2, maxW: 4, maxH: 6, isDoor: true, defaultType: "escaleras", desc: "Peldaños de madera que ascienden al piso superior" },
-  { id: "escaleras_bajar", name: "Escaleras (Bajar Piso)", category: "puertas", icon: "🪜", defaultW: 2, defaultH: 4, minW: 2, minH: 2, maxW: 4, maxH: 6, isDoor: true, defaultType: "escaleras", desc: "Peldaños que descienden a la planta inferior" },
-  { id: "entrada_porche", name: "Puerta Principal de Entrada", category: "puertas", icon: "🚪", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "puerta", desc: "Umbral exterior de madera noble y herrajes" },
+  { id: "puerta_batiente", name: "Puerta", oldName: "Puerta Batiente con Arco", category: "puertas", icon: "🚪", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "puerta", desc: "Puerta de una hoja" },
+  { id: "arco_paso", name: "Arco", oldName: "Arco de Paso Abierto", category: "puertas", icon: "⛩️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "arco", desc: "Paso abierto entre estancias" },
+  { id: "puerta_doble", name: "Puerta doble", oldName: "Puerta Doble Señorial", category: "puertas", icon: "🚪🚪", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "puerta", desc: "Puerta de dos hojas" },
+  { id: "ventana", name: "Ventana", oldName: "Ventana con Vano de Luz", category: "puertas", icon: "🪟", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 2, isDoor: true, defaultType: "ventana", desc: "Ventana con marco de madera" },
+  { id: "escaleras_subir", name: "Escalera de subida", oldName: "Escaleras (Subir Piso)", category: "puertas", icon: "🪜", defaultW: 2, defaultH: 4, minW: 2, minH: 2, maxW: 4, maxH: 6, isDoor: true, defaultType: "escaleras", desc: "Sube al piso de arriba" },
+  { id: "escaleras_bajar", name: "Escalera de bajada", oldName: "Escaleras (Bajar Piso)", category: "puertas", icon: "🪜", defaultW: 2, defaultH: 4, minW: 2, minH: 2, maxW: 4, maxH: 6, isDoor: true, defaultType: "escaleras", desc: "Baja al piso de abajo" },
+  { id: "entrada_porche", name: "Puerta principal", oldName: "Puerta Principal de Entrada", category: "puertas", icon: "🚪", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDoor: true, defaultType: "puerta", desc: "Entrada de la casa" },
 
   // 2. DESCANSO Y HABITACIÓN
-  { id: "cama_individual", name: "Cama Individual", category: "descanso", icon: "🛏️", defaultW: 2, defaultH: 4, minW: 2, minH: 4, maxW: 4, maxH: 6, isFurniture: true, defaultType: "cama", desc: "Cama de roble con sábana doblada y almohada" },
-  { id: "cama_matrimonio", name: "Cama de Matrimonio / Dosel", category: "descanso", icon: "🛌", defaultW: 4, defaultH: 4, minW: 4, minH: 4, maxW: 6, maxH: 6, isFurniture: true, defaultType: "cama", desc: "Cama noble espaciosa con almohadas dobles" },
-  { id: "sillon_lectura", name: "Sillón Orejero de Reposo", category: "descanso", icon: "🛋️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isFurniture: true, defaultType: "sillon", desc: "Sillón mullido tapizado para descanso" },
+  { id: "cama_individual", name: "Cama", oldName: "Cama Individual", category: "descanso", icon: "🛏️", defaultW: 2, defaultH: 4, minW: 2, minH: 4, maxW: 4, maxH: 6, isFurniture: true, defaultType: "cama", desc: "Cama de una plaza" },
+  { id: "cama_matrimonio", name: "Cama doble", oldName: "Cama de Matrimonio / Dosel", category: "descanso", icon: "🛌", defaultW: 4, defaultH: 4, minW: 4, minH: 4, maxW: 6, maxH: 6, isFurniture: true, defaultType: "cama", desc: "Cama de dos plazas" },
+  { id: "sillon_lectura", name: "Sillón", oldName: "Sillón Orejero de Reposo", category: "descanso", icon: "🛋️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isFurniture: true, defaultType: "sillon", desc: "Sillón tapizado" },
 
   // 3. MESAS Y ASIENTOS
-  { id: "mesa_comedor", name: "Mesa de Roble con 4 Sillas", category: "mesas", icon: "🪵", defaultW: 4, defaultH: 4, minW: 2, minH: 2, maxW: 8, maxH: 6, isFurniture: true, defaultType: "mesa", desc: "Mesa central para banquetes y reuniones" },
-  { id: "escritorio", name: "Escritorio de Estudio y Pergaminos", category: "mesas", icon: "📜", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "escritorio", desc: "Mesa de trabajo con tintero, pluma y silla" },
-  { id: "mesa_alquimia", name: "Mesa de Alquimia y Matraces", category: "mesas", icon: "🧪", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "mesa", desc: "Superficie de laboratorio con matraces y alambiques" },
+  { id: "mesa_comedor", name: "Mesa", oldName: "Mesa de Roble con 4 Sillas", category: "mesas", icon: "🪵", defaultW: 4, defaultH: 4, minW: 2, minH: 2, maxW: 8, maxH: 6, isFurniture: true, defaultType: "mesa", desc: "Mesa con cuatro sillas" },
+  { id: "escritorio", name: "Escritorio", oldName: "Escritorio de Estudio y Pergaminos", category: "mesas", icon: "📜", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "escritorio", desc: "Mesa de trabajo con silla" },
+  { id: "mesa_alquimia", name: "Mesa de alquimia", oldName: "Mesa de Alquimia y Matraces", category: "mesas", icon: "🧪", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "mesa", desc: "Mesa con matraces" },
 
   // 4. ALMACENAJE (CON INVENTARIO)
-  { id: "baul", name: "Baúl Reforzado de Viaje", category: "almacen", icon: "🧰", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 2, isFurniture: true, isStorage: true, defaultType: "baul", desc: "Cofre con herrajes metálicos para guardar pertenencias" },
-  { id: "alacena", name: "Alacena Despensa de Víveres", category: "almacen", icon: "🗄️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, isStorage: true, defaultType: "alacena", desc: "Mueble de dos hojas para provisiones e ingredientes" },
-  { id: "armero", name: "Armero de Guardia y Panoplia", category: "almacen", icon: "⚔️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 2, isFurniture: true, isStorage: true, defaultType: "armero", desc: "Soporte de armas, espadas y correajes" },
-  { id: "libreria", name: "Librería de Grimorios Sapientes", category: "almacen", icon: "📚", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 8, maxH: 2, isFurniture: true, isStorage: true, defaultType: "libreria", desc: "Estantes repletos de tomos vivientes y crónicas" },
+  { id: "baul", name: "Baúl", oldName: "Baúl Reforzado de Viaje", category: "almacen", icon: "🧰", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 2, isFurniture: true, isStorage: true, defaultType: "baul", desc: "Para guardar cosas" },
+  { id: "alacena", name: "Despensa", oldName: "Alacena Despensa de Víveres", category: "almacen", icon: "🗄️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, isStorage: true, defaultType: "alacena", desc: "Para guardar comida" },
+  { id: "armero", name: "Armero", oldName: "Armero de Guardia y Panoplia", category: "almacen", icon: "⚔️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 2, isFurniture: true, isStorage: true, defaultType: "armero", desc: "Para guardar armas" },
+  { id: "libreria", name: "Librería", oldName: "Librería de Grimorios Sapientes", category: "almacen", icon: "📚", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 8, maxH: 2, isFurniture: true, isStorage: true, defaultType: "libreria", desc: "Estantes con libros" },
 
   // 5. COCINA Y FUEGO
-  { id: "fogon_caldero", name: "Fogón con Caldero Errante", category: "cocina", icon: "🍳", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isFurniture: true, defaultType: "cocina", desc: "Hogar de cocción con caldero de hierro y fuego vivo" },
-  { id: "chimenea", name: "Chimenea de Piedra con Leña", category: "cocina", icon: "🔥", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "chimenea", desc: "Chimenea cálida con tiro de piedra y ascuas" },
-  { id: "banco_trabajo", name: "Banco de Trabajo y Forja", category: "cocina", icon: "🔨", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "banco", desc: "Mesa pesada con herramientas de artesanía" },
+  { id: "fogon_caldero", name: "Fogón", oldName: "Fogón con Caldero Errante", category: "cocina", icon: "🍳", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isFurniture: true, defaultType: "cocina", desc: "Fogón con caldero" },
+  { id: "chimenea", name: "Chimenea", oldName: "Chimenea de Piedra con Leña", category: "cocina", icon: "🔥", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "chimenea", desc: "Chimenea de piedra" },
+  { id: "banco_trabajo", name: "Banco de trabajo", oldName: "Banco de Trabajo y Forja", category: "cocina", icon: "🔨", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isFurniture: true, defaultType: "banco", desc: "Mesa con herramientas" },
 
   // 6. DECORACIÓN Y ALFOMBRAS
-  { id: "alfombra_persa", name: "Alfombra Persa Granate", category: "decoracion", icon: "🧶", defaultW: 4, defaultH: 4, minW: 2, minH: 2, maxW: 99, maxH: 99, isDecor: true, defaultType: "alfombra_persa", desc: "Tapete noble con cenefas doradas y flecos" },
-  { id: "alfombra_runica", name: "Alfombra Rúnica Celestial", category: "decoracion", icon: "🔮", defaultW: 4, defaultH: 4, minW: 2, minH: 2, maxW: 99, maxH: 99, isDecor: true, defaultType: "alfombra_runica", desc: "Círculo místico de invocación bordado" },
-  { id: "piel_oso", name: "Piel de Oso Nórdico", category: "decoracion", icon: "🐻", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "piel_oso", desc: "Alfombra rústica de pelo grueso" },
-  { id: "tapiz_pared", name: "Tapiz Bordado del Mapa", category: "decoracion", icon: "🖼️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 2, isDecor: true, defaultType: "cuadro", desc: "Tapiz heráldico con las tierras de Krysalis" },
-  { id: "trofeo_caza", name: "Trofeo de Cráneo de Bestia", category: "decoracion", icon: "💀", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "trofeo", desc: "Cráneo grabado con runas de victoria" },
-  { id: "diana_tiro", name: "Diana con Flechas", category: "decoracion", icon: "🎯", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "diana", desc: "Diana de paja y madera para entrenamiento" },
-  { id: "barriles_reserva", name: "Barriles de Hidromiel Enana", category: "decoracion", icon: "🍺", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "barriles", desc: "Lote de barriles de roble con espita" },
-  { id: "planta_maceta", name: "Planta Frondosa en Maceta", category: "decoracion", icon: "🌿", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDecor: true, defaultType: "planta", desc: "Follaje verde en maceta de barro cocido" },
-  { id: "setas_luminosas", name: "Setas Bioluminiscentes", category: "decoracion", icon: "🍄", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDecor: true, defaultType: "setas", desc: "Hongos fosforescentes de caverna" },
-  { id: "bonsai_mistico", name: "Bonsái Arcano Viviente", category: "decoracion", icon: "🪴", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "bonsai", desc: "Árbol miniatura imbuido de éter" },
-  { id: "estante_pociones", name: "Anaquel de Pociones y Viales", category: "decoracion", icon: "🧪", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 2, isDecor: true, defaultType: "pociones", desc: "Estante con reactivos y elixires brillantes" },
-  { id: "mesa_mapas", name: "Mesa Táctica de Cartografía", category: "decoracion", icon: "🗺️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "mapas", desc: "Mesa con planos, compás y catalejo" },
-  { id: "reliquia_arcana", name: "Pedestal de Gema Radiante", category: "decoracion", icon: "💎", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "reliquia", desc: "Columna de piedra con cristal que levita" },
-  { id: "telarana", name: "Telaraña Ancestral de Rincón", category: "decoracion", icon: "🕸️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "telarana", desc: "Sutil filamento de araña en esquina" },
+  { id: "alfombra_persa", name: "Alfombra", oldName: "Alfombra Persa Granate", category: "decoracion", icon: "🧶", defaultW: 4, defaultH: 4, minW: 2, minH: 2, maxW: 99, maxH: 99, isDecor: true, defaultType: "alfombra_persa", desc: "Alfombra con flecos" },
+  { id: "alfombra_runica", name: "Alfombra rúnica", oldName: "Alfombra Rúnica Celestial", category: "decoracion", icon: "🔮", defaultW: 4, defaultH: 4, minW: 2, minH: 2, maxW: 99, maxH: 99, isDecor: true, defaultType: "alfombra_runica", desc: "Alfombra con runas" },
+  { id: "piel_oso", name: "Piel de oso", oldName: "Piel de Oso Nórdico", category: "decoracion", icon: "🐻", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "piel_oso", desc: "Alfombra de piel" },
+  { id: "tapiz_pared", name: "Tapiz", oldName: "Tapiz Bordado del Mapa", category: "decoracion", icon: "🖼️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 2, isDecor: true, defaultType: "cuadro", desc: "Tapiz de pared" },
+  { id: "trofeo_caza", name: "Trofeo", oldName: "Trofeo de Cráneo de Bestia", category: "decoracion", icon: "💀", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "trofeo", desc: "Cráneo de pared" },
+  { id: "diana_tiro", name: "Diana", oldName: "Diana con Flechas", category: "decoracion", icon: "🎯", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "diana", desc: "Diana con flechas" },
+  { id: "barriles_reserva", name: "Barriles", oldName: "Barriles de Hidromiel Enana", category: "decoracion", icon: "🍺", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "barriles", desc: "Barriles de madera" },
+  { id: "planta_maceta", name: "Planta", oldName: "Planta Frondosa en Maceta", category: "decoracion", icon: "🌿", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDecor: true, defaultType: "planta", desc: "Planta en maceta" },
+  { id: "setas_luminosas", name: "Setas", oldName: "Setas Bioluminiscentes", category: "decoracion", icon: "🍄", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 4, maxH: 4, isDecor: true, defaultType: "setas", desc: "Setas que brillan" },
+  { id: "bonsai_mistico", name: "Bonsái", oldName: "Bonsái Arcano Viviente", category: "decoracion", icon: "🪴", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "bonsai", desc: "Árbol pequeño en maceta" },
+  { id: "estante_pociones", name: "Estante de pociones", oldName: "Anaquel de Pociones y Viales", category: "decoracion", icon: "🧪", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 2, isDecor: true, defaultType: "pociones", desc: "Estante con frascos" },
+  { id: "mesa_mapas", name: "Mesa de mapas", oldName: "Mesa Táctica de Cartografía", category: "decoracion", icon: "🗺️", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "mapas", desc: "Mesa con planos" },
+  { id: "reliquia_arcana", name: "Pedestal con gema", oldName: "Pedestal de Gema Radiante", category: "decoracion", icon: "💎", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "reliquia", desc: "Columna con un cristal" },
+  { id: "telarana", name: "Telaraña", oldName: "Telaraña Ancestral de Rincón", category: "decoracion", icon: "🕸️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "telarana", desc: "Telaraña de rincón" },
 
   // 7. ILUMINACIÓN
-  { id: "candelabro", name: "Candelabro Alto de Forja", category: "luces", icon: "🕯️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "candelabro", desc: "Lámpara de forja con 4 velas aromáticas" },
-  { id: "farol_pared", name: "Farol de Aceite de Pared", category: "luces", icon: "🏮", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "antorcha", desc: "Candil con cristal protector y luz tenue" },
-  { id: "brasero", name: "Brasero de Fuego Violeta", category: "luces", icon: "✨", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "brasero", desc: "Recipiente con ascuas mágicas de resplandor arcano" },
-  { id: "chimenea_decor", name: "Gran Chimenea de Piedra", category: "luces", icon: "🪵", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "chimenea", desc: "Hogar de leña con tiro de sillería y brasas" }
+  { id: "candelabro", name: "Candelabro", oldName: "Candelabro Alto de Forja", category: "luces", icon: "🕯️", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "candelabro", desc: "Candelabro de velas" },
+  { id: "farol_pared", name: "Farol", oldName: "Farol de Aceite de Pared", category: "luces", icon: "🏮", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "antorcha", desc: "Farol de pared" },
+  { id: "brasero", name: "Brasero", oldName: "Brasero de Fuego Violeta", category: "luces", icon: "✨", defaultW: 2, defaultH: 2, minW: 2, minH: 2, maxW: 2, maxH: 2, isDecor: true, defaultType: "brasero", desc: "Brasero con ascuas" },
+  { id: "chimenea_decor", name: "Chimenea grande", oldName: "Gran Chimenea de Piedra", category: "luces", icon: "🪵", defaultW: 4, defaultH: 2, minW: 2, minH: 2, maxW: 6, maxH: 4, isDecor: true, defaultType: "chimenea", desc: "Chimenea de piedra grande" }
 ];
 
 var HOUSE_DECOR_CATALOG = [
-  { type: "alfombra", icon: "🧶", label: "Alfombra tejida", defaultW: 4, defaultH: 4 },
+  { type: "alfombra", icon: "🧶", label: "Alfombra", defaultW: 4, defaultH: 4 },
   { type: "alfombra_persa", icon: "🧶", label: "Alfombra persa", defaultW: 4, defaultH: 4 },
-  { type: "alfombra_runica", icon: "🔮", label: "Alfombra arcana", defaultW: 4, defaultH: 4 },
+  { type: "alfombra_runica", icon: "🔮", label: "Alfombra rúnica", defaultW: 4, defaultH: 4 },
   { type: "piel_oso", icon: "🐻", label: "Piel de oso", defaultW: 4, defaultH: 2 },
-  { type: "planta", icon: "🌿", label: "Planta silvestre", defaultW: 2, defaultH: 2 },
-  { type: "setas", icon: "🍄", label: "Setas mágicas", defaultW: 2, defaultH: 2 },
-  { type: "bonsai", icon: "🪴", label: "Bonsái arcano", defaultW: 2, defaultH: 2 },
-  { type: "vela", icon: "🕯️", label: "Vela encantada", defaultW: 2, defaultH: 2 },
-  { type: "candelabro", icon: "🕯️", label: "Candelabro alto", defaultW: 2, defaultH: 2 },
-  { type: "antorcha", icon: "🔥", label: "Antorcha mural", defaultW: 2, defaultH: 2 },
-  { type: "brasero", icon: "✨", label: "Brasero místico", defaultW: 2, defaultH: 2 },
-  { type: "chimenea", icon: "🪵", label: "Chimenea piedra", defaultW: 4, defaultH: 2 },
-  { type: "cuadro", icon: "🖼️", label: "Tapiz del mapa", defaultW: 4, defaultH: 2 },
-  { type: "trofeo", icon: "💀", label: "Trofeo bestia", defaultW: 2, defaultH: 2 },
-  { type: "diana", icon: "🎯", label: "Diana flechas", defaultW: 2, defaultH: 2 },
-  { type: "barriles", icon: "🍺", label: "Barriles licor", defaultW: 4, defaultH: 2 },
-  { type: "pociones", icon: "🧪", label: "Anaquel pociones", defaultW: 4, defaultH: 2 },
-  { type: "mapas", icon: "🗺️", label: "Mesa táctica", defaultW: 4, defaultH: 2 },
-  { type: "reliquia", icon: "💎", label: "Gema rúnica", defaultW: 2, defaultH: 2 },
-  { type: "telarana", icon: "🕸️", label: "Telaraña rincón", defaultW: 2, defaultH: 2 },
-  { type: "cofre", icon: "📦", label: "Cofre decorativo", defaultW: 2, defaultH: 2 }
+  { type: "planta", icon: "🌿", label: "Planta", defaultW: 2, defaultH: 2 },
+  { type: "setas", icon: "🍄", label: "Setas", defaultW: 2, defaultH: 2 },
+  { type: "bonsai", icon: "🪴", label: "Bonsái", defaultW: 2, defaultH: 2 },
+  { type: "vela", icon: "🕯️", label: "Vela", defaultW: 2, defaultH: 2 },
+  { type: "candelabro", icon: "🕯️", label: "Candelabro", defaultW: 2, defaultH: 2 },
+  { type: "antorcha", icon: "🔥", label: "Antorcha", defaultW: 2, defaultH: 2 },
+  { type: "brasero", icon: "✨", label: "Brasero", defaultW: 2, defaultH: 2 },
+  { type: "chimenea", icon: "🪵", label: "Chimenea", defaultW: 4, defaultH: 2 },
+  { type: "cuadro", icon: "🖼️", label: "Tapiz", defaultW: 4, defaultH: 2 },
+  { type: "trofeo", icon: "💀", label: "Trofeo", defaultW: 2, defaultH: 2 },
+  { type: "diana", icon: "🎯", label: "Diana", defaultW: 2, defaultH: 2 },
+  { type: "barriles", icon: "🍺", label: "Barriles", defaultW: 4, defaultH: 2 },
+  { type: "pociones", icon: "🧪", label: "Estante de pociones", defaultW: 4, defaultH: 2 },
+  { type: "mapas", icon: "🗺️", label: "Mesa de mapas", defaultW: 4, defaultH: 2 },
+  { type: "reliquia", icon: "💎", label: "Pedestal con gema", defaultW: 2, defaultH: 2 },
+  { type: "telarana", icon: "🕸️", label: "Telaraña", defaultW: 2, defaultH: 2 },
+  { type: "cofre", icon: "📦", label: "Cofre", defaultW: 2, defaultH: 2 }
 ];
 
 // Dibujo del mueble como imagen para el plano (Konva). Se guarda en caché por tipo, tamaño y giro.
@@ -3245,7 +3245,7 @@ function findCanvaAssetForItem(item){
   if(!item) return null;
   var lib = CANVA_ASSET_LIBRARY;
   return (item.asset_id && lib.find(function(a){ return a.id === item.asset_id; }))
-    || lib.find(function(a){ return a.name === (item.name || item.label); })
+    || lib.find(function(a){ return a.name === (item.name || item.label) || a.oldName === (item.name || item.label); })
     || lib.find(function(a){ return a.defaultType === item.type; })
     || null;
 }
