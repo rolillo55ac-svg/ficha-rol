@@ -1,6 +1,6 @@
 {
-  "version": "1.4.23.0",
-  "build": "2026.10.13.16",
-  "updatedAt": "2026-10-13T17:00:00Z",
-  "changelog": "La Casa se maneja mejor con el dedo: todos los botones del plano, la barra de estancia, los menús de suelo, color, icono y planta, el detalle de la estancia y las ventanas miden al menos 44 px; los menús ya no se salen de la pantalla ni quedan debajo del dado, las mejoras ya no se salen por la derecha y los nombres largos del editor de muebles se ven en dos líneas."
+  "version": "1.4.25.0",
+  "build": "2026.10.13.19",
+  "updatedAt": "2026-10-13T20:10:00Z",
+  "changelog": "Se deshace el cambio de la 1.4.24.0 que agrandaba botones y cajas en toda la web: la interfaz del móvil vuelve a verse como en la 1.4.23.0."
 }
