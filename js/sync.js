@@ -220,6 +220,8 @@ function importData(file){
 }
 
 function checkWeeklyBackup(){
+  // Solo el máster con sesión: sin usuario isGM() es true y subiría el estado local de cualquiera
+  if(!currentUser || !isGM()) return;
   try{
     var lastBackupStr = localStorage.getItem("krysalis_last_weekly_backup");
     var now = Date.now();
