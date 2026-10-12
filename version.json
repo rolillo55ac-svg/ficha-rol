@@ -1,6 +1,6 @@
 {
-  "version": "1.4.27.0",
-  "build": "2026.10.13.21",
-  "updatedAt": "2026-10-13T21:30:00Z",
-  "changelog": "Alquimia renovada: en la lista se ve el nombre entero, etiquetas claras (Probado, Sin probar, Conocido) y las dosis; dentro de cada sustancia, un recuadro de Siguiente paso con su botón, las fases Muestra y Extraído y las ramas En enemigos y En Cherk (esta solo la ven Cherk y el máster). Los filtros se abren con un botón."
+  "version": "1.4.28.0",
+  "build": "2026.10.13.22",
+  "updatedAt": "2026-10-13T22:30:00Z",
+  "changelog": "Reloj de la partida: arriba, junto a tu personaje, se ve el día y la hora del juego (Día N, HH:00) y se actualiza en directo. Solo el máster puede cambiarlo (+1 h, +4 h, +1 día o ponerlo a mano) tocando el reloj."
 }
