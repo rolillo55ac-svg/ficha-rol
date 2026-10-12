@@ -264,6 +264,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .icon-btn:hover{border-color:var(--gold);color:var(--gold-light);box-shadow:0 0 0 3px rgba(176,141,87,0.15), 0 2px 8px rgba(0,0,0,0.5);}
 .icon-btn:active{transform:scale(.94);}
+@media (pointer:coarse){.icon-btn{width:44px;height:44px;}.char-switch{min-height:44px;}}
 
 /* GAUGES */
 .gauges{display:grid;grid-template-columns:1fr 110px 1fr;gap:8px;margin-top:8px;}
@@ -297,7 +298,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   .char-owner-topbar-tag{display:none;}
   .role-badge{font-size:0.52rem;padding:1px 5px;letter-spacing:0.02em;}
   .sync-status{font-size:0.52rem;padding:1px 4px;}
-  .icon-btn{width:32px;height:32px;font-size:0.95rem;}
+  .icon-btn{width:44px;height:44px;font-size:0.95rem;}
+  .char-switch{min-height:44px;}
 
   /* Medidores en una sola fila compacta de 3 columnas para no duplicar altura */
   .gauges{grid-template-columns:1.1fr 0.8fr 1fr;gap:4px;margin-top:5px;}
@@ -3370,7 +3372,7 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .modal::before{top:8px;left:8px;border-right:none;border-bottom:none;}
 .modal::after{bottom:8px;right:8px;border-left:none;border-top:none;}
 .modal h2{font-family:var(--font-display);color:var(--gold-light);font-size:1.12rem;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;text-shadow:0 1px 2px rgba(0,0,0,.6);}
-.modal h2 button{background:none;border:none;color:var(--ink-faint);font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;min-width:36px;min-height:36px;transition:all var(--transition-fast);}
+.modal h2 button{background:none;border:none;color:var(--ink-faint);font-size:1.4rem;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;min-width:44px;min-height:44px;transition:all var(--transition-fast);}
 .modal h2 button:hover{color:var(--danger);background:rgba(192,57,43,0.1);}
 
 @media (max-width: 480px) {
@@ -7102,6 +7104,7 @@ textarea,
   font-size: 0.66rem;
   font-weight: 700;
   cursor: pointer;
+  min-height: 44px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   transition: all var(--transition-fast);
 }
@@ -7578,6 +7581,31 @@ textarea,
   color: var(--gold-light);
   text-shadow: 0 0 8px rgba(253, 224, 71, 0.4);
 }
+@media (max-width: 400px) {
+  .lapidary-stat-chips {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .lapidary-stat-chip {
+    min-width: 0;
+  }
+}
+
+/* Pestaña Piedras: todo lo que se toca mide al menos 44 px */
+.lapidary-tier-select,
+.lapidary-btn-polish,
+.lapidary-btn-investigate,
+[data-action="open-add-stone-modal"],
+[data-action="confirm-add-rough-stone"],
+#addStoneModal input {
+  min-height: 44px;
+}
+[data-action="del-stone"] {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
 
 /* 3. Bandeja de Minerales en Bruto */
 .lapidary-rough-grid {
@@ -7886,6 +7914,9 @@ textarea,
   cursor: pointer;
   padding: 0 4px;
   line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  flex: none;
   transition: color var(--transition-fast);
 }
 .lapidary-close-btn:hover {
@@ -8810,7 +8841,7 @@ textarea,
   color: var(--ink-light);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  min-height: 40px;
+  min-height: 44px;
   touch-action: manipulation;
   user-select: none;
 }
@@ -8865,6 +8896,22 @@ textarea,
   }
   .lapidary-bench-top {
     flex-direction: column;
+  }
+  .lapidary-bench-top > * {
+    min-width: 0;
+  }
+  .lapidary-tool-card {
+    flex: none;
+    flex-wrap: wrap;
+  }
+  .lapidary-tool-info {
+    min-width: 0;
+  }
+  .lapidary-tier-select-wrap {
+    flex: 1 1 100%;
+  }
+  .lapidary-tier-select {
+    width: 100%;
   }
   .lapidary-score-breakdown-grid {
     grid-template-columns: 1fr;
