@@ -61,6 +61,7 @@ function renderTopbar(){
         '</span>'+
       '</button>'+
       '<div class="topbar-actions">'+
+        (typeof gameClockPillHtml === "function" ? gameClockPillHtml() : '')+
         '<span id="syncBadge" class="sync-status">'+(currentUser?'● Nube':'○ Local')+'</span>'+
         roleBadgeHtml+
         '<button class="' + feedbackBtnClass + '" data-action="open-feedback-modal" title="' + feedbackTitle + '" aria-label="Reportes">📬' + feedbackBadgeHtml + '</button>'+

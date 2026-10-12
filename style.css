@@ -9302,3 +9302,20 @@ button.alq-step { cursor: pointer; }
 .alq-pill { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink-dim); font-size: .88rem; cursor: pointer; }
 .alq-pill.active { border-color: var(--gold); color: var(--gold-light); background: #2c2017; }
 .alq-sheet .alq-btnrow { margin-top: 6px; }
+
+/* Reloj de la partida (cabecera + ventana) */
+.game-clock-pill { height: 38px; padding: 0 10px; border-radius: 19px; border: 1px solid var(--line); background: var(--bg-card); color: var(--gold-light); font-family: var(--font-mono); font-size: .68rem; white-space: nowrap; flex: none; cursor: pointer; display: flex; align-items: center; gap: 4px; -webkit-tap-highlight-color: transparent; }
+.game-clock-pill:active { transform: scale(.96); }
+@media (max-width: 600px) {
+  .game-clock-pill { height: 32px; padding: 0 7px; font-size: .58rem; gap: 2px; }
+}
+.game-clock-modal { max-width: 420px; }
+.game-clock-now { font-family: var(--font-display); font-size: 1.6rem; color: var(--gold-light); text-align: center; margin: 6px 0 14px; }
+.game-clock-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+.game-clock-btn { min-height: 44px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg-card); color: var(--ink); font-size: .9rem; cursor: pointer; }
+.game-clock-btn.primary { border-color: var(--gold); color: var(--gold-light); }
+.game-clock-btn:disabled { opacity: .5; }
+.game-clock-set { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 6px 8px; align-items: center; }
+.game-clock-set .game-clock-btn { grid-column: 1 / -1; }
+.game-clock-input { min-height: 44px; font-size: 16px; min-width: 0; width: 100%; }
+.game-clock-note { color: var(--ink-faint); text-align: center; }
