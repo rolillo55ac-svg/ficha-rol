@@ -1,6 +1,6 @@
 {
-  "version": "1.4.28.0",
-  "build": "2026.10.13.22",
-  "updatedAt": "2026-10-13T22:30:00Z",
-  "changelog": "Reloj de la partida: arriba, junto a tu personaje, se ve el día y la hora del juego (Día N, HH:00) y se actualiza en directo. Solo el máster puede cambiarlo (+1 h, +4 h, +1 día o ponerlo a mano) tocando el reloj."
+  "version": "1.4.29.0",
+  "build": "2026.10.13.23",
+  "updatedAt": "2026-10-13T23:30:00Z",
+  "changelog": "Alquimia: destilar ahora lleva tiempo de juego según la rareza (Común 2 h, Rara 4 h, Muy rara 8 h, Legendaria 24 h). Mientras destila se ve a qué hora estará lista y una barra; al llegar la hora, \"Guardar dosis (+1)\". El máster puede pulsar \"Terminar ya\" y cambiar las horas por rareza."
 }
