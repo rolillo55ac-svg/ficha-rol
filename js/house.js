@@ -1838,7 +1838,8 @@ function openHousePresetModal(){
   document.body.appendChild(modal);
 }
 
-function saveRoomChangesToRemoteAndBroadcast(room, fieldName){
+// keepItemsCopy: guarda tal cual la copia de objetos que llevan los muebles (la de la importación)
+function saveRoomChangesToRemoteAndBroadcast(room, fieldName, keepItemsCopy){
   if(!room) return;
 
   // 1. Persistencia local inmediata en este dispositivo
@@ -1887,7 +1888,7 @@ function saveRoomChangesToRemoteAndBroadcast(room, fieldName){
       width: Math.max(1, room.width || 2),
       height: Math.max(1, room.height || 2),
       floor: room.floor || 1,
-      furniture: stripFurnitureItems(room.furniture),
+      furniture: keepItemsCopy ? (room.furniture || []) : stripFurnitureItems(room.furniture),
       decor: Array.isArray(room.decor) ? room.decor : [],
       color: room.color || null,
       updated_at: new Date().toISOString()
@@ -3348,7 +3349,7 @@ function normalizeAllRoomLayouts(){
   if(!converted.length) return;
   if(!houseState.remote){ saveHouseLocalData(); return; }
   if(typeof isGM === "function" && isGM()){
-    converted.forEach(function(r){ saveRoomChangesToRemoteAndBroadcast(r, "furniture"); });
+    converted.forEach(function(r){ saveRoomChangesToRemoteAndBroadcast(r, "furniture", true); });
   }
 }
 
