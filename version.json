@@ -1,6 +1,6 @@
 {
-  "version": "1.4.15.0",
-  "build": "2026.10.13.08",
-  "updatedAt": "2026-10-13T09:00:00Z",
-  "changelog": "Piedras: el tutorial de la geoda ya no vuelve a salir después de cada actualización de la web."
+  "version": "1.4.16.0",
+  "build": "2026.10.13.09",
+  "updatedAt": "2026-10-13T10:00:00Z",
+  "changelog": "La Casa: si un cambio no se guarda en la nube, ahora sale un aviso y el editor marca \"Sin guardar\"."
 }
