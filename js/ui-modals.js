@@ -503,15 +503,17 @@ function modalClick(e){
     var charName = targetChar ? targetChar.name : "este personaje";
     if(confirm("¿Eliminar definitivamente a \"" + charName + "\"?")){
       var dbId = targetChar ? (targetChar.db_id || targetChar.id) : targetId;
-      if(supabaseClient){
-        if(dbId){
-          supabaseClient.from('characters').delete().eq('id', dbId).then(function(res){
-            if(res.error) console.error("Error al borrar en Supabase:", res.error);
-          }).catch(function(e){ console.error("Error al borrar en Supabase:", e); });
-        }
-        if(targetChar && targetChar.name){
-          supabaseClient.from('characters').delete().eq('name', targetChar.name).catch(function(){});
-        }
+      // Solo se borra en la nube por id: borrar por nombre se llevaba otras fichas con el mismo nombre
+      var remoteId = targetChar ? targetChar.db_id : targetId;
+      if(supabaseClient && remoteId){
+        var deleteFailed = function(e){
+          console.error("Error al borrar en Supabase:", e);
+          showToast("\"" + charName + "\" no se ha borrado en la nube: volverá a aparecer al recargar.", "error");
+        };
+        supabaseClient.from('characters').delete().eq('id', remoteId).select('id').then(function(res){
+          if(res.error) deleteFailed(res.error);
+          else if(!res.data || !res.data.length) deleteFailed("sin permiso o no encontrado");
+        }).catch(deleteFailed);
       }
       dirtyCharIds.delete(targetId);
       if(dbId) dirtyCharIds.delete(dbId);
