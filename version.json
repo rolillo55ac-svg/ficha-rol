@@ -1,6 +1,6 @@
 {
-  "version": "1.4.10.0",
-  "build": "2026.10.13.03",
-  "updatedAt": "2026-10-13T04:00:00Z",
-  "changelog": "La Casa: dibujos de muebles nuevos, vistos desde arriba, que se rehacen al cambiar el tamaño (más almohadas, sillas o libros) sin deformarse. Se ven en el editor, el catálogo, la miniatura y el plano."
+  "version": "1.4.11.0",
+  "build": "2026.10.13.04",
+  "updatedAt": "2026-10-13T05:00:00Z",
+  "changelog": "La Casa: rejilla más fina en el editor de muebles (cada casilla del plano se divide en 2×2), para colocar los muebles con más precisión también en estancias pequeñas. Los muebles que ya había se pasan solos a la rejilla nueva."
 }
