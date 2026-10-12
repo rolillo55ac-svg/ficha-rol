@@ -1613,7 +1613,7 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
   var rarity = p.rarity || (cat ? cat.rarity : 'Común');
   var rClass = 'alq-r-' + rarity.toLowerCase().replace(/\s+/g, '');
   var terrain = (cat ? cat.terrain : (p.terrain || 'Bosque'));
-  var rawMat = (cat ? cat.rawMaterial : (p.rawMaterial || 'Materia prima'));
+  var rawMat = (cat ? cat.rawMaterial : (p.rawMaterial || ''));
   var loreTitle = cat ? cat.loreRefTitle : null;
   var eIdx = getAlchemyStageIndex(p.progEnemigo);
   var cIdx = getAlchemyStageIndex(p.progCherk);
@@ -1640,7 +1640,7 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
     '</div>' +
     tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx, dosis) +
     '<div class="alq-path">' +
-      tplAlquimiaStep(p, 1, base, "identificado", "Muestra", "Materia prima: " + rawMat + ".", canEdit) +
+      tplAlquimiaStep(p, 1, base, "identificado", "Muestra", rawMat ? "Materia prima: " + rawMat + "." : "Materia prima recogida.", canEdit) +
       tplAlquimiaStep(p, 2, base, "extraido", "Extraído", "Destilada en un frasco.", canEdit) +
     '</div>' +
     '<div class="alq-split">' +
@@ -1696,10 +1696,10 @@ function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx
   var distill = '<button type="button" class="alq-btn gold" data-action="alchemy-craft-single" data-id="' + p.id + '">⚗️ Destilar (+1 dosis)</button>' +
     '<button type="button" class="alq-btn" data-action="alchemy-roll-herbalism" data-id="' + p.id + '" data-cd="' + cd + '">🎲 Herboristería (CD ' + cd + ')</button>';
   if(base < 1){
-    txt = 'Aún no tenéis la muestra (' + esc(rawMat) + '). Cuando la recojáis, márcala.';
+    txt = 'Aún no tenéis la muestra' + (rawMat ? ' (' + esc(rawMat) + ')' : '') + '. Cuando la recojáis, márcala.';
     btns = '<button type="button" class="alq-btn gold" data-action="alchemy-set-base" data-id="' + p.id + '" data-stage="identificado">🌿 Ya tengo la muestra</button>';
   } else if(base < 2){
-    txt = 'Tienes la <b>muestra</b> (' + esc(rawMat) + '). Destílala para poder usarla.';
+    txt = 'Tienes la <b>muestra</b>' + (rawMat ? ' (' + esc(rawMat) + ')' : '') + '. Destílala para poder usarla.';
     btns = distill;
   } else if(dosis < 1){
     txt = 'No te quedan dosis. Destila otra.';
