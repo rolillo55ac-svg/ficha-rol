@@ -1744,7 +1744,7 @@ function defaultCutHint(){
   var CG = cutState(), S = CG.S, cut = LAPIDARY_CUTS[CG.idx];
   if(S.done){
     return S.failed ? '<span class="bad">El corte se ha agrietado.</span> Puedes repetirlo o seguir.' :
-      "Corte terminado: <b>" + cutStarsHTML(cutStarsFor(CG.results[CG.idx])) + "</b>. Puedes repetirlo o seguir.";
+      "Corte terminado: <b class=\"lapidary-cuts-stars\">" + cutStarsHTML(cutStarsFor(CG.results[CG.idx])) + "</b>. Puedes repetirlo o seguir.";
   }
   if(!S.started) return cut.hint + " <b>Pon el dedo en la sierra</b> y arrastra. En los tramos <b>◆</b> ve despacio, pero sin pararte.";
   if(!S.active) return "Pausa. Vuelve a poner el dedo sobre la sierra para seguir.";
@@ -2461,9 +2461,10 @@ function handleLapidaryCutTrigger(){
    ========================================================================== */
 
 function computeArtisanMasteryAndRisk(c){
-  var p1 = lapidaryMinigameState.phase1Score || 70;
-  var p2 = lapidaryMinigameState.phase2Score || 70;
-  var p3 = lapidaryMinigameState.phase3Score || 60;
+  // Una nota de 0 también cuenta: solo se usa el valor por defecto si el paso no tiene nota
+  var p1 = lapidaryMinigameState.phase1Score != null ? lapidaryMinigameState.phase1Score : 70;
+  var p2 = lapidaryMinigameState.phase2Score != null ? lapidaryMinigameState.phase2Score : 70;
+  var p3 = lapidaryMinigameState.phase3Score != null ? lapidaryMinigameState.phase3Score : 60;
 
   var total = Math.round((p1 * 0.35) + (p2 * 0.35) + (p3 * 0.30));
   lapidaryMinigameState.totalArtisanScore = total;
