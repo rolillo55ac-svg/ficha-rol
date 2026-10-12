@@ -3884,6 +3884,50 @@ body:has(#canvaStudio) .fab-dice {
   text-overflow: ellipsis;
 }
 
+.cs-rename-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px dashed var(--line-strong);
+  background: none;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cs-rename-btn > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-pen {
+  flex: none;
+  color: var(--gold-light);
+  font-weight: 400;
+}
+
+.cs-rename-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--gold-light);
+  background: var(--bg-card);
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.cs-icon-btn.is-ok {
+  color: var(--bg-card);
+  background: var(--gold-light);
+}
+
 .cs-dock-size {
   font-size: 0.78rem;
   color: var(--ink-faint);
