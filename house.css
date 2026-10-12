@@ -3570,6 +3570,10 @@ body:has(#canvaStudio) .fab-dice {
   color: var(--ink-faint);
 }
 
+.cs-save.is-error {
+  color: #E07A6A;
+}
+
 .cs-rotv {
   min-height: 44px;
   padding: 0 12px;
