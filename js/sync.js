@@ -169,6 +169,16 @@ function updateSyncBadge(st){
   else { el.className="sync-status"; el.textContent="○ Local"; }
 }
 
+// Guardado compartido (mapas, compendio) rechazado por la nube: que no parezca guardado
+var lastCloudSaveFailToast = 0;
+function notifyCloudSaveFailed(){
+  updateSyncBadge("local");
+  if(currentUser && !isGM()) return;
+  if(Date.now() - lastCloudSaveFailToast < 5000) return;
+  lastCloudSaveFailToast = Date.now();
+  showToast("No se ha podido guardar en la nube. Revisa la conexión y vuelve a intentarlo.", "error");
+}
+
 
 function exportFullBackup(){
   var dateStr = new Date().toISOString().slice(0, 10);

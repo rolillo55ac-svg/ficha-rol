@@ -294,6 +294,15 @@ async function deleteSingleMarker(markerId, mapId){
   }
 }
 
+// Los jugadores no pueden guardar mapas en la nube (RLS de campaign_map): avisar en vez de dar por guardado
+function pinChangeToast(msg, type){
+  if(currentUser && !isGM()){
+    showToast(msg + " solo en este dispositivo: solo el máster puede guardarlo para todos", "warning");
+    return;
+  }
+  showToast(msg, type);
+}
+
 function pinModalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
@@ -398,7 +407,7 @@ function pinModalClick(e){
       pushSharedData({ questMap: state.questMap });
       closeModals();
       renderTab();
-      showToast("Marcador guardado en el mapa de misión", "success");
+      pinChangeToast("Marcador guardado en el mapa de misión", "success");
       return;
     }
 
@@ -422,7 +431,7 @@ function pinModalClick(e){
         pushSharedData({ quests: state.quests });
         closeModals();
         renderTab();
-        showToast("Marcador guardado en la misión", "success");
+        pinChangeToast("Marcador guardado en la misión", "success");
       }
       return;
     }
@@ -447,7 +456,7 @@ function pinModalClick(e){
       saveState(true);
       closeModals();
       renderTab();
-      showToast("Marcador guardado", "success");
+      pinChangeToast("Marcador guardado", "success");
       pushSingleMarker(pData, curM.id);
       pushMapsData(true);
       return;
@@ -465,7 +474,7 @@ function pinModalClick(e){
       pushSharedData({ questMap: state.questMap });
       closeModals();
       renderTab();
-      showToast("Marcador eliminado del mapa de misión", "info");
+      pinChangeToast("Marcador eliminado del mapa de misión", "info");
       return;
     }
 
@@ -477,7 +486,7 @@ function pinModalClick(e){
         pushSharedData({ quests: state.quests });
         closeModals();
         renderTab();
-        showToast("Marcador eliminado de la misión", "info");
+        pinChangeToast("Marcador eliminado de la misión", "info");
       }
       return;
     }
@@ -488,7 +497,7 @@ function pinModalClick(e){
       saveState(true);
       closeModals();
       renderTab();
-      showToast("Marcador eliminado", "info");
+      pinChangeToast("Marcador eliminado", "info");
       deleteSingleMarker(delPid, curMD.id);
       pushMapsData(true);
       return;
