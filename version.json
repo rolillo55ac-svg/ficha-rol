@@ -1,6 +1,6 @@
 {
-  "version": "1.4.16.0",
-  "build": "2026.10.13.09",
-  "updatedAt": "2026-10-13T10:00:00Z",
-  "changelog": "La Casa: si un cambio no se guarda en la nube, ahora sale un aviso y el editor marca \"Sin guardar\"."
+  "version": "1.4.17.0",
+  "build": "2026.10.13.10",
+  "updatedAt": "2026-10-13T11:00:00Z",
+  "changelog": "Personajes: al borrar una ficha se quita de la lista al momento, solo se borra esa ficha en la nube y, si la nube no la borra, sale un aviso."
 }
