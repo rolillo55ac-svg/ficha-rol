@@ -1,6 +1,6 @@
 {
-  "version": "1.4.29.0",
-  "build": "2026.10.13.23",
-  "updatedAt": "2026-10-13T23:30:00Z",
-  "changelog": "Alquimia: destilar ahora lleva tiempo de juego según la rareza (Común 2 h, Rara 4 h, Muy rara 8 h, Legendaria 24 h). Mientras destila se ve a qué hora estará lista y una barra; al llegar la hora, \"Guardar dosis (+1)\". El máster puede pulsar \"Terminar ya\" y cambiar las horas por rareza."
+  "version": "1.4.30.0",
+  "build": "2026.10.14.01",
+  "updatedAt": "2026-10-14T01:00:00Z",
+  "changelog": "Alquimia: las notas secretas del catálogo (qué hace de verdad cada sustancia en enemigos y en Cherk) ya no van dentro de la web: están guardadas en la nube y solo las ve el máster."
 }
