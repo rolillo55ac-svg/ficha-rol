@@ -3679,6 +3679,43 @@ function canvaInsertAsset(roomId, assetId){
   canvaShowToast(asset.name + " colocado. Arrástralo a su sitio.", true);
 }
 
+// Nombre propio del mueble (máx. 30 letras); vacío = el nombre del catálogo
+var CANVA_NAME_MAX = 30;
+function canvaRenameItem(roomId, itemId, text){
+  var room = canvaRoom(roomId);
+  houseState.studioRenameId = null;
+  if(!canvaIsEditing(room)){ refreshCanvaStudio(); return; }
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found){ refreshCanvaStudio(); return; }
+  var it = found.item;
+  var key = (it.name || found.field === "furniture") ? "name" : "label";
+  var asset = findCanvaAssetForItem(it);
+  var name = String(text || "").replace(/\s+/g, " ").trim().slice(0, CANVA_NAME_MAX).trim();
+  if(!name) name = asset ? asset.name : (it[key] || "");
+  if(!name || name === it[key]){ refreshCanvaStudio(); return; }
+
+  var before = canvaSnapshot(room);
+  // Los muebles antiguos se reconocían por el nombre: se apunta su tipo para no perder el dibujo ni el baúl
+  if(asset && !it.asset_id) it.asset_id = asset.id;
+  it[key] = name;
+  canvaCommit(room, before);
+  canvaShowToast("Ahora se llama " + name + ".", true);
+}
+
+// Intro guarda el nombre y Escape lo deja como estaba
+document.addEventListener("keydown", function(e){
+  var t = e.target;
+  if(!t || t.id !== "canvaRenameInput") return;
+  if(e.key === "Enter"){
+    e.preventDefault();
+    canvaRenameItem(t.getAttribute("data-room-id"), t.getAttribute("data-item-id"), t.value);
+  } else if(e.key === "Escape"){
+    e.preventDefault();
+    houseState.studioRenameId = null;
+    refreshCanvaStudio();
+  }
+});
+
 function canvaRotateItem(roomId, itemId){
   var room = canvaRoom(roomId);
   if(!room) return;
@@ -4007,11 +4044,22 @@ function renderCanvaStudioDock(r, editing, canEdit, sel, grid, rot, total){
     var n = canvaItemCount(it);
     var attrs = ' data-room-id="' + rid + '" data-item-id="' + iid + '"';
 
-    html += '<div class="cs-dock-head">';
-    html += '  <span class="cs-dock-name">' + esc(canvaItemName(it)) + '</span>';
-    html += '  <span class="cs-dock-size">' + vs.w + '×' + vs.h + ' casillas</span>';
-    html += '  <button type="button" class="cs-icon-btn" data-action="canva-deselect-item" aria-label="Quitar selección" title="Quitar selección">✕</button>';
-    html += '</div>';
+    if(houseState.studioRenameId === it.id){
+      var asset = findCanvaAssetForItem(it);
+      html += '<div class="cs-dock-head cs-rename">';
+      html += '  <input type="text" id="canvaRenameInput" class="cs-rename-input" maxlength="' + CANVA_NAME_MAX + '" value="' + esc(canvaItemName(it)) + '"' +
+        (asset ? ' placeholder="' + esc(asset.name) + '"' : '') + ' aria-label="Nuevo nombre"' + attrs + ' autocomplete="off" enterkeyhint="done">';
+      html += '  <button type="button" class="cs-icon-btn is-ok" data-action="canva-rename-save"' + attrs + ' aria-label="Guardar nombre" title="Guardar nombre">✓</button>';
+      html += '  <button type="button" class="cs-icon-btn" data-action="canva-rename-cancel" aria-label="Cancelar" title="Cancelar">✕</button>';
+      html += '</div>';
+      html += '<div class="cs-tip">Máximo ' + CANVA_NAME_MAX + ' letras.' + (asset ? ' Si lo dejas vacío vuelve a llamarse ' + esc(asset.name) + '.' : '') + '</div>';
+    } else {
+      html += '<div class="cs-dock-head">';
+      html += '  <button type="button" class="cs-dock-name cs-rename-btn" data-action="canva-rename-start"' + attrs + ' aria-label="Renombrar ' + esc(canvaItemName(it)) + '" title="Renombrar"><span>' + esc(canvaItemName(it)) + '</span><span class="cs-pen" aria-hidden="true">✎</span></button>';
+      html += '  <span class="cs-dock-size">' + vs.w + '×' + vs.h + ' casillas</span>';
+      html += '  <button type="button" class="cs-icon-btn" data-action="canva-deselect-item" aria-label="Quitar selección" title="Quitar selección">✕</button>';
+      html += '</div>';
+    }
 
     html += '<div class="cs-acts">';
     html += '  <button type="button" class="cs-act" data-action="canva-rotate-item"' + attrs + '><span class="g">⟳</span>Girar</button>';
@@ -6012,7 +6060,7 @@ function backFromHouseView(){
 var HOUSE_GM_ONLY_ACTIONS = ["quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit"];
 var HOUSE_ROOM_EDIT_ACTIONS = ["quick-rename-selected-room", "quick-step-room-size", "quick-toggle-texture-menu", "quick-toggle-color-menu", "quick-toggle-icon-menu", "nudge-room", "resize-room", "set-room-color", "open-edit-room-modal",
   "canva-insert-asset", "canva-rotate-item", "canva-duplicate-item", "canva-delete-item", "canva-change-w", "canva-change-h", "canva-nudge-item",
-  "canva-size-view", "canva-nudge-view", "canva-relocate-item", "canva-undo", "canva-redo", "canva-open-catalog"];
+  "canva-size-view", "canva-nudge-view", "canva-relocate-item", "canva-undo", "canva-redo", "canva-open-catalog", "canva-rename-start", "canva-rename-save"];
 
 // ============================================================================
 // 11. GESTOR DE EVENTOS DELEGADOS PARA LA CASA
@@ -6329,6 +6377,21 @@ document.addEventListener("click", function(e){
   } else if(act === "canva-deselect-item"){
     e.stopPropagation();
     houseState.selectedItemId = null;
+    houseState.studioRenameId = null;
+    refreshCanvaStudio();
+  } else if(act === "canva-rename-start"){
+    e.stopPropagation();
+    houseState.studioRenameId = btn.getAttribute("data-item-id") || houseState.selectedItemId;
+    refreshCanvaStudio();
+    var renIn = document.getElementById("canvaRenameInput");
+    if(renIn){ renIn.focus(); renIn.select(); }
+  } else if(act === "canva-rename-save"){
+    e.stopPropagation();
+    var renSave = document.getElementById("canvaRenameInput");
+    canvaRenameItem(btn.getAttribute("data-room-id") || houseState.studioRoomId, btn.getAttribute("data-item-id") || houseState.selectedItemId, renSave ? renSave.value : "");
+  } else if(act === "canva-rename-cancel"){
+    e.stopPropagation();
+    houseState.studioRenameId = null;
     refreshCanvaStudio();
   } else if(act === "canva-undo" || act === "canva-redo"){
     canvaHideToast();
