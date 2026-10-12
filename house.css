@@ -3498,7 +3498,8 @@ body:has(#canvaStudio) .fab-dice {
 }
 
 .cs-studio {
-  max-width: 760px;
+  max-width: min(760px, 100%);
+  min-width: 0;
   margin: 0 auto;
   gap: 12px;
   scroll-margin-top: 8px;
@@ -3617,6 +3618,8 @@ body:has(#canvaStudio) .fab-dice {
   display: flex;
   justify-content: center;
   width: 100%;
+  /* Sin esto, el ancho se mide sobre una caja que ya se ha estirado y la estancia se sale por la derecha */
+  min-width: 0;
 }
 
 .cs-wall {
