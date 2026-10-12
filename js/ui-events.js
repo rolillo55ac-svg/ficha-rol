@@ -1776,13 +1776,131 @@ function handleClick(e){
     var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
     if(pItem && num(pItem.dosis, 0) > 0){
       pItem.dosis = num(pItem.dosis, 0) - 1;
-      if(getAlchemyStageIndex(pItem.progCherk) < 3) pItem.progCherk = "probado";
+      // Sin la rama de Cherk (pociones y ungüentos de otras fichas) cuenta en la única que se ve
+      var drinkAxis = alchemyShowsCherk(c) ? "progCherk" : "progEnemigo";
+      if(getAlchemyStageIndex(pItem[drinkAxis]) < 3) pItem[drinkAxis] = "probado";
       markCharDirty(c.id, "poisons");
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
       showToast("🛡️ " + c.name + " se toma '" + pItem.name + "'. Anota qué notó.", "success");
     }
+    return;
+  }
+  if(action==="alchemy-open-prepare"){
+    if(!c || !canEditChar(c)) return;
+    alchemyPrepareId = btn.getAttribute("data-id");
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-close-prepare"){
+    if(btn.classList.contains("alq-sheet-bg") && e.target !== btn) return;
+    alchemyPrepareId = null;
+    renderTab();
+    return;
+  }
+  if(action==="alchemy-prepare-weapon" || action==="alchemy-prepare-ammo"){
+    if(!c || !canEditChar(c)) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(!pItem || num(pItem.dosis, 0) < 1){ alchemyPrepareId = null; renderTab(); return; }
+    var uses = poisonUsesPerDose(pItem);
+    var patch = {};
+    var msg = "";
+    if(action==="alchemy-prepare-weapon"){
+      var wpn = (c.weapons||[]).find(function(w){ return w.id === btn.getAttribute("data-wid"); });
+      if(!wpn) return;
+      if(!Array.isArray(wpn.venenos)) wpn.venenos = [];
+      var vEntry = wpn.venenos.find(function(v){ return v.poisonId === pItem.id; });
+      if(vEntry) vEntry.cargas = Math.max(0, num(vEntry.cargas, 0)) + uses;
+      else wpn.venenos.push({ poisonId: pItem.id, name: pItem.name, cargas: uses });
+      patch.weapons = c.weapons;
+      msg = "⚔️ " + wpn.name + " impregnada con '" + pItem.name + "': +" + uses + " cargas.";
+    } else {
+      var srcId = btn.getAttribute("data-src");
+      var src = srcId ? (c.inventory||[]).find(function(it){ return it.id === srcId; }) : null;
+      var made = src ? Math.min(uses, num(src.qty, 0)) : uses;
+      if(made < 1) return;
+      if(src) src.qty = num(src.qty, 0) - made;
+      var ammoName = poisonAmmoBaseName(src ? src.name : "Dardos") + " con " + pItem.name;
+      var ammo = (c.inventory||[]).find(function(it){ return it.poisonId === pItem.id && it.name === ammoName; });
+      if(ammo) ammo.qty = Math.max(0, num(ammo.qty, 0)) + made;
+      else {
+        c.inventory = c.inventory || [];
+        c.inventory.push({ id: uid(), name: ammoName, qty: made, category: (src && src.category) || "Armas", poisonId: pItem.id, poisonName: pItem.name });
+      }
+      patch.inventory = c.inventory;
+      msg = "🏹 " + made + " × " + ammoName + " en el inventario.";
+    }
+    pItem.dosis = num(pItem.dosis, 0) - 1;
+    patch.poisons = c.poisons;
+    alchemyPrepareId = null;
+    markCharDirty(c.id, patch);
+    saveState(false);
+    if(typeof pushCharacterPatch === 'function') pushCharacterPatch(c.id, patch);
+    renderTab();
+    showToast(msg, "success");
+    return;
+  }
+  if(action==="alchemy-mod-uses"){
+    if(!c || !isGM()) return;
+    var psId = btn.getAttribute("data-id");
+    var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
+    if(pItem){
+      pItem.usosPorDosis = Math.max(1, Math.min(20, poisonUsesPerDose(pItem) + parseInt(btn.getAttribute("data-delta")||"0", 10)));
+      markCharDirty(c.id, "poisons");
+      saveState(false);
+      manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
+      renderTab();
+    }
+    return;
+  }
+  if(action==="poison-spend" || action==="poison-undo" || action==="poison-clear"){
+    if(!c || !canEditChar(c)) return;
+    if(action==="poison-undo" && !isGM()) return;
+    var kind = btn.getAttribute("data-kind");
+    var tId = btn.getAttribute("data-id");
+    var psId = btn.getAttribute("data-poison");
+    var delta = action==="poison-spend" ? -1 : 1;
+    var patch = {};
+    var label = "";
+    var left = 0;
+    if(kind === "weapon"){
+      var wpn = (c.weapons||[]).find(function(w){ return w.id === tId; });
+      var vEntry = wpn && Array.isArray(wpn.venenos) ? wpn.venenos.find(function(v){ return v.poisonId === psId; }) : null;
+      if(!vEntry) return;
+      if(action==="poison-clear") wpn.venenos.splice(wpn.venenos.indexOf(vEntry), 1);
+      else {
+        if(delta < 0 && num(vEntry.cargas, 0) < 1) return;
+        vEntry.cargas = Math.max(0, num(vEntry.cargas, 0) + delta);
+      }
+      patch.weapons = c.weapons;
+      label = wpn.name + " (" + (vEntry.name || "veneno") + ")";
+      left = num(vEntry.cargas, 0);
+    } else {
+      var ammo = (c.inventory||[]).find(function(it){ return it.id === tId; });
+      if(!ammo) return;
+      if(action==="poison-clear") c.inventory.splice(c.inventory.indexOf(ammo), 1);
+      else {
+        if(delta < 0 && num(ammo.qty, 0) < 1) return;
+        ammo.qty = Math.max(0, num(ammo.qty, 0) + delta);
+      }
+      patch.inventory = c.inventory;
+      label = ammo.name;
+      left = num(ammo.qty, 0);
+    }
+    // Usarlo en combate cuenta como probado en enemigos
+    var pUsed = action==="poison-spend" ? (c.poisons||[]).find(function(x){ return x.id === psId; }) : null;
+    if(pUsed && getAlchemyStageIndex(pUsed.progEnemigo) < 3){
+      pUsed.progEnemigo = "probado";
+      patch.poisons = c.poisons;
+    }
+    markCharDirty(c.id, patch);
+    saveState(false);
+    if(typeof pushCharacterPatch === 'function') pushCharacterPatch(c.id, patch);
+    renderTab();
+    if(action==="poison-spend") showToast("🧪 " + label + ": quedan " + left + ".", left > 0 ? "info" : "warning");
+    else if(action==="poison-undo") showToast("↩ " + label + ": vuelve a " + left + ".", "info");
     return;
   }
   if(action==="alchemy-gm-reveal"){
