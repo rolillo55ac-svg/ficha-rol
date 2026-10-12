@@ -1,6 +1,6 @@
 {
-  "version": "1.4.7.0",
-  "build": "2026.10.12.03",
-  "updatedAt": "2026-10-12T18:00:00Z",
-  "changelog": "La Casa: los muebles ya no se montan unos encima de otros, se pueden arrastrar a cualquier casilla de la estancia, girar cambia de verdad ancho y alto, cada mueble entra con su tamaño y las casillas del editor son cuadradas."
+  "version": "1.4.8.0",
+  "build": "2026.10.13.01",
+  "updatedAt": "2026-10-13T02:00:00Z",
+  "changelog": "Taller de Lapidario nuevo: desbaste de la geoda (el primer toque siempre es seguro), cortes siguiendo la silueta, pulido en 5 pasadas y veredicto final: el jugador tira la calidad y el máster decide en directo si la piedra aguanta."
 }
