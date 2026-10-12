@@ -1,6 +1,6 @@
 {
-  "version": "1.4.26.0",
-  "build": "2026.10.13.20",
-  "updatedAt": "2026-10-13T20:40:00Z",
-  "changelog": "Los botones de arriba (buzón y ajustes) y la cruz de cerrar las ventanas vuelven a su tamaño de antes; los botones más grandes quedan solo en Piedras y La Casa."
+  "version": "1.4.27.0",
+  "build": "2026.10.13.21",
+  "updatedAt": "2026-10-13T21:30:00Z",
+  "changelog": "Alquimia renovada: en la lista se ve el nombre entero, etiquetas claras (Probado, Sin probar, Conocido) y las dosis; dentro de cada sustancia, un recuadro de Siguiente paso con su botón, las fases Muestra y Extraído y las ramas En enemigos y En Cherk (esta solo la ven Cherk y el máster). Los filtros se abren con un botón."
 }
