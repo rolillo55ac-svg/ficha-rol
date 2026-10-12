@@ -513,7 +513,15 @@ async function fetchHouseRemoteData(){
 
     var roomsRes = await supabaseClient.from("house_rooms").select("*").eq("house_id", houseState.house.id).order("created_at", { ascending: true });
     if(!roomsRes.error && roomsRes.data && roomsRes.data.length > 0){
+      var pendingRoom = canvaPendingSaveRoomId ? (houseState.rooms || []).find(function(x){ return x.id === canvaPendingSaveRoomId; }) : null;
       houseState.rooms = roomsRes.data;
+      if(pendingRoom){
+        var freshRoom = houseState.rooms.find(function(x){ return x.id === pendingRoom.id; });
+        if(freshRoom){
+          freshRoom.furniture = pendingRoom.furniture;
+          freshRoom.decor = pendingRoom.decor;
+        }
+      }
     }
     normalizeAllRoomLayouts();
     await fetchHouseItemsRemote();
@@ -2086,8 +2094,10 @@ function handleRemoteHouseRoomUpdate(payload){
   var room = (houseState.rooms || []).find(function(x){ return x.id === rId; });
   if(!room) return;
 
-  if(payload.furniture !== undefined) room.furniture = keepFurnitureItems(room.furniture, payload.furniture);
-  if(payload.decor !== undefined) room.decor = payload.decor;
+  // Si en este dispositivo hay muebles sin guardar en esa estancia, se quedan los de aquí (se guardan enseguida)
+  var keepLocalLayout = (canvaPendingSaveRoomId === rId);
+  if(payload.furniture !== undefined && !keepLocalLayout) room.furniture = keepFurnitureItems(room.furniture, payload.furniture);
+  if(payload.decor !== undefined && !keepLocalLayout) room.decor = payload.decor;
   if(payload.color !== undefined) room.color = payload.color;
   if(payload.name !== undefined) room.name = payload.name;
   if(payload.pos_x !== undefined) room.pos_x = payload.pos_x;
@@ -2101,7 +2111,12 @@ function handleRemoteHouseRoomUpdate(payload){
 
   saveHouseLocalData();
   if(houseState.active){
-    renderHouseView();
+    // Con el editor abierto se repinta solo el editor, y nunca a mitad de un arrastre (al soltar se repinta)
+    if(houseState.studioRoomId && document.getElementById("canvaStudioInner")){
+      if(!canvaActiveDrag) refreshCanvaStudio();
+    } else {
+      renderHouseView();
+    }
   }
 }
 
@@ -3241,19 +3256,87 @@ function findRoomLayoutItem(room, itemId){
   return null;
 }
 
-// La huella completa (x, y, w, h) cabe en la estancia y no pisa otro elemento de su misma capa
-function canPlaceItem(room, item, x, y, w, h){
+// Puertas de una estancia, las mismas que dibuja el plano (drawHouseDoors): lado y centro, en casillas del plano
+function getRoomDoorSpots(room){
+  var floor = room.floor || 1;
+  var rooms = (houseState.rooms || []).filter(function(o){ return isRoomOnFloor(o, floor); });
+  function cell(r){
+    return { x: r.pos_x || 0, y: r.pos_y || 0, w: Math.max(1, r.width || 2), h: Math.max(1, r.height || 2) };
+  }
+  var a = cell(room);
+  var spots = [];
+  rooms.forEach(function(O){
+    if(O === room || O.id === room.id) return;
+    if(HOUSE_PASSAGE_TYPES.indexOf(room.room_type) === -1 && HOUSE_PASSAGE_TYPES.indexOf(O.room_type) === -1) return;
+    var b = cell(O);
+    var y0 = Math.max(a.y, b.y), y1 = Math.min(a.y + a.h, b.y + b.h);
+    var x0 = Math.max(a.x, b.x), x1 = Math.min(a.x + a.w, b.x + b.w);
+    if((a.x + a.w === b.x || b.x + b.w === a.x) && y1 - y0 >= 1){
+      spots.push({ side: a.x + a.w === b.x ? "right" : "left", at: (y0 + y1) / 2 - a.y });
+    } else if((a.y + a.h === b.y || b.y + b.h === a.y) && x1 - x0 >= 1){
+      spots.push({ side: a.y + a.h === b.y ? "bottom" : "top", at: (x0 + x1) / 2 - a.x });
+    }
+  });
+  if(room.room_type === "entrada"){
+    var touches = function(side){
+      return rooms.some(function(O){
+        if(O === room || O.id === room.id) return false;
+        var o = cell(O);
+        if(side === "bottom") return o.y === a.y + a.h && o.x < a.x + a.w && o.x + o.w > a.x;
+        if(side === "top") return o.y + o.h === a.y && o.x < a.x + a.w && o.x + o.w > a.x;
+        if(side === "left") return o.x + o.w === a.x && o.y < a.y + a.h && o.y + o.h > a.y;
+        return o.x === a.x + a.w && o.y < a.y + a.h && o.y + o.h > a.y;
+      });
+    };
+    if(!touches("bottom")) spots.push({ side: "bottom", at: a.w / 2 });
+    else if(!touches("left")) spots.push({ side: "left", at: a.h / 2 });
+    else if(!touches("right")) spots.push({ side: "right", at: a.h / 2 });
+    else if(!touches("top")) spots.push({ side: "top", at: a.w / 2 });
+  }
+  return spots;
+}
+
+// Zona de paso: una casilla delante de cada puerta, donde no se ponen muebles (las alfombras sí)
+function getRoomPassZones(room){
+  var g = getRoomFurnitureGrid(room);
+  var sx = g.cols / Math.max(1, room.width || g.cols);
+  var sy = g.rows / Math.max(1, room.height || g.rows);
+  return getRoomDoorSpots(room).map(function(d){
+    var horiz = (d.side === "top" || d.side === "bottom");
+    var scale = horiz ? sx : sy;
+    var max = horiz ? g.cols : g.rows;
+    var from = Math.max(0, Math.floor((d.at - 0.35) * scale));
+    var to = Math.min(max, Math.max(from + 1, Math.ceil((d.at + 0.35) * scale)));
+    if(horiz) return { side: d.side, x: from, w: to - from, y: d.side === "top" ? 0 : g.rows - 1, h: 1 };
+    return { side: d.side, x: d.side === "left" ? 0 : g.cols - 1, w: 1, y: from, h: to - from };
+  });
+}
+
+// Motivo por el que la huella (x, y, w, h) no vale, o null si cabe:
+// dentro de la estancia, sin pisar otro elemento de su misma capa y sin tapar la zona de paso
+function getItemPlacementProblem(room, item, x, y, w, h){
   var grid = getRoomFurnitureGrid(room);
-  if(x < 0 || y < 0 || w < 1 || h < 1 || x + w > grid.cols || y + h > grid.rows) return false;
+  if(x < 0 || y < 0 || w < 1 || h < 1 || x + w > grid.cols || y + h > grid.rows) return "Se sale de la estancia";
   var layer = getHouseItemLayer(item);
   var itemId = item && item.id;
-  return !(room.furniture || []).concat(room.decor || []).some(function(o){
+  var hit = null;
+  (room.furniture || []).concat(room.decor || []).some(function(o){
     if(!o || o === item || (itemId && o.id === itemId)) return false;
     if(typeof o.pos_x !== "number" || typeof o.pos_y !== "number") return false;
     if(getHouseItemLayer(o) !== layer) return false;
     var s = getHouseItemSize(o);
-    return x < o.pos_x + s.w && o.pos_x < x + w && y < o.pos_y + s.h && o.pos_y < y + h;
+    if(x < o.pos_x + s.w && o.pos_x < x + w && y < o.pos_y + s.h && o.pos_y < y + h){ hit = o; return true; }
+    return false;
   });
+  if(hit) return "Choca con " + canvaItemName(hit).toLowerCase();
+  if(layer !== "suelo" && getRoomPassZones(room).some(function(z){
+    return x < z.x + z.w && z.x < x + w && y < z.y + z.h && z.y < y + h;
+  })) return "Deja libre la zona de paso de la puerta";
+  return null;
+}
+
+function canPlaceItem(room, item, x, y, w, h){
+  return !getItemPlacementProblem(room, item, x, y, w, h);
 }
 
 // Hueco libre más cercano a (nearX, nearY); sin referencia, el primero de arriba abajo
@@ -3315,12 +3398,13 @@ function rotateHouseItem(room, item){
   return true;
 }
 
-// Coloca un elemento nuevo en el primer hueco libre; si no cabe así, lo prueba girado
+// Coloca un elemento nuevo en el hueco libre más cercano al centro; si no cabe así, lo prueba girado
 function placeNewHouseItem(room, item){
   var s = getHouseItemSize(item);
-  var spot = findFreeItemSpot(room, item, s.w, s.h);
+  var g = getRoomFurnitureGrid(room);
+  var spot = findFreeItemSpot(room, item, s.w, s.h, (g.cols - s.w) / 2, (g.rows - s.h) / 2);
   if(!spot && s.w !== s.h){
-    spot = findFreeItemSpot(room, item, s.h, s.w);
+    spot = findFreeItemSpot(room, item, s.h, s.w, (g.cols - s.h) / 2, (g.rows - s.w) / 2);
     if(spot){
       item.w = s.h;
       item.h = s.w;
@@ -3363,8 +3447,10 @@ function normalizeAllRoomLayouts(){
   (houseState.rooms || []).forEach(normalizeRoomLayout);
 }
 
+// Dentro del editor el aviso sale bajo la estancia; fuera, como aviso normal
 function houseLayoutWarn(msg){
-  if(typeof showToast === "function") showToast(msg, "warning");
+  if(houseState.studioRoomId && document.getElementById("canvaHint")) canvaFlash(msg);
+  else if(typeof showToast === "function") showToast(msg, "warning");
 }
 
 // ============================================================================
@@ -3409,82 +3495,262 @@ function renderRoomMiniLayout(r){
   return items.join('');
 }
 
-function canvaInsertAsset(roomId, assetId){
+// ============================================================================
+// EDITOR DE MUEBLES (Estudio): la estancia a todo el ancho, un único panel inferior,
+// catálogo en cajón, deshacer/rehacer y guardado agrupado.
+// ============================================================================
+var CANVA_STUDIO_CATEGORIES = [
+  { id: "todas", label: "Todo" },
+  { id: "descanso", label: "Camas" },
+  { id: "mesas", label: "Mesas" },
+  { id: "almacen", label: "Almacén" },
+  { id: "cocina", label: "Cocina" },
+  { id: "decoracion", label: "Adornos" },
+  { id: "luces", label: "Luces" }
+];
+var CANVA_SAVE_DELAY_MS = 800;
+var CANVA_UNDO_MAX = 50;
+var canvaUndoStack = [];
+var canvaRedoStack = [];
+var canvaUndoRoomId = null;
+var canvaSaveTimer = null;
+var canvaPendingSaveRoomId = null;
+var canvaHintMsg = "";
+var canvaHintTimer = null;
+var canvaToastTimer = null;
+var canvaResizeTimer = null;
+
+function canvaRoom(roomId){
+  var id = roomId || houseState.studioRoomId;
+  return (houseState.rooms || []).find(function(x){ return x.id === id; }) || null;
+}
+
+function canvaItemName(item){
+  return (item && (item.name || item.label || item.type)) || "Elemento";
+}
+
+function canvaItemCount(item){
+  return (item && Array.isArray(item.items)) ? item.items.length : 0;
+}
+
+// Guarda objetos: los muebles de almacén del catálogo y los antiguos que no están en él
+function canvaItemIsStorage(found){
+  if(!found || found.field !== "furniture") return false;
+  var asset = findCanvaAssetForItem(found.item);
+  return !asset || !!asset.isStorage || canvaItemCount(found.item) > 0;
+}
+
+function canvaIsEditing(room){
+  return !!room && canUserEditRoomGeometry(room) && houseState.studioMode !== "view";
+}
+
+// Vista girada: se gira sola si así las casillas salen más grandes (móvil en vertical con estancia ancha)
+function canvaIsRotated(room){
+  var g = getRoomFurnitureGrid(room);
+  if(g.cols === g.rows) return false;
+  if(houseState.studioRotView === true || houseState.studioRotView === false) return houseState.studioRotView;
+  return canvaCellSize(g.rows, g.cols) > canvaCellSize(g.cols, g.rows);
+}
+
+// Paso entre coordenadas del plano y de la pantalla (vista girada 90° a la derecha)
+function canvaToView(box, grid, rot){
+  return rot ? { x: grid.rows - (box.y + box.h), y: box.x, w: box.h, h: box.w } : { x: box.x, y: box.y, w: box.w, h: box.h };
+}
+
+function canvaFromView(v, grid, rot){
+  return rot ? { x: v.y, y: grid.rows - (v.x + v.w), w: v.h, h: v.w } : { x: v.x, y: v.y, w: v.w, h: v.h };
+}
+
+function canvaViewDelta(dx, dy, rot){
+  return rot ? { dx: dy, dy: -dx } : { dx: dx, dy: dy };
+}
+
+function canvaBoxStyle(v, cell){
+  return "left:" + (v.x * cell) + "px;top:" + (v.y * cell) + "px;width:" + (v.w * cell) + "px;height:" + (v.h * cell) + "px;";
+}
+
+// Tamaño de casilla para que la estancia quepa entera con la cabecera y el panel inferior
+function canvaCellSize(vCols, vRows){
+  var wrap = document.querySelector("#canvaStudio .cs-stage-wrap");
+  var main = document.getElementById("main");
+  var availW = wrap ? wrap.clientWidth : ((main && main.clientWidth) || window.innerWidth) - 32;
+  availW = Math.min(760, availW) - 20;
+  // Alto libre: sin la cabecera fija de la ficha, el panel inferior (más alto en el móvil) ni la cabecera del editor
+  var topbar = document.getElementById("topbar");
+  var dockH = window.innerWidth < 560 ? 250 : 190;
+  var availH = window.innerHeight - (topbar ? topbar.offsetHeight : 0) - dockH - 190;
+  return Math.max(22, Math.min(64, Math.floor(availW / vCols), Math.floor(availH / vRows)));
+}
+
+// ---------- Deshacer y guardado ----------
+function canvaSnapshot(room){
+  return JSON.stringify({ furniture: room.furniture || [], decor: room.decor || [] });
+}
+
+// Deshacer solo cambia la colocación: los objetos de los baúles se quedan como están ahora
+function canvaRestore(room, snap){
+  var s = JSON.parse(snap);
+  var cur = {};
+  (room.furniture || []).forEach(function(f){ if(f && f.id) cur[f.id] = f.items; });
+  (s.furniture || []).forEach(function(f){ if(f && cur[f.id] !== undefined) f.items = cur[f.id]; });
+  room.furniture = s.furniture || [];
+  room.decor = s.decor || [];
+}
+
+function canvaResetHistory(roomId){
+  canvaUndoStack = [];
+  canvaRedoStack = [];
+  canvaUndoRoomId = roomId || null;
+}
+
+function canvaCommit(room, before){
+  if(canvaUndoRoomId !== room.id) canvaResetHistory(room.id);
+  canvaUndoStack.push(before);
+  if(canvaUndoStack.length > CANVA_UNDO_MAX) canvaUndoStack.shift();
+  canvaRedoStack = [];
+  canvaScheduleSave(room);
+  refreshCanvaStudio();
+}
+
+function canvaUndoRedo(isRedo){
+  var room = canvaRoom();
+  if(!room || canvaUndoRoomId !== room.id) return;
+  var from = isRedo ? canvaRedoStack : canvaUndoStack;
+  var to = isRedo ? canvaUndoStack : canvaRedoStack;
+  if(!from.length) return;
+  to.push(canvaSnapshot(room));
+  canvaRestore(room, from.pop());
+  if(houseState.selectedItemId && !findRoomLayoutItem(room, houseState.selectedItemId)) houseState.selectedItemId = null;
+  canvaScheduleSave(room);
+  refreshCanvaStudio();
+}
+
+// Los cambios se ven al momento y se guardan una sola vez cuando se deja de tocar
+function canvaScheduleSave(room){
+  if(canvaPendingSaveRoomId && canvaPendingSaveRoomId !== room.id) flushCanvaStudioSave();
+  canvaPendingSaveRoomId = room.id;
+  saveHouseLocalData();
+  setCanvaSaveState(true);
+  clearTimeout(canvaSaveTimer);
+  canvaSaveTimer = setTimeout(flushCanvaStudioSave, CANVA_SAVE_DELAY_MS);
+}
+
+function flushCanvaStudioSave(){
+  clearTimeout(canvaSaveTimer);
+  canvaSaveTimer = null;
+  var roomId = canvaPendingSaveRoomId;
+  if(!roomId) return;
+  canvaPendingSaveRoomId = null;
   var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(room) saveRoomChangesToRemoteAndBroadcast(room, "furniture");
+  setCanvaSaveState(false);
+}
+
+function setCanvaSaveState(busy){
+  var el = document.getElementById("canvaSaveState");
+  if(!el) return;
+  el.className = "cs-save" + (busy ? " is-busy" : "");
+  el.textContent = busy ? "Guardando…" : "✓ Guardado";
+}
+
+// ---------- Avisos ----------
+function canvaDefaultHint(){
+  var room = canvaRoom();
+  if(!canvaIsEditing(room)) return "Toca un baúl o una librería para ver lo que hay dentro.";
+  if(houseState.selectedItemId) return "Arrástralo para moverlo, o tira del círculo dorado para cambiar su tamaño.";
+  return "Toca un mueble para elegirlo, o arrástralo directamente.";
+}
+
+function canvaFlash(msg){
+  canvaHintMsg = msg;
+  var el = document.getElementById("canvaHint");
+  if(el){
+    el.textContent = msg;
+    el.classList.add("is-warn");
+  }
+  clearTimeout(canvaHintTimer);
+  canvaHintTimer = setTimeout(function(){
+    canvaHintMsg = "";
+    var e = document.getElementById("canvaHint");
+    if(e){
+      e.classList.remove("is-warn");
+      e.textContent = canvaDefaultHint();
+    }
+  }, 2600);
+}
+
+function canvaShowToast(msg, withUndo){
+  var host = document.getElementById("canvaToastHost");
+  if(!host) return;
+  host.innerHTML = '<div class="cs-toast" role="status"><span>' + esc(msg) + '</span>' +
+    (withUndo ? '<button type="button" class="cs-toast-undo" data-action="canva-undo" data-room-id="' + esc(houseState.studioRoomId || "") + '">Deshacer</button>' : '') +
+    '<button type="button" class="cs-toast-x" data-action="canva-toast-close" aria-label="Cerrar aviso">✕</button></div>';
+  clearTimeout(canvaToastTimer);
+  canvaToastTimer = setTimeout(function(){ host.innerHTML = ""; }, 4000);
+}
+
+function canvaHideToast(){
+  var host = document.getElementById("canvaToastHost");
+  if(host) host.innerHTML = "";
+}
+
+// ---------- Acciones (en coordenadas del plano) ----------
+function canvaInsertAsset(roomId, assetId){
+  var room = canvaRoom(roomId);
   if(!room) return;
 
   var asset = CANVA_ASSET_LIBRARY.find(function(a){ return a.id === assetId; });
   if(!asset) return;
 
-  room.furniture = room.furniture || [];
-  room.decor = room.decor || [];
-
-  var isStorage = !!asset.isStorage;
-  var isFurn = !!asset.isFurniture;
-  var newItem = null;
-
-  if(isStorage || isFurn){
-    newItem = {
-      id: "fur_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-      name: asset.name,
-      type: asset.defaultType || asset.id,
-      asset_id: asset.id,
-      icon: asset.icon,
-      w: asset.defaultW || 1,
-      h: asset.defaultH || 1,
-      pos_x: 0,
-      pos_y: 0,
-      rotation: 0,
-      items: []
-    };
+  var isFurn = !!(asset.isStorage || asset.isFurniture);
+  var newItem = {
+    id: (isFurn ? "fur_" : "dec_") + Date.now() + "_" + Math.floor(Math.random() * 1000),
+    type: asset.defaultType || asset.id,
+    asset_id: asset.id,
+    icon: asset.icon,
+    w: asset.defaultW || 1,
+    h: asset.defaultH || 1,
+    pos_x: 0,
+    pos_y: 0,
+    rotation: 0
+  };
+  if(isFurn){
+    newItem.name = asset.name;
+    newItem.items = [];
   } else {
-    newItem = {
-      id: "dec_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-      type: asset.defaultType || asset.id,
-      asset_id: asset.id,
-      label: asset.name,
-      icon: asset.icon,
-      w: asset.defaultW || 1,
-      h: asset.defaultH || 1,
-      pos_x: 0,
-      pos_y: 0,
-      rotation: 0
-    };
+    newItem.label = asset.name;
   }
 
-  if(!placeNewHouseItem(room, newItem)){ houseLayoutWarn("No queda hueco libre para " + asset.name + "."); return; }
-
-  if(isStorage || isFurn){
-    room.furniture.push(newItem);
-    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
-  } else {
-    room.decor.push(newItem);
-    saveRoomChangesToRemoteAndBroadcast(room, "decor");
+  houseState.studioCatalogOpen = false;
+  if(!placeNewHouseItem(room, newItem)){
+    refreshCanvaStudio();
+    houseLayoutWarn("No queda hueco libre para " + asset.name + ". Quita algo o elige algo más pequeño.");
+    return;
   }
 
+  var before = canvaSnapshot(room);
+  var field = isFurn ? "furniture" : "decor";
+  room[field] = room[field] || [];
+  room[field].push(newItem);
   houseState.selectedItemId = newItem.id;
-  renderHouseView();
-
-  if(typeof showToast === "function"){
-    showToast(asset.icon + " " + asset.name + " colocado en la estancia.", "success");
-  }
+  canvaCommit(room, before);
+  canvaShowToast(asset.name + " colocado. Arrástralo a su sitio.", true);
 }
 
 function canvaRotateItem(roomId, itemId){
-  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  var room = canvaRoom(roomId);
   if(!room) return;
-
   var found = findRoomLayoutItem(room, itemId);
   if(!found) return;
-  if(!rotateHouseItem(room, found.item)){ houseLayoutWarn("No hay sitio para girarlo."); return; }
-  saveRoomChangesToRemoteAndBroadcast(room, found.field);
-  renderHouseView();
+
+  var before = canvaSnapshot(room);
+  if(!rotateHouseItem(room, found.item)){ houseLayoutWarn("No hay sitio para girarlo aquí."); return; }
+  canvaCommit(room, before);
 }
 
 function canvaDuplicateItem(roomId, itemId){
-  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  var room = canvaRoom(roomId);
   if(!room) return;
-
   var found = findRoomLayoutItem(room, itemId);
   if(!found) return;
   var isFurn = (found.field === "furniture");
@@ -3495,45 +3761,41 @@ function canvaDuplicateItem(roomId, itemId){
 
   var s = getHouseItemSize(clone);
   var spot = findFreeItemSpot(room, clone, s.w, s.h, found.item.pos_x || 0, found.item.pos_y || 0);
-  if(!spot){ houseLayoutWarn("No queda hueco libre para duplicarlo."); return; }
+  if(!spot){ houseLayoutWarn("No queda sitio para otro igual."); return; }
   clone.pos_x = spot.x;
   clone.pos_y = spot.y;
 
+  var before = canvaSnapshot(room);
   room[found.field].push(clone);
   houseState.selectedItemId = clone.id;
-  saveRoomChangesToRemoteAndBroadcast(room, found.field);
-  renderHouseView();
-  if(typeof showToast === "function") showToast(isFurn ? "Mueble duplicado." : "Adorno duplicado.", "info");
+  canvaCommit(room, before);
+  canvaShowToast(canvaItemName(clone) + " duplicado" + (isFurn ? " (vacío por dentro)." : "."), true);
 }
 
+// Un mueble con objetos dentro no se puede quitar: así no se pierde nada
 function canvaDeleteItem(roomId, itemId){
-  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  var room = canvaRoom(roomId);
   if(!room) return;
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found) return;
 
-  var initFurLen = (room.furniture || []).length;
-  room.furniture = (room.furniture || []).filter(function(x){ return x.id !== itemId; });
-  if(room.furniture.length !== initFurLen){
-    houseState.selectedItemId = null;
-    saveRoomChangesToRemoteAndBroadcast(room, "furniture");
-    renderHouseView();
-    if(typeof showToast === "function") showToast("Mueble retirado.", "info");
+  var n = canvaItemCount(found.item);
+  if(n > 0){
+    houseLayoutWarn("Vacíalo antes de quitarlo: tiene " + n + (n === 1 ? " objeto" : " objetos") + " dentro.");
     return;
   }
 
-  var initDecLen = (room.decor || []).length;
-  room.decor = (room.decor || []).filter(function(x){ return x.id !== itemId; });
-  if(room.decor.length !== initDecLen){
-    houseState.selectedItemId = null;
-    saveRoomChangesToRemoteAndBroadcast(room, "decor");
-    renderHouseView();
-    if(typeof showToast === "function") showToast("Elemento decorativo retirado.", "info");
-  }
+  var before = canvaSnapshot(room);
+  room[found.field] = room[found.field].filter(function(x){ return x.id !== itemId; });
+  if(houseState.selectedItemId === itemId) houseState.selectedItemId = null;
+  canvaCommit(room, before);
+  canvaShowToast(canvaItemName(found.item) + " quitado.", true);
 }
 
-function canvaResizeItem(roomId, itemId, dw, dh){
-  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+// keepBottom: el borde de abajo se queda fijo (lo usa la vista girada para que no se mueva el borde izquierdo de la pantalla)
+function canvaResizeItem(roomId, itemId, dw, dh, keepBottom){
+  var room = canvaRoom(roomId);
   if(!room) return;
-
   var found = findRoomLayoutItem(room, itemId);
   if(!found) return;
   var it = found.item;
@@ -3545,477 +3807,491 @@ function canvaResizeItem(roomId, itemId, dw, dh){
   if((dw < 0 && targetW < lim.minW) || (dh < 0 && targetH < lim.minH)){ houseLayoutWarn("Ya tiene el tamaño mínimo."); return; }
   if((dw > 0 && targetW > lim.maxW) || (dh > 0 && targetH > lim.maxH)){ houseLayoutWarn("Ya tiene el tamaño máximo."); return; }
 
-  // Si crece contra la pared o contra otro mueble, se prueba desplazándolo hacia atrás
+  // Si crece contra la pared o contra otro mueble, se prueba creciendo hacia el otro lado
   var x = it.pos_x || 0;
   var y = it.pos_y || 0;
-  var tries = [{ x: x, y: y }, { x: x - Math.max(0, dw), y: y - Math.max(0, dh) }];
+  var tries = keepBottom
+    ? [{ x: x, y: y - dh }, { x: x - Math.max(0, dw), y: y }]
+    : [{ x: x, y: y }, { x: x - Math.max(0, dw), y: y - Math.max(0, dh) }];
   var spot = tries.find(function(p){ return canPlaceItem(room, it, p.x, p.y, targetW, targetH); });
-  if(!spot){ houseLayoutWarn("No cabe más grande ahí."); return; }
+  if(!spot){
+    houseLayoutWarn("No cabe más grande: " + getItemPlacementProblem(room, it, tries[0].x, tries[0].y, targetW, targetH).toLowerCase() + ".");
+    return;
+  }
 
+  var before = canvaSnapshot(room);
   it.w = targetW;
   it.h = targetH;
   it.pos_x = spot.x;
   it.pos_y = spot.y;
-  saveRoomChangesToRemoteAndBroadcast(room, found.field);
-  renderHouseView();
+  canvaCommit(room, before);
 }
 
 function canvaNudgeItem(roomId, itemId, dx, dy){
-  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  var room = canvaRoom(roomId);
   if(!room) return;
-
   var found = findRoomLayoutItem(room, itemId);
   if(!found) return;
   var it = found.item;
   var s = getHouseItemSize(it);
   var nx = (it.pos_x || 0) + dx;
   var ny = (it.pos_y || 0) + dy;
-  if(!canPlaceItem(room, it, nx, ny, s.w, s.h)){ houseLayoutWarn("No cabe ahí."); return; }
+  var problem = getItemPlacementProblem(room, it, nx, ny, s.w, s.h);
+  if(problem){ houseLayoutWarn(problem + "."); return; }
 
+  var before = canvaSnapshot(room);
   it.pos_x = nx;
   it.pos_y = ny;
-  saveRoomChangesToRemoteAndBroadcast(room, found.field);
-  renderHouseView();
+  canvaCommit(room, before);
 }
 
+// Ancho y alto de la pantalla: en la vista girada son el alto y el ancho del plano
+function canvaResizeItemView(roomId, itemId, axis, delta){
+  var room = canvaRoom(roomId);
+  if(!room) return;
+  if(!canvaIsRotated(room)){
+    canvaResizeItem(room.id, itemId, axis === "w" ? delta : 0, axis === "h" ? delta : 0);
+  } else if(axis === "w"){
+    canvaResizeItem(room.id, itemId, 0, delta, true);
+  } else {
+    canvaResizeItem(room.id, itemId, delta, 0);
+  }
+}
+
+function canvaNudgeItemView(roomId, itemId, dx, dy){
+  var room = canvaRoom(roomId);
+  if(!room) return;
+  var d = canvaViewDelta(dx, dy, canvaIsRotated(room));
+  canvaNudgeItem(room.id, itemId, d.dx, d.dy);
+}
+
+// Recolocar: al hueco libre más cercano al centro de la estancia
+function canvaRelocateItem(roomId, itemId){
+  var room = canvaRoom(roomId);
+  if(!room) return;
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found) return;
+  var it = found.item;
+  var s = getHouseItemSize(it);
+  var g = getRoomFurnitureGrid(room);
+  var spot = findFreeItemSpot(room, it, s.w, s.h, (g.cols - s.w) / 2, (g.rows - s.h) / 2);
+  if(!spot){ houseLayoutWarn("No hay otro hueco libre."); return; }
+  if(spot.x === (it.pos_x || 0) && spot.y === (it.pos_y || 0)){ houseLayoutWarn("Ya está en el mejor hueco libre."); return; }
+
+  var before = canvaSnapshot(room);
+  it.pos_x = spot.x;
+  it.pos_y = spot.y;
+  canvaCommit(room, before);
+}
+
+function canvaOpenItemAsPlayer(room, itemId){
+  var found = findRoomLayoutItem(room, itemId);
+  if(!found) return;
+  if(canvaItemIsStorage(found)) openAddItemModal(room.id, found.item.id);
+  else canvaFlash(canvaItemName(found.item));
+}
+
+// ---------- Pintado ----------
 function renderCanvaStudio(roomId){
-  var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  var r = canvaRoom(roomId);
   if(!r){
     houseState.studioRoomId = null;
-    return '<div class="alert warning">Habitación no encontrada. <button class="btn-compact" data-action="close-canva-studio">Volver al Plano</button></div>';
+    return '<div class="alert warning">Habitación no encontrada. <button class="btn-compact" data-action="close-canva-studio">Volver al plano</button></div>';
   }
+  return '<div class="canva-studio-container cs-studio" id="canvaStudio">' +
+    '<div id="canvaStudioInner">' + renderCanvaStudioInner(r) + '</div>' +
+    '<div class="cs-toast-host" id="canvaToastHost"></div>' +
+  '</div>';
+}
 
-  var isGm = (typeof isGM === "function" && isGM());
+// Repinta solo el editor (no toda la vista de La Casa)
+function refreshCanvaStudio(){
+  var inner = document.getElementById("canvaStudioInner");
+  var room = canvaRoom();
+  if(!inner || !room){
+    renderHouseView();
+    return;
+  }
+  inner.innerHTML = renderCanvaStudioInner(room);
+  canvaAfterRender();
+}
+
+// Ajusta la casilla al ancho real y deja sitio debajo para el panel fijo
+function canvaAfterRender(){
+  var studio = document.getElementById("canvaStudio");
+  if(!studio) return;
+  var dock = document.getElementById("canvaDock");
+  if(dock){
+    studio.style.setProperty("--cs-dock-h", dock.offsetHeight + "px");
+    studio.style.paddingBottom = (dock.offsetHeight + 16) + "px";
+  }
+  var stage = document.getElementById("canvaRoomStage");
+  var room = canvaRoom();
+  if(!stage || !room || studio._fitting) return;
+  var g = getRoomFurnitureGrid(room);
+  var rot = canvaIsRotated(room);
+  var cell = canvaCellSize(rot ? g.rows : g.cols, rot ? g.cols : g.rows);
+  if(cell !== parseFloat(stage.getAttribute("data-cell"))){
+    studio._fitting = true;
+    document.getElementById("canvaStudioInner").innerHTML = renderCanvaStudioInner(room);
+    studio._fitting = false;
+  }
+}
+
+function renderCanvaStudioInner(r){
   var canEdit = canUserEditRoomGeometry(r);
-  var curCategory = houseState.studioCategory || "todas";
-  var search = (houseState.studioSearch || "").toLowerCase().trim();
-  var owner = getRoomOwnerInfo(r.owner_character_id);
+  var editing = canvaIsEditing(r);
+  if(!editing) houseState.studioCatalogOpen = false;
 
+  var grid = getRoomFurnitureGrid(r);
+  var rot = canvaIsRotated(r);
+  var vCols = rot ? grid.rows : grid.cols;
+  var vRows = rot ? grid.cols : grid.rows;
+  var cell = canvaCellSize(vCols, vRows);
+  var sel = (editing && houseState.selectedItemId) ? findRoomLayoutItem(r, houseState.selectedItemId) : null;
   var furnitureList = Array.isArray(r.furniture) ? r.furniture : [];
   var decorList = Array.isArray(r.decor) ? r.decor : [];
+  var rid = esc(r.id);
+  var html = '';
 
-  var filteredAssets = CANVA_ASSET_LIBRARY.filter(function(a){
-    if(curCategory !== "todas" && a.category !== curCategory) return false;
-    if(search){
-      var matchName = a.name.toLowerCase().includes(search);
-      var matchDesc = a.desc && a.desc.toLowerCase().includes(search);
-      return matchName || matchDesc;
-    }
-    return true;
-  });
-
-  var categories = [
-    { id: "todas", label: "✨ Todo" },
-    { id: "puertas", label: "🚪 Puertas" },
-    { id: "descanso", label: "🛏️ Camas" },
-    { id: "mesas", label: "🪑 Mesas" },
-    { id: "almacen", label: "📦 Almacén" },
-    { id: "cocina", label: "🍳 Cocina" },
-    { id: "decoracion", label: "🌿 Adornos" },
-    { id: "luces", label: "🕯️ Luces" }
-  ];
-
-  var html = '<div class="canva-studio-container">';
-
-  // 1. Barra Superior del Estudio Canva
-  html += '<div class="canva-studio-topbar">';
-  html += '  <div class="canva-studio-topbar-left">';
-  html += '    <button class="house-back-btn" data-action="close-canva-studio" title="Volver al plano principal de la casa">';
-  html += '      <span>← Volver al Plano General</span>';
-  html += '    </button>';
-  html += '    <div class="canva-studio-title-group">';
-  html += '      <h2 class="canva-studio-title"><span>🎨 Estudio Canva:</span> ' + esc(r.name) + '</h2>';
-  html += '      <span class="house-room-type-tag ' + (r.room_type || 'salon') + '">' + getRoomTypeIcon(r.room_type) + ' ' + getRoomTypeLabel(r.room_type) + '</span>';
-  html += '      <span class="house-room-level-pill">Nv. ' + (r.level || 1) + '</span>';
-  if(owner) html += '      <span class="house-room-owner-tag">👤 ' + esc(owner.name) + '</span>';
+  // Barra superior: volver, nombre, guardado, vista girada, deshacer y rehacer
+  html += '<div class="cs-top">';
+  html += '  <button type="button" class="cs-icon-btn" data-action="close-canva-studio" aria-label="Volver al plano" title="Volver al plano">←</button>';
+  html += '  <div class="cs-title">';
+  html += '    <h2>' + esc(r.name) + '</h2>';
+  html += '    <div class="cs-sub">';
+  html += '      <span>Estancia ' + (r.width || grid.cols) + '×' + (r.height || grid.rows) + '</span>';
+  if(canEdit){
+    var busy = (canvaPendingSaveRoomId === r.id);
+    html += '      <span class="cs-save' + (busy ? ' is-busy' : '') + '" id="canvaSaveState">' + (busy ? 'Guardando…' : '✓ Guardado') + '</span>';
+  }
+  if(grid.cols !== grid.rows){
+    html += '      <button type="button" class="cs-rotv" data-action="canva-toggle-rotview" aria-pressed="' + rot + '">⟲ Vista girada</button>';
+  }
   html += '    </div>';
   html += '  </div>';
-
-  html += '  <div class="canva-studio-topbar-right">';
-  html += '    <span class="canva-studio-dim-tag">📐 ' + (r.width || 2) + 'x' + (r.height || 2) + ' (P.' + (r.floor || 1) + ')</span>';
-  if(canEdit && isGm){
-    html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ Datos de Sala</button>';
+  if(editing){
+    var canUndo = canvaUndoRoomId === r.id && canvaUndoStack.length > 0;
+    var canRedo = canvaUndoRoomId === r.id && canvaRedoStack.length > 0;
+    html += '  <button type="button" class="cs-icon-btn" data-action="canva-undo" data-room-id="' + rid + '" aria-label="Deshacer" title="Deshacer"' + (canUndo ? '' : ' disabled') + '>↶</button>';
+    html += '  <button type="button" class="cs-icon-btn" data-action="canva-redo" data-room-id="' + rid + '" aria-label="Rehacer" title="Rehacer"' + (canRedo ? '' : ' disabled') + '>↷</button>';
   }
-  html += '  </div>';
   html += '</div>';
 
-  // Banner informativo estilo Canva
-  html += '<div class="canva-studio-hint-banner">';
-  html += '  <span>💡 <b>Diseño Visual:</b> Toca cualquier elemento de la biblioteca para colocarlo en la habitación. Pulsa cualquier mueble para ver su <b>caja de control morada</b>: rótalo (🔄), abre su inventario (📦) o duplícalo (📋).</span>';
-  html += '</div>';
-
-  // 2. Layout Principal de Dos Columnas
-  html += '<div class="canva-studio-layout">';
-
-  // Columna Izquierda: Biblioteca de Elementos Canva
-  html += '<div class="canva-library-sidebar">';
-  html += '  <div class="canva-library-header">';
-  html += '    <div class="canva-library-title">📦 Elementos y Mobiliario</div>';
-  html += '    <input type="text" class="canva-search-input" id="canvaSearchInput" placeholder="🔍 Buscar camas, mesas, puertas..." value="' + esc(houseState.studioSearch || '') + '">';
-  html += '  </div>';
-
-  // Pestañas de categorías
-  html += '  <div class="canva-category-pills">';
-  categories.forEach(function(cat){
-    var isActive = (curCategory === cat.id);
-    html += '<button class="canva-category-pill' + (isActive ? ' active' : '') + '" data-action="canva-select-category" data-category="' + cat.id + '">' + cat.label + '</button>';
-  });
-  html += '  </div>';
-
-  // Grid de tarjetas de elementos
-  html += '  <div class="canva-assets-grid">';
-  if(filteredAssets.length === 0){
-    html += '<div style="font-size:0.78rem;color:var(--ink-faint);text-align:center;padding:24px;">No se encontraron elementos para esa búsqueda.</div>';
-  } else {
-    filteredAssets.forEach(function(asset){
-      var badge = asset.isStorage ? '📦 Inventario' : (asset.isDoor ? '🚪 Acceso' : (asset.isDecor ? '🌿 Adorno' : '🪑 Mueble'));
-      html += '<div class="canva-asset-card" data-action="canva-insert-asset" data-room-id="' + r.id + '" data-asset-id="' + asset.id + '" title="' + esc(asset.desc) + ' (Toca para colocar en la habitación)">';
-      html += '  <div class="canva-asset-card-preview">' + getCanvaSvg(asset.id, 0) + '</div>';
-      html += '  <div class="canva-asset-card-info">';
-      html += '    <div class="canva-asset-card-name">' + esc(asset.name) + '</div>';
-      html += '    <span class="canva-asset-card-badge">' + badge + '</span>';
-      html += '  </div>';
-      html += '  <div class="canva-asset-card-add">➕</div>';
-      html += '</div>';
-    });
+  if(canEdit){
+    html += '<div class="cs-mode" role="group" aria-label="Modo">';
+    html += '  <button type="button" data-action="canva-set-mode" data-mode="edit" aria-pressed="' + editing + '">Editar muebles</button>';
+    html += '  <button type="button" data-action="canva-set-mode" data-mode="view" aria-pressed="' + !editing + '">Ver como jugador</button>';
+    html += '</div>';
   }
-  html += '  </div>'; // fin canva-assets-grid
-  html += '</div>'; // fin canva-library-sidebar
 
-  var studioGrid = getRoomFurnitureGrid(r);
-  var maxCols = studioGrid.cols;
-  var maxRows = studioGrid.rows;
+  // Estancia
+  var bg = r.color ? 'background:' + getRoomCustomBackground(r.color) + ';' : '';
+  html += '<div class="cs-stage-wrap">';
+  html += '<div class="cs-wall tex-' + esc(r.room_type || 'salon') + '" style="' + bg + '">';
+  html += '<div class="cs-room' + (editing ? ' is-edit' : '') + '" id="canvaRoomStage" data-room-id="' + rid + '" data-cell="' + cell + '" style="width:' + (vCols * cell) + 'px;height:' + (vRows * cell) + 'px;--cell:' + cell + 'px;">';
 
-  // Columna Central: Lienzo de la Habitación (Stage)
-  html += '<div class="canva-stage-wrap">';
-  html += '  <div class="canva-stage-toolbar">';
-  html += '    <div class="canva-stage-toolbar-title">Lienzo Arquitectónico Cenital (' + maxCols + 'x' + maxRows + ' Celdas)</div>';
-  html += '    <div class="canva-stage-color-bar" title="Cambiar color o suelo de la estancia">';
-  html += '      <span class="canva-stage-color-lbl">🎨 Suelo:</span>';
-  HOUSE_COLOR_PALETTES.forEach(function(p){
-    var isSel = (r.color === p.hex || (!r.color && !p.hex));
-    html += '<button class="canva-color-chip' + (isSel ? ' is-active' : '') + '" style="background:' + (p.hex || '#1a1816') + ';" data-action="set-room-color" data-room-id="' + r.id + '" data-color="' + p.hex + '" title="' + p.name + ' - ' + p.desc + '"></button>';
+  var sideAfterRot = { top: "right", right: "bottom", bottom: "left", left: "top" };
+  getRoomPassZones(r).forEach(function(z){
+    var v = canvaToView(z, grid, rot);
+    var side = rot ? sideAfterRot[z.side] : z.side;
+    if(editing) html += '<div class="cs-pass" style="' + canvaBoxStyle(v, cell) + '"><span>Paso</span></div>';
+    var doorPos = (side === "top" || side === "bottom")
+      ? 'left:' + (v.x * cell) + 'px;width:' + (v.w * cell) + 'px;'
+      : 'top:' + (v.y * cell) + 'px;height:' + (v.h * cell) + 'px;';
+    html += '<div class="cs-door cs-door-' + side + '" style="' + doorPos + '"></div>';
   });
-  html += '      <input type="color" class="canva-custom-color-input" value="' + (r.color || '#2a1e16') + '" data-action="canva-custom-color-input" data-room-id="' + r.id + '" title="Color personalizado">';
-  html += '    </div>';
-  html += '    <div class="canva-stage-toolbar-stats">' + (furnitureList.length + decorList.length) + ' elementos</div>';
-  html += '  </div>';
 
-  var texClass = "tex-" + (r.room_type || "salon");
-  var stageCustomBg = r.color ? ('background: ' + getRoomCustomBackground(r.color) + ' !important;') : '';
-  // Casillas cuadradas: el lienzo mantiene la proporción de la rejilla y no pasa del alto de la pantalla
-  var stageSize = 'width:100%;max-width:calc(72vh * ' + maxCols + ' / ' + maxRows + ');margin:0 auto;min-height:0;aspect-ratio:' + maxCols + ' / ' + maxRows + ';';
-  html += '  <div class="canva-room-stage ' + texClass + '" id="canvaRoomStage" style="' + stageSize + 'grid-template-columns:repeat(' + maxCols + ', minmax(0, 1fr));grid-template-rows:repeat(' + maxRows + ', minmax(0, 1fr));' + stageCustomBg + '">';
-
-  // Celdas de guía de fondo
-  html += '    <div class="canva-stage-grid-lines" style="grid-template-columns:repeat(' + maxCols + ', minmax(0, 1fr));grid-template-rows:repeat(' + maxRows + ', minmax(0, 1fr));">';
-  for(var cellIdx = 0; cellIdx < (maxCols * maxRows); cellIdx++){
-    html += '<div class="canva-stage-grid-cell"></div>';
-  }
-  html += '    </div>';
-
-  // Renderizar muebles con soporte de selección morada Canva
-  furnitureList.forEach(function(f){
-    var isSel = (houseState.selectedItemId === f.id);
-    var itemW = Math.max(1, f.w || 1);
-    var itemH = Math.max(1, f.h || 1);
-    var colStart = (f.pos_x || 0) + 1;
-    var rowStart = (f.pos_y || 0) + 1;
-    var rot = f.rotation || 0;
-    var itemCount = Array.isArray(f.items) ? f.items.length : 0;
-    var gridSpan = 'grid-column:' + colStart + ' / span ' + itemW + ';grid-row:' + rowStart + ' / span ' + itemH + ';';
-
-    html += '<div class="canva-stage-item item-furniture' + (isSel ? ' canva-selected' : '') + '" style="' + gridSpan + '" data-action="canva-select-item" data-item-id="' + f.id + '" data-room-id="' + r.id + '">';
-
-    if(isSel && canEdit){
-      html += '<div class="canva-floating-toolbar">';
-      html += '  <button class="canva-float-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" title="Girar 90°">🔄 90°</button>';
-      html += '  <button class="canva-float-btn highlight" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Abrir inventario de este mueble">📦 Inv (' + itemCount + ')</button>';
-      html += '  <div class="canva-size-bar" title="Ajustar ancho">';
-      html += '    <span class="canva-size-lbl">W:</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="-1" title="Menos ancho">➖</button>';
-      html += '    <span class="canva-size-val">' + itemW + '</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="1" title="Más ancho">➕</button>';
-      html += '  </div>';
-      html += '  <div class="canva-size-bar" title="Ajustar alto">';
-      html += '    <span class="canva-size-lbl">H:</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="-1" title="Menos alto">➖</button>';
-      html += '    <span class="canva-size-val">' + itemH + '</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="1" title="Más alto">➕</button>';
-      html += '  </div>';
-      html += '  <div class="canva-nudge-bar" title="Mover celda">';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-dx="-1" data-dy="0" title="Izquierda">◀</button>';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-dx="0" data-dy="-1" title="Arriba">▲</button>';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-dx="0" data-dy="1" title="Abajo">▼</button>';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-dx="1" data-dy="0" title="Derecha">▶</button>';
-      html += '  </div>';
-      html += '  <button class="canva-float-btn" data-action="canva-duplicate-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" title="Duplicar elemento">📋 Copiar</button>';
-      html += '  <button class="canva-float-btn danger" data-action="canva-delete-item" data-room-id="' + r.id + '" data-item-id="' + f.id + '" title="Eliminar mueble">&times; Borrar</button>';
-      html += '</div>';
-      html += '<div class="canva-item-nametag">' + esc(f.name) + ' (' + itemW + 'x' + itemH + ')</div>';
-    } else if(!isSel && itemCount > 0){
-      html += '<div class="canva-item-mini-badge">📦 ' + itemCount + '</div>';
+  // Alfombras primero, para que queden debajo de los muebles
+  var all = [];
+  furnitureList.forEach(function(f){ if(f) all.push({ item: f, field: "furniture" }); });
+  decorList.forEach(function(d){ if(d) all.push({ item: d, field: "decor" }); });
+  all.sort(function(a, b){
+    return (getHouseItemLayer(a.item) === "suelo" ? 0 : 1) - (getHouseItemLayer(b.item) === "suelo" ? 0 : 1);
+  });
+  all.forEach(function(entry){
+    var it = entry.item;
+    var s = getHouseItemSize(it);
+    var v = canvaToView({ x: it.pos_x || 0, y: it.pos_y || 0, w: s.w, h: s.h }, grid, rot);
+    var isSel = !!sel && sel.item === it;
+    var n = canvaItemCount(it);
+    var cls = 'canva-stage-item cs-item' + (getHouseItemLayer(it) === "suelo" ? ' is-floor' : '') + (isSel ? ' is-sel' : '');
+    html += '<div class="' + cls + '" data-item-id="' + esc(it.id) + '" data-room-id="' + rid + '" style="' + canvaBoxStyle(v, cell) + '" role="button" aria-label="' + esc(canvaItemName(it)) + '">';
+    html += '  <div class="canva-stage-item-svg">' + getCanvaSvg(it.type || it.id, ((it.rotation || 0) + (rot ? 90 : 0)) % 360) + '</div>';
+    if(n > 0 && canvaItemIsStorage(entry)) html += '  <span class="cs-badge">' + n + '</span>';
+    if(isSel){
+      html += '  <span class="cs-name">' + esc(canvaItemName(it)) + '</span>';
+      html += '  <span class="cs-resize" aria-hidden="true"><i></i></span>';
     }
-
-    html += '  <div class="canva-stage-item-svg">' + getCanvaSvg(f.type || f.id, rot) + '</div>';
     html += '</div>';
   });
 
-  // Renderizar decoración con soporte de selección morada Canva
-  decorList.forEach(function(d){
-    var isSel = (houseState.selectedItemId === d.id);
-    var itemW = Math.max(1, d.w || 1);
-    var itemH = Math.max(1, d.h || 1);
-    var colStart = (d.pos_x || 0) + 1;
-    var rowStart = (d.pos_y || 0) + 1;
-    var rot = d.rotation || 0;
-    var gridSpan = 'grid-column:' + colStart + ' / span ' + itemW + ';grid-row:' + rowStart + ' / span ' + itemH + ';';
+  html += '</div>'; // fin cs-room
+  html += '</div>'; // fin cs-wall
+  html += '</div>'; // fin cs-stage-wrap
 
-    var floorCls = (getHouseItemLayer(d) === "suelo") ? ' item-floor' : '';
-    html += '<div class="canva-stage-item item-decor' + floorCls + (isSel ? ' canva-selected' : '') + '" style="' + gridSpan + '" data-action="canva-select-item" data-item-id="' + d.id + '" data-room-id="' + r.id + '">';
-
-    if(isSel && canEdit){
-      html += '<div class="canva-floating-toolbar">';
-      html += '  <button class="canva-float-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" title="Girar 90°">🔄 90°</button>';
-      html += '  <div class="canva-size-bar" title="Ajustar ancho">';
-      html += '    <span class="canva-size-lbl">W:</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="-1" title="Menos ancho">➖</button>';
-      html += '    <span class="canva-size-val">' + itemW + '</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="1" title="Más ancho">➕</button>';
-      html += '  </div>';
-      html += '  <div class="canva-size-bar" title="Ajustar alto">';
-      html += '    <span class="canva-size-lbl">H:</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="-1" title="Menos alto">➖</button>';
-      html += '    <span class="canva-size-val">' + itemH + '</span>';
-      html += '    <button class="canva-size-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="1" title="Más alto">➕</button>';
-      html += '  </div>';
-      html += '  <div class="canva-nudge-bar" title="Mover celda">';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-dx="-1" data-dy="0" title="Izquierda">◀</button>';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-dx="0" data-dy="-1" title="Arriba">▲</button>';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-dx="0" data-dy="1" title="Abajo">▼</button>';
-      html += '    <button class="canva-nudge-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-dx="1" data-dy="0" title="Derecha">▶</button>';
-      html += '  </div>';
-      html += '  <button class="canva-float-btn" data-action="canva-duplicate-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" title="Duplicar adorno">📋 Copiar</button>';
-      html += '  <button class="canva-float-btn danger" data-action="canva-delete-item" data-room-id="' + r.id + '" data-item-id="' + d.id + '" title="Quitar adorno">&times; Borrar</button>';
-      html += '</div>';
-      html += '<div class="canva-item-nametag">' + esc(d.label || d.type) + ' (' + itemW + 'x' + itemH + ')</div>';
-    }
-
-    html += '  <div class="canva-stage-item-svg">' + getCanvaSvg(d.type || d.id, rot) + '</div>';
-    html += '</div>';
-  });
-
-  html += '  </div>'; // fin canva-room-stage
-
-  // Panel de control táctil de elemento seleccionado (Dock interactivo para móviles y ratón)
-  if(houseState.selectedItemId && canEdit){
-    var selFurn = furnitureList.find(function(f){ return f.id === houseState.selectedItemId; });
-    var selDec = decorList.find(function(d){ return d.id === houseState.selectedItemId; });
-    var selItem = selFurn || selDec;
-    var isFurn = !!selFurn;
-
-    if(selItem){
-      var sW = Math.max(1, selItem.w || 1);
-      var sH = Math.max(1, selItem.h || 1);
-      var sX = selItem.pos_x || 0;
-      var sY = selItem.pos_y || 0;
-      var sName = isFurn ? selItem.name : (selItem.label || selItem.type);
-      var sItemCount = (isFurn && Array.isArray(selItem.items)) ? selItem.items.length : 0;
-
-      html += '<div class="canva-selected-dock" id="canvaSelectedDock">';
-      html += '  <div class="canva-dock-header">';
-      html += '    <div class="canva-dock-item-info">';
-      html += '      <span class="canva-dock-icon">' + (isFurn ? '🪑' : '🌿') + '</span>';
-      html += '      <strong class="canva-dock-name">' + esc(sName) + '</strong>';
-      html += '      <span class="canva-dock-coords">[' + sW + 'x' + sH + ' en celda (' + sX + ', ' + sY + ')]</span>';
-      html += '    </div>';
-      html += '    <button class="canva-dock-close-btn" data-action="canva-deselect-item" title="Cerrar selección">&times;</button>';
-      html += '  </div>';
-      html += '  <div class="canva-dock-body">';
-      html += '    <div class="canva-dock-actions-row">';
-      html += '      <button class="canva-dock-btn" data-action="canva-rotate-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" title="Rotar 90 grados">🔄 Girar</button>';
-      if(isFurn){
-        html += '      <button class="canva-dock-btn highlight" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + selItem.id + '" title="Abrir inventario">📦 Almacén (' + sItemCount + ')</button>';
-      }
-      html += '      <button class="canva-dock-btn" data-action="canva-duplicate-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" title="Duplicar">📋 Copiar</button>';
-      html += '      <button class="canva-dock-btn danger" data-action="canva-delete-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" title="Eliminar elemento">🗑️ Quitar</button>';
-      html += '    </div>';
-      html += '    <div class="canva-dock-adjust-row">';
-      html += '      <div class="canva-dock-size-pill">';
-      html += '        <span class="canva-dock-lbl">Ancho:</span>';
-      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="-1" title="Menos ancho">➖</button>';
-      html += '        <span class="canva-dock-val">' + sW + '</span>';
-      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-w" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="1" title="Más ancho">➕</button>';
-      html += '      </div>';
-      html += '      <div class="canva-dock-size-pill">';
-      html += '        <span class="canva-dock-lbl">Alto:</span>';
-      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="-1" title="Menos alto">➖</button>';
-      html += '        <span class="canva-dock-val">' + sH + '</span>';
-      html += '        <button class="canva-dock-adj-btn" data-action="canva-change-h" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-delta="1" title="Más alto">➕</button>';
-      html += '      </div>';
-      html += '      <div class="canva-dock-dpad">';
-      html += '        <span class="canva-dock-lbl">Mover:</span>';
-      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="-1" data-dy="0" title="Izquierda">◀</button>';
-      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="0" data-dy="-1" title="Arriba">▲</button>';
-      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="0" data-dy="1" title="Abajo">▼</button>';
-      html += '        <button class="canva-dock-dpad-btn" data-action="canva-nudge-item" data-room-id="' + r.id + '" data-item-id="' + selItem.id + '" data-dx="1" data-dy="0" title="Derecha">▶</button>';
-      html += '      </div>';
-      html += '    </div>';
-      html += '  </div>';
-      html += '</div>';
-    }
+  html += '<div class="cs-hint' + (canvaHintMsg ? ' is-warn' : '') + '" id="canvaHint" aria-live="polite">' + esc(canvaHintMsg || canvaDefaultHint()) + '</div>';
+  if(editing){
+    html += '<div class="cs-legend"><span><i class="is-ok"></i>Cabe aquí</span><span><i class="is-bad"></i>No cabe</span><span><i class="is-pass"></i>Zona de paso</span></div>';
   }
 
-  html += '</div>'; // fin canva-stage-wrap
-
-  html += '</div>'; // fin canva-studio-layout
-  html += '</div>'; // fin canva-studio-container
+  html += renderCanvaStudioDock(r, editing, canEdit, sel, grid, rot, furnitureList.length + decorList.length);
+  if(editing && houseState.studioCatalogOpen) html += renderCanvaCatalogSheet(r);
   return html;
 }
 
-// Arrastre directo de elementos en el Estudio Canva
+// Panel inferior único: añadir, o las acciones del mueble elegido
+function renderCanvaStudioDock(r, editing, canEdit, sel, grid, rot, total){
+  var rid = esc(r.id);
+  var html = '<div class="cs-dock" id="canvaDock"><div class="cs-dock-in">';
+
+  if(!editing){
+    html += '<div class="cs-tip">' + (canEdit
+      ? 'Así lo ve un jugador: los muebles no se mueven. Toca un baúl para ver lo que hay dentro.'
+      : 'Toca un baúl o una librería para ver lo que hay dentro.') + '</div>';
+  } else if(!sel){
+    html += '<button type="button" class="cs-add" data-action="canva-open-catalog" data-room-id="' + rid + '">＋ Añadir mueble o adorno</button>';
+    html += '<div class="cs-tip">' + total + (total === 1 ? ' elemento' : ' elementos') + ' en la estancia</div>';
+  } else {
+    var it = sel.item;
+    var iid = esc(it.id);
+    var s = getHouseItemSize(it);
+    var vs = rot ? { w: s.h, h: s.w } : s;
+    var lim = getHouseItemSizeLimits(it);
+    var vl = rot ? { minW: lim.minH, maxW: lim.maxH, minH: lim.minW, maxH: lim.maxW } : lim;
+    var vMaxW = Math.min(vl.maxW, rot ? grid.rows : grid.cols);
+    var vMaxH = Math.min(vl.maxH, rot ? grid.cols : grid.rows);
+    var store = canvaItemIsStorage(sel);
+    var n = canvaItemCount(it);
+    var attrs = ' data-room-id="' + rid + '" data-item-id="' + iid + '"';
+
+    html += '<div class="cs-dock-head">';
+    html += '  <span class="cs-dock-name">' + esc(canvaItemName(it)) + '</span>';
+    html += '  <span class="cs-dock-size">' + vs.w + '×' + vs.h + ' casillas</span>';
+    html += '  <button type="button" class="cs-icon-btn" data-action="canva-deselect-item" aria-label="Quitar selección" title="Quitar selección">✕</button>';
+    html += '</div>';
+
+    html += '<div class="cs-acts">';
+    html += '  <button type="button" class="cs-act" data-action="canva-rotate-item"' + attrs + '><span class="g">⟳</span>Girar</button>';
+    if(store){
+      html += '  <button type="button" class="cs-act is-store" data-action="open-add-item-modal" data-room-id="' + rid + '" data-furniture-id="' + iid + '"><span class="g">▣</span>Dentro (' + n + ')</button>';
+      html += '  <button type="button" class="cs-act" data-action="canva-duplicate-item"' + attrs + '><span class="g">⧉</span>Duplicar</button>';
+    } else {
+      html += '  <button type="button" class="cs-act" data-action="canva-duplicate-item"' + attrs + '><span class="g">⧉</span>Duplicar</button>';
+      html += '  <button type="button" class="cs-act" data-action="canva-relocate-item"' + attrs + '><span class="g">⌖</span>Recolocar</button>';
+    }
+    html += '  <button type="button" class="cs-act is-danger" data-action="canva-delete-item"' + attrs + '><span class="g">✕</span>Quitar</button>';
+    html += '</div>';
+
+    html += '<div class="cs-row">';
+    html += '  <div class="cs-step">';
+    html += '    <button type="button" data-action="canva-size-view" data-axis="w" data-delta="-1"' + attrs + ' aria-label="Menos ancho"' + (vs.w <= vl.minW ? ' disabled' : '') + '>−</button>';
+    html += '    <span>Ancho <b>' + vs.w + '</b></span>';
+    html += '    <button type="button" data-action="canva-size-view" data-axis="w" data-delta="1"' + attrs + ' aria-label="Más ancho"' + (vs.w >= vMaxW ? ' disabled' : '') + '>+</button>';
+    html += '  </div>';
+    html += '  <div class="cs-step">';
+    html += '    <button type="button" data-action="canva-size-view" data-axis="h" data-delta="-1"' + attrs + ' aria-label="Menos alto"' + (vs.h <= vl.minH ? ' disabled' : '') + '>−</button>';
+    html += '    <span>Alto <b>' + vs.h + '</b></span>';
+    html += '    <button type="button" data-action="canva-size-view" data-axis="h" data-delta="1"' + attrs + ' aria-label="Más alto"' + (vs.h >= vMaxH ? ' disabled' : '') + '>+</button>';
+    html += '  </div>';
+    html += '  <div class="cs-nudge">';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="-1" data-dy="0"' + attrs + ' aria-label="Mover a la izquierda">◀</button>';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="0" data-dy="-1"' + attrs + ' aria-label="Mover arriba">▲</button>';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="0" data-dy="1"' + attrs + ' aria-label="Mover abajo">▼</button>';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="1" data-dy="0"' + attrs + ' aria-label="Mover a la derecha">▶</button>';
+    html += '  </div>';
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+// Cajón del catálogo (sin puertas: las dibuja el plano)
+function renderCanvaCatalogSheet(r){
+  var rid = esc(r.id);
+  var cur = houseState.studioCategory || "todas";
+  if(!CANVA_STUDIO_CATEGORIES.some(function(c){ return c.id === cur; })) cur = "todas";
+  var list = CANVA_ASSET_LIBRARY.filter(function(a){
+    return !a.isDoor && (cur === "todas" || a.category === cur);
+  });
+
+  var html = '<div class="cs-sheet-bg" data-action="canva-close-catalog-bg">';
+  html += '<div class="cs-sheet" role="dialog" aria-modal="true" aria-labelledby="canvaCatTitle">';
+  html += '  <div class="cs-grab"></div>';
+  html += '  <div class="cs-sheet-h"><h2 id="canvaCatTitle">Añadir a la estancia</h2><button type="button" class="cs-icon-btn" data-action="canva-close-catalog" aria-label="Cerrar">✕</button></div>';
+  html += '  <div class="cs-chips">';
+  CANVA_STUDIO_CATEGORIES.forEach(function(c){
+    html += '<button type="button" data-action="canva-select-category" data-category="' + c.id + '" aria-pressed="' + (c.id === cur) + '">' + c.label + '</button>';
+  });
+  html += '  </div>';
+  html += '  <div class="cs-cat">';
+  list.forEach(function(a){
+    var floor = getHouseItemLayer({ type: a.defaultType || a.id }) === "suelo";
+    html += '<button type="button" class="cs-card" data-action="canva-insert-asset" data-room-id="' + rid + '" data-asset-id="' + a.id + '">';
+    html += '  <span class="cs-card-pv">' + getCanvaSvg(a.id, 0) + '</span>';
+    html += '  <span class="cs-card-tx"><b>' + esc(a.name) + '</b><small>' + (a.defaultW || 1) + '×' + (a.defaultH || 1) + ' casillas</small>';
+    if(a.isStorage) html += '<small class="is-store">Guarda objetos</small>';
+    if(floor) html += '<small>Va en el suelo</small>';
+    html += '  </span>';
+    html += '</button>';
+  });
+  html += '  </div>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+// ---------- Arrastre: mover, o cambiar el tamaño desde el tirador dorado ----------
 var canvaActiveDrag = null;
 
 function handleCanvaStagePointerDown(e){
   if(!houseState.studioRoomId) return;
   if(e.button !== undefined && e.button !== 0) return;
-  if(e.target.closest(".canva-floating-toolbar") || e.target.closest("button")) return;
-
-  var itemEl = e.target.closest(".canva-stage-item");
-  var stageEl = document.getElementById("canvaRoomStage");
-  if(!itemEl || !stageEl) return;
-
-  var itemId = itemEl.getAttribute("data-item-id");
-  var roomId = itemEl.getAttribute("data-room-id") || houseState.studioRoomId;
-  if(!itemId || !roomId) return;
-
-  var room = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  var stageEl = e.target.closest ? e.target.closest("#canvaRoomStage") : null;
+  if(!stageEl) return;
+  var room = canvaRoom();
   if(!room) return;
 
-  var isFurn = true;
-  var targetItem = (room.furniture || []).find(function(x){ return x.id === itemId; });
-  if(!targetItem){
-    targetItem = (room.decor || []).find(function(x){ return x.id === itemId; });
-    isFurn = false;
+  var itemEl = e.target.closest(".canva-stage-item");
+  if(!canvaIsEditing(room)){
+    // Modo jugador: un toque abre el baúl (al soltar, para no confundirlo con desplazar la página)
+    if(itemEl) canvaActiveDrag = { pointerId: e.pointerId, viewTap: true, roomId: room.id, itemId: itemEl.getAttribute("data-item-id"), startX: e.clientX, startY: e.clientY, moved: false, stageEl: stageEl };
+    return;
   }
-  if(!targetItem) return;
+  if(!itemEl){
+    // Tocar el suelo vacío quita la selección
+    if(houseState.selectedItemId){
+      houseState.selectedItemId = null;
+      refreshCanvaStudio();
+    }
+    return;
+  }
 
-  // Paso real de una casilla: ancho interior (sin borde ni relleno) más un hueco, entre columnas
+  var found = findRoomLayoutItem(room, itemEl.getAttribute("data-item-id"));
+  if(!found) return;
+  e.preventDefault();
+
   var grid = getRoomFurnitureGrid(room);
-  var cs = window.getComputedStyle(stageEl);
-  var padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-  var padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-  var gapX = parseFloat(cs.columnGap) || 0;
-  var gapY = parseFloat(cs.rowGap) || 0;
-  var cellW = Math.max(1, (stageEl.clientWidth - padX + gapX) / grid.cols);
-  var cellH = Math.max(1, (stageEl.clientHeight - padY + gapY) / grid.rows);
-
+  var rot = canvaIsRotated(room);
+  var s = getHouseItemSize(found.item);
+  var box = { x: found.item.pos_x || 0, y: found.item.pos_y || 0, w: s.w, h: s.h };
   canvaActiveDrag = {
     pointerId: e.pointerId,
-    roomId: roomId,
-    itemId: itemId,
-    isFurn: isFurn,
+    roomId: room.id,
+    itemId: found.item.id,
     itemEl: itemEl,
     stageEl: stageEl,
     startX: e.clientX,
     startY: e.clientY,
-    origPosX: targetItem.pos_x || 0,
-    origPosY: targetItem.pos_y || 0,
-    w: Math.max(1, targetItem.w || 1),
-    h: Math.max(1, targetItem.h || 1),
-    cols: grid.cols,
-    rows: grid.rows,
-    cellW: cellW,
-    cellH: cellH,
-    canDrop: true,
-    hasMoved: false,
-    currentPosX: targetItem.pos_x || 0,
-    currentPosY: targetItem.pos_y || 0
+    grid: grid,
+    rot: rot,
+    cell: parseFloat(stageEl.getAttribute("data-cell")) || 40,
+    box: box,
+    view: canvaToView(box, grid, rot),
+    resizing: !!e.target.closest(".cs-resize"),
+    moved: false,
+    ghost: null,
+    target: null,
+    problem: null
   };
 
   try {
-    itemEl.setPointerCapture(e.pointerId);
+    stageEl.setPointerCapture(e.pointerId);
   } catch(err){}
 }
 
 function handleCanvaStagePointerMove(e){
-  if(!canvaActiveDrag || canvaActiveDrag.pointerId !== e.pointerId) return;
+  var d = canvaActiveDrag;
+  if(!d || d.pointerId !== e.pointerId) return;
 
-  var dx = e.clientX - canvaActiveDrag.startX;
-  var dy = e.clientY - canvaActiveDrag.startY;
-
-  if(!canvaActiveDrag.hasMoved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)){
-    canvaActiveDrag.hasMoved = true;
-    canvaActiveDrag.itemEl.classList.add("canva-dragging");
-  }
-
-  if(!canvaActiveDrag.hasMoved) return;
-
+  var dx = e.clientX - d.startX;
+  var dy = e.clientY - d.startY;
+  if(!d.moved && Math.abs(dx) <= 6 && Math.abs(dy) <= 6) return;
+  if(d.viewTap){ d.moved = true; return; }
   e.preventDefault();
 
-  var deltaCols = Math.round(dx / canvaActiveDrag.cellW);
-  var deltaRows = Math.round(dy / canvaActiveDrag.cellH);
+  var room = canvaRoom(d.roomId);
+  var found = room ? findRoomLayoutItem(room, d.itemId) : null;
+  if(!found) return;
 
-  var newX = Math.max(0, Math.min(canvaActiveDrag.cols - canvaActiveDrag.w, canvaActiveDrag.origPosX + deltaCols));
-  var newY = Math.max(0, Math.min(canvaActiveDrag.rows - canvaActiveDrag.h, canvaActiveDrag.origPosY + deltaRows));
+  if(!d.moved){
+    d.moved = true;
+    d.itemEl.classList.add("cs-dragging");
+    d.ghost = document.createElement("div");
+    d.ghost.className = "cs-ghost";
+    d.stageEl.appendChild(d.ghost);
+  }
 
-  canvaActiveDrag.currentPosX = newX;
-  canvaActiveDrag.currentPosY = newY;
+  var target, problem, label = "";
+  if(d.resizing){
+    // La esquina de arriba a la izquierda (en pantalla) se queda fija
+    var vw = Math.max(1, Math.round(d.view.w + dx / d.cell));
+    var vh = Math.max(1, Math.round(d.view.h + dy / d.cell));
+    target = canvaFromView({ x: d.view.x, y: d.view.y, w: vw, h: vh }, d.grid, d.rot);
+    var lim = getHouseItemSizeLimits(found.item);
+    if(target.w < lim.minW || target.h < lim.minH) problem = "No puede ser más pequeño";
+    else if(target.w > lim.maxW || target.h > lim.maxH) problem = "No puede ser más grande";
+    else problem = getItemPlacementProblem(room, found.item, target.x, target.y, target.w, target.h);
+    label = vw + "×" + vh;
+  } else {
+    d.itemEl.style.left = (d.view.x * d.cell + dx) + "px";
+    d.itemEl.style.top = (d.view.y * d.cell + dy) + "px";
+    var md = canvaViewDelta(dx / d.cell, dy / d.cell, d.rot);
+    var nx = Math.max(0, Math.min(d.grid.cols - d.box.w, Math.round(d.box.x + md.dx)));
+    var ny = Math.max(0, Math.min(d.grid.rows - d.box.h, Math.round(d.box.y + md.dy)));
+    target = { x: nx, y: ny, w: d.box.w, h: d.box.h };
+    problem = getItemPlacementProblem(room, found.item, nx, ny, d.box.w, d.box.h);
+  }
+  d.target = target;
+  d.problem = problem;
 
-  // Aviso en rojo mientras el sitio de destino choca con otro elemento
-  var dragRoom = (houseState.rooms || []).find(function(x){ return x.id === canvaActiveDrag.roomId; });
-  var dragFound = dragRoom ? findRoomLayoutItem(dragRoom, canvaActiveDrag.itemId) : null;
-  canvaActiveDrag.canDrop = !!dragFound && canPlaceItem(dragRoom, dragFound.item, newX, newY, canvaActiveDrag.w, canvaActiveDrag.h);
-  canvaActiveDrag.itemEl.classList.toggle("canva-drop-invalid", !canvaActiveDrag.canDrop);
+  var gv = canvaToView(target, d.grid, d.rot);
+  d.ghost.setAttribute("style", canvaBoxStyle(gv, d.cell));
+  d.ghost.classList.toggle("is-bad", !!problem);
+  d.ghost.textContent = label;
 
-  canvaActiveDrag.itemEl.style.transform = "translate3d(" + dx + "px, " + dy + "px, 0)";
+  var hint = document.getElementById("canvaHint");
+  if(hint){
+    hint.classList.toggle("is-warn", !!problem);
+    hint.textContent = problem ? problem + "." : (d.resizing ? "Suelta para dejarlo de " + label + "." : "Suelta para colocarlo aquí.");
+  }
 }
 
 function handleCanvaStagePointerUp(e){
-  if(!canvaActiveDrag || canvaActiveDrag.pointerId !== e.pointerId) return;
-
-  var drag = canvaActiveDrag;
+  var d = canvaActiveDrag;
+  if(!d || d.pointerId !== e.pointerId) return;
   canvaActiveDrag = null;
 
   try {
-    drag.itemEl.releasePointerCapture(e.pointerId);
+    d.stageEl.releasePointerCapture(e.pointerId);
   } catch(err){}
 
-  drag.itemEl.classList.remove("canva-dragging");
-  drag.itemEl.classList.remove("canva-drop-invalid");
-  drag.itemEl.style.transform = "";
-
-  if(!drag.hasMoved){
-    houseState.selectedItemId = (houseState.selectedItemId === drag.itemId) ? null : drag.itemId;
-    renderHouseView();
-    return;
-  }
-
-  var room = (houseState.rooms || []).find(function(x){ return x.id === drag.roomId; });
+  var room = canvaRoom(d.roomId);
   if(!room) return;
 
-  var targetItem = drag.isFurn
-    ? (room.furniture || []).find(function(x){ return x.id === drag.itemId; })
-    : (room.decor || []).find(function(x){ return x.id === drag.itemId; });
-
-  if(!targetItem) return;
-
-  var changed = (targetItem.pos_x !== drag.currentPosX || targetItem.pos_y !== drag.currentPosY);
-  if(changed && !canPlaceItem(room, targetItem, drag.currentPosX, drag.currentPosY, drag.w, drag.h)){
-    // No cabe: vuelve a su sitio
-    houseLayoutWarn("No cabe ahí: choca con otro mueble.");
-    renderHouseView();
+  if(d.viewTap){
+    if(!d.moved && e.type === "pointerup") canvaOpenItemAsPlayer(room, d.itemId);
     return;
   }
-  if(changed){
-    targetItem.pos_x = drag.currentPosX;
-    targetItem.pos_y = drag.currentPosY;
-    houseState.selectedItemId = drag.itemId;
-    saveRoomChangesToRemoteAndBroadcast(room, drag.isFurn ? "furniture" : "decor");
-    renderHouseView();
-  } else {
-    renderHouseView();
+
+  houseState.selectedItemId = d.itemId;
+  var found = findRoomLayoutItem(room, d.itemId);
+  var t = d.target;
+  var changed = !!(found && t && (t.x !== d.box.x || t.y !== d.box.y || t.w !== d.box.w || t.h !== d.box.h));
+  if(d.moved && changed && !d.problem && e.type === "pointerup"){
+    var before = canvaSnapshot(room);
+    found.item.pos_x = t.x;
+    found.item.pos_y = t.y;
+    found.item.w = t.w;
+    found.item.h = t.h;
+    canvaCommit(room, before);
+    return;
   }
+
+  // No cabe o no ha cambiado: vuelve a su sitio
+  refreshCanvaStudio();
+  if(d.moved && d.problem) canvaFlash(d.problem + ". Vuelve a su sitio.");
 }
 
 
@@ -4479,7 +4755,7 @@ function renderHouseView(){
   html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
-  html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">🎨 Decorar Interior</button>';
+  html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">Editar muebles</button>';
   if(gmMode){
   html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
   html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
@@ -4551,6 +4827,8 @@ function renderHouseView(){
     setTimeout(function(){
       initOrRenderHouseKonvaStage();
     }, 10);
+  } else {
+    canvaAfterRender();
   }
 }
 
@@ -4728,97 +5006,27 @@ function renderHouseGridRooms(floorNumber){
 // ============================================================================
 // FASE 3 & 4: SUB-REJILLA CENITAL DE HABITACIÓN (Muebles y Decoración)
 // ============================================================================
+// Pestaña "Muebles" del inspector: solo lectura. Los muebles se cambian en el editor (Estudio).
 function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
-  var furnitureList = Array.isArray(r.furniture) ? r.furniture : [];
-  var decorList = Array.isArray(r.decor) ? r.decor : [];
+  var all = (Array.isArray(r.furniture) ? r.furniture : []).concat(Array.isArray(r.decor) ? r.decor : []);
+  var grid = getRoomFurnitureGrid(r);
 
-  // Las posiciones que falten se ponen al cargar (normalizeRoomLayout): pintar no cambia datos
-  var subGrid = getRoomFurnitureGrid(r);
-  var maxCols = subGrid.cols;
-  var maxRows = subGrid.rows;
-
-  var html = '<div class="house-room-subgrid-wrap">';
-  html += '  <div class="house-room-subgrid-toolbar">';
-  html += '    <div class="house-room-subgrid-title"><span>📐</span> Plano Interior de ' + esc(r.name) + ' (' + maxCols + 'x' + maxRows + ')</div>';
-  if(canEdit){
-    html += '    <div style="display:flex;gap:6px;">';
-    html += '      <button class="btn-compact highlight" data-action="open-add-furniture-modal" data-room-id="' + r.id + '" style="font-size:0.7rem;padding:3px 8px;">➕ Mueble</button>';
-    html += '      <button class="btn-compact highlight" data-action="toggle-decor-palette" data-room-id="' + r.id + '" style="font-size:0.7rem;padding:3px 8px;background:rgba(46,204,113,0.2);border-color:#2ECC71;color:#A9DFBF;">🌿 + Decoración</button>';
-    html += '    </div>';
-  }
+  var html = '<div class="house-room-subgrid-wrap cs-readonly">';
+  html += '  <div class="cs-readonly-head">';
+  html += '    <span>' + all.length + (all.length === 1 ? ' elemento' : ' elementos') + ' en ' + esc(r.name) + '</span>';
+  html += '    <button type="button" class="cs-open-btn" data-action="open-canva-studio" data-room-id="' + esc(r.id) + '">' + (canUserEditRoomGeometry(r) ? 'Editar muebles' : 'Ver muebles') + '</button>';
   html += '  </div>';
-
-  html += '  <div class="house-room-subgrid tex-' + (r.room_type || 'salon') + '" id="houseRoomSubgrid" style="grid-template-columns:repeat(' + maxCols + ', 1fr);grid-template-rows:repeat(' + maxRows + ', 72px);">';
-
-  // Renderizar muebles posicionados
-  furnitureList.forEach(function(f){
-    var colStart = (f.pos_x || 0) + 1;
-    var rowStart = (f.pos_y || 0) + 1;
-    var itemW = Math.max(1, f.w || 1);
-    var itemH = Math.max(1, f.h || 1);
-    var style = 'grid-column:' + colStart + ' / span ' + itemW + '; grid-row:' + rowStart + ' / span ' + itemH + ';';
-    var icon = f.icon || getFurnitureIcon(f.type);
-    var rot = f.rotation || 0;
-
-    html += '<div class="house-subtile-item house-subtile-furniture" style="' + style + '" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="' + esc(f.name) + ' (' + itemW + 'x' + itemH + ')">';
-    if(canEdit){
-      html += '  <div class="house-subtile-controls">';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="1" title="Más ancho">↔+</button>';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="-1" title="Menos ancho">↔-</button>';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="1" title="Más alto">↕+</button>';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + f.id + '" data-delta="-1" title="Menos alto">↕-</button>';
-      html += '    <button class="house-subtile-btn" data-action="rotate-room-furniture" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Girar 90°">⟳</button>';
-      html += '    <button class="house-subtile-btn danger" data-action="delete-furniture" data-room-id="' + r.id + '" data-furniture-id="' + f.id + '" title="Eliminar">&times;</button>';
-      html += '  </div>';
-    }
-    html += '  <span class="house-subtile-icon" style="transform:rotate(' + rot + 'deg);">' + icon + '</span>';
-    html += '  <span class="house-subtile-name">' + esc(f.name) + ' (' + itemW + 'x' + itemH + ')</span>';
-    html += '</div>';
-  });
-
-  // Renderizar elementos decorativos (sin inventario)
-  decorList.forEach(function(d){
-    var colStart = (d.pos_x || 0) + 1;
-    var rowStart = (d.pos_y || 0) + 1;
-    var itemW = Math.max(1, d.w || 1);
-    var itemH = Math.max(1, d.h || 1);
-    var style = 'grid-column:' + colStart + ' / span ' + itemW + '; grid-row:' + rowStart + ' / span ' + itemH + ';';
-    var rot = d.rotation || 0;
-
-    html += '<div class="house-subtile-item house-subtile-decor" style="' + style + '" title="' + esc(d.label || d.type) + ' (' + itemW + 'x' + itemH + ')">';
-    if(canEdit){
-      html += '  <div class="house-subtile-controls">';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="1" title="Más ancho">↔+</button>';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-w" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="-1" title="Menos ancho">↔-</button>';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="1" title="Más alto">↕+</button>';
-      html += '    <button class="house-subtile-btn" data-action="subgrid-change-h" data-room-id="' + r.id + '" data-item-id="' + d.id + '" data-delta="-1" title="Menos alto">↕-</button>';
-      html += '    <button class="house-subtile-btn" data-action="rotate-room-decor" data-room-id="' + r.id + '" data-decor-id="' + d.id + '" title="Girar 90°">⟳</button>';
-      html += '    <button class="house-subtile-btn danger" data-action="delete-room-decor" data-room-id="' + r.id + '" data-decor-id="' + d.id + '" title="Quitar">&times;</button>';
-      html += '  </div>';
-    }
-    html += '  <span class="house-subtile-icon" style="transform:rotate(' + rot + 'deg);">' + (d.icon || '🌿') + '</span>';
-    html += '  <span class="house-subtile-name">' + esc(d.label || d.type) + ' (' + itemW + 'x' + itemH + ')</span>';
-    html += '</div>';
-  });
-
-  html += '  </div>'; // fin house-room-subgrid
-
-  // Paleta de Decoración Rápida
-  if(canEdit){
-    html += '<div id="houseDecorPalette" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(212,175,55,0.25);">';
-    html += '  <div style="font-size:0.75rem;color:var(--gold-light);font-weight:700;margin-bottom:6px;">Toca un elemento decorativo para añadirlo a la estancia:</div>';
-    html += '  <div class="house-decor-palette">';
-    HOUSE_DECOR_CATALOG.forEach(function(dec){
-      html += '    <div class="house-decor-card" data-action="add-room-decor" data-room-id="' + r.id + '" data-decor-type="' + dec.type + '">';
-      html += '      <div class="house-decor-card-icon">' + dec.icon + '</div>';
-      html += '      <div class="house-decor-card-label">' + esc(dec.label) + ' (' + (dec.defaultW || 1) + 'x' + (dec.defaultH || 1) + ')</div>';
-      html += '    </div>';
+  html += '  <div class="cs-mini tex-' + esc(r.room_type || 'salon') + '" style="aspect-ratio:' + grid.cols + ' / ' + grid.rows + ';' + (r.color ? 'background:' + getRoomCustomBackground(r.color) + ';' : '') + '">' + renderRoomMiniLayout(r) + '</div>';
+  if(all.length){
+    html += '  <ul class="cs-mini-list">';
+    all.forEach(function(it){
+      if(!it) return;
+      var s = getHouseItemSize(it);
+      html += '<li><span>' + esc(canvaItemName(it)) + '</span><span>' + s.w + '×' + s.h + '</span></li>';
     });
-    html += '  </div>';
-    html += '</div>';
+    html += '  </ul>';
   }
-
-  html += '</div>'; // fin house-room-subgrid-wrap
+  html += '</div>';
   return html;
 }
 
@@ -4963,7 +5171,7 @@ function renderRoomInspector(roomId){
     }
 
     html += '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;">';
-    html += '    <button class="btn-solid-gold" data-action="open-canva-studio" data-room-id="' + r.id + '" style="font-size:0.8rem;padding:5px 12px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-color:#a78bfa;box-shadow:0 2px 10px rgba(139,92,246,0.35);">🎨 Diseñar en Estudio Canva</button>';
+    html += '    <button class="btn-solid-gold" data-action="open-canva-studio" data-room-id="' + r.id + '" style="font-size:0.85rem;padding:8px 14px;min-height:44px;">' + (canDecor ? 'Editar muebles' : 'Ver muebles') + '</button>';
     if(canDecor){
       html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
     }
@@ -4983,9 +5191,6 @@ function renderRoomInspector(roomId){
 
     html += '  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">';
     html += '    <div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);">Inventario de Almacenamiento:</div>';
-    if(canEdit){
-      html += '    <button class="btn-compact highlight" data-action="open-add-furniture-modal" data-room-id="' + r.id + '" style="font-size:0.72rem;padding:3px 8px;">➕ Añadir Mueble</button>';
-    }
     html += '  </div>';
 
     if(furnitureList.length === 0){
@@ -5002,9 +5207,6 @@ function renderRoomInspector(roomId){
         html += '        <div style="display:flex;gap:6px;align-items:center;">';
         if(canChest){
           html += '          <button class="btn-compact" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + fur.id + '" style="font-size:0.68rem;padding:2px 6px;">➕ Guardar Objeto</button>';
-        }
-        if(canEdit){
-          html += '          <button class="btn-compact" data-action="delete-furniture" data-room-id="' + r.id + '" data-furniture-id="' + fur.id + '" style="font-size:0.68rem;color:#E74C3C;" title="Quitar mueble">&times;</button>';
         }
         html += '        </div>';
         html += '      </div>';
@@ -5853,6 +6055,7 @@ function openHouseView(){
 }
 
 function backFromHouseView(){
+  flushCanvaStudioSave();
   houseState.active = false;
   houseState.selectedRoomId = null;
   if(typeof state !== "undefined"){
@@ -5864,7 +6067,9 @@ function backFromHouseView(){
 }
 
 var HOUSE_GM_ONLY_ACTIONS = ["quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit"];
-var HOUSE_ROOM_EDIT_ACTIONS = ["quick-rename-selected-room", "quick-step-room-size", "quick-toggle-texture-menu", "quick-toggle-color-menu", "quick-toggle-icon-menu", "nudge-room", "resize-room", "set-room-color", "open-edit-room-modal"];
+var HOUSE_ROOM_EDIT_ACTIONS = ["quick-rename-selected-room", "quick-step-room-size", "quick-toggle-texture-menu", "quick-toggle-color-menu", "quick-toggle-icon-menu", "nudge-room", "resize-room", "set-room-color", "open-edit-room-modal",
+  "canva-insert-asset", "canva-rotate-item", "canva-duplicate-item", "canva-delete-item", "canva-change-w", "canva-change-h", "canva-nudge-item",
+  "canva-size-view", "canva-nudge-view", "canva-relocate-item", "canva-undo", "canva-redo", "canva-open-catalog"];
 
 // ============================================================================
 // 11. GESTOR DE EVENTOS DELEGADOS PARA LA CASA
@@ -6136,30 +6341,57 @@ document.addEventListener("click", function(e){
   } else if(act === "open-canva-studio"){
     var csRoomId = btn.getAttribute("data-room-id") || houseState.selectedRoomId;
     if(csRoomId){
+      flushCanvaStudioSave();
       houseState.studioRoomId = csRoomId;
       houseState.selectedItemId = null;
+      houseState.studioCatalogOpen = false;
+      canvaHintMsg = "";
+      canvaResetHistory(csRoomId);
       renderHouseView();
+      var csEl = document.getElementById("canvaStudio");
+      var csTop = document.getElementById("topbar");
+      if(csEl) window.scrollTo({ top: Math.max(0, csEl.getBoundingClientRect().top + window.scrollY - (csTop ? csTop.offsetHeight : 0) - 8), behavior: "instant" });
     }
   } else if(act === "close-canva-studio"){
+    flushCanvaStudioSave();
     houseState.studioRoomId = null;
     houseState.selectedItemId = null;
+    houseState.studioCatalogOpen = false;
+    canvaResetHistory(null);
     renderHouseView();
+  } else if(act === "canva-set-mode"){
+    houseState.studioMode = (btn.getAttribute("data-mode") === "view") ? "view" : "edit";
+    if(houseState.studioMode === "view") houseState.selectedItemId = null;
+    canvaHintMsg = "";
+    refreshCanvaStudio();
+  } else if(act === "canva-toggle-rotview"){
+    var rvRoom = canvaRoom();
+    if(rvRoom){
+      houseState.studioRotView = !canvaIsRotated(rvRoom);
+      refreshCanvaStudio();
+    }
+  } else if(act === "canva-open-catalog"){
+    houseState.studioCatalogOpen = true;
+    refreshCanvaStudio();
+  } else if(act === "canva-close-catalog" || (act === "canva-close-catalog-bg" && e.target === btn)){
+    houseState.studioCatalogOpen = false;
+    refreshCanvaStudio();
   } else if(act === "canva-select-category"){
     houseState.studioCategory = btn.getAttribute("data-category") || "todas";
-    renderHouseView();
+    refreshCanvaStudio();
   } else if(act === "canva-insert-asset"){
     var insRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
     var insAssetId = btn.getAttribute("data-asset-id");
     canvaInsertAsset(insRoomId, insAssetId);
-  } else if(act === "canva-select-item"){
-    e.stopPropagation();
-    var itmId = btn.getAttribute("data-item-id");
-    houseState.selectedItemId = (houseState.selectedItemId === itmId) ? null : itmId;
-    renderHouseView();
   } else if(act === "canva-deselect-item"){
     e.stopPropagation();
     houseState.selectedItemId = null;
-    renderHouseView();
+    refreshCanvaStudio();
+  } else if(act === "canva-undo" || act === "canva-redo"){
+    canvaHideToast();
+    canvaUndoRedo(act === "canva-redo");
+  } else if(act === "canva-toast-close"){
+    canvaHideToast();
   } else if(act === "canva-rotate-item"){
     e.stopPropagation();
     var rotRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
@@ -6175,6 +6407,17 @@ document.addEventListener("click", function(e){
     var delRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
     var delItemId = btn.getAttribute("data-item-id") || houseState.selectedItemId;
     canvaDeleteItem(delRoomId, delItemId);
+  } else if(act === "canva-relocate-item"){
+    e.stopPropagation();
+    canvaRelocateItem(btn.getAttribute("data-room-id") || houseState.studioRoomId, btn.getAttribute("data-item-id") || houseState.selectedItemId);
+  } else if(act === "canva-size-view"){
+    e.stopPropagation();
+    canvaResizeItemView(btn.getAttribute("data-room-id") || houseState.studioRoomId, btn.getAttribute("data-item-id") || houseState.selectedItemId,
+      btn.getAttribute("data-axis"), parseInt(btn.getAttribute("data-delta"), 10) || 0);
+  } else if(act === "canva-nudge-view"){
+    e.stopPropagation();
+    canvaNudgeItemView(btn.getAttribute("data-room-id") || houseState.studioRoomId, btn.getAttribute("data-item-id") || houseState.selectedItemId,
+      parseInt(btn.getAttribute("data-dx"), 10) || 0, parseInt(btn.getAttribute("data-dy"), 10) || 0);
   } else if(act === "canva-change-w"){
     e.stopPropagation();
     var wRoomId = btn.getAttribute("data-room-id") || houseState.studioRoomId;
@@ -6230,47 +6473,13 @@ document.addEventListener("input", function(e){
       bar2.querySelectorAll(".house-color-chip").forEach(function(c){ c.classList.remove("is-active"); });
     }
   }
-
-  if(e.target && e.target.id === "canvaSearchInput"){
-    houseState.studioSearch = e.target.value || "";
-    var assetsGrid = document.querySelector(".canva-assets-grid");
-    if(assetsGrid && houseState.studioRoomId){
-      var r = (houseState.rooms || []).find(function(x){ return x.id === houseState.studioRoomId; });
-      if(r){
-        var curCategory = houseState.studioCategory || "todas";
-        var search = houseState.studioSearch.toLowerCase().trim();
-        var filtered = CANVA_ASSET_LIBRARY.filter(function(a){
-          if(curCategory !== "todas" && a.category !== curCategory) return false;
-          if(search){
-            return a.name.toLowerCase().includes(search) || (a.desc && a.desc.toLowerCase().includes(search));
-          }
-          return true;
-        });
-        var gHtml = '';
-        if(filtered.length === 0){
-          gHtml = '<div style="font-size:0.78rem;color:var(--ink-faint);text-align:center;padding:24px;">No se encontraron elementos para esa búsqueda.</div>';
-        } else {
-          filtered.forEach(function(asset){
-            var badge = asset.isStorage ? '📦 Inventario' : (asset.isDoor ? '🚪 Acceso' : (asset.isDecor ? '🌿 Adorno' : '🪑 Mueble'));
-            gHtml += '<div class="canva-asset-card" data-action="canva-insert-asset" data-room-id="' + r.id + '" data-asset-id="' + asset.id + '" title="' + esc(asset.desc) + '">';
-            gHtml += '  <div class="canva-asset-card-preview">' + getCanvaSvg(asset.id, 0) + '</div>';
-            gHtml += '  <div class="canva-asset-card-info">';
-            gHtml += '    <div class="canva-asset-card-name">' + esc(asset.name) + '</div>';
-            gHtml += '    <span class="canva-asset-card-badge">' + badge + '</span>';
-            gHtml += '  </div>';
-            gHtml += '  <div class="canva-asset-card-add">➕</div>';
-            gHtml += '</div>';
-          });
-        }
-        assetsGrid.innerHTML = gHtml;
-      }
-    }
-  }
 });
 
 // Sincronización automática entre dispositivos cuando la ventana recupera foco o visibilidad
 if(typeof document !== "undefined" && typeof document.addEventListener === "function"){
   document.addEventListener("visibilitychange", function(){
+    // Al salir de la app o cambiar de pestaña se guarda lo pendiente del editor de muebles
+    if(document.visibilityState === "hidden") flushCanvaStudioSave();
     if(document.visibilityState === "visible" && houseState.active){
       fetchHouseRemoteData().then(function(){ renderHouseView(); });
     }
@@ -6278,6 +6487,15 @@ if(typeof document !== "undefined" && typeof document.addEventListener === "func
 }
 
 if(typeof window !== "undefined" && typeof window.addEventListener === "function"){
+  window.addEventListener("pagehide", flushCanvaStudioSave);
+  // Al girar el móvil o cambiar el tamaño de la ventana, la estancia se vuelve a ajustar
+  window.addEventListener("resize", function(){
+    if(!houseState.studioRoomId) return;
+    clearTimeout(canvaResizeTimer);
+    canvaResizeTimer = setTimeout(function(){
+      if(houseState.studioRoomId && document.getElementById("canvaStudioInner") && !canvaActiveDrag) refreshCanvaStudio();
+    }, 150);
+  });
   window.addEventListener("focus", function(){
     if(houseState.active){
       fetchHouseRemoteData().then(function(){ renderHouseView(); });

@@ -3486,3 +3486,764 @@
   background: linear-gradient(180deg, #E8C06A, #D9A84A);
   color: #1A120D;
 }
+
+/* ==========================================================================
+   EDITOR DE MUEBLES (Estudio): estancia a todo el ancho, panel inferior fijo,
+   catálogo en cajón. Dorado y oscuro, objetivos táctiles de 44 px.
+   ========================================================================== */
+/* Mientras el editor está abierto, su panel ocupa el sitio de la barra de pestañas y del dado */
+body:has(#canvaStudio) .tabbar,
+body:has(#canvaStudio) .fab-dice {
+  display: none !important;
+}
+
+.cs-studio {
+  max-width: min(760px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+  gap: 12px;
+  scroll-margin-top: 8px;
+}
+
+#canvaStudioInner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cs-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-icon-btn {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-card);
+  color: var(--gold-light);
+  font-size: 1.15rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cs-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cs-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-title h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 4.5vw, 1.3rem);
+  color: var(--gold-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.cs-save {
+  color: #7CC4A4;
+  font-size: 0.78rem;
+}
+
+.cs-save.is-busy {
+  color: var(--ink-faint);
+}
+
+.cs-rotv {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.cs-rotv[aria-pressed="true"] {
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+.cs-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+}
+
+.cs-mode button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink-dim);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.cs-mode button[aria-pressed="true"] {
+  background: linear-gradient(180deg, #3a2a1d, #2a1e15);
+  color: var(--gold-light);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+/* Estancia */
+.cs-stage-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  /* Sin esto, el ancho se mide sobre una caja que ya se ha estirado y la estancia se sale por la derecha */
+  min-width: 0;
+}
+
+.cs-wall {
+  position: relative;
+  border: 10px solid #3b2a1f;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px #5a4232, 0 8px 30px rgba(0, 0, 0, 0.6);
+  background-color: #5e422e;
+}
+
+.cs-room {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.cs-room.is-edit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(243, 234, 219, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(243, 234, 219, 0.14) 1px, transparent 1px);
+  background-size: var(--cell) var(--cell);
+}
+
+.cs-door {
+  position: absolute;
+  background: #6a4a33;
+  pointer-events: none;
+}
+
+.cs-door-top,
+.cs-door-bottom {
+  height: 10px;
+  border-left: 3px solid var(--gold);
+  border-right: 3px solid var(--gold);
+}
+
+.cs-door-top { top: -10px; }
+.cs-door-bottom { bottom: -10px; }
+
+.cs-door-left,
+.cs-door-right {
+  width: 10px;
+  border-top: 3px solid var(--gold);
+  border-bottom: 3px solid var(--gold);
+}
+
+.cs-door-left { left: -10px; }
+.cs-door-right { right: -10px; }
+
+.cs-pass {
+  position: absolute;
+  pointer-events: none;
+  border: 1px dashed rgba(222, 195, 146, 0.45);
+  border-radius: 4px;
+  background: repeating-linear-gradient(45deg, rgba(222, 195, 146, 0.16) 0 6px, transparent 6px 12px);
+}
+
+.cs-pass span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  opacity: 0.8;
+}
+
+.cs-room .canva-stage-item.cs-item {
+  position: absolute;
+  z-index: 3;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  outline: none;
+  cursor: grab;
+  transition: left 0.15s ease, top 0.15s ease, width 0.15s ease, height 0.15s ease;
+}
+
+.cs-room .canva-stage-item.cs-item.is-floor {
+  z-index: 2;
+}
+
+.cs-room .cs-item.is-floor .canva-stage-item-svg svg {
+  filter: none;
+}
+
+.cs-room .canva-stage-item.cs-item.is-sel {
+  z-index: 5;
+  outline: 2.5px solid var(--gold-light);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 5px rgba(222, 195, 146, 0.22);
+}
+
+.cs-room .canva-stage-item.cs-item.cs-dragging {
+  z-index: 10;
+  opacity: 0.85;
+  transition: none;
+  cursor: grabbing;
+}
+
+.cs-room:not(.is-edit) .cs-item {
+  cursor: pointer;
+}
+
+.cs-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 11px;
+  background: var(--gold);
+  color: #1a120d;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+
+.cs-name {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgba(18, 13, 10, 0.92);
+  color: var(--gold-light);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Tirador de tamaño: se ve pequeño, pero la zona táctil es de 44 px */
+.cs-resize {
+  position: absolute;
+  right: -22px;
+  bottom: -22px;
+  width: 44px;
+  height: 44px;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  cursor: nwse-resize;
+}
+
+.cs-resize i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  border: 2px solid #1a120d;
+  box-shadow: 0 0 0 2px var(--gold), 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.cs-ghost {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 6px;
+  border: 2.5px dashed var(--gold-light);
+  background: rgba(222, 195, 146, 0.16);
+  display: grid;
+  place-items: center;
+  color: var(--gold-light);
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 2px #000;
+}
+
+.cs-ghost.is-bad {
+  border-color: #F07A84;
+  background: rgba(240, 122, 132, 0.18);
+  color: #F07A84;
+}
+
+.cs-hint {
+  min-height: 1.4em;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+  text-wrap: balance;
+}
+
+.cs-hint.is-warn {
+  color: #F07A84;
+}
+
+.cs-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.cs-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+.cs-legend i.is-ok { background: rgba(222, 195, 146, 0.3); border: 1px dashed var(--gold-light); }
+.cs-legend i.is-bad { background: rgba(240, 122, 132, 0.3); border: 1px dashed #F07A84; }
+.cs-legend i.is-pass { background: repeating-linear-gradient(45deg, rgba(222, 195, 146, 0.4) 0 3px, transparent 3px 6px); }
+
+/* Panel inferior fijo */
+.cs-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(26, 18, 13, 0.96), var(--bg-elev));
+  border-top: 1px solid var(--line-strong);
+}
+
+.cs-dock-in {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-dock-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cs-dock-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-dock-size {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-acts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.cs-act {
+  min-height: 56px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-card);
+  color: var(--ink-dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cs-act .g {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--gold-light);
+}
+
+.cs-act.is-store {
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+
+.cs-act.is-danger,
+.cs-act.is-danger .g {
+  color: #F07A84;
+}
+
+.cs-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cs-step {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+}
+
+.cs-step span {
+  min-width: 3.8em;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+.cs-step span b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-step button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 9px;
+  background: #2c2018;
+  color: var(--gold-light);
+  font-size: 1.15rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cs-step button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.cs-nudge {
+  display: flex;
+  gap: 4px;
+}
+
+.cs-nudge button {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  color: var(--ink-dim);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cs-add {
+  width: 100%;
+  min-height: 54px;
+  border-radius: 14px;
+  border: 1px solid var(--gold);
+  background: linear-gradient(180deg, #d4b178, #a8834c);
+  color: #1a120d;
+  font-weight: 800;
+  font-size: 1.02rem;
+  box-shadow: 0 2px 0 #6e5430;
+  cursor: pointer;
+}
+
+.cs-tip {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+
+/* Cajón del catálogo */
+.cs-sheet-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(8, 5, 3, 0.6);
+}
+
+.cs-sheet {
+  width: 100%;
+  max-width: 760px;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  animation: csSheetUp 0.25s ease;
+}
+
+@keyframes csSheetUp {
+  from { transform: translateY(40px); opacity: 0; }
+}
+
+.cs-grab {
+  width: 44px;
+  height: 5px;
+  margin: 8px auto 4px;
+  border-radius: 3px;
+  background: var(--line-strong);
+}
+
+.cs-sheet-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px 8px;
+}
+
+.cs-sheet-h h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--gold-light);
+}
+
+.cs-chips {
+  display: flex;
+  gap: 6px;
+  padding: 0 16px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cs-chips button {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.cs-chips button[aria-pressed="true"] {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1a120d;
+  font-weight: 700;
+}
+
+.cs-cat {
+  overflow-y: auto;
+  padding: 0 16px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.cs-card {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 68px;
+  padding: 8px;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.cs-card-pv {
+  width: 52px;
+  height: 52px;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #2a1e17;
+}
+
+.cs-card-pv svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cs-card-tx b {
+  display: block;
+  font-size: 0.86rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.cs-card-tx small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.cs-card-tx small.is-store {
+  color: var(--gold-light);
+}
+
+/* Aviso con "Deshacer", encima del panel */
+.cs-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--cs-dock-h, 150px) + 12px);
+  transform: translateX(-50%);
+  z-index: 50;
+  width: min(440px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--gold);
+  background: #2a1e15;
+  color: var(--ink);
+  font-size: 0.88rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+.cs-toast span {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-toast button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.cs-toast-undo {
+  background: var(--gold);
+  color: #1a120d;
+  font-weight: 700;
+}
+
+.cs-toast-x {
+  background: transparent;
+  color: var(--ink-faint);
+}
+
+/* Pestaña "Muebles" del inspector (solo lectura) */
+.cs-readonly-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.cs-open-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--gold);
+  background: linear-gradient(180deg, #d4b178, #a8834c);
+  color: #1a120d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cs-mini {
+  position: relative;
+  width: 100%;
+  max-height: 260px;
+  border: 6px solid #3b2a1f;
+  border-radius: 6px;
+  background-color: #5e422e;
+  overflow: hidden;
+}
+
+.cs-mini-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cs-mini-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  font-size: 0.85rem;
+}
+
+.cs-mini-list li span:last-child {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-room .canva-stage-item.cs-item,
+  .cs-sheet {
+    transition: none;
+    animation: none;
+  }
+}
