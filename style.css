@@ -308,14 +308,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   .gauge-nums{font-size:0.62rem;white-space:nowrap;}
   .gauge{height:8px;border-radius:4px;}
   .gauge-adjust{gap:2px;margin-top:3px;}
-  .gauge-adjust button{min-height:24px;height:24px;padding:0;font-size:0.62rem;border-radius:4px;}
+  .gauge-adjust button{min-height:44px;height:44px;padding:0;font-size:0.62rem;border-radius:4px;}
 }
 
 @media(max-width:600px){
   .char-name{font-size:0.86rem;max-width:130px;}
   .sync-status{display:none;}
   .gauges{grid-template-columns:1fr 85px 1fr;gap:4px;}
-  .gauge-adjust button{min-height:24px;height:24px;font-size:0.6rem;padding:2px 0;}
+  .gauge-adjust button{min-height:44px;height:44px;font-size:0.68rem;padding:2px 0;}
   main{padding:10px 6px 110px;}
   .section{padding:10px 8px 14px;}
 }
@@ -9201,3 +9201,80 @@ textarea,
 
 /* Contador en la pestaña Piedras (máster) */
 .tab-btn .tab-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: #D2691E; color: #fff; font-size: .7rem; font-weight: 700; line-height: 1; vertical-align: middle; }
+
+/* Móvil: en las pestañas todo lo que se toca mide al menos 44 px */
+@media (max-width: 900px), (pointer: coarse) {
+  #main button,
+  #main select,
+  #main summary,
+  #main input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]),
+  .gauge-adjust button {
+    min-height: 44px;
+  }
+  #main button,
+  #main select {
+    min-width: 44px;
+  }
+  /* Habilidades: la columna del bono cabe con los botones grandes; el nombre baja de línea */
+  .skill-col-headers,
+  .skill-row {
+    grid-template-columns: minmax(0, 1fr) 26px 124px 30px 44px;
+  }
+  .skill-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .gm-skill-tools {
+    gap: 4px;
+  }
+  /* Misiones: casilla, texto y contadores de los objetivos */
+  #main .quest-task-cb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 44px;
+    height: 44px;
+    margin: -10px;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect x='11' y='11' width='22' height='22' rx='4' fill='%23120D0A' stroke='%23B08D57' stroke-width='2'/%3E%3C/svg%3E") center / 44px 44px no-repeat;
+  }
+  #main .quest-task-cb:checked {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect x='11' y='11' width='22' height='22' rx='4' fill='%23B08D57' stroke='%23B08D57' stroke-width='2'/%3E%3Cpath d='M16 22.5l4.5 4.5 8-9' fill='none' stroke='%23120D0A' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  #main .quest-task-cb:disabled {
+    opacity: 0.6;
+  }
+  .quest-task-text.editable {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .quest-task-num-input {
+    width: 48px;
+  }
+  /* Ventanas (menos el taller del lapidario, que tiene las suyas): lo mismo */
+  .modal:not(.lapidary-modal-box) button,
+  .modal:not(.lapidary-modal-box) select,
+  .modal:not(.lapidary-modal-box) summary,
+  .modal:not(.lapidary-modal-box) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]) {
+    min-height: 44px !important;
+  }
+  .modal:not(.lapidary-modal-box) button {
+    min-width: 44px !important;
+  }
+  .char-list-item .cli-main-select {
+    min-height: 44px;
+  }
+  .swatch {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Móvil en horizontal: la cabecera se va al desplazar para dejar sitio al contenido */
+@media (orientation: landscape) and (max-height: 500px) {
+  .topbar {
+    position: static;
+  }
+}
