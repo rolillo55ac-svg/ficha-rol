@@ -2719,10 +2719,11 @@ function renderAlchemyCatalogModalList(c){
         '<span>🌱 <i>' + esc(s.rawMaterial) + '</i></span>' +
         '<span>CD Extracción: ' + s.dificultadExtraccion + '</span>' +
       '</div>' +
-      '<div style="font-size:0.72rem;color:var(--ink-dim);line-height:1.3;margin-top:2px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
-        '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:#FF8A96;font-weight:600;">⚔️ Enemigo:</span> ' + esc(s.efectoEnemigo) + '</div>' +
-        '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:var(--teal-light);font-weight:600;">🛡️ Propio:</span> ' + esc(s.efectoCherk) + '</div>' +
-      '</div>' +
+      ((s.efectoEnemigo || s.efectoCherk) ?
+        '<div style="font-size:0.72rem;color:var(--ink-dim);line-height:1.3;margin-top:2px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:#FF8A96;font-weight:600;">⚔️ Enemigo:</span> ' + esc(s.efectoEnemigo) + '</div>' +
+          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:var(--teal-light);font-weight:600;">🛡️ Propio:</span> ' + esc(s.efectoCherk) + '</div>' +
+        '</div>' : '') +
     '</div>';
   });
 

@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.29.0";
-var APP_BUILD = "2026.10.13.23";
+var APP_VERSION = "1.4.30.0";
+var APP_BUILD = "2026.10.14.01";
 
 var state = null;
 var supabaseClient = null;
@@ -272,8 +272,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 8,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Base de venenos (Muy común). Entorpece las funciones motoras.",
-      efectoCherk: "Neutralizante digestivo / Estimulante base.",
       desc: "Hongo común de bosque húmedo. Su savia filtrada sirve como base de fijación para toxinas complejas."
     },
     {
@@ -288,8 +286,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 10,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Sueño profundo / Paralización motora progresiva.",
-      efectoCherk: "No necesitas dormir (Máximo 1 noche sin penalización).",
       desc: "Libera finas esporas azucaradas. Induce un sopor narcótico en adversarios, mientras que Cherk metaboliza el principio activo como lucidez continuada."
     },
     {
@@ -304,8 +300,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 10,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Entumecer músculos y articulaciones.",
-      efectoCherk: "+ Mitad de movilidad (4 Turnos).",
       desc: "Crece adherida a vetas minerales en penumbra. Agota los reflejos del rival pero activa la circulación periférica en Cherk."
     },
     {
@@ -320,8 +314,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 10,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Reduce la Percepción rival (-2 a tiradas de Advertir y Buscar).",
-      efectoCherk: "+2 a Percepción (20 min).",
       desc: "Planta flotante de aguas turbias. Su extracto obnubila la vista y el oído enemigo, pero afina los sentidos sensoriales de Cherk."
     },
     {
@@ -336,8 +328,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 11,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Daño continuo por toxina corrosiva (1d4 por turno).",
-      efectoCherk: "+3 de vida falsa / escudo orgánico (hasta perderla).",
       desc: "Vegetal viscoso de manglar salobre. Al inyectarse, su reacción orgánica genera una coraza celular protectora en Cherk."
     },
     {
@@ -352,8 +342,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 16,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Veneno mortal. Colapso biológico fulminante.",
-      efectoCherk: "Trance agónico: Inmune a caer inconsciente durante 3 turnos.",
       desc: "Planta legendaria de la jungla profunda que florece donde cayeron héroes antiguos. Letal para el organismo común."
     },
     {
@@ -368,8 +356,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 13,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Ceguera temporal e hipersensibilidad a la luz.",
-      efectoCherk: "Visión en la oscuridad completa (20 min).",
       desc: "Flor que solo abre sus cálices bajo la noche sin luna. Su resina ciega a quien la recibe en los ojos pero dilata la pupila de Cherk."
     },
     {
@@ -384,8 +370,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Urticante lacerante, ardor constante que distrae en combate.",
-      efectoCherk: "+1 a las acciones (3 Turnos).",
       desc: "Planta crasa de las arenas. Su jugo irritante genera un estallido adrenérgico que duplica el ímpetu de Cherk."
     },
     {
@@ -400,8 +384,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 13,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Congela al rival (-4 a Movilidad / entumecimiento glacial).",
-      efectoCherk: "Resistencia térmica absoluta al calor y fuego (15 min).",
       desc: "Resina recolectada en tundras de alta montaña que mantiene el frío perenne."
     },
     {
@@ -416,8 +398,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Deshidrata con extrema rapidez, causando jadeo y sed dolorosa.",
-      efectoCherk: "Absorbe y drena toxinas estomacales ajenas.",
       desc: "Fungo de las tierras de Aslan capaz de chupar la humedad de cualquier tejido circundante."
     },
     {
@@ -432,8 +412,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 13,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Azufre corrosivo. Quema piel y corroe armaduras leves.",
-      efectoCherk: "Calor interno que otorga inmunidad al congelamiento ambiental.",
       desc: "Vegetal termófilo que florece cerca de chimeneas de basalto incandescente."
     },
     {
@@ -448,8 +426,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Visión monocromática en blanco y negro (anula contrastes).",
-      efectoCherk: "Visión térmica: Detecta siluetas calientes en la penumbra.",
       desc: "Arbusto común de claros boscosos. Afecta los conos retinianos del adversario."
     },
     {
@@ -464,8 +440,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Duerme la lengua y cuerdas vocales (impide articular conjuros).",
-      efectoCherk: "Anestesia local: Ignora penalizadores por dolor.",
       desc: "Frutos negros de espino venenoso con fuerte efecto paralizante en mucosas orales."
     },
     {
@@ -480,8 +454,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: "Kimera",
       dificultadExtraccion: 16,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Paraliza por completo el sistema nervioso motor.",
-      efectoCherk: "Hiperreflejos felinos: +3 a Reflejos y Esquivar (3 turnos).",
       desc: "Toxina pura recolectada de bestias de Kimera en las grutas profundas de Vetrys."
     },
     {
@@ -496,8 +468,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Quemadura de sol abrasadora interna.",
-      efectoCherk: "Piel bronceada endurecida: +2 a la Absorción física.",
       desc: "Arácnido metálico que mora bajo las arenas cobrizas de Aslan."
     },
     {
@@ -512,8 +482,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Ceguera por fotofobia aguda y lagrimeo constante.",
-      efectoCherk: "Clarividencia: Ojos descansados bajo la noche estelar.",
       desc: "Brote floral que crece en las orillas de manantiales escondidos en el desierto."
     },
     {
@@ -528,8 +496,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 15,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Dolor fatal e insuficiencia nerviosa dolorosa.",
-      efectoCherk: "Furia adrenalínica: +1d6 al daño del próximo ataque físico.",
       desc: "Criatura de pesadilla de las dunas profundas. Su veneno es legendario en los bazares."
     },
     {
@@ -544,8 +510,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Corrosivo dérmico y escozor agudo al contacto.",
-      efectoCherk: "Ligereza corporal y reducción de penalización de armadura.",
       desc: "Exudado aceitoso de aves exóticas que ayuda a disolver impurezas."
     },
     {
@@ -560,8 +524,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Adicción severa, náusea e inestabilidad al disiparse.",
-      efectoCherk: "Éxtasis embriagador: Inmune a efectos de miedo o cobardía.",
       desc: "Fruta silvestre de aroma dulzón engañoso. Muy codiciada por contrabandistas."
     },
     {
@@ -576,8 +538,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 13,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Indigestión masiva y mareo de mar en tierra.",
-      efectoCherk: "Elasticidad tentacular: +2 a maniobras de presa o escape.",
       desc: "Sustancia viscosa extraída de moluscos de alta mar con alto contenido de álcalis tóxicos."
     },
     {
@@ -592,8 +552,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: "Anaconda G.",
       dificultadExtraccion: 12,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Pesadillas alucinógenas y pánico visceral.",
-      efectoCherk: "Termorrecepción ofídica: Capacidad de percibir criaturas a 15m.",
       desc: "Extraído de reptiles de Tryssar. Afecta los centros cerebrales del miedo."
     },
     {
@@ -608,8 +566,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 13,
       baseRequerida: "Base de veneno",
-      efectoEnemigo: "Parálisis respiratoria y sofoco asfixiante.",
-      efectoCherk: "Respiración acuática completa (20 min).",
       desc: "Toxina marina de Tryssar que paradójicamente desbloquea las branquias latentes de Cherk."
     },
 
@@ -626,8 +582,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 8,
       baseRequerida: "Agua de manantial",
-      efectoEnemigo: "Sabor salobre vomitivo que interrumpe acciones.",
-      efectoCherk: "Base de pociones (Muy común). Facilita decocciones curativas.",
       desc: "Alga marina de fácil recolección en rompientes. Diluida conforma el sustrato de elixires."
     },
     {
@@ -642,8 +596,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 8,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Fosforescencia delatora: Ilumina al enemigo e impide ocultarse.",
-      efectoCherk: "Emite Luz Verde suave iluminando 10m sin necesidad de antorcha.",
       desc: "Briófito de minas profundas que almacena luz química y la devuelve lentamente."
     },
     {
@@ -658,8 +610,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 15,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Inestabilidad de éter: Penaliza el lanzamiento de hechizos.",
-      efectoCherk: "+Defensa mágica temporal (+4 contra magia durante 1 hora).",
       desc: "Hierba real de fragancia solemne. Escudo vegetal contra las fuerzas del tejido místico."
     },
     {
@@ -674,8 +624,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 14,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Purga gástrica incontrolable.",
-      efectoCherk: "Cura venenos, toxinas y ponzoñas activas de inmediato.",
       desc: "Antídoto supremo de los pantanos. Destruye cualquier compuesto ponzoñoso en sangre."
     },
     {
@@ -690,8 +638,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Enraizamiento vegetal molesto a sus pies.",
-      efectoCherk: "Crecimiento de Plantas acelerado en la tierra circundante.",
       desc: "Rica en auxinas botánicas concentradas capaces de germinar semillas al instante."
     },
     {
@@ -706,8 +652,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 15,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Deslumbramiento por energía solar desbordada.",
-      efectoCherk: "+Vitalidad temporal (+10 PV máximos por 2 horas).",
       desc: "Florece solo cuando el sol alcanza su cénit en el dosel de la jungla."
     },
     {
@@ -722,8 +666,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Sobrecarga de estímulos sensoriales.",
-      efectoCherk: "+Percepción aguda (+2 a tiradas de Advertir/Buscar).",
       desc: "Infusión clásica de boticario para aclarar la vista y despejar la niebla mental."
     },
     {
@@ -738,8 +680,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 16,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Fuga de maná por sobre-ionización.",
-      efectoCherk: "Regeneración de Maná / Energía rápida (+10 Maná al instante).",
       desc: "El elixir místico más codiciado por hechiceros y místicos de las dunas."
     },
     {
@@ -754,8 +694,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 8,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Resplandor azulado que revela puntos débiles.",
-      efectoCherk: "Emite Luz Azul fría y serena útil para explorar sin ruido.",
       desc: "Variedad cavernaria que tiñe los frascos de un azul eléctrico brillante."
     },
     {
@@ -770,8 +708,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 16,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Petrificación celular transitoria y dolor articular.",
-      efectoCherk: "Regeneración celular avanzada: Recupera 3 PV por turno (3 turnos).",
       desc: "Rarísima flor mineralizada que regenera cartílagos y tejidos de inmediato."
     },
     {
@@ -786,8 +722,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Alga playa (Base)",
-      efectoEnemigo: "Sopor placentero que reduce la agresividad.",
-      efectoCherk: "Dulce sedante: Disipa crisis nerviosas o penalizadores de pánico.",
       desc: "Jarabe de sabor amielado que reconforta el espíritu de aventureros exhaustos."
     },
 
@@ -804,8 +738,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 8,
       baseRequerida: "Grasa animal o bálsamo",
-      efectoEnemigo: "Emplasto resbaladizo inofensivo.",
-      efectoCherk: "Base de ungüentos (Muy común). Facilita bálsamos tópicos.",
       desc: "Emplasto rico en minerales que humecta y fija cataplasmas en la piel."
     },
     {
@@ -820,8 +752,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Evaporación acelerada de defensas dérmicas.",
-      efectoCherk: "Mejorador de ungüentos: Duplica la duración de otros bálsamos.",
       desc: "Flor mecida por vientos huracanados que impregna ligereza en las mezclas."
     },
     {
@@ -836,8 +766,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 8,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Cicatrización superficial mínima.",
-      efectoCherk: "Curación básica de heridas: Restaura 1d6+2 PV al aplicarse.",
       desc: "Bálsamo clásico de campaña indispensable en el botiquín de cualquier explorador."
     },
     {
@@ -852,8 +780,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Inocuo en humanoides.",
-      efectoCherk: "Curación animal: Restaura 2d6 PV a monturas, bestias o familiares.",
       desc: "Formulación veterinaria tradicional para sanar corceles y sabuesos heridos."
     },
     {
@@ -868,8 +794,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Olor penetrante que delata al enemigo a larga distancia.",
-      efectoCherk: "Rastreo de feromonas y pistas: +3 a tiradas de Rastrear.",
       desc: "Desprende un almizcle acre que orienta el olfato del rastreador avezado."
     },
     {
@@ -884,8 +808,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Obstrucción de poros y sensación de ahogo.",
-      efectoCherk: "Apnea prolongada bajo el agua (hasta 15 min sin consumir aire).",
       desc: "Ungüento que se unta en el pecho y cuello para sellar el consumo de oxígeno."
     },
     {
@@ -900,8 +822,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Coagulación desordenada en cortes externos.",
-      efectoCherk: "Cicatrización rápida de cortes profundos y cese de sangrados.",
       desc: "Excelente hemostático vegetal que coagula heridas abiertas en segundos."
     },
     {
@@ -916,8 +836,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 9,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Tinte verdoso que ensucia armaduras.",
-      efectoCherk: "Camuflaje con el entorno: +2 a tiradas de Sigilo entre vegetación.",
       desc: "Arcilla con pigmentos miméticos que rompen la silueta corporal en la maleza."
     },
     {
@@ -932,8 +850,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Calor sofocante cutáneo.",
-      efectoCherk: "Resistencia al frío extremo e inmunidad a hipotermia ambiental.",
       desc: "Manteca cálida que protege el cuerpo de ventiscas heladas durante horas."
     },
     {
@@ -948,8 +864,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Espasmo muscular menor en extremidades.",
-      efectoCherk: "Energía y rendimiento de Atleta: +2 en Atletismo y +2 Movilidad.",
       desc: "Fortalece tendones y ligamentos permitiendo carreras y zancadas mayores."
     },
     {
@@ -964,8 +878,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 12,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Escalofríos paralizantes.",
-      efectoCherk: "Resistencia al calor extremo y quemaduras por sol o brasas.",
       desc: "Ungüento refrescante que baja la temperatura corporal en páramos calcinantes."
     },
     {
@@ -980,8 +892,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 8,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Adherencia molesta en manos y mangos de armas.",
-      efectoCherk: "Pegamento adhesivo instantáneo de gran tenacidad mecánica.",
       desc: "Cola vegetal de fraguado inmediato capaz de unir cuerdas, armas o trampas."
     },
     {
@@ -996,8 +906,6 @@ function getSeedAlchemyCatalog(){
       bestiaryRefName: null,
       dificultadExtraccion: 16,
       baseRequerida: "Musgo de río (Base)",
-      efectoEnemigo: "Choque térmico alternante desestabilizador.",
-      efectoCherk: "Adaptación climática universal: Inmune tanto al frío como al calor extremos.",
       desc: "Cúspide de la ungüentística elemental: el equilibrio perfecto entre hielo y fuego."
     }
   ];

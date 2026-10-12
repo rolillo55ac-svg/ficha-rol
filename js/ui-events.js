@@ -1657,8 +1657,8 @@ function handleClick(e){
     if(pItem[axis] === "confirmado" && isGM()){
       var cat = findAlchemyCatalogItem(pItem);
       if(cat){
-        if(axis === "progEnemigo" && !pItem.efectoEnemigo) pItem.efectoEnemigo = cat.efectoEnemigo;
-        if(axis === "progCherk" && !pItem.efectoCherk) pItem.efectoCherk = cat.efectoCherk;
+        if(axis === "progEnemigo" && !pItem.efectoEnemigo && cat.efectoEnemigo) pItem.efectoEnemigo = cat.efectoEnemigo;
+        if(axis === "progCherk" && !pItem.efectoCherk && cat.efectoCherk) pItem.efectoCherk = cat.efectoCherk;
       }
     }
     markCharDirty(c.id, "poisons");
@@ -1680,8 +1680,8 @@ function handleClick(e){
           return (pItem.catalogId && x.id === pItem.catalogId) || (x.name.trim().toLowerCase() === (pItem.name||'').trim().toLowerCase());
         }) : null;
         if(cat){
-          if(axis === "progEnemigo" && !pItem.efectoEnemigo) pItem.efectoEnemigo = cat.efectoEnemigo;
-          if(axis === "progCherk" && !pItem.efectoCherk) pItem.efectoCherk = cat.efectoCherk;
+          if(axis === "progEnemigo" && !pItem.efectoEnemigo && cat.efectoEnemigo) pItem.efectoEnemigo = cat.efectoEnemigo;
+          if(axis === "progCherk" && !pItem.efectoCherk && cat.efectoCherk) pItem.efectoCherk = cat.efectoCherk;
         }
       }
       markCharDirty(c.id, "poisons");
@@ -1863,8 +1863,8 @@ function handleClick(e){
         materiaPrimaQty: 0,
         progEnemigo: isGM() ? "confirmado" : "identificado",
         progCherk: isGM() ? "confirmado" : "desconocido",
-        efectoEnemigo: isGM() ? cat.efectoEnemigo : "",
-        efectoCherk: isGM() ? cat.efectoCherk : "",
+        efectoEnemigo: (isGM() && cat.efectoEnemigo) || "",
+        efectoCherk: (isGM() && cat.efectoCherk) || "",
         notasInvestigacion: "",
         custom: false
       };
