@@ -1,6 +1,6 @@
 {
-  "version": "1.4.22.0",
-  "build": "2026.10.13.15",
-  "updatedAt": "2026-10-13T16:00:00Z",
-  "changelog": "Piedras se ve mejor en el móvil: el banco de trabajo ya no se sale ni deja un hueco enorme, las estadísticas van en dos columnas y los botones (cerrar, borrar piedra, investigar, pulir, añadir, menú de puntas y los de la cabecera) son más grandes para el dedo."
+  "version": "1.4.23.0",
+  "build": "2026.10.13.16",
+  "updatedAt": "2026-10-13T17:00:00Z",
+  "changelog": "La Casa se maneja mejor con el dedo: todos los botones del plano, la barra de estancia, los menús de suelo, color, icono y planta, el detalle de la estancia y las ventanas miden al menos 44 px; los menús ya no se salen de la pantalla ni quedan debajo del dado, las mejoras ya no se salen por la derecha y los nombres largos del editor de muebles se ven en dos líneas."
 }
