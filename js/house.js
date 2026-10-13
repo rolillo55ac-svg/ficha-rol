@@ -4538,25 +4538,6 @@ function renderHouseView(){
 
   var html = '<div class="house-container">';
 
-  // 1. Cabecera Principal
-  html += '<div class="house-header">';
-  html += '  <div class="house-header-top">';
-  html += '    <div class="house-title-group">';
-  html += '      <h1 class="house-title"><span>🏠</span> ' + esc(h.name || "La Casa Andante") + '</h1>';
-  html += '      <span class="house-beta-badge">🧪 BETA</span>';
-  html += '    </div>';
-  html += '    <button class="house-back-btn" data-action="back-from-house-view" title="Volver a la ficha de personaje">';
-  html += '      <span>← Volver a la Ficha</span>';
-  html += '    </button>';
-  html += '  </div>';
-
-  if(h.description) html += '  <div class="house-desc" id="houseDescDisplay">' + esc(h.description) + '</div>';
-  if(gmMode){
-    html += '  <div style="margin-top:6px;"><button class="btn-compact" data-action="open-edit-house-desc" style="font-size:0.7rem;padding:2px 8px;">✏️ Editar descripción (GM)</button></div>';
-  }
-
-  html += '</div>';
-
   // Mejoras y misiones de la casa (los niveles los da el máster con misiones)
   html += renderHouseUpgradesBox();
   html += renderHouseQuestsBox();
@@ -4764,12 +4745,10 @@ function renderHouseUpgradesBox(){
   return html;
 }
 
-// Misiones del apartado Misiones que hablan de la casa (en el título o en la recompensa)
+// Misiones que el máster ha marcado como Casa en el apartado Misiones
 function getHouseQuests(){
   var list = (typeof state !== "undefined" && Array.isArray(state.quests)) ? state.quests : [];
-  return list.filter(function(q){
-    return q && /(^|[^a-záéíóúñ])casa([^a-záéíóúñ]|$)/i.test((q.title || "") + " · " + (q.reward || ""));
-  });
+  return list.filter(function(q){ return q && q.house === true; });
 }
 
 function renderHouseQuestsBox(){
@@ -4778,7 +4757,9 @@ function renderHouseQuestsBox(){
   var done = quests.filter(function(q){ return q.status === "completada"; });
   var html = '<div class="house-info-box" id="houseQuestsBox">';
   html += '  <h3 class="house-events-title">Misiones de la casa</h3>';
-  if(!active.length){
+  if(!quests.length){
+    html += '  <div class="house-info-empty">El máster puede marcar misiones como Casa en Misiones.</div>';
+  } else if(!active.length){
     html += '  <div class="house-info-empty">Ninguna misión de la casa en curso.</div>';
   }
   active.forEach(function(q){

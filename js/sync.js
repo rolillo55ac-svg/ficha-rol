@@ -10,7 +10,7 @@ var isGlobalDirty = false;
 
 var CHAR_DATA_KEYS = [
   "name", "theme", "portrait", "isNPC", "owner_id", "ownerEmail",
-  "nivel", "lugarNacimiento", "altura", "peso", "edad", "ojos", "pelo", "trabajo", "descripcion",
+  "nivel", "titulo", "lugarNacimiento", "altura", "peso", "edad", "ojos", "pelo", "trabajo", "descripcion",
   "attrs", "skillBonus", "skillProgress", "skillPointsUnlocked", "skillHybrid", "customSkills",
   "combat", "weapons", "armors", "inventory", "money",
   "magiaTipo", "spells", "stones", "passivesNeg", "passivesPos",

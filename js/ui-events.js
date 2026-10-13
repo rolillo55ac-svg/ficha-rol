@@ -2878,6 +2878,19 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="toggle-quest-house"){
+    if(!isGM() && currentUser) return;
+    var qidHouse = btn.getAttribute("data-id");
+    var qObjHouse = (state.quests||[]).find(function(q){ return q.id === qidHouse; });
+    if(qObjHouse){
+      qObjHouse.house = qObjHouse.house === true ? false : true;
+      saveState(true);
+      pushSharedData({ quests: state.quests });
+      renderTab();
+      showToast(qObjHouse.house ? "Misión marcada como Casa" : "Misión desmarcada de Casa", "info");
+    }
+    return;
+  }
   if(action==="set-quest-status"){
     if(!isGM() && currentUser) return;
     var qidStatus = btn.getAttribute("data-id");

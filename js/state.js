@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.35.0";
-var APP_BUILD = "2026.10.14.06";
+var APP_VERSION = "1.4.38.0";
+var APP_BUILD = "2026.10.14.13";
 
 var state = null;
 var supabaseClient = null;
@@ -71,7 +71,7 @@ function blankCharacter(name, isNPC){
     isNPC:!!isNPC,
     owner_id:null,
     ownerEmail:"",
-    nivel:"1", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
+    nivel:"1", titulo:"", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
     skillBonus:{}, skillProgress:{}, skillPointsUnlocked:false,
     skillHybrid:{}, customSkills:[],
