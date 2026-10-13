@@ -1,6 +1,6 @@
 {
-  "version": "1.4.34.0",
-  "build": "2026.10.14.05",
-  "updatedAt": "2026-10-14T05:00:00Z",
-  "changelog": "Fichas: las subidas y bajadas de nivel, los puntos y las habilidades se guardan siempre, también con varios toques seguidos, al cerrar la app justo después o con la ficha abierta en dos móviles. Si no se puede guardar en la nube sale un aviso rojo y se reintenta solo."
+  "version": "1.4.35.0",
+  "build": "2026.10.14.06",
+  "updatedAt": "2026-10-14T06:00:00Z",
+  "changelog": "Entrar es obligatorio: al abrir la web, si ya habías entrado pasas directo; si no, solo se ve la pantalla de entrada y no se carga ningún dato de la partida. Al cerrar sesión vuelves a la pantalla de entrada. Sin red, con la sesión guardada, sigue funcionando con lo que hay en el móvil."
 }
