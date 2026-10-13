@@ -9485,3 +9485,12 @@ button.alq-step { cursor: pointer; }
   background:rgba(20,16,10,0.92);border:1px solid var(--gold);color:var(--gold-light);white-space:nowrap;
 }
 .conn-status-pill.is-offline{border-color:#a94442;color:#f0a8a6;}
+
+/* Deslizar arriba del todo: sin recarga del navegador; la app se pone al día ella misma */
+html,body{overscroll-behavior-y:contain;}
+.pull-sync-hint{
+  position:fixed;top:calc(env(safe-area-inset-top, 0px) + 34px);left:50%;transform:translateX(-50%);z-index:9500;
+  font-size:.8rem;font-family:var(--font-mono);padding:5px 14px;border-radius:20px;pointer-events:none;
+  background:rgba(20,16,10,0.92);border:1px solid var(--line);color:var(--ink-dim);white-space:nowrap;
+}
+.pull-sync-hint.is-ready{border-color:var(--gold);color:var(--gold-light);}

@@ -315,6 +315,19 @@ async function catchUpWithServer(opts){
   return ok;
 }
 
+// Puesta al día pedida a mano (deslizar arriba del todo o botón de Ajustes)
+async function syncDataNow(){
+  if(catchUpRunning) return false;
+  if(typeof navigator !== 'undefined' && navigator.onLine === false){
+    setConnectionStatus('offline');
+    showToast('Sin conexión: no se puede sincronizar', 'error');
+    return false;
+  }
+  var ok = await catchUpWithServer();
+  showToast(ok ? 'Datos al día' : 'No se pudo sincronizar del todo', ok ? 'success' : 'error');
+  return ok;
+}
+
 
 function broadcastCharStatUpdate(charId, combatObj){
   if(supabaseClient && realtimeChannel){
