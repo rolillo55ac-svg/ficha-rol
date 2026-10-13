@@ -1,6 +1,6 @@
 {
-  "version": "1.4.39.0",
-  "build": "2026.10.14.14",
-  "updatedAt": "2026-10-14T14:00:00Z",
-  "changelog": "El tiempo real (tiradas, estadísticas, sonidos, La Casa, mapa y reloj) va por canales privados: solo lo reciben los usuarios con sesión."
+  "version": "1.4.40.0",
+  "build": "2026.10.14.15",
+  "updatedAt": "2026-10-14T15:00:00Z",
+  "changelog": "La Casa: el máster puede añadir, editar, ordenar y archivar las mejoras, y tiene un panel secreto (vida de la casa, notas y estadísticas de cada mejora) que los jugadores no pueden leer."
 }
