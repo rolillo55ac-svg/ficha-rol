@@ -261,6 +261,9 @@ function openDataModal(){
       '<div id="versionCheckResult" style="font-size:0.7rem;color:var(--ink-faint);margin-top:5px;text-align:center;word-break:break-word;">'+
         '✓ Versión v' + curVerStr + ' sincronizada · Pulsa para forzar recarga limpia'+
       '</div>'+
+      '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;padding:8px;font-size:0.75rem;" data-action="sync-data-now" title="Vuelve a leer de la nube fichas, misiones, mapa, reloj y La Casa sin recargar la página">'+
+        '<span>🔄 Sincronizar datos</span>'+
+      '</button>'+
       (isGM() ? 
         '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;padding:8px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.75rem;background:rgba(88,101,242,0.12);" data-action="broadcast-force-update" title="Envía una señal en tiempo real a todos los jugadores conectados para forzarles a actualizar su versión y limpiar caché">'+
           '<span>📢 Forzar actualización a jugadores</span>'+
@@ -406,6 +409,7 @@ function modalClick(e){
   if(action==="open-feedback-modal"){ openFeedbackModal(); return; }
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
+  if(action==="sync-data-now"){ btn.disabled = true; syncDataNow().finally(function(){ btn.disabled = false; }); return; }
   if(action==="broadcast-force-update"){ broadcastForceAppUpdate(); return; }
   if(action==="migrate-local-images"){ migrateLocalImagesToSupabase(); return; }
   if(action==="clean-orphan-storage"){ cleanOrphanStorage(); return; }

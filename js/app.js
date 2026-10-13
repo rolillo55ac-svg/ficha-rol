@@ -306,6 +306,7 @@ function init(){
     window.addEventListener("offline", function(){
       if(currentUser && typeof setConnectionStatus === "function") setConnectionStatus("offline");
     });
+    initPullToSync();
 
     updateLoadingProgress(85, "Conectando con la partida...");
     initSupabase();
@@ -333,3 +334,53 @@ function init(){
 }
 
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
+// Deslizar hacia abajo arriba del todo: ponerse al día con la nube (en vez de recargar la página)
+function initPullToSync(){
+  var PULL_NEEDED = 90;
+  var startY = 0, startX = 0, pulling = false, armed = false, hint = null;
+  function blocked(target){
+    if(!currentUser || (window.scrollY || document.documentElement.scrollTop) > 0) return true;
+    // Dentro de ventanas, paneles fijos, lienzos o listas con su propio scroll no se activa
+    for(var el = target; el && el !== document.body && el.nodeType === 1; el = el.parentElement){
+      if(el.tagName === "CANVAS" || el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") return true;
+      if(el.scrollTop > 0) return true;
+      if(getComputedStyle(el).position === "fixed") return true;
+    }
+    return false;
+  }
+  function setHint(text, ready){
+    if(!hint){
+      hint = document.createElement("div");
+      hint.id = "pullSyncHint";
+      hint.className = "pull-sync-hint";
+      hint.setAttribute("role", "status");
+      document.body.appendChild(hint);
+    }
+    hint.textContent = text;
+    hint.classList.toggle("is-ready", !!ready);
+  }
+  function clearHint(){ if(hint){ hint.remove(); hint = null; } }
+  document.addEventListener("touchstart", function(e){
+    pulling = false; armed = false;
+    if(e.touches.length !== 1 || blocked(e.target)) return;
+    startY = e.touches[0].clientY; startX = e.touches[0].clientX;
+    pulling = true;
+  }, { passive: true });
+  document.addEventListener("touchmove", function(e){
+    if(!pulling) return;
+    var dy = e.touches[0].clientY - startY, dx = e.touches[0].clientX - startX;
+    if(dy < 0 || Math.abs(dx) > dy){ if(dy < -10 || Math.abs(dx) > 30){ pulling = false; armed = false; clearHint(); } return; }
+    if(dy < 30) return;
+    armed = dy >= PULL_NEEDED;
+    setHint(armed ? "Suelta para sincronizar" : "↓ Desliza para sincronizar", armed);
+  }, { passive: true });
+  document.addEventListener("touchend", function(){
+    if(!pulling) return;
+    pulling = false;
+    if(!armed){ clearHint(); return; }
+    armed = false;
+    setHint("Sincronizando…", true);
+    syncDataNow().finally(clearHint);
+  }, { passive: true });
+  document.addEventListener("touchcancel", function(){ pulling = false; armed = false; clearHint(); }, { passive: true });
+}

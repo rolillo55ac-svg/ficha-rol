@@ -1,6 +1,6 @@
 {
-  "version": "1.4.43.0",
-  "build": "2026.10.14.18",
-  "updatedAt": "2026-10-14T18:00:00Z",
-  "changelog": "Al volver a la app tras un rato (o al volver la conexión) se pone al día sola, sin recargar: fichas, compendio, misiones, mapa, reloj y La Casa. Si se corta la conexión sale arriba «Sin conexión» o «Reconectando…»."
+  "version": "1.4.44.0",
+  "build": "2026.10.14.19",
+  "updatedAt": "2026-10-14T19:00:00Z",
+  "changelog": "Deslizar hacia abajo arriba del todo ya no recarga la página: pone los datos al día (fichas, misiones, mapa, reloj y La Casa) y avisa «Datos al día». También hay un botón «Sincronizar datos» en Ajustes."
 }
