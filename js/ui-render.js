@@ -97,18 +97,18 @@ function renderTopbar(){
 }
 
 var PLAYER_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
+  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"lapidario",label:"Piedras"},
-  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}, {id:"casa",label:"Casa"}
+  {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
 var GM_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
+  {id:"ficha",label:"Ficha"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"lapidario",label:"Piedras"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
-  {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}, {id:"casa",label:"Casa"}
+  {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
 function renderTabbar(){

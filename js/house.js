@@ -44,7 +44,7 @@ function getSeedHouseData(){
       id: houseId,
       campaign_id: "c0000000-0000-0000-0000-000000000001",
       name: "La Casa Andante",
-      description: "Un antiguo hogar nómada encantado que viaja entre tierras guiado por un libro sapiente.",
+      description: "",
       level: 1,
       progress_current: 0,
       progress_max: 100,
@@ -321,43 +321,8 @@ function getSeedHouseData(){
         ]
       }
     ],
-    upgrades: [
-      {
-        id: "u0000000-0000-0000-0000-000000000001",
-        house_id: houseId,
-        room_id: cocinaId,
-        name: "Horno Encantado",
-        description: "Mantiene la comida caliente de forma mágica y realza las propiedades nutritivas.",
-        unlocked: false,
-        level: 1,
-        bonus_value: "+1",
-        effect_type: "buff",
-        buff_id: "buff_comida_reconfortante",
-        required_house_level: 1
-      },
-      {
-        id: "u0000000-0000-0000-0000-000000000002",
-        house_id: houseId,
-        room_id: cherkRoomId,
-        name: "Invernadero de Hongos y Venenos",
-        description: "Permite cultivar especies vegetales tóxicas con mayor efectividad en cada descanso.",
-        unlocked: false,
-        level: 1,
-        bonus_value: "Cosecha Nv.1",
-        effect_type: "narrativo",
-        buff_id: null,
-        required_house_level: 1
-      }
-    ],
-    events: [
-      {
-        id: "e0000000-0000-0000-0000-000000000001",
-        house_id: houseId,
-        event_type: "level_up",
-        payload: { message: "La Casa Andante ha despertado a su nivel inicial 1." },
-        created_at: new Date().toISOString()
-      }
-    ]
+    upgrades: [],
+    events: []
   };
 }
 
@@ -427,7 +392,6 @@ function loadHouseLocalData(){
         normalizeAllRoomLayouts();
         houseState.upgrades = parsed.upgrades || [];
         houseState.events = parsed.events || [];
-        ensureSeedBuffsRegistered();
         return;
       }
     }
@@ -441,7 +405,6 @@ function loadHouseLocalData(){
   normalizeAllRoomLayouts();
   houseState.upgrades = seed.upgrades;
   houseState.events = seed.events;
-  ensureSeedBuffsRegistered();
   saveHouseLocalData();
 }
 
@@ -456,39 +419,6 @@ function saveHouseLocalData(){
     localStorage.setItem("krysalis_house_beta_v1", JSON.stringify(payload));
   } catch(e){
     console.warn("No se pudo guardar localmente La Casa:", e);
-  }
-}
-
-function ensureSeedBuffsRegistered(){
-  if(typeof state === "undefined" || !state) return;
-  if(!Array.isArray(state.buffCatalog)) state.buffCatalog = [];
-
-  var defaultHouseBuffs = [
-    {
-      id: "buff_comida_reconfortante",
-      name: "Comida Reconfortante (La Casa)",
-      type: "buff",
-      attr: "todo",
-      bonus: "+1",
-      duration: "permanent",
-      durationTurns: 0,
-      desc: "Beneficio de comer en la Cocina con Horno Encantado de La Casa. +1 a todas las tiradas.",
-      visible: true,
-      source: "house"
-    }
-  ];
-
-  var addedAny = false;
-  defaultHouseBuffs.forEach(function(hb){
-    var exists = state.buffCatalog.some(function(b){ return b.id === hb.id; });
-    if(!exists){
-      state.buffCatalog.push(hb);
-      addedAny = true;
-    }
-  });
-
-  if(addedAny && typeof saveState === "function"){
-    saveState(true);
   }
 }
 
@@ -536,7 +466,6 @@ async function fetchHouseRemoteData(){
       houseState.events = evRes.data;
     }
 
-    ensureSeedBuffsRegistered();
     saveHouseLocalData();
   } catch(err){
     console.warn("Error cargando La Casa desde Supabase, usando local:", err);
@@ -1419,7 +1348,7 @@ function deselectKonvaRoom(){
 
   var insp = document.getElementById("houseInspectorContainer");
   if(insp){
-    insp.innerHTML = '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl, sus buffos y de quién es.</div>';
+    insp.innerHTML = '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl y de quién es.</div>';
   }
 
   if(houseKonvaLayer) houseKonvaLayer.draw();
@@ -4605,7 +4534,6 @@ function renderHouseView(){
   var gmMode = (typeof isGM === "function" && isGM());
   var canEditPlan = canUserEditPlan();
   if(!canEditPlan) houseState.editMode = false;
-  var lvlPct = Math.min(100, Math.round(((h.progress_current || 0) / Math.max(1, h.progress_max || 100)) * 100));
   var curFloor = houseState.activeFloor || 1;
 
   var html = '<div class="house-container">';
@@ -4622,42 +4550,16 @@ function renderHouseView(){
   html += '    </button>';
   html += '  </div>';
 
-  html += '  <div class="house-desc" id="houseDescDisplay">' + esc(h.description || "Un antiguo hogar nómada encantado con voluntad propia, guiado por un libro sapiente.") + '</div>';
+  if(h.description) html += '  <div class="house-desc" id="houseDescDisplay">' + esc(h.description) + '</div>';
   if(gmMode){
     html += '  <div style="margin-top:6px;"><button class="btn-compact" data-action="open-edit-house-desc" style="font-size:0.7rem;padding:2px 8px;">✏️ Editar descripción (GM)</button></div>';
   }
 
-  // Barra de Nivel
-  html += '  <div class="house-level-bar-wrap">';
-  html += '    <div class="house-level-info">';
-  html += '      <span class="house-level-tag">Nivel de la Casa: <b>' + (h.level || 1) + '</b></span>';
-  html += '      <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--ink-light);">' + (h.progress_current || 0) + ' / ' + (h.progress_max || 100) + ' (' + lvlPct + '%)</span>';
-  html += '    </div>';
-  html += '    <div class="house-level-track">';
-  html += '      <div class="house-level-fill" style="width:' + lvlPct + '%;"></div>';
-  html += '    </div>';
-
-  if(gmMode){
-    html += '    <div class="house-progress-controls">';
-    html += '      <span style="font-size:0.7rem;color:var(--ink-faint);font-weight:700;">Progreso de Misión (GM):</span>';
-    html += '      <button class="house-prog-btn" data-action="add-house-progress" data-amount="10" data-stat="general">+10 pts</button>';
-    html += '      <button class="house-prog-btn" data-action="add-house-progress" data-amount="25" data-stat="general">+25 pts</button>';
-    html += '      <button class="house-prog-btn" data-action="add-house-progress" data-amount="50" data-stat="general">+50 pts</button>';
-    html += '      <button class="house-prog-btn" data-action="prompt-house-progress" data-stat="general">🎯 Cantidad...</button>';
-    html += '    </div>';
-  }
-
-  html += '  </div>';
   html += '</div>';
 
-  // 2. Estadísticas de la Casa
-  html += '<div class="house-stats-grid">';
-  html += renderHouseStatCard("🛋️ Confort", "confort", h.confort || 1, h.confort_progress || 0, h.confort_max || 10, "Calidad del reposo. Recuperación de PV y Maná.", gmMode);
-  html += renderHouseStatCard("📖 Arcana (Libro)", "arcana", h.arcana || 1, h.arcana_progress || 0, h.arcana_max || 10, "Poder mágico y guía sapiente. Potencia de mejoras.", gmMode);
-  html += renderHouseStatCard("🍲 Provisiones", "provisiones", h.provisiones || 1, h.provisiones_progress || 0, h.provisiones_max || 10, "Calidad culinaria. Determina los buffs de comida.", gmMode);
-  html += renderHouseStatCard("🛡️ Custodia", "custodia", h.custodia || 1, h.custodia_progress || 0, h.custodia_max || 10, "Defensa y camuflaje en acampada.", gmMode);
-  html += renderHouseStatCard("🔮 Vínculo", "vinculo", h.vinculo || 1, h.vinculo_progress || 0, h.vinculo_max || 10, "Conexión anímica con los moradores.", gmMode);
-  html += '</div>';
+  // Mejoras y misiones de la casa (los niveles los da el máster con misiones)
+  html += renderHouseUpgradesBox();
+  html += renderHouseQuestsBox();
 
   // 3. Sección del Plano Arquitectónico 2D con Konva y Texturas de Suelo
   html += '<div class="house-blueprint-section">';
@@ -4802,15 +4704,14 @@ function renderHouseView(){
     if(houseState.selectedRoomId){
       html += renderRoomPanel(houseState.selectedRoomId);
     } else {
-      html += '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl, sus buffos y de quién es.</div>';
+      html += '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl y de quién es.</div>';
     }
     html += '</div>';
   }
 
   html += '</div>'; // Fin house-blueprint-section
 
-  // Historial de eventos
-  html += renderHouseEventsSection();
+  // El historial solo guardaba niveles y mejoras, que ya no se muestran (los datos siguen en la base)
 
   html += '</div>'; // Fin house-container
   main.innerHTML = html;
@@ -4845,6 +4746,70 @@ function renderHouseStatCard(label, statKey, val, prog, max, desc, gmMode){
 
   html += '</div>';
   return html;
+}
+
+// Mejoras que tiene de verdad la casa
+var HOUSE_REAL_UPGRADES = [
+  { icon: "🗡️", name: "Daga", desc: "Una daga que defiende la casa." },
+  { icon: "🧭", name: "Buen camino", desc: "Al andar, la casa sabe por dónde ir para hacerse menos daño." }
+];
+
+function renderHouseUpgradesBox(){
+  var html = '<div class="house-info-box">';
+  html += '  <h3 class="house-events-title">Mejoras de la casa</h3>';
+  HOUSE_REAL_UPGRADES.forEach(function(u){
+    html += '  <div class="house-info-row"><span class="house-info-icon">' + u.icon + '</span><span><b>' + esc(u.name) + '</b> · ' + esc(u.desc) + '</span></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// Misiones del apartado Misiones que hablan de la casa (en el título o en la recompensa)
+function getHouseQuests(){
+  var list = (typeof state !== "undefined" && Array.isArray(state.quests)) ? state.quests : [];
+  return list.filter(function(q){
+    return q && /(^|[^a-záéíóúñ])casa([^a-záéíóúñ]|$)/i.test((q.title || "") + " · " + (q.reward || ""));
+  });
+}
+
+function renderHouseQuestsBox(){
+  var quests = getHouseQuests();
+  var active = quests.filter(function(q){ return !q.status || q.status === "activa"; });
+  var done = quests.filter(function(q){ return q.status === "completada"; });
+  var html = '<div class="house-info-box" id="houseQuestsBox">';
+  html += '  <h3 class="house-events-title">Misiones de la casa</h3>';
+  if(!active.length){
+    html += '  <div class="house-info-empty">Ninguna misión de la casa en curso.</div>';
+  }
+  active.forEach(function(q){
+    html += '  <div class="house-quest-card">';
+    html += '    <div class="house-quest-title">' + esc(q.title || "Misión") + '</div>';
+    if(q.reward) html += '    <div class="house-quest-reward">Recompensa: ' + esc(q.reward) + '</div>';
+    html += '    <button class="house-quest-open-btn" data-action="open-house-quest" data-quest-id="' + esc(q.id || "") + '">Abrir en Misiones</button>';
+    html += '  </div>';
+  });
+  if(done.length){
+    html += '  <div class="house-info-sub">Cumplidas</div>';
+    done.forEach(function(q){
+      html += '  <button class="house-quest-done-row" data-action="open-house-quest" data-quest-id="' + esc(q.id || "") + '">✅ ' + esc(q.title || "Misión") + (q.reward ? ' · ' + esc(q.reward) : '') + '</button>';
+    });
+  }
+  html += '</div>';
+  return html;
+}
+
+// Lleva a la pestaña Misiones y enseña esa misión
+function openHouseQuest(questId){
+  flushCanvaStudioSave();
+  houseState.active = false;
+  houseState.selectedRoomId = null;
+  state.activeTab = "mision";
+  state.questTypeFilter = "all";
+  if(typeof saveState === "function") saveState(true);
+  if(typeof renderTabbar === "function") renderTabbar();
+  if(typeof renderTab === "function") renderTab();
+  var card = questId ? document.getElementById("quest-" + questId) : null;
+  if(card && card.scrollIntoView) card.scrollIntoView({ block: "start" });
 }
 
 function renderHouseGridRooms(floorNumber){
@@ -5025,8 +4990,8 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
 // ============================================================================
 // 7. INSPECTOR DE HABITACIÓN SEGMENTADO
 // ============================================================================
-// Panel inferior del modo Ver: lo importante para jugar (baúl, dueño, buffos) y dos botones grandes.
-// "Abrir baúl" y "Ver buffos" abren el inspector completo en la pestaña correspondiente.
+// Panel inferior del modo Ver: lo importante para jugar (baúl y dueño) y un botón grande.
+// "Abrir baúl" abre el inspector completo en la pestaña de muebles.
 function renderRoomPanel(roomId){
   if(houseState.editMode || houseState.showRoomDetail) return renderRoomInspector(roomId);
   var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
@@ -5034,7 +4999,6 @@ function renderRoomPanel(roomId){
 
   var owner = getRoomOwnerInfo(r.owner_character_id);
   var itemCount = getRoomItemCount(r);
-  var activeBuffs = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id && u.unlocked; });
   var isPassage = (r.room_type === "pasillo");
 
   var html = '<div class="house-room-sheet" id="houseRoomInspector">';
@@ -5048,7 +5012,6 @@ function renderRoomPanel(roomId){
   html += '  <div class="house-sheet-chips">';
   if(!isPassage) html += '    <span class="house-sheet-chip">📦 Baúl · ' + itemCount + (itemCount === 1 ? ' objeto' : ' objetos') + '</span>';
   if(owner && owner.name) html += '    <span class="house-sheet-chip">Habitación de ' + esc(owner.name) + '</span>';
-  html += '    <span class="house-sheet-chip">Nivel ' + (r.level || 1) + '</span>';
   html += '  </div>';
 
   if(r.description){
@@ -5056,20 +5019,8 @@ function renderRoomPanel(roomId){
   }
 
   if(!isPassage){
-    html += '  <div class="house-sheet-label">Buffos activos</div>';
-    html += '  <div class="house-sheet-chips">';
-    if(activeBuffs.length === 0){
-      html += '    <span class="house-sheet-chip empty">Sin buffos activos</span>';
-    } else {
-      activeBuffs.forEach(function(u){
-        html += '    <span class="house-sheet-chip buff">✨ ' + esc(u.name || "Buff") + (u.bonus_value ? ' ' + esc(String(u.bonus_value)) : '') + '</span>';
-      });
-    }
-    html += '  </div>';
-
     html += '  <div class="house-sheet-actions">';
     html += '    <button class="house-sheet-btn primary" data-action="open-room-detail" data-tab="muebles">Abrir baúl</button>';
-    html += '    <button class="house-sheet-btn" data-action="open-room-detail" data-tab="buffs">Ver buffos</button>';
     html += '  </div>';
   }
   html += '</div>';
@@ -5089,6 +5040,8 @@ function renderRoomInspector(roomId){
   var roomUpgrades = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id; });
   var curChar = (typeof activeChar === "function") ? activeChar() : null;
   var currentTab = houseState.inspectorTab || "estancia";
+  // Las mejoras por estancia ya no se muestran (los datos se quedan en la base)
+  if(currentTab === "buffs") currentTab = "estancia";
 
   // FASE 2: Inspector Ligero para Pasillos
   if(r.room_type === "pasillo"){
@@ -5134,7 +5087,6 @@ function renderRoomInspector(roomId){
   html += '      <h3 class="house-inspector-title">' + getRoomTypeIcon(r.room_type) + ' ' + esc(r.name) + '</h3>';
   html += '      <div class="house-inspector-meta">';
   html += '        <span class="house-room-type-tag ' + (r.room_type || 'otro') + '">' + getRoomTypeLabel(r.room_type) + '</span>';
-  html += '        <span class="house-room-level-pill">Nivel ' + (r.level || 1) + '</span>';
   html += '        <span style="font-size:0.72rem;color:var(--ink-faint);">Planta ' + (r.floor || 1) + ' (' + (r.width||2) + 'x' + (r.height||2) + ')</span>';
   if(owner){
     html += '        <span class="house-room-owner-tag">Dueño: <b>' + esc(owner.name) + '</b></span>';
@@ -5148,7 +5100,6 @@ function renderRoomInspector(roomId){
   html += '  <div class="house-inspector-nav">';
   html += '    <button class="house-inspector-tab-btn' + (currentTab === "estancia" ? ' active' : '') + '" data-action="switch-inspector-tab" data-tab="estancia">📜 Estancia</button>';
   html += '    <button class="house-inspector-tab-btn' + (currentTab === "muebles" ? ' active' : '') + '" data-action="switch-inspector-tab" data-tab="muebles">📦 Muebles y Almacén (' + (r.furniture ? r.furniture.length : 0) + ')</button>';
-  html += '    <button class="house-inspector-tab-btn' + (currentTab === "buffs" ? ' active' : '') + '" data-action="switch-inspector-tab" data-tab="buffs">✨ Mejoras y Buffs (' + roomUpgrades.length + ')</button>';
   html += '  </div>';
 
   // CONTENIDO PESTAÑA 1: ESTANCIA
@@ -5168,7 +5119,6 @@ function renderRoomInspector(roomId){
       html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
     }
     if(isGm){
-      html += '    <button class="btn-compact" data-action="grant-room-level" data-room-id="' + r.id + '" style="color:#F1C40F;border-color:rgba(241,196,15,0.4);" title="Subir nivel de esta sala">+ 1 Nivel de Sala</button>';
       html += '    <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);" title="Eliminar habitación del plano">🗑️ Eliminar</button>';
     }
     html += '  </div>';
@@ -6095,6 +6045,12 @@ document.addEventListener("click", function(e){
     houseState.showRoomDetail = true;
     var detEl = document.getElementById("houseInspectorContainer");
     if(detEl && houseState.selectedRoomId) detEl.innerHTML = renderRoomInspector(houseState.selectedRoomId);
+    return;
+  }
+
+  if(act === "open-house-quest"){
+    e.preventDefault();
+    openHouseQuest(btn.getAttribute("data-quest-id"));
     return;
   }
 

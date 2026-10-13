@@ -1481,6 +1481,62 @@
   white-space: nowrap;
 }
 
+/* Mejoras y misiones de la casa */
+.house-info-box {
+  background: rgba(20, 14, 10, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.house-info-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--ink, #EDE3D1);
+}
+.house-info-icon { font-size: 1.2rem; line-height: 1.2; }
+.house-info-empty { font-size: 0.9rem; color: var(--ink-dim); font-style: italic; }
+.house-info-sub { font-size: 0.8rem; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+.house-quest-card {
+  border-left: 3px solid #E2B65A;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.house-quest-title { font-size: 1rem; font-weight: 700; color: var(--gold-light); }
+.house-quest-reward { font-size: 0.9rem; color: var(--ink-dim); }
+.house-quest-open-btn {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid #E2B65A;
+  border-radius: 10px;
+  background: transparent;
+  color: #E2B65A;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.house-quest-done-row {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .house-container {
@@ -3463,7 +3519,7 @@
 
 .house-sheet-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-top: 20px;
 }
