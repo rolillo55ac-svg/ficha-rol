@@ -183,6 +183,7 @@ function openCharModal(){
   document.getElementById("charModalOverlay").classList.remove("hidden");
 }
 
+var DONATE_PAYPAL_ME = "https://paypal.me/chemorol";
 var settingsScreen = "main";
 
 function settingsRow(action, screen, icon, title, sub, val, extraClass){
@@ -206,13 +207,15 @@ function settingsLastBackupText(){
 function settingsScreenTitle(screen){
   return {
     version: "Versión", storage: "Almacenamiento", backup: "Copia de seguridad", help: "Ayuda y sugerencias",
-    cloud: "Copia en la nube", broadcast: "Avisar para que actualicen"
+    cloud: "Copia en la nube", broadcast: "Avisar para que actualicen",
+    donate: "Apoya el proyecto"
   }[screen] || "Ajustes";
 }
 
 function openDataModal(screen){
   screen = (typeof screen === "string") ? screen : "main";
   if((screen === "cloud" || screen === "broadcast") && !isGM()) screen = "main";
+  if(screen === "donate" && !DONATE_PAYPAL_ME) screen = "main";
   settingsScreen = screen;
   var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.7");
   var html = '<h2 class="settings-head">'+
@@ -238,6 +241,7 @@ function openDataModal(screen){
       settingsRow("settings-go", "version", "🚀", "Versión", "", '<span class="settings-row-val" id="settingsVerState">v'+esc(curVerStr)+'</span>')+
       settingsRow("settings-go", "storage", "💾", "Almacenamiento", "Espacio en el móvil y en la nube")+
       settingsRow("settings-go", "backup", "📥", "Copia de seguridad", "Descargar mis datos")+
+      (DONATE_PAYPAL_ME ? settingsRow("settings-go", "donate", "🦴", "Apoya el proyecto", "") : '')+
       settingsRow("settings-go", "help", "📬", "Ayuda y sugerencias", "")+
     '</div>';
     if(gm){
@@ -335,6 +339,32 @@ function openDataModal(screen){
           '<button type="button" class="btn-solid-gold settings-btn" data-action="broadcast-force-update">Sí, avisar</button>'+
         '</div>'+
       '</div>'+
+    '</div>';
+  }
+
+  else if(screen === "donate"){
+    html += '<div class="settings-panel donate-panel">'+
+      '<figure class="donate-polaroid"><span class="donate-tape"></span><img src="images/haku-donaciones.jpg" width="640" height="846" loading="lazy" alt="Haku, tapado con una manta, junto a un cuenco vacío y un cartel: Una monedita pa mis croquetas… por fis"><figcaption>Foto real. El cuenco también.</figcaption></figure>'+
+      '<h3 class="donate-title">Esta web funciona con café… y croquetas</h3>'+
+      '<p class="settings-note donate-lead">El admin programa por las noches, y Haku, jefe de seguridad (el de la manta), cobra en croquetas. Hace semanas que no le suben el sueldo y ha empezado a mirar mal a todo el mundo.</p>'+
+      '<div class="donate-options">'+
+        '<a class="donate-opt btn-solid-gold" href="' + esc(DONATE_PAYPAL_ME + "/2EUR") + '" target="_blank" rel="noopener" data-donate="1">'+
+          '<span class="donate-opt-icon">🦴</span>'+
+          '<span class="donate-opt-text"><strong>Una croqueta para Haku</strong><small>Te mirará un poco menos mal</small></span>'+
+          '<span class="donate-opt-amount">2 €</span>'+
+        '</a>'+
+        '<a class="donate-opt summon-roll-pill" href="' + esc(DONATE_PAYPAL_ME + "/1.5EUR") + '" target="_blank" rel="noopener" data-donate="1">'+
+          '<span class="donate-opt-icon">☕</span>'+
+          '<span class="donate-opt-text"><strong>Un café para el admin</strong><small>Para el próximo arreglo a las 3 de la mañana</small></span>'+
+          '<span class="donate-opt-amount">1,50 €</span>'+
+        '</a>'+
+        '<a class="donate-opt summon-roll-pill" href="' + esc(DONATE_PAYPAL_ME) + '" target="_blank" rel="noopener" data-donate="1">'+
+          '<span class="donate-opt-icon">🎁</span>'+
+          '<span class="donate-opt-text"><strong>Lo que tú quieras</strong><small>Tú pones la cantidad en PayPal</small></span>'+
+          '<span class="donate-opt-amount">?</span>'+
+        '</a>'+
+      '</div>'+
+      '<p class="settings-note donate-fine">Es totalmente voluntario y la web seguirá siendo gratis para todos.<br>Haku va a poner esa cara igual, pero con croquetas la pone más contento.</p>'+
     '</div>';
   }
 
@@ -442,6 +472,111 @@ async function updateStorageStatsUI(showToastFeedback){
     console.warn("Error en updateStorageStatsUI:", e);
   } finally {
     if(btn) btn.classList.remove("loading");
+  }
+}
+
+var donatePending = false;
+
+function donateBack(){
+  if(donatePending && document.visibilityState === "visible"){
+    donatePending = false;
+    showDonateThanks();
+  }
+}
+
+document.addEventListener("visibilitychange", donateBack);
+window.addEventListener("focus", donateBack);
+
+document.addEventListener("click", function(e){
+  if(e.target && e.target.closest && e.target.closest("[data-donate]")){
+    donatePending = true;
+    setTimeout(donateBack, 4000);
+  }
+});
+
+function showDonateThanks(){
+  var thanks = document.getElementById("donateThanks");
+  if(!thanks){
+    thanks = document.createElement("div");
+    thanks.id = "donateThanks";
+    thanks.className = "donate-thanks";
+    thanks.setAttribute("role", "dialog");
+    thanks.setAttribute("aria-label", "Gracias");
+    thanks.innerHTML =
+      '<div class="donate-thanks-box">'+
+        '<video class="donate-video" src="images/haku-gracias.mp4" loop playsinline preload="none" aria-label="Haku bailando con chubasquero amarillo y gorro de rana"></video>'+
+        '<h3 class="donate-title">¡Haku baila por ti!</h3>'+
+        '<p class="settings-note">Si has donado, gracias de corazón (y de estómago). Si solo estabas mirando, Haku baila igual: es muy profesional.</p>'+
+        '<button type="button" class="btn-compact donate-sound" hidden>🔊 Activar la música</button>'+
+        '<button type="button" class="btn-solid-gold donate-close">Seguir jugando</button>'+
+      '</div>';
+    document.body.appendChild(thanks);
+
+    var closeBtn = thanks.querySelector(".donate-close");
+    var soundBtn = thanks.querySelector(".donate-sound");
+    var video = thanks.querySelector(".donate-video");
+
+    var closeThanks = function(){
+      thanks.classList.add("hidden");
+      if(video){
+        try { video.pause(); } catch(e){}
+      }
+    };
+
+    closeBtn.addEventListener("click", closeThanks);
+
+    thanks.addEventListener("click", function(e){
+      if(e.target === thanks){
+        closeThanks();
+      }
+    });
+
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape" && !thanks.classList.contains("hidden")){
+        closeThanks();
+      }
+    });
+
+    soundBtn.addEventListener("click", function(){
+      if(video){
+        video.muted = false;
+        video.volume = 0.7;
+        video.play().catch(function(){});
+      }
+      soundBtn.hidden = true;
+    });
+  }
+
+  thanks.classList.remove("hidden");
+
+  var video = thanks.querySelector(".donate-video");
+  var soundBtn = thanks.querySelector(".donate-sound");
+  if(soundBtn) soundBtn.hidden = true;
+
+  var reducedMotion = false;
+  try {
+    reducedMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  } catch(e){}
+
+  if(video && !reducedMotion){
+    var hasSound = (typeof soundEnabled === "function") ? soundEnabled() : true;
+    if(!hasSound){
+      video.muted = true;
+      video.currentTime = 0;
+      video.play().catch(function(){});
+    } else {
+      video.muted = false;
+      video.volume = 0.7;
+      video.currentTime = 0;
+      var p = video.play();
+      if(p && typeof p.catch === "function"){
+        p.catch(function(){
+          video.muted = true;
+          video.play().catch(function(){});
+          if(soundBtn) soundBtn.hidden = false;
+        });
+      }
+    }
   }
 }
 

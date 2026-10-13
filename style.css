@@ -7051,7 +7051,7 @@ textarea,
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: center;
-  min-height: 40px;
+  min-height: 44px;
   opacity: 0.45;
 }
 .alchemy-step-pill:hover:not(:disabled) {
@@ -7160,7 +7160,7 @@ textarea,
   resize: vertical;
   line-height: 1.4;
   padding: 0;
-  min-height: 40px;
+  min-height: 44px;
 }
 .alchemy-effect-area textarea:focus {
   outline: none;
@@ -9506,3 +9506,203 @@ html,body{overscroll-behavior-y:contain;}
 .settings-confirm.hidden{display:none;}
 .settings-confirm-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .settings-storage-actions{display:flex;flex-direction:column;gap:6px;}
+
+/* Pantalla y agradecimiento de donaciones */
+.donate-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.donate-polaroid {
+  align-self: center;
+  width: min(100%, 280px);
+  background: #efe6d6;
+  padding: 10px 10px 14px;
+  border-radius: 4px;
+  transform: rotate(-2deg);
+  position: relative;
+  margin: 8px 0 0;
+  box-sizing: border-box;
+}
+
+.donate-polaroid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 846;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.donate-polaroid figcaption {
+  text-align: center;
+  font-style: italic;
+  font-family: var(--font-display);
+  color: #3a2a1c;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
+
+.donate-tape {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(3deg);
+  width: 90px;
+  height: 22px;
+  background: var(--line-strong);
+}
+
+.donate-title {
+  text-align: center;
+  font-family: var(--font-display);
+  color: var(--gold-light);
+  font-size: 1.35rem;
+  text-wrap: balance;
+  margin: 0;
+}
+
+.donate-lead {
+  text-align: center;
+}
+
+.donate-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.donate-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  white-space: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.donate-opt.summon-roll-pill {
+  color: var(--ink);
+}
+
+.donate-opt-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex: none;
+}
+
+.donate-opt-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.donate-opt-text strong {
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.donate-opt-text small {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  color: var(--ink-dim);
+}
+
+.donate-opt.btn-solid-gold .donate-opt-text small {
+  color: var(--bg-elev);
+  opacity: 0.85;
+}
+
+.donate-opt-amount {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  flex: none;
+  white-space: nowrap;
+}
+
+.donate-opt.summon-roll-pill .donate-opt-amount {
+  color: var(--gold-light);
+}
+
+.donate-opt.btn-solid-gold .donate-opt-amount {
+  color: var(--bg-elev);
+}
+
+.donate-fine {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+
+.donate-thanks {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(8, 5, 4, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(3px);
+  box-sizing: border-box;
+}
+
+.donate-thanks.hidden {
+  display: none;
+}
+
+.donate-thanks-box {
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+  width: min(100%, 380px);
+  box-sizing: border-box;
+}
+
+.donate-video {
+  width: 100%;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donate-video {
+    display: none;
+  }
+}
+
+.donate-sound {
+  min-height: 44px;
+  width: 100%;
+}
+
+.donate-sound[hidden] {
+  display: none;
+}
+
+.donate-close {
+  min-height: 48px;
+  width: 100%;
+}
+
