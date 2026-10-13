@@ -616,7 +616,8 @@ async function executeUnifiedAppUpdate(isManual){
     console.warn("Aviso limpiando cachés:", errCache);
   }
 
-  // 3. Recarga limpia con parámetro de rotura de caché
+  // 3. Recarga limpia con parámetro de rotura de caché, sin cortar un guardado a medias
+  await waitForPendingSaves(8000);
   setTimeout(function(){
     var url = new URL(window.location.href);
     url.searchParams.set("_v", Date.now());
@@ -626,6 +627,93 @@ async function executeUnifiedAppUpdate(isManual){
 window.executeUnifiedAppUpdate = executeUnifiedAppUpdate;
 
 var hasNotifiedUpdateAvailable = false;
+// Solo la primera comprobación (al abrir la app) recarga sola; después se avisa con la barra
+var appUpdateFirstCheckDone = false;
+
+function waitForPendingSaves(maxMs){
+  return new Promise(function(resolve){
+    var start = Date.now();
+    (function check(){
+      if(typeof hasPendingSaves !== "function" || !hasPendingSaves() || Date.now() - start >= maxMs) return resolve();
+      if(typeof flushPendingSync === "function") flushPendingSync();
+      setTimeout(check, 500);
+    })();
+  });
+}
+
+function isAnyModalOpen(){
+  return !!document.querySelector('[id$="ModalOverlay"]:not(.hidden)');
+}
+
+function getAppUpdateBar(){
+  var bar = document.getElementById("appUpdateBar");
+  if(!bar){
+    bar = document.createElement("div");
+    bar.id = "appUpdateBar";
+    bar.className = "app-update-bar";
+    bar.setAttribute("role", "status");
+    bar.innerHTML = '<span class="app-update-bar__text"></span>' +
+      '<button type="button" class="app-update-bar__btn"></button>' +
+      '<button type="button" class="app-update-bar__close" aria-label="Cerrar">✕</button>';
+    document.body.appendChild(bar);
+    bar.querySelector(".app-update-bar__close").addEventListener("click", function(){
+      if(appForcedUpdateTimer) return;
+      bar.classList.add("hidden");
+    });
+  }
+  bar.classList.remove("hidden");
+  return bar;
+}
+
+// Barra discreta "Hay una versión nueva · Actualizar" (no recarga hasta que se pulsa)
+function showAppUpdateBar(version){
+  var bar = getAppUpdateBar();
+  if(appForcedUpdateTimer) return;
+  bar.querySelector(".app-update-bar__text").textContent = "Hay una versión nueva" + (version ? " (v" + version + ")" : "");
+  var btn = bar.querySelector(".app-update-bar__btn");
+  btn.textContent = "Actualizar";
+  btn.onclick = function(){ btn.disabled = true; executeUnifiedAppUpdate(true); };
+  bar.querySelector(".app-update-bar__close").classList.remove("hidden");
+}
+window.showAppUpdateBar = showAppUpdateBar;
+
+// Orden del máster: cuenta atrás de 10 s; espera a que no haya guardados ni ventanas abiertas
+var appForcedUpdateTimer = null;
+function startForcedAppUpdate(version){
+  if(appForcedUpdateTimer) return;
+  var bar = getAppUpdateBar();
+  var textEl = bar.querySelector(".app-update-bar__text");
+  var btn = bar.querySelector(".app-update-bar__btn");
+  bar.querySelector(".app-update-bar__close").classList.add("hidden");
+  var left = 10;
+  var waited = 0;
+  var go = function(){
+    clearInterval(appForcedUpdateTimer);
+    textEl.textContent = "Actualizando…";
+    btn.disabled = true;
+    executeUnifiedAppUpdate(false);
+  };
+  btn.textContent = "Ahora";
+  btn.disabled = false;
+  btn.onclick = go;
+  var tick = function(){
+    if(left > 0){
+      textEl.textContent = "El máster ha publicado una versión nueva. Se actualiza en " + left + " s";
+      left--;
+      return;
+    }
+    var busy = (typeof hasPendingSaves === "function" && hasPendingSaves()) || isAnyModalOpen();
+    if(busy && waited < 120){
+      waited++;
+      textEl.textContent = "Versión nueva: se actualizará al cerrar la ventana abierta";
+      return;
+    }
+    go();
+  };
+  tick();
+  appForcedUpdateTimer = setInterval(tick, 1000);
+}
+window.startForcedAppUpdate = startForcedAppUpdate;
 
 async function checkForAppUpdates(isManual){
   if(isCheckingAppVersion) return;
@@ -664,6 +752,8 @@ async function checkForAppUpdates(isManual){
       if(isManual){
         showToast("🚀 Aplicando actualización a v" + data.version + "...", "info");
         executeUnifiedAppUpdate(true);
+      } else if(appUpdateFirstCheckDone){
+        showAppUpdateBar(data.version);
       } else if(!alreadyAttempted){
         try {
           sessionStorage.setItem(reloadAttemptKey, "true");
@@ -699,6 +789,7 @@ async function checkForAppUpdates(isManual){
     }
   } finally {
     isCheckingAppVersion = false;
+    appUpdateFirstCheckDone = true;
   }
 }
 window.checkForAppUpdates = checkForAppUpdates;
