@@ -1,6 +1,6 @@
 {
-  "version": "1.4.32.0",
-  "build": "2026.10.14.03",
-  "updatedAt": "2026-10-14T03:00:00Z",
-  "changelog": "La Casa: pestaña con icono 🏠 junto a Misión. Sin niveles, barras ni buffos: solo las mejoras reales (la daga y el buen camino) y un recuadro con las misiones de la casa, con botón para abrirlas en Misiones."
+  "version": "1.4.33.0",
+  "build": "2026.10.14.04",
+  "updatedAt": "2026-10-14T04:00:00Z",
+  "changelog": "Dados: el panel de tirada cabe entero en la pantalla, sin desplazar. Dado más pequeño, resultado y desglose más compactos, bonificadores con el nombre completo y los botones siempre abajo. En horizontal, el dado a la izquierda y el resultado a la derecha."
 }
