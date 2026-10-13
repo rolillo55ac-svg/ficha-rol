@@ -1,6 +1,6 @@
 {
-  "version": "1.4.44.0",
-  "build": "2026.10.14.19",
-  "updatedAt": "2026-10-14T19:00:00Z",
-  "changelog": "Deslizar hacia abajo arriba del todo ya no recarga la página: pone los datos al día (fichas, misiones, mapa, reloj y La Casa) y avisa «Datos al día». También hay un botón «Sincronizar datos» en Ajustes."
+  "version": "1.4.45.0",
+  "build": "2026.10.14.20",
+  "updatedAt": "2026-10-14T20:00:00Z",
+  "changelog": "Si recargas justo después de un cambio en la ficha (veneno, piedras...) ya no se pierde: se sube al volver. Mejorar un buffo de La Casa ahora se guarda también en la nube."
 }
