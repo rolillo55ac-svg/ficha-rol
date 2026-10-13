@@ -46,33 +46,33 @@
 body.auth-locked #app{display:none;}
 .login-gate{
   position:fixed;inset:0;z-index:9000;overflow-y:auto;
-  background:radial-gradient(circle at 50% 35%, #1F1510 0%, #120D0A 60%, #080504 100%);
+  background:radial-gradient(circle at 50% 35%, var(--bg-elev) 0%, var(--bg) 60%, #000 100%);
   display:flex;align-items:center;justify-content:center;padding:20px 16px;
 }
 .login-gate[hidden]{display:none;}
 .login-gate-card{
   width:100%;max-width:360px;display:flex;flex-direction:column;
-  padding:26px 20px;border-radius:14px;background:rgba(35,24,18,0.92);
-  border:1px solid rgba(176,141,87,0.35);box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  padding:26px 20px;border-radius:var(--radius);background:var(--bg-card);
+  border:1px solid var(--line-strong);box-shadow:0 10px 30px rgba(0,0,0,0.6);
 }
 .login-gate-brand{
   font-family:var(--font-display);font-size:1.6rem;font-weight:700;letter-spacing:0.22em;
-  color:var(--gold-light);text-align:center;margin:0;text-shadow:0 0 18px rgba(176,141,87,0.4);
+  color:var(--gold-light);text-align:center;margin:0;text-shadow:0 0 18px var(--line-strong);
 }
 .login-gate-sub{text-align:center;color:var(--ink-dim);font-size:0.95rem;margin:8px 0 18px;}
 .login-gate-label{color:var(--gold-light);font-size:0.9rem;margin:10px 0 6px;}
 .login-gate-input{
-  min-height:48px;padding:10px 12px;font-size:16px;border-radius:10px;
-  background:var(--bg);color:var(--ink);border:1px solid rgba(176,141,87,0.4);
+  min-height:48px;padding:10px 12px;font-size:16px;border-radius:var(--radius);
+  background:var(--bg);color:var(--ink);border:1px solid var(--line-strong);
 }
 .login-gate-input:focus{outline:none;border-color:var(--gold-light);}
 .login-gate-enter{
-  margin-top:20px;min-height:50px;border-radius:10px;font-size:1.05rem;font-weight:700;cursor:pointer;
-  background:linear-gradient(180deg, var(--gold-light), var(--gold));color:#1A120D;border:none;
+  margin-top:20px;min-height:50px;border-radius:var(--radius);font-size:1.05rem;font-weight:700;cursor:pointer;
+  background:linear-gradient(180deg, var(--gold-light), var(--gold));color:var(--bg-elev);border:none;
 }
 .login-gate-signup{
-  margin-top:10px;min-height:44px;border-radius:10px;font-size:0.95rem;cursor:pointer;
-  background:transparent;color:var(--ink-dim);border:1px solid rgba(176,141,87,0.3);
+  margin-top:10px;min-height:44px;border-radius:var(--radius);font-size:0.95rem;cursor:pointer;
+  background:transparent;color:var(--ink-dim);border:1px solid var(--line);
 }
 
 /* Pantalla de carga prémium Krysalis */
@@ -6811,7 +6811,7 @@ textarea,
 .alchemy-stat-chip {
   flex: 1;
   min-width: 90px;
-  background: linear-gradient(145deg, rgba(35, 24, 18, 0.95), rgba(26, 18, 13, 0.95));
+  background: var(--bg-card);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
@@ -6914,7 +6914,7 @@ textarea,
 .alchemy-type-badge {
   font-size: 0.95rem;
   padding: 3px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--line);
   line-height: 1;
@@ -7002,7 +7002,7 @@ textarea,
   gap: 5px;
 }
 .alchemy-axis-enemy .alchemy-axis-title {
-  color: #FF8A96;
+  color: var(--blood-light);
 }
 .alchemy-axis-cherk .alchemy-axis-title {
   color: var(--teal-light);
@@ -7010,19 +7010,19 @@ textarea,
 .alchemy-stage-badge {
   font-size: 0.6rem;
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   border: 1px solid;
   font-family: var(--font-mono);
   font-weight: 600;
 }
 .alchemy-axis-enemy .alchemy-stage-badge {
   border-color: rgba(200, 75, 87, 0.5);
-  color: #FFA4AD;
+  color: var(--blood-light);
   background: rgba(140, 37, 47, 0.25);
 }
 .alchemy-axis-cherk .alchemy-stage-badge {
   border-color: rgba(118, 172, 157, 0.5);
-  color: #A3DFD1;
+  color: var(--teal-light);
   background: rgba(61, 110, 96, 0.25);
 }
 
@@ -7033,16 +7033,16 @@ textarea,
   gap: 4px;
   background: rgba(8, 5, 4, 0.7);
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(176, 141, 87, 0.2);
 }
 .alchemy-step-pill {
   background: rgba(14, 10, 8, 0.75);
   border: 1px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 5px 2px;
   font-size: 0.64rem;
-  color: #6B5E50;
+  color: var(--ink-faint);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -7075,20 +7075,17 @@ textarea,
 .alchemy-axis-enemy .alchemy-step-pill.is-past {
   background: rgba(140, 37, 47, 0.22);
   border: 1px solid rgba(200, 75, 87, 0.4);
-  color: #E27B86;
+  color: var(--blood-light);
   opacity: 0.85;
   font-weight: 600;
 }
 /* ACTUAL (Resaltado con glow y borde nítido) */
 .alchemy-axis-enemy .alchemy-step-pill.is-active {
-  background: linear-gradient(135deg, #B52230 0%, #E74C3C 100%);
-  border: 2px solid #FFA4AD;
-  color: #FFFFFF;
+  background: var(--blood);
+  border: 1px solid var(--blood-light);
+  color: var(--ink);
   opacity: 1;
-  font-weight: 800;
-  box-shadow: 0 0 14px rgba(231, 76, 60, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transform: scale(1.04);
-  z-index: 2;
+  font-weight: 700;
 }
 
 /* 1. CONTRASTE STEPPER CHERK (Asimilación / Teal) */
@@ -7096,20 +7093,17 @@ textarea,
 .alchemy-axis-cherk .alchemy-step-pill.is-past {
   background: rgba(61, 110, 96, 0.22);
   border: 1px solid rgba(118, 172, 157, 0.4);
-  color: #76AC9D;
+  color: var(--teal-light);
   opacity: 0.85;
   font-weight: 600;
 }
 /* ACTUAL (Resaltado con glow y borde nítido) */
 .alchemy-axis-cherk .alchemy-step-pill.is-active {
-  background: linear-gradient(135deg, #2D6B5D 0%, #43A08A 100%);
-  border: 2px solid #A8F0DF;
-  color: #FFFFFF;
+  background: var(--teal);
+  border: 1px solid var(--teal-light);
+  color: var(--ink);
   opacity: 1;
-  font-weight: 800;
-  box-shadow: 0 0 14px rgba(67, 160, 138, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transform: scale(1.04);
-  z-index: 2;
+  font-weight: 700;
 }
 
 /* Mini barras de progreso para modo colapsado */
@@ -7119,7 +7113,7 @@ textarea,
   gap: 2px;
   background: rgba(0, 0, 0, 0.5);
   padding: 3px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(176, 141, 87, 0.2);
 }
 .alchemy-mini-bar-block {
@@ -7133,15 +7127,13 @@ textarea,
   background: rgba(200, 75, 87, 0.4);
 }
 .alchemy-mini-track.enemy .alchemy-mini-bar-block.is-active {
-  background: #E74C3C;
-  box-shadow: 0 0 6px #FF8A96;
+  background: var(--blood-light);
 }
 .alchemy-mini-track.cherk .alchemy-mini-bar-block.is-past {
   background: rgba(61, 110, 96, 0.4);
 }
 .alchemy-mini-track.cherk .alchemy-mini-bar-block.is-active {
-  background: #43A08A;
-  box-shadow: 0 0 6px #A8F0DF;
+  background: var(--teal-light);
 }
 
 /* Área de Efecto y Niebla Alquímica */
@@ -7149,7 +7141,7 @@ textarea,
   min-height: 48px;
   background: rgba(10, 8, 6, 0.7);
   border: 1px solid rgba(176, 141, 87, 0.2);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
   font-size: 0.78rem;
   color: var(--ink);
@@ -7185,18 +7177,11 @@ textarea,
 /* 3. CAJA GM CONFIDENCIAL INCONFUNDIBLE (Patrón rayado diagonal y aviso secreto) */
 .alchemy-gm-confidential-card {
   margin-top: 8px;
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(65, 30, 8, 0.55),
-    rgba(65, 30, 8, 0.55) 10px,
-    rgba(35, 16, 5, 0.65) 10px,
-    rgba(35, 16, 5, 0.65) 20px
-  );
-  border: 1.5px dashed var(--gold);
-  border-left: 4px solid var(--gold-light);
-  border-radius: 6px;
+  background: var(--bg-elev);
+  border: 1px dashed var(--gold);
+  border-left: 3px solid var(--gold-light);
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(176, 141, 87, 0.1);
   position: relative;
 }
 .alchemy-gm-confidential-header {
@@ -7216,37 +7201,34 @@ textarea,
   background: rgba(176, 141, 87, 0.28);
   border: 1px solid rgba(176, 141, 87, 0.5);
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 .alchemy-gm-confidential-body {
   font-size: 0.76rem;
-  color: #FFF6E0;
+  color: var(--ink);
   line-height: 1.4;
   background: rgba(15, 10, 6, 0.5);
   border: 1px solid rgba(176, 141, 87, 0.2);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 5px 8px;
 }
 .alchemy-btn-reveal {
-  background: linear-gradient(135deg, var(--gold), var(--gold-light));
-  color: #120D0A;
+  background: var(--gold);
+  color: var(--bg);
   border: 1px solid var(--gold-light);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 3px 8px;
   font-size: 0.66rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   transition: all var(--transition-fast);
 }
 .alchemy-btn-reveal:hover {
-  background: #FFF;
-  color: #120D0A;
-  box-shadow: 0 0 10px rgba(253, 224, 71, 0.8);
-  transform: translateY(-1px);
+  background: var(--gold-light);
+  color: var(--bg);
 }
 
 /* 4. CARDS COLAPSABLES */
@@ -7273,7 +7255,7 @@ textarea,
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   background: rgba(176, 141, 87, 0.1);
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   flex: none;
 }
 .alchemy-card:not(.is-collapsed) .alchemy-card-chevron {
@@ -7316,7 +7298,7 @@ textarea,
 .alchemy-dosis-btn {
   background: rgba(176, 141, 87, 0.15);
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   color: var(--gold-light);
   width: 26px;
   height: 26px;
@@ -7330,7 +7312,7 @@ textarea,
 }
 .alchemy-dosis-btn:hover {
   background: var(--gold);
-  color: #120D0A;
+  color: var(--bg);
 }
 .alchemy-dosis-num {
   font-family: var(--font-mono);
@@ -7357,46 +7339,37 @@ textarea,
   font-weight: 600;
   letter-spacing: 0.02em;
   transition: all var(--transition-fast);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 /* 1. Destilar: Dorado / Alquímico */
 .alchemy-btn-craft {
-  background: linear-gradient(135deg, rgba(80, 52, 18, 0.88), rgba(42, 28, 10, 0.95));
+  background: var(--bg-card);
   border: 1px solid var(--gold);
   color: var(--gold-light);
 }
 .alchemy-btn-craft:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(120, 80, 28, 0.95), rgba(70, 46, 16, 0.98));
-  color: #FFF8E7;
+  background: rgba(176, 141, 87, 0.18);
+  color: var(--ink);
   border-color: var(--gold-light);
-  box-shadow: 0 0 10px rgba(176, 141, 87, 0.6);
-  transform: translateY(-1px);
 }
 /* 2. Untar en arma: Carmesí Ofensivo */
 .alchemy-btn-weapon {
-  background: linear-gradient(135deg, rgba(120, 25, 35, 0.88), rgba(65, 12, 18, 0.95));
+  background: var(--bg-card);
   border: 1px solid var(--blood-light);
-  color: #FFA4AD;
+  color: var(--blood-light);
 }
 .alchemy-btn-weapon:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(165, 35, 48, 0.95), rgba(95, 18, 26, 0.98));
-  color: #FFFFFF;
-  border-color: #FF8A96;
-  box-shadow: 0 0 10px rgba(200, 75, 87, 0.6);
-  transform: translateY(-1px);
+  background: rgba(var(--accent-rgb), 0.35);
+  color: var(--ink);
 }
 /* 3. Asimilar en Cherk: Turquesa Asimilación */
 .alchemy-btn-cherk {
-  background: linear-gradient(135deg, rgba(28, 80, 68, 0.88), rgba(15, 45, 38, 0.95));
+  background: var(--bg-card);
   border: 1px solid var(--teal-light);
-  color: #A8F0DF;
+  color: var(--teal-light);
 }
 .alchemy-btn-cherk:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(42, 115, 98, 0.95), rgba(22, 65, 55, 0.98));
-  color: #FFFFFF;
-  border-color: #76AC9D;
-  box-shadow: 0 0 10px rgba(118, 172, 157, 0.6);
-  transform: translateY(-1px);
+  background: rgba(61, 110, 96, 0.4);
+  color: var(--ink);
 }
 .alchemy-btn-action:disabled {
   opacity: 0.35;
@@ -7425,7 +7398,7 @@ textarea,
   max-width: 220px;
 }
 .alchemy-card:hover .alchemy-card-title-text {
-  color: #FFF8E7;
+  color: var(--ink);
 }
 .alchemy-header-tags {
   display: inline-flex;
@@ -7436,7 +7409,7 @@ textarea,
 .alchemy-header-tag {
   font-size: 0.62rem;
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--line);
   color: var(--ink-dim);
@@ -7457,7 +7430,7 @@ textarea,
   background: rgba(176, 141, 87, 0.2);
   border: 1px solid rgba(176, 141, 87, 0.4);
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   letter-spacing: 0.05em;
 }
 
@@ -9373,9 +9346,9 @@ textarea,
 .alq-nm { font-family: var(--font-display); font-weight: 700; font-size: 1.08rem; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
 .alq-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .alq-tag { font-size: .74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); white-space: nowrap; }
-.alq-tag.e { border-color: rgba(200,75,87,.5); color: #E8949C; }
-.alq-tag.s { border-color: rgba(118,172,157,.5); color: #9FD0C2; }
-.alq-tag.wait { border-color: rgba(224,144,74,.5); color: #F2B47E; }
+.alq-tag.e { border-color: rgba(200,75,87,.5); color: var(--blood-light); }
+.alq-tag.s { border-color: rgba(118,172,157,.5); color: var(--teal-light); }
+.alq-tag.wait { border-color: rgba(224,144,74,.5); color: var(--warning); }
 .alq-tag.ready { border-color: var(--gold); color: var(--gold-light); }
 .alq-dose { flex: none; min-width: 44px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--gold-light); }
 .alq-dose small { display: block; font-family: var(--font-body); font-weight: 400; font-size: .66rem; color: var(--ink-faint); }
@@ -9386,11 +9359,11 @@ textarea,
 .alq-link { background: none; border: 0; padding: 0 4px; min-height: 44px; color: var(--gold-light); text-decoration: underline; font-size: .84rem; cursor: pointer; }
 .alq-note { font-size: .82rem; color: var(--ink-faint); line-height: 1.4; }
 
-.alq-next { border-radius: 12px; padding: 12px; background: linear-gradient(180deg, rgba(176,141,87,.14), rgba(176,141,87,.05)); border: 1px solid var(--line-strong); display: flex; flex-direction: column; gap: 8px; }
+.alq-next { border-radius: 12px; padding: 12px; background: rgba(176,141,87,.1); border: 1px solid var(--line-strong); display: flex; flex-direction: column; gap: 8px; }
 .alq-k { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--gold); }
 .alq-next p { margin: 0; line-height: 1.4; color: var(--ink); }
 .alq-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,.35); overflow: hidden; }
-.alq-bar div { height: 100%; background: linear-gradient(90deg, #a8834c, #e8c35a); }
+.alq-bar div { height: 100%; background: var(--gold); }
 .alq-hours { display: grid; grid-template-columns: 1fr 96px; gap: 8px 10px; align-items: center; }
 .alq-hours-input { min-height: 44px; width: 100%; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink); padding: 0 10px; font-size: 16px; }
 
@@ -9400,8 +9373,8 @@ button.alq-step { cursor: pointer; }
 .alq-step:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--line); }
 .alq-step.done:not(:last-child)::before { background: var(--gold); }
 .alq-dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 700; border: 2px solid var(--line-strong); background: var(--bg-card); color: var(--ink-faint); position: relative; z-index: 1; }
-.alq-step.done .alq-dot { background: var(--gold); border-color: var(--gold); color: #1a120d; }
-.alq-step.now .alq-dot { border-color: var(--gold-light); color: var(--gold-light); box-shadow: 0 0 0 4px rgba(222,195,146,.15); }
+.alq-step.done .alq-dot { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+.alq-step.now .alq-dot { border-color: var(--gold-light); color: var(--gold-light);  }
 .alq-step-txt b { display: block; font-size: .95rem; }
 .alq-step-txt span { font-size: .82rem; color: var(--ink-faint); line-height: 1.35; }
 
@@ -9411,8 +9384,8 @@ button.alq-step { cursor: pointer; }
 .alq-branch.e { background: rgba(200,75,87,.12); border: 1px solid rgba(200,75,87,.35); }
 .alq-branch.s { background: rgba(118,172,157,.12); border: 1px solid rgba(118,172,157,.35); }
 .alq-branch h4 { margin: 0; font-size: .95rem; }
-.alq-branch.e h4 { color: #F0A3AA; }
-.alq-branch.s h4 { color: #A9DCCD; }
+.alq-branch.e h4 { color: var(--blood-light); }
+.alq-branch.s h4 { color: var(--teal-light); }
 .alq-minis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .alq-mini { min-height: 48px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.2); color: var(--ink-dim); font-size: .88rem; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; cursor: pointer; }
 .alq-mini small { font-size: .68rem; color: var(--ink-faint); }
@@ -9422,8 +9395,8 @@ button.alq-step { cursor: pointer; }
 .alq-mini:disabled { cursor: default; }
 .alq-branch textarea { width: 100%; min-height: 64px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.25); color: var(--ink); padding: 8px 10px; resize: vertical; line-height: 1.4; font-family: var(--font-body); font-size: .92rem; }
 .alq-fog { font-size: .86rem; color: var(--ink-faint); font-style: italic; }
-.alq-secret { border: 1px dashed #E0904A; border-radius: 10px; padding: 4px 10px 8px; font-size: .86rem; background: rgba(224,144,74,.06); }
-.alq-secret summary { cursor: pointer; color: #F2B47E; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.alq-secret { border: 1px dashed var(--warning); border-radius: 10px; padding: 4px 10px 8px; font-size: .86rem; background: rgba(224,144,74,.06); }
+.alq-secret summary { cursor: pointer; color: var(--warning); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
 .alq-secret p { margin: 4px 0 8px; color: var(--ink); }
 .alq-secret .alq-btn { width: 100%; }
 
@@ -9443,7 +9416,7 @@ button.alq-step { cursor: pointer; }
 .alq-sheet-lbl { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-top: 4px; }
 .alq-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .alq-pill { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink-dim); font-size: .88rem; cursor: pointer; }
-.alq-pill.active { border-color: var(--gold); color: var(--gold-light); background: #2c2017; }
+.alq-pill.active { border-color: var(--gold); color: var(--gold-light); background: rgba(176,141,87,.12); }
 .alq-sheet .alq-btnrow { margin-top: 6px; }
 
 /* Reloj de la partida (cabecera + ventana) */
@@ -9465,14 +9438,14 @@ button.alq-step { cursor: pointer; }
 
 /* Venenos preparados: armas con cargas y munición (Combate, Inventario y Alquimia) */
 .psn-list { display: flex; flex-direction: column; gap: 8px; }
-.psn-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-elev); }
+.psn-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-elev); }
 .psn-row.empty { opacity: .6; }
 .psn-ico { font-size: 1.2rem; flex: 0 0 auto; }
 .psn-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .psn-txt b { color: var(--ink); font-size: .92rem; overflow-wrap: anywhere; }
 .psn-txt small { color: var(--ink-dim); font-size: .8rem; overflow-wrap: anywhere; }
-.psn-btn { flex: 0 0 auto; min-height: 44px; min-width: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--blood-light); background: rgba(200,75,87,.12); color: #F0A3AA; font-weight: 600; font-size: .85rem; cursor: pointer; }
-.psn-btn.gm { border-color: #E0904A; color: #F2B47E; background: rgba(224,144,74,.1); }
+.psn-btn { flex: 0 0 auto; min-height: 44px; min-width: 44px; padding: 0 10px; border-radius: var(--radius); border: 1px solid var(--blood-light); background: var(--bg-card); color: var(--blood-light); font-weight: 600; font-size: .85rem; cursor: pointer; }
+.psn-btn.gm { border-color: var(--warning); color: var(--warning); background: var(--bg-card); }
 .psn-picks { display: flex; flex-direction: column; gap: 8px; }
 .psn-pick { display: flex; flex-direction: column; align-items: flex-start; text-align: left; flex: 0 0 auto; }
 .psn-pick small { font-weight: 400; font-size: .78rem; color: var(--ink-dim); }
@@ -9484,7 +9457,7 @@ button.alq-step { cursor: pointer; }
   font-size:.75rem;font-family:var(--font-mono);padding:3px 10px;border-radius:20px;pointer-events:none;
   background:rgba(20,16,10,0.92);border:1px solid var(--gold);color:var(--gold-light);white-space:nowrap;
 }
-.conn-status-pill.is-offline{border-color:#a94442;color:#f0a8a6;}
+.conn-status-pill.is-offline{border-color:var(--blood-light);color:var(--blood-light);}
 
 /* Deslizar arriba del todo: sin recarga del navegador; la app se pone al día ella misma */
 html,body{overscroll-behavior-y:contain;}

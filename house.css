@@ -1312,9 +1312,9 @@
 
 /* Mejoras y Buffs Evolutivos */
 .house-upgrade-item {
-  background: rgba(20, 14, 10, 0.7);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: 6px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   display: flex;
   justify-content: space-between;
@@ -1323,8 +1323,8 @@
 }
 
 .house-upgrade-item.unlocked {
-  border-color: rgba(46, 204, 113, 0.4);
-  background: rgba(46, 204, 113, 0.08);
+  border-color: var(--success);
+  background: var(--bg-card);
 }
 
 .house-upgrade-info {
@@ -1396,7 +1396,7 @@
 .house-modal-box {
   background: #18120D;
   border: 1px solid var(--gold);
-  border-radius: 8px;
+  border-radius: var(--radius);
   max-width: 520px;
   width: 100%;
   padding: 20px;
@@ -1426,8 +1426,8 @@
 /* Historial de Eventos */
 .house-events-section {
   background: rgba(20, 14, 10, 0.9);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -1454,7 +1454,7 @@
 }
 
 .house-event-item {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-elev);
   border-left: 3px solid var(--gold);
   padding: 6px 10px;
   border-radius: 0 4px 4px 0;
@@ -1466,7 +1466,7 @@
 }
 
 .house-event-item.level_up { border-left-color: #F1C40F; background: rgba(241, 196, 15, 0.08); }
-.house-event-item.unlock_upgrade { border-left-color: #2ECC71; background: rgba(46, 204, 113, 0.08); }
+.house-event-item.unlock_upgrade { border-left-color: #2ECC71; background: var(--bg-card); }
 .house-event-item.stat_gain { border-left-color: #3498DB; }
 
 .house-event-text {
@@ -1484,8 +1484,8 @@
 /* Mejoras y misiones de la casa */
 .house-info-box {
   background: rgba(20, 14, 10, 0.9);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 14px;
   display: flex;
   flex-direction: column;
@@ -1497,15 +1497,15 @@
   align-items: flex-start;
   font-size: 0.95rem;
   line-height: 1.4;
-  color: var(--ink, #EDE3D1);
+  color: var(--ink);
 }
 .house-info-icon { font-size: 1.2rem; line-height: 1.2; }
 .house-info-empty { font-size: 0.9rem; color: var(--ink-dim); font-style: italic; }
 .house-info-sub { font-size: 0.8rem; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
 .house-quest-card {
-  border-left: 3px solid #E2B65A;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 0 6px 6px 0;
+  border-left: 3px solid var(--gold-light);
+  background: var(--bg-elev);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
@@ -1517,10 +1517,10 @@
   align-self: flex-start;
   min-height: 44px;
   padding: 0 16px;
-  border: 1.5px solid #E2B65A;
-  border-radius: 10px;
+  border: 1.5px solid var(--gold-light);
+  border-radius: var(--radius);
   background: transparent;
-  color: #E2B65A;
+  color: var(--gold-light);
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
@@ -1529,8 +1529,8 @@
   min-height: 44px;
   padding: 8px 10px;
   border: 0;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
   color: var(--ink-dim);
   font-size: 0.9rem;
   text-align: left;
@@ -1540,28 +1540,28 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-elev);
   border: 1px solid rgba(212, 175, 55, 0.18);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 10px 12px;
 }
 .house-perk-icon { font-size: 1.6rem; line-height: 1.2; }
 .house-perk-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .house-perk-name { font-size: 1rem; font-weight: 700; color: var(--gold-light); }
-.house-perk-desc { font-size: 0.92rem; line-height: 1.4; color: var(--ink, #EDE3D1); }
+.house-perk-desc { font-size: 0.92rem; line-height: 1.4; color: var(--ink); }
 .house-perk-gm-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .house-perk-gm-btn {
   min-height: 44px;
   padding: 0 14px;
-  border: 1.5px solid #E2B65A;
-  border-radius: 10px;
+  border: 1.5px solid var(--gold-light);
+  border-radius: var(--radius);
   background: transparent;
-  color: #E2B65A;
+  color: var(--gold-light);
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
 }
-.house-perk-gm-btn.gold { background: #E2B65A; color: #18120D; }
+.house-perk-gm-btn.gold { background: var(--gold-light); color: #18120D; }
 .house-perk-close {
   min-width: 44px;
   min-height: 44px;
@@ -1576,9 +1576,9 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
 }
 .house-perk-edit-top { display: flex; gap: 8px; }
 .house-perk-in-icon { width: 52px; min-height: 44px; text-align: center; font-size: 1.3rem; }
@@ -1589,19 +1589,19 @@
   min-width: 44px;
   min-height: 44px;
   padding: 0 10px;
-  border: 1px solid rgba(212, 175, 55, 0.45);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--ink, #EDE3D1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  color: var(--ink);
   font-size: 0.9rem;
   cursor: pointer;
 }
-.house-perk-mini.gold { border-color: #E2B65A; color: #E2B65A; font-weight: 700; }
+.house-perk-mini.gold { border-color: var(--gold-light); color: var(--gold-light); font-weight: 700; }
 .house-perk-mini:disabled { opacity: 0.35; cursor: default; }
 .house-perk-archived { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--ink-dim); }
 .house-secret-note { font-size: 0.85rem; color: var(--ink-dim); font-style: italic; }
 .house-secret-hp-row { display: flex; align-items: center; gap: 6px; }
-.house-secret-hp-label { flex: 1; font-size: 0.95rem; color: var(--ink, #EDE3D1); }
+.house-secret-hp-label { flex: 1; font-size: 0.95rem; color: var(--ink); }
 .house-secret-hp-in { width: 64px; min-height: 44px; text-align: center; font-size: 1rem; }
 .house-secret-stats { display: flex; flex-direction: column; gap: 6px; }
 .house-secret-stat { display: flex; gap: 6px; }

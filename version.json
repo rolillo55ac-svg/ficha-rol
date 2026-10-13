@@ -1,6 +1,6 @@
 {
-  "version": "1.4.47.0",
-  "build": "2026.10.14.22",
-  "updatedAt": "2026-10-14T22:00:00Z",
-  "changelog": "Ajustes nuevos: lista como en el móvil, interruptor de sonidos, versión, almacenamiento y copia de seguridad en apartados."
+  "version": "1.4.48.0",
+  "build": "2026.10.15.10",
+  "updatedAt": "2026-10-15T10:00:00Z",
+  "changelog": "Un solo estilo: Alquimia, venenos, avisos, La Casa y pantalla de entrada usan los colores y botones de la web."
 }
