@@ -34,7 +34,14 @@ var houseState = {
 // ============================================================================
 // 1. SEMILLA LOCAL Y PERSISTENCIA
 // ============================================================================
+// La casa de ejemplo es de Krysalis: una partida nueva empieza sin estancias
 function getSeedHouseData(){
+  var d = getSeedHouseDataBase();
+  if(PARTIDA_ACTUAL.id !== "krysalis") d.rooms = [];
+  return d;
+}
+
+function getSeedHouseDataBase(){
   var houseId = "h0000000-0000-0000-0000-000000000001";
   var salonId = "r0000000-0000-0000-0000-000000000001";
   var cocinaId = "r0000000-0000-0000-0000-000000000002";
