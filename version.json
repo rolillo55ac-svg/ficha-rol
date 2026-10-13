@@ -1,6 +1,6 @@
 {
-  "version": "1.4.38.0",
-  "build": "2026.10.14.13",
-  "updatedAt": "2026-10-14T13:00:00Z",
-  "changelog": "Las fichas tienen un campo Título aparte del nivel (Derek: Nv. 1 · Vástago); subir de nivel no lo toca."
+  "version": "1.4.39.0",
+  "build": "2026.10.14.14",
+  "updatedAt": "2026-10-14T14:00:00Z",
+  "changelog": "El tiempo real (tiradas, estadísticas, sonidos, La Casa, mapa y reloj) va por canales privados: solo lo reciben los usuarios con sesión."
 }
