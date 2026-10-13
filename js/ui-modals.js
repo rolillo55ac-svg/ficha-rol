@@ -183,130 +183,182 @@ function openCharModal(){
   document.getElementById("charModalOverlay").classList.remove("hidden");
 }
 
-function openDataModal(){
-  var html = '<h2>Ajustes y Cuenta<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
-  if(currentUser){
-    html += '<div class="data-modal-user-box">'+
-      '<div class="data-modal-user-info">'+
-        '<div class="data-modal-user-label">Conectado como</div>'+
-        '<div class="data-modal-user-email">'+esc(currentUser.email)+' <span class="data-modal-user-role">('+ (isGM() ? 'Máster' : 'Jugador') +')</span></div>'+
-      '</div>'+
-      '<button class="btn-compact data-modal-logout-btn" data-action="auth-logout">Cerrar sesión</button>'+
+var settingsScreen = "main";
+
+function settingsRow(action, screen, icon, title, sub, val, extraClass){
+  return '<button type="button" class="settings-row'+(extraClass ? ' '+extraClass : '')+'" data-action="'+action+'"'+(screen ? ' data-screen="'+screen+'"' : '')+'>'+
+    '<span class="settings-row-ico">'+icon+'</span>'+
+    '<span class="settings-row-txt"><span class="settings-row-title">'+title+'</span>'+(sub ? '<span class="settings-row-sub">'+sub+'</span>' : '')+'</span>'+
+    (val || '')+
+    (screen ? '<span class="settings-row-chev">›</span>' : '')+
+  '</button>';
+}
+
+function settingsLastBackupText(){
+  var iso = null;
+  try { iso = localStorage.getItem("krysalis_last_weekly_backup"); } catch(e){}
+  if(!iso) return "Aún sin copias desde este dispositivo";
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return "Aún sin copias desde este dispositivo";
+  return "Última: " + d.toLocaleDateString("es-ES", {day:"numeric", month:"short"});
+}
+
+function settingsScreenTitle(screen){
+  return {
+    version: "Versión", storage: "Almacenamiento", backup: "Copia de seguridad", help: "Ayuda y sugerencias",
+    cloud: "Copia en la nube", broadcast: "Avisar para que actualicen"
+  }[screen] || "Ajustes";
+}
+
+function openDataModal(screen){
+  screen = (typeof screen === "string") ? screen : "main";
+  if((screen === "cloud" || screen === "broadcast") && !isGM()) screen = "main";
+  settingsScreen = screen;
+  var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.7");
+  var html = '<h2 class="settings-head">'+
+    (screen !== "main" ? '<button type="button" class="settings-back" data-action="settings-go" data-screen="main" aria-label="Volver">‹</button>' : '')+
+    '<span class="settings-head-title">'+settingsScreenTitle(screen)+'</span>'+
+    '<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
+
+  if(screen === "main"){
+    var email = currentUser ? currentUser.email : "";
+    var gm = isGM();
+    html += '<div class="settings-profile">'+
+      '<div class="settings-avatar">'+esc((email || "?").charAt(0).toUpperCase())+'</div>'+
+      '<div class="settings-profile-info"><div class="settings-profile-mail">'+esc(email || "Sin sesión")+'</div>'+
+      '<span class="settings-chip'+(gm ? ' gm' : '')+'">'+(gm ? 'Máster' : 'Jugador')+'</span></div>'+
     '</div>';
-  } else {
-    html += '<div style="font-size:0.8rem;color:var(--ink-dim);margin-bottom:10px;">Inicia sesión con tu cuenta para guardar y sincronizar tu personaje:</div>'+
-      '<div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="tu-correo@gmail.com"></div>'+
-      '<div class="field" style="margin-top:8px;"><label>Contraseña</label><input type="password" id="authPass" placeholder="••••••••"></div>'+
-      '<div class="data-modal-auth-actions">'+
-        '<button class="btn-solid-gold data-modal-btn" data-action="auth-login">Entrar</button>'+
-        '<button class="btn-compact data-modal-btn" data-action="auth-signup">Crear cuenta</button>'+
+    html += '<div class="settings-group-title">Preferencias</div><div class="settings-list">'+
+      '<button type="button" class="settings-row" data-action="toggle-sound" role="switch" aria-checked="'+(soundEnabled() ? 'true' : 'false')+'">'+
+        '<span class="settings-row-ico">🔊</span>'+
+        '<span class="settings-row-txt"><span class="settings-row-title">Sonidos</span><span class="settings-row-sub">Dados, pestañas y sonidos de personaje</span></span>'+
+        '<span class="settings-switch'+(soundEnabled() ? ' on' : '')+'"></span>'+
+      '</button></div>';
+    html += '<div class="settings-group-title">App</div><div class="settings-list">'+
+      settingsRow("settings-go", "version", "🚀", "Versión", "", '<span class="settings-row-val" id="settingsVerState">v'+esc(curVerStr)+'</span>')+
+      settingsRow("settings-go", "storage", "💾", "Almacenamiento", "Espacio en el móvil y en la nube")+
+      settingsRow("settings-go", "backup", "📥", "Copia de seguridad", "Descargar mis datos")+
+      settingsRow("settings-go", "help", "📬", "Ayuda y sugerencias", "")+
+    '</div>';
+    if(gm){
+      html += '<div class="settings-group-title">Máster</div><div class="settings-list">'+
+        settingsRow("settings-go", "cloud", "☁️", "Copia en la nube", settingsLastBackupText())+
+        settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
       '</div>';
+    }
+    html += '<div class="settings-list settings-logout">'+
+      settingsRow("auth-logout", "", "🚪", "Cerrar sesión", "", "", "settings-row-danger")+
+    '</div>';
+    html += '<div class="settings-foot">Rol Krysalis · v'+esc(curVerStr)+'</div>';
   }
 
-  // === MONITOR DE ALMACENAMIENTO Y VERSIÓN UNIFICADO ===
-  var local = typeof getLocalStorageUsage === "function" ? getLocalStorageUsage() : { pct: 0, usedStr: "0 B", totalStr: "5.0 MB", freeStr: "5.0 MB" };
-  var localPillClass = local.pct > 90 ? "critical" : (local.pct > 70 ? "warning" : "optimal");
-  var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.7");
-
-  html += '<div class="storage-monitor-box">'+
-    '<div class="storage-monitor-header">'+
-      '<div class="storage-monitor-title"><span>📊</span> <span>Espacio y Versión</span></div>'+
-      '<span class="storage-pill optimal" id="appVersionBadge">v' + curVerStr + '</span>'+
+  else if(screen === "version"){
+    html += '<div class="settings-panel">'+
+      '<div class="settings-big"><span class="storage-pill optimal" id="appVersionBadge">v'+esc(curVerStr)+'</span></div>'+
+      '<div id="versionCheckResult" class="settings-note">Comprobando…</div>'+
+      '<button type="button" class="btn-solid-gold settings-btn" data-action="check-app-update">Buscar actualización</button>'+
     '</div>'+
-    '<div class="storage-cards-grid">'+
-      // Tarjeta Local
+    '<div class="settings-panel">'+
+      '<div class="settings-panel-title">Sincronizar datos</div>'+
+      '<div class="settings-note">Vuelve a leer de la nube fichas, misiones, mapa, reloj y La Casa sin recargar.</div>'+
+      '<button type="button" class="btn-compact settings-btn" data-action="sync-data-now">Sincronizar datos</button>'+
+    '</div>'+
+    '<div class="settings-panel">'+
+      '<div class="settings-panel-title">Reparar la app</div>'+
+      '<div class="settings-note">Borra la caché y la vuelve a cargar. Tus fichas y datos no se tocan.</div>'+
+      '<button type="button" class="btn-compact settings-btn" data-action="unified-app-update-cache">Reparar la app</button>'+
+    '</div>';
+  }
+
+  else if(screen === "storage"){
+    var local = typeof getLocalStorageUsage === "function" ? getLocalStorageUsage() : { pct: 0, usedStr: "0 B", totalStr: "5.0 MB", freeStr: "5.0 MB" };
+    var localPillClass = local.pct > 90 ? "critical" : (local.pct > 70 ? "warning" : "optimal");
+    html += '<div class="storage-cards-grid">'+
       '<div class="storage-card local">'+
         '<div class="storage-card-head">'+
           '<div class="storage-card-name"><span class="storage-card-icon">💾</span> Local (Navegador)</div>'+
           '<span class="storage-pill '+localPillClass+'" id="localPill">'+local.pct+'%</span>'+
         '</div>'+
-        '<div class="storage-bar-track">'+
-          '<div class="storage-bar-fill local '+localPillClass+'" id="localBarFill" style="width:'+Math.max(2, local.pct)+'%;"></div>'+
-        '</div>'+
+        '<div class="storage-bar-track"><div class="storage-bar-fill local '+localPillClass+'" id="localBarFill" style="width:'+Math.max(2, local.pct)+'%;"></div></div>'+
         '<div class="storage-card-stats">'+
           '<span class="storage-stat-used" id="localUsedText"><b>'+local.usedStr+'</b> ocupados de '+local.totalStr+'</span>'+
           '<span class="storage-stat-free" id="localFreeText"><b>'+local.freeStr+'</b> libres</span>'+
         '</div>'+
         '<div class="storage-card-note">Caché del personaje y configuración en este dispositivo</div>'+
-        '<div id="localActionContainer">'+
-          (local.base64Count > 0 ?
-            '<div style="margin-top:4px;padding:6px 8px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:4px;display:flex;flex-direction:column;gap:5px;">'+
-              '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">⚠️ Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
-              '<button class="btn-compact highlight data-modal-btn" data-action="migrate-local-images" style="font-size:0.72rem;background:var(--gold);color:#120D0A;font-weight:700;padding:6px 8px;width:100%;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
-            '</div>' : ''
-          )+
-        '</div>'+
+        '<div id="localActionContainer" class="settings-storage-actions"></div>'+
       '</div>'+
-      // Tarjeta Supabase Cloud
       '<div class="storage-card cloud">'+
         '<div class="storage-card-head">'+
           '<div class="storage-card-name"><span class="storage-card-icon">☁️</span> Supabase (Nube)</div>'+
           '<span class="storage-pill optimal" id="cloudPill">Consultando...</span>'+
         '</div>'+
-        '<div class="storage-bar-track">'+
-          '<div class="storage-bar-fill cloud" id="cloudBarFill" style="width:0%;"></div>'+
-        '</div>'+
+        '<div class="storage-bar-track"><div class="storage-bar-fill cloud" id="cloudBarFill" style="width:0%;"></div></div>'+
         '<div class="storage-card-stats">'+
           '<span class="storage-stat-used" id="cloudUsedText"><b>Calculando...</b> de 1.00 GB</span>'+
           '<span class="storage-stat-free" id="cloudFreeText"><b>...</b> libres</span>'+
         '</div>'+
         '<div class="storage-card-note" id="cloudDetailText">Imágenes de personajes, mapas, misiones y pistas</div>'+
       '</div>'+
-    '</div>'+
-    // Control Unificado de Actualización y Limpieza de Caché
-    '<div style="margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;">'+
-      '<button class="btn-solid-gold data-modal-btn" style="width:100%;padding:9px 12px;font-size:0.82rem;font-weight:700;" data-action="unified-app-update-cache" title="Comprueba si hay una nueva versión, purga cachés de navegadores/PWA y recarga limpiamente">'+
-        '<span>🚀 Actualizar y Limpiar Caché</span>'+
-      '</button>'+
-      '<div id="versionCheckResult" style="font-size:0.7rem;color:var(--ink-faint);margin-top:5px;text-align:center;word-break:break-word;">'+
-        '✓ Versión v' + curVerStr + ' sincronizada · Pulsa para forzar recarga limpia'+
-      '</div>'+
-      '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;padding:8px;font-size:0.75rem;" data-action="sync-data-now" title="Vuelve a leer de la nube fichas, misiones, mapa, reloj y La Casa sin recargar la página">'+
-        '<span>🔄 Sincronizar datos</span>'+
-      '</button>'+
-      (isGM() ? 
-        '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;padding:8px;border-color:rgba(88,101,242,0.5);color:#8EA1E1;font-size:0.75rem;background:rgba(88,101,242,0.12);" data-action="broadcast-force-update" title="Envía una señal en tiempo real a todos los jugadores conectados para forzarles a actualizar su versión y limpiar caché">'+
-          '<span>📢 Forzar actualización a jugadores</span>'+
-        '</button>' : '')+
-    '</div>'+
-  '</div>';
+    '</div>';
+  }
 
-  html += '<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">'+
-    '<div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);margin-bottom:8px;">💾 Guardar y restaurar partida</div>'+
-    '<div class="data-modal-backup-grid">'+
-      '<button class="btn-compact data-modal-btn" data-action="download-full-backup" title="Descargar un archivo JSON con todos los datos">Descargar copia (.json)</button>'+
-      '<button class="btn-compact data-modal-btn" data-action="import-data" title="Cargar un archivo de copia anterior">Cargar copia</button>'+
-    '</div>'+
-    (isGM() ? '<button class="btn-compact btn-solid-gold data-modal-btn" style="width:100%;margin-top:8px;" data-action="cloud-backup-now">☁️ Guardar copia en la nube ahora</button>' : '')+
-    '<button class="btn-compact highlight data-modal-btn" style="width:100%;margin-top:8px;background:rgba(176,141,87,0.18);border:1px solid var(--gold);color:var(--gold-light);font-weight:700;" data-action="repair-compendium-data" title="Verifica y recupera todas las misiones oficiales, criaturas del bestiario, armas y lore sin borrar tus datos">🛡️ Reparar compendio oficial (Misiones y Bestiario)</button>'+
-    '<button class="btn-compact data-modal-btn" style="width:100%;margin-top:8px;border-color:rgba(212,175,55,0.4);" data-action="open-feedback-modal"><span>📬</span> <span>Buzón de Reportes y Sugerencias</span></button>'+
-    ((typeof CONFIG_ENABLE_HOUSE !== "undefined" && CONFIG_ENABLE_HOUSE) ? (
-      '<div style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">'+
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'+
-          '<div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);">🔬 Mantenimiento / Propuestas</div>'+
-          '<span style="font-size:0.65rem;background:rgba(243,156,18,0.2);color:#F39C12;border:1px solid #F39C12;padding:1px 6px;border-radius:3px;font-weight:700;">BETA</span>'+
+  else if(screen === "backup"){
+    html += '<div class="settings-panel">'+
+      '<div class="settings-note">Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil.</div>'+
+      '<button type="button" class="btn-solid-gold settings-btn" data-action="download-full-backup">Descargar mi copia (.json)</button>'+
+    '</div>';
+  }
+
+  else if(screen === "help"){
+    html += '<div class="settings-panel">'+
+      '<div class="settings-note">¿Algo falla o tienes una idea? Cuéntalo en el buzón.</div>'+
+      '<button type="button" class="btn-solid-gold settings-btn" data-action="open-feedback-modal">Buzón de reportes y sugerencias</button>'+
+      '<div class="settings-note">Si pasa algo raro con la web, pásale tu copia al Administrador (rolillo55ac@gmail.com).</div>'+
+    '</div>';
+  }
+
+  else if(screen === "cloud"){
+    html += '<div class="settings-panel">'+
+      '<div class="settings-note">'+settingsLastBackupText()+'. Se guarda una copia de todo el estado en la nube.</div>'+
+      '<button type="button" class="btn-solid-gold settings-btn" data-action="cloud-backup-now">Guardar copia en la nube ahora</button>'+
+    '</div>';
+  }
+
+  else if(screen === "broadcast"){
+    html += '<div class="settings-panel">'+
+      '<div class="settings-note">Envía una orden a todos los jugadores conectados para que actualicen su versión y limpien la caché.</div>'+
+      '<button type="button" class="btn-solid-gold settings-btn" data-action="broadcast-ask" id="settingsBroadcastAsk">Enviar aviso</button>'+
+      '<div class="settings-confirm hidden" id="settingsBroadcastConfirm">'+
+        '<div class="settings-note">¿Seguro? Se recargará la app a todos los que estén conectados.</div>'+
+        '<div class="settings-confirm-btns">'+
+          '<button type="button" class="btn-compact settings-btn" data-action="settings-go" data-screen="main">Cancelar</button>'+
+          '<button type="button" class="btn-solid-gold settings-btn" data-action="broadcast-force-update">Sí, avisar</button>'+
         '</div>'+
-        '<button class="btn-solid-gold data-modal-btn" style="width:100%;padding:10px 12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg, rgba(212,175,55,0.25), rgba(40,28,20,0.9));border:1px solid var(--gold);" data-action="open-house-view">'+
-          '<span>🏠 Entrar a "La Casa"</span> <span style="font-size:0.7rem;opacity:0.85;">(Prototipo en pruebas)</span>'+
-        '</button>'+
-        '<div style="font-size:0.7rem;color:var(--ink-faint);margin-top:5px;line-height:1.3;">'+
-          'Hogar nómada viviente, habitaciones de personajes, plano interactivo y mejoras narrativas.'+
-        '</div>'+
-      '</div>'
-    ) : '')+
-    '<div style="font-size:0.72rem;color:var(--ink-faint);margin-top:10px;line-height:1.4;">'+
-      '💡 <i>Descárgate una copia de vez en cuando para tenerla guardada en tu Drive o en el móvil. Si pasa algo raro con la web, pásale el archivo al Administrador (rolillo55ac@gmail.com).</i>'+
-    '</div>'+
-    '<button class="btn-solid-gold data-modal-btn" style="width:100%;margin-top:12px;" data-action="reset-all-characters">↻ Restablecer personajes oficiales (PDF)</button>'+
-  '</div>';
+      '</div>'+
+    '</div>';
+  }
 
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 
   setTimeout(function(){
-    updateStorageStatsUI(false);
-    if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
+    if(settingsScreen === "storage") updateStorageStatsUI(false);
+    if(settingsScreen === "version" && typeof checkForAppUpdates === "function") checkForAppUpdates(false);
+    if(settingsScreen === "main") settingsCheckVersionLabel();
   }, 50);
+}
+
+async function settingsCheckVersionLabel(){
+  try {
+    var res = await fetch("./version.json?t=" + Date.now(), { cache: "no-store" });
+    if(!res.ok) return;
+    var data = await res.json();
+    var el = document.getElementById("settingsVerState");
+    if(!el || !data || !data.version) return;
+    var outdated = (data.version !== APP_VERSION) || (data.build && typeof APP_BUILD !== "undefined" && data.build !== APP_BUILD);
+    el.textContent = outdated ? "Hay versión nueva" : "Al día";
+    el.className = "settings-row-val " + (outdated ? "warn" : "ok");
+  } catch(e){}
 }
 
 async function updateStorageStatsUI(showToastFeedback){
@@ -342,7 +394,7 @@ async function updateStorageStatsUI(showToastFeedback){
             '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
           '</div>' :
           '<div style="display:flex;justify-content:flex-end;margin-top:2px;">'+
-            '<button class="btn-compact" data-action="clean-orphan-storage" style="font-size:0.65rem;padding:2px 7px;color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">🧹 Limpiar caché residual</button>'+
+            '<button class="btn-compact settings-btn" data-action="clean-orphan-storage" style="color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">🧹 Limpiar restos de versiones viejas</button>'+
           '</div>'
         );
       }
@@ -409,6 +461,22 @@ function modalClick(e){
   if(action==="open-feedback-modal"){ openFeedbackModal(); return; }
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
+  if(action==="settings-go"){ openDataModal(btn.getAttribute("data-screen")); return; }
+  if(action==="toggle-sound"){
+    setSoundEnabled(!soundEnabled());
+    var swOn = soundEnabled();
+    btn.setAttribute("aria-checked", swOn ? "true" : "false");
+    var sw = btn.querySelector(".settings-switch");
+    if(sw) sw.classList.toggle("on", swOn);
+    return;
+  }
+  if(action==="check-app-update"){ checkForAppUpdates(true); return; }
+  if(action==="broadcast-ask"){
+    var cf = document.getElementById("settingsBroadcastConfirm");
+    if(cf) cf.classList.remove("hidden");
+    btn.classList.add("hidden");
+    return;
+  }
   if(action==="sync-data-now"){ btn.disabled = true; syncDataNow().finally(function(){ btn.disabled = false; }); return; }
   if(action==="broadcast-force-update"){ broadcastForceAppUpdate(); return; }
   if(action==="migrate-local-images"){ migrateLocalImagesToSupabase(); return; }
@@ -615,12 +683,9 @@ function modalClick(e){
     }
     return;
   }
-  if(action==="auth-login"){ supabaseLogin(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
-  if(action==="auth-signup"){ supabaseSignup(document.getElementById("authEmail").value.trim(), document.getElementById("authPass").value); return; }
   if(action==="auth-logout"){ supabaseLogout(); return; }
   if(action==="export-data" || action==="download-full-backup"){ exportFullBackup(); return; }
   if(action==="cloud-backup-now"){ performCloudBackup(false); return; }
-  if(action==="import-data"){ document.getElementById("importFileInput").click(); return; }
   if(action==="set-beast-mov-num"){
     var bid = btn.getAttribute("data-id");
     var val = parseInt(btn.getAttribute("data-val"), 10);
@@ -633,19 +698,6 @@ function modalClick(e){
     var delta = parseInt(btn.getAttribute("data-delta"), 10);
     var isSummon = btn.getAttribute("data-summon") === "true";
     stepBeastMobility(bid, delta, isSummon);
-    return;
-  }
-  if(action==="repair-compendium-data"){
-    state = migrateState(state);
-    saveState(true);
-    if(isGM()){
-      pushSharedData();
-      pushMapsData();
-    }
-    renderTopbar();
-    renderTab();
-    closeModals();
-    showToast("¡Compendio verificado! Misiones, Bestiario, Lore y Armas protegidos con éxito.", "success");
     return;
   }
   if(action==="mod-inv-qty"){
@@ -742,20 +794,6 @@ function modalClick(e){
     renderTab();
     if(typeof pushCharacterPatch === 'function'){
       pushCharacterPatch(c.id, { inventory: c.inventory });
-    }
-    return;
-  }
-  if(action==="reset-all-characters"){
-    if(confirm("¿Deseas resetear los atributos, habilidades, combate, magias y equipo de los 5 personajes oficiales (Cherk, Ink, Bucky, Scarleth, Derek) a los valores exactos de sus fichas oficiales en PDF? Se conservarán las fotos de perfil.")){
-      resetCharactersToOfficial(true);
-      saveState(true);
-      if(supabaseClient && currentUser){
-        state.characters.forEach(function(c){ pushCharacterById(c.id); });
-      }
-      renderTopbar();
-      renderTab();
-      closeModals();
-      showToast("¡Personajes oficiales (incluyendo Derek y Scarleth) reseteados con éxito!", "success");
     }
     return;
   }
@@ -1097,7 +1135,6 @@ function closeModals(){
 }
 
 // Sistema de reportes y tickets
-var DEFAULT_DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1547672027035472003/8soKhpr6HxuSSvJDOhwsDxrhn5Sqgn8rRRPEpyxfQQDSYMnklfLOam6vO7sop4qMHcIM";
 var currentFeedbackCategory = "bug";
 var currentFeedbackTab = "new"; // "new" | "my_tickets"
 var adminFeedbackFilter = "all"; // "all" | "pending" | "in_progress" | "resolved"
@@ -2464,6 +2501,7 @@ function handlePickCharSoundPreset(btn){
     playBatSound();
   } else if(pUrl){
     try {
+      if(!soundEnabled()) throw 0;
       var a = new Audio(pUrl);
       a.volume = 0.6;
       a.play().catch(function(){});
