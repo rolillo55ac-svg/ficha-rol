@@ -951,6 +951,7 @@ function tplCombate(c){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-weapon">+ Añadir arma al equipo</button>';
   }
   html += '</div>';
+  html += tplPoisonLoadout(c, canEdit);
 
   // 6. Armaduras
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Armaduras</span></div>';
@@ -1510,6 +1511,91 @@ function alchemyDistillState(p){
   return { until: until, ready: ready, left: ready ? 0 : until - now, pct: Math.max(4, Math.round(done / total * 100)) };
 }
 
+var alchemyPrepareId = null;
+var POISON_AMMO_RE = /dardo|flecha|virote|aguja|bala/i;
+
+// Usos por dosis: cada dosis preparada da N cargas de arma o N proyectiles (4 si el máster no lo cambia)
+function poisonUsesPerDose(p){
+  var n = Math.round(num(p && p.usosPorDosis, 4));
+  return Math.max(1, Math.min(20, n || 4));
+}
+
+// Lo preparado con veneno: cargas en armas (weapon.venenos) y munición del inventario (poisonId)
+function getPoisonLoadout(c, poisonId){
+  var out = [];
+  (c.weapons || []).forEach(function(w){
+    (Array.isArray(w.venenos) ? w.venenos : []).forEach(function(v){
+      if(poisonId && v.poisonId !== poisonId) return;
+      out.push({ kind: "weapon", id: w.id, poisonId: v.poisonId, label: w.name || "Arma sin nombre", poison: v.name || "", n: Math.max(0, num(v.cargas, 0)) });
+    });
+  });
+  (c.inventory || []).forEach(function(it){
+    if(!it.poisonId || (poisonId && it.poisonId !== poisonId)) return;
+    out.push({ kind: "ammo", id: it.id, poisonId: it.poisonId, label: it.name || "", poison: it.poisonName || "", n: Math.max(0, num(it.qty, 0)) });
+  });
+  return out;
+}
+
+function poisonLoadoutUnits(x){
+  if(x.kind === "weapon") return x.n === 1 ? "1 carga" : x.n + " cargas";
+  return "×" + x.n;
+}
+
+// Mismo bloque en Combate e Inventario: gastar un uso, y el máster puede deshacerlo
+function tplPoisonLoadout(c, canEdit){
+  var list = getPoisonLoadout(c);
+  if(!list.length) return '';
+  var gm = isGM();
+  var rows = list.map(function(x){
+    var data = ' data-kind="' + x.kind + '" data-id="' + x.id + '" data-poison="' + esc(x.poisonId) + '"';
+    return '<div class="psn-row' + (x.n < 1 ? ' empty' : '') + '">' +
+      '<span class="psn-ico">' + (x.kind === "weapon" ? '⚔️' : '🏹') + '</span>' +
+      '<span class="psn-txt"><b>' + esc(x.label) + '</b><small>' + (x.kind === "weapon" ? '🧪 ' + esc(x.poison) + ' · ' : '') +
+        (x.n > 0 ? poisonLoadoutUnits(x) : 'Agotado') + '</small></span>' +
+      (canEdit && x.n > 0 ? '<button type="button" class="psn-btn"' + data + ' data-action="poison-spend">Gastar 1</button>' : '') +
+      (canEdit && x.n < 1 ? '<button type="button" class="psn-btn"' + data + ' data-action="poison-clear">Quitar</button>' : '') +
+      (gm ? '<button type="button" class="psn-btn gm"' + data + ' data-action="poison-undo" aria-label="Deshacer un uso">↩ +1</button>' : '') +
+    '</div>';
+  }).join('');
+  return '<div class="section psn-section' + (c.isNPC ? ' gm-section' : '') + '"><div class="section-title"><span>🧪 Preparado con veneno</span></div>' +
+    '<div class="psn-list">' + rows + '</div></div>';
+}
+
+function poisonAmmoBaseName(name){
+  var n = String(name || "").trim();
+  return /[aeiou]s$/i.test(n) && n.length > 4 ? n.slice(0, -1) : n;
+}
+
+function tplAlquimiaPreparar(c, p){
+  var uses = poisonUsesPerDose(p);
+  var weapons = (c.weapons || []).filter(function(w){ return w.name; });
+  var wBtns = weapons.map(function(w){
+    var has = (Array.isArray(w.venenos) ? w.venenos : []).find(function(v){ return v.poisonId === p.id; });
+    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-weapon" data-id="' + p.id + '" data-wid="' + w.id + '">⚔️ ' + esc(w.name) +
+      '<small>+' + uses + ' cargas' + (has && num(has.cargas, 0) > 0 ? ' (ya tiene ' + num(has.cargas, 0) + ')' : '') + '</small></button>';
+  }).join('');
+  var srcs = (c.inventory || []).filter(function(it){ return !it.poisonId && POISON_AMMO_RE.test(it.name || "") && num(it.qty, 0) > 0; });
+  var aBtns = srcs.map(function(it){
+    var n = Math.min(uses, num(it.qty, 0));
+    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="' + it.id + '">🏹 ' + esc(poisonAmmoBaseName(it.name)) + ' con ' + esc(p.name) + ' ×' + n +
+      '<small>Gasta ' + n + ' de "' + esc(it.name) + '" (tienes ' + num(it.qty, 0) + ')</small></button>';
+  }).join('');
+  if(!aBtns){
+    aBtns = '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="">🏹 Dardo con ' + esc(p.name) + ' ×' + uses +
+      '<small>No hay dardos ni flechas en el inventario</small></button>';
+  }
+  return '<div class="alq-sheet-bg" data-action="alchemy-close-prepare">' +
+    '<div class="alq-sheet" role="dialog" aria-label="Preparar veneno">' +
+      '<div class="alq-sheet-head"><h3>Preparar: ' + esc(p.name) + '</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-prepare" aria-label="Cerrar">✕</button></div>' +
+      '<p class="alq-note">Gastas 1 dosis (tienes ' + num(p.dosis, 0) + ') y da <b>' + uses + ' usos</b>.</p>' +
+      '<div class="alq-sheet-lbl">Impregnar un arma</div>' +
+      (wBtns ? '<div class="psn-picks">' + wBtns + '</div>' : '<p class="alq-note">No hay armas en la pestaña Combate.</p>') +
+      '<div class="alq-sheet-lbl">Crear munición</div>' +
+      '<div class="psn-picks">' + aBtns + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
 function alchemyRarityOf(p){
   var cat = findAlchemyCatalogItem(p);
   return p.rarity || (cat ? cat.rarity : 'Común');
@@ -1613,6 +1699,10 @@ function tplAlquimiaRecetario(c, canEdit){
   }
   if(alchemyFiltersOpen) html += tplAlquimiaFiltros();
   if(alchemyHoursOpen && isMaster) html += tplAlquimiaHoras();
+  if(alchemyPrepareId && canEdit){
+    var prepP = (c.poisons || []).find(function(x){ return x.id === alchemyPrepareId; });
+    if(prepP && num(prepP.dosis, 0) > 0) html += tplAlquimiaPreparar(c, prepP);
+  }
 
   var sText = alchemySearch.trim().toLowerCase();
   var filtered = (c.poisons || []).filter(function(p){
@@ -1686,6 +1776,7 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
       (loreTitle ? '<button type="button" class="alq-link" data-action="alchemy-jump-lore" data-lore-title="' + esc(loreTitle) + '">Ver en Lore ↗</button>' : '') +
     '</div>' +
     tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx, dosis, isMaster, rarity, dist) +
+    tplAlquimiaPrepared(c, p, isMaster) +
     '<div class="alq-path">' +
       tplAlquimiaStep(p, 1, base, "identificado", "Muestra", rawMat ? "Materia prima: " + rawMat + "." : "Materia prima recogida.", canEdit) +
       tplAlquimiaStep(p, 2, base, "extraido", "Extraído", "Destilada en un frasco. Tarda según la rareza.", canEdit) +
@@ -1707,6 +1798,26 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
       '<button type="button" class="alq-btn alq-del" data-action="del-poison" data-id="' + p.id + '">🗑 Quitar de la ficha</button>';
   }
   return html + '</div></div>';
+}
+
+function tplAlquimiaPrepared(c, p, isMaster){
+  if((p.type || "Veneno") !== "Veneno") return '';
+  var list = getPoisonLoadout(c, p.id).filter(function(x){ return x.n > 0; });
+  var html = '';
+  if(list.length){
+    html += '<p class="alq-note psn-ready">Preparado: ' + list.map(function(x){
+      return '<b>' + esc(x.label) + '</b> ' + poisonLoadoutUnits(x);
+    }).join(' · ') + '</p>';
+  }
+  if(isMaster){
+    var uses = poisonUsesPerDose(p);
+    html += '<div class="alq-dosebar"><span class="alq-note">Usos por dosis (máster)</span><div class="alq-stepper">' +
+        '<button type="button" data-action="alchemy-mod-uses" data-id="' + p.id + '" data-delta="-1" aria-label="Menos usos por dosis">−</button>' +
+        '<b>' + uses + '</b>' +
+        '<button type="button" data-action="alchemy-mod-uses" data-id="' + p.id + '" data-delta="1" aria-label="Más usos por dosis">+</button>' +
+      '</div></div>';
+  }
+  return html;
 }
 
 function tplAlquimiaStep(p, n, base, stageId, title, sub, canEdit){
@@ -1764,10 +1875,17 @@ function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx
   } else if(dosis < 1){
     txt = 'No te quedan dosis. Destila otra.' + lasts;
     btns = distill;
+  } else if((p.type || "Veneno") === "Poción"){
+    txt = 'Bébela (o dásela a alguien) cuando la necesites.';
+    btns = '<button type="button" class="alq-btn s" data-action="alchemy-consume-dose" data-id="' + p.id + '">🧪 Beberla (−1)</button>';
+  } else if(p.type === "Ungüento"){
+    txt = 'Aplícalo cuando lo necesites.';
+    btns = '<button type="button" class="alq-btn s" data-action="alchemy-consume-dose" data-id="' + p.id + '">🧴 Aplicarlo (−1)</button>';
   } else {
     txt = (eIdx < 3 ? 'Pruébala en un enemigo para descubrir qué hace.' : 'Ya sabéis lo que hace en enemigos.') +
+      ' Prepárala en un arma o en munición: cada dosis da ' + poisonUsesPerDose(p) + ' usos.' +
       (showCherk && cIdx < 3 ? ' O tómatela tú para ver su efecto en ti.' : '');
-    btns = '<button type="button" class="alq-btn e" data-action="alchemy-apply-weapon" data-id="' + p.id + '">⚔️ Usar en arma (−1)</button>' +
+    btns = '<button type="button" class="alq-btn e" data-action="alchemy-open-prepare" data-id="' + p.id + '">🧪 Preparar (−1 dosis)</button>' +
       (showCherk ? '<button type="button" class="alq-btn s" data-action="alchemy-consume-dose" data-id="' + p.id + '">🛡️ Tomarla (−1)</button>' : '');
   }
   return '<div class="alq-next"><span class="alq-k">' + k + '</span><p>' + txt + '</p>' + bar +
@@ -1920,6 +2038,7 @@ function tplInventario(c){
       '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'" '+(canEdit?'':'readonly')+'></div>'+
       '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'" '+(canEdit?'':'readonly')+'></div>'+
     '</div></div>';
+  html += tplPoisonLoadout(c, canEdit);
 
   var categories = typeof INVENTORY_CATEGORIES !== "undefined" ? INVENTORY_CATEGORIES : [
     "Armas", "Armadura y vestimenta", "Accesorios", "Consumibles", "Supervivencia", "Objetos de misión", "Materiales/Ingredientes", "Objetos especiales/únicos", "Miscelánea"
