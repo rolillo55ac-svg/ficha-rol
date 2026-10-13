@@ -1624,6 +1624,8 @@ function openBg3RollModal(cfg){
   bg3RollState.mode = cfg.mode || "normal";
   bg3RollState.charName = cfg.charName || ((typeof activeChar === "function" && activeChar() && activeChar().name) ? activeChar().name : "Aventurero");
   bg3RollState.modifiers = Array.isArray(cfg.modifiers) ? cfg.modifiers.slice() : [];
+  var rollAc = (typeof activeChar === "function") ? activeChar() : null;
+  bg3RollState.charId = cfg.charId || ((rollAc && rollAc.name && bg3RollState.charName.indexOf(rollAc.name) >= 0) ? rollAc.db_id : null);
   bg3RollState.onResolve = cfg.onResolve || null;
   bg3RollState.rerollFn = cfg.rerollFn || null;
   bg3RollState.rolling = false;
@@ -1952,7 +1954,14 @@ function triggerBg3Roll(launchIntensity){
         formulaText: formulaStr,
         isCrit: isCrit,
         isFumble: isFumble,
-        ts: Date.now()
+        ts: Date.now(),
+        charId: bg3RollState.charId || null,
+        kind: bg3RollState.isDamage ? "damage" : "check",
+        sides: bg3RollState.sides,
+        qty: bg3RollState.qty || 1,
+        dice: [r1].concat(r2 !== null ? [r2] : []),
+        modifier: modSum,
+        mode: bg3RollState.mode
       };
       state.rollLog.unshift(rollItem);
       if(state.rollLog.length > 20) state.rollLog.length = 20;
@@ -2455,6 +2464,9 @@ function performSummonRoll(charName, summonName, actionName, formulaRaw){
 }
 
 function broadcastDiceRoll(rollObj){
+  // Mismo id en el aviso y en la base, para no duplicarla al leer el historial
+  if(rollObj && !rollObj.dbId && typeof newRollUuid === "function") rollObj.dbId = newRollUuid();
+  if(typeof saveDiceRollToDb === "function") saveDiceRollToDb(rollObj);
   if(typeof realtimeChannel !== 'undefined' && realtimeChannel && typeof realtimeChannel.send === 'function'){
     try {
       realtimeChannel.send({
@@ -2480,6 +2492,7 @@ function handleRemoteDiceRoll(rollObj){
   });
   if(state.rollLog.length > 20) state.rollLog.length = 20;
   saveState(true);
+  if(typeof addRemoteRollToHistory === "function") addRemoteRollToHistory(rollObj);
 
   var critText = rollObj.isCrit ? " ¡Éxito Crítico!" : (rollObj.isFumble ? " ¡Pifia!" : "");
   var toastType = rollObj.isCrit ? "success" : (rollObj.isFumble ? "error" : "info");
@@ -2573,7 +2586,8 @@ function openDiceModal(){
         '</div>'+
       '</div>'+
     '</div>'+
-    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>';
+    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>'+
+    '<button type="button" class="btn-compact roll-history-open" data-action="open-roll-history">📜 Historial de tiradas</button>';
 
   document.getElementById("diceModalOverlay").classList.remove("hidden");
 }
@@ -2616,8 +2630,8 @@ function diceModalClick(e){
 function rollLogHtml(){
   if(!state) return '';
   state.rollLog = state.rollLog || [];
-  var logs = state.rollLog.slice(0,5);
-  var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span></div>';
+  var logs = (typeof recentRollsForLog === "function" ? recentRollsForLog() : state.rollLog).slice(0,5);
+  var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span><button type="button" class="btn-compact roll-history-open" data-action="open-roll-history">Ver todo</button></div>';
   if(!logs.length){ html += '<div class="roll-empty">Sin tiradas recientes.</div>'; }
   else {
     html += '<div class="roll-log">'+logs.map(function(r){

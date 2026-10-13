@@ -312,6 +312,7 @@ async function catchUpWithServer(opts){
       jobs.push(pullSharedDataFromSupabase(), pullMapFromSupabase());
     }
     if(typeof loadGameClock === 'function') jobs.push(loadGameClock());
+    if(typeof loadRollHistory === 'function') jobs.push(loadRollHistory());
     if(!opts.skipHouse && typeof houseState !== 'undefined' && houseState.active && typeof fetchHouseRemoteData === 'function'){
       jobs.push(fetchHouseRemoteData().then(function(){ if(houseState.active) renderHouseView(); }));
     }

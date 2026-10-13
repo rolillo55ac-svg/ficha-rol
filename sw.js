@@ -52,6 +52,7 @@ const PRECACHE_ASSETS = [
   './js/house-art.js',
   './js/house.js',
   './js/dice.js',
+  './js/roll-history.js',
   './js/lapidary.js',
   './js/discord-config.js',
   './js/ui-modals.js',
