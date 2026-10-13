@@ -1,6 +1,6 @@
 {
-  "version": "1.4.52.0",
-  "build": "2026.10.15.14",
-  "updatedAt": "2026-10-15T14:00:00Z",
-  "changelog": "Nueva partida: en el login ya se puede elegir \"Partida 2\", con su propia base de datos aparte. Krysalis sigue igual."
+  "version": "1.4.53.0",
+  "build": "2026.10.15.15",
+  "updatedAt": "2026-10-15T15:00:00Z",
+  "changelog": "Invocaciones: nuevo botón \"Enseñar\" en Aprendizaje. Lo que le enseñas queda en \"Aprendiendo\" hasta marcar \"Ya lo sabe\". Se quita el bloque Entrenando de la tarjeta (el entrenamiento sigue en su pestaña)."
 }
