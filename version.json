@@ -1,6 +1,6 @@
 {
-  "version": "1.4.51.0",
-  "build": "2026.10.15.13",
-  "updatedAt": "2026-10-15T13:00:00Z",
-  "changelog": "Preparado para varias partidas: cada una guarda sus datos aparte en el móvil. Con una sola partida no cambia nada."
+  "version": "1.4.52.0",
+  "build": "2026.10.15.14",
+  "updatedAt": "2026-10-15T14:00:00Z",
+  "changelog": "Nueva partida: en el login ya se puede elegir \"Partida 2\", con su propia base de datos aparte. Krysalis sigue igual."
 }
