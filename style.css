@@ -9438,14 +9438,14 @@ button.alq-step { cursor: pointer; }
 
 /* Venenos preparados: armas con cargas y munición (Combate, Inventario y Alquimia) */
 .psn-list { display: flex; flex-direction: column; gap: 8px; }
-.psn-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-elev); }
+.psn-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-elev); }
 .psn-row.empty { opacity: .6; }
 .psn-ico { font-size: 1.2rem; flex: 0 0 auto; }
 .psn-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .psn-txt b { color: var(--ink); font-size: .92rem; overflow-wrap: anywhere; }
 .psn-txt small { color: var(--ink-dim); font-size: .8rem; overflow-wrap: anywhere; }
-.psn-btn { flex: 0 0 auto; min-height: 44px; min-width: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--blood-light); background: rgba(200,75,87,.12); color: var(--blood-light); font-weight: 600; font-size: .85rem; cursor: pointer; }
-.psn-btn.gm { border-color: var(--warning); color: var(--warning); background: rgba(224,144,74,.1); }
+.psn-btn { flex: 0 0 auto; min-height: 44px; min-width: 44px; padding: 0 10px; border-radius: var(--radius); border: 1px solid var(--blood-light); background: var(--bg-card); color: var(--blood-light); font-weight: 600; font-size: .85rem; cursor: pointer; }
+.psn-btn.gm { border-color: var(--warning); color: var(--warning); background: var(--bg-card); }
 .psn-picks { display: flex; flex-direction: column; gap: 8px; }
 .psn-pick { display: flex; flex-direction: column; align-items: flex-start; text-align: left; flex: 0 0 auto; }
 .psn-pick small { font-weight: 400; font-size: .78rem; color: var(--ink-dim); }
@@ -9457,7 +9457,7 @@ button.alq-step { cursor: pointer; }
   font-size:.75rem;font-family:var(--font-mono);padding:3px 10px;border-radius:20px;pointer-events:none;
   background:rgba(20,16,10,0.92);border:1px solid var(--gold);color:var(--gold-light);white-space:nowrap;
 }
-.conn-status-pill.is-offline{border-color:#a94442;color:#f0a8a6;}
+.conn-status-pill.is-offline{border-color:var(--blood-light);color:var(--blood-light);}
 
 /* Deslizar arriba del todo: sin recarga del navegador; la app se pone al día ella misma */
 html,body{overscroll-behavior-y:contain;}
