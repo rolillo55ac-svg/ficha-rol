@@ -334,6 +334,7 @@ function init(){
 }
 
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
+setTimeout(function(){ if(typeof showInstallHintOnce==="function") showInstallHintOnce(); }, 6000);
 // Deslizar hacia abajo arriba del todo: ponerse al día con la nube (en vez de recargar la página)
 function initPullToSync(){
   var PULL_NEEDED = 90;

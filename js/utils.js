@@ -677,6 +677,30 @@ function showAppUpdateBar(version){
 }
 window.showAppUpdateBar = showAppUpdateBar;
 
+// Aviso único «Instálala como app» (solo en navegador, no en la app instalada)
+function showInstallHintOnce(){
+  var KEY = "krysalisInstallHintV1";
+  try{
+    if(localStorage.getItem(KEY)) return;
+    if(window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) return;
+  }catch(e){ return; }
+  var bar = document.createElement("div");
+  bar.id = "installHintBar";
+  bar.className = "app-update-bar";
+  bar.setAttribute("role", "status");
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  bar.innerHTML = '<span class="app-update-bar__text"><b>Instálala como app</b>: va más fluida y no se recarga sin querer. ' +
+    (ios ? 'En iPhone: Compartir › «Añadir a pantalla de inicio».' : 'En Android: menú ⋮ › «Instalar aplicación» o «Añadir a pantalla de inicio».') +
+    '</span><button type="button" class="app-update-bar__close" aria-label="Cerrar">✕</button>';
+  bar.querySelector(".app-update-bar__close").addEventListener("click", function(){
+    try{ localStorage.setItem(KEY, "1"); }catch(e){}
+    bar.remove();
+  });
+  document.body.appendChild(bar);
+  setTimeout(function(){ try{ localStorage.setItem(KEY, "1"); }catch(e){} bar.remove(); }, 15000);
+}
+window.showInstallHintOnce = showInstallHintOnce;
+
 // Orden del máster: cuenta atrás de 10 s; espera a que no haya guardados ni ventanas abiertas
 var appForcedUpdateTimer = null;
 function startForcedAppUpdate(version){
