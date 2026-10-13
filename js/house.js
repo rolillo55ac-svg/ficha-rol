@@ -2615,6 +2615,7 @@ async function levelUpHouseUpgrade(upgradeId){
       var curNum = parseInt(buffItem.bonus.replace(/[^0-9]/g, ""), 10) || 1;
       buffItem.bonus = "+" + (curNum + 1);
       upg.bonus_value = buffItem.bonus;
+      var buffChanged = true;
       if(typeof saveState === "function") saveState(true);
     }
   } else {
@@ -2644,6 +2645,8 @@ async function levelUpHouseUpgrade(upgradeId){
         updated_at: new Date().toISOString()
       }).eq("id", upg.id).select();
       if(lvlRes.error || !lvlRes.data || !lvlRes.data.length) notifyHouseSaveFailed();
+      // El buffo del compendio sube a la vez en la nube; antes solo cambiaba en este móvil
+      else if(buffChanged && typeof pushSharedData === "function") pushSharedData({ buffCatalog: state.buffCatalog });
     } catch(e){
       notifyHouseSaveFailed();
     }

@@ -1065,6 +1065,8 @@ async function pushExistingCharacter(c, explicitPatch){
 async function pushCharacterPatch(charId, patch){
   if(!charId || !patch) return;
   markCharDirty(charId, patch);
+  // Deja apuntado en el móvil que está pendiente: si se recarga antes de que conteste la nube, no se pierde
+  saveState(true);
   return pushCharacterById(charId, false, patch);
 }
 
