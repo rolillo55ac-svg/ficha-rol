@@ -217,6 +217,15 @@ function saveState(skipRemote){
   }
 }
 
+// Hay algo sin subir a la nube (para no recargar ni salir a mitad de un guardado)
+function hasPendingSaves(){
+  if(syncDebounceTimer || isGlobalDirty || state._isSharedDirty) return true;
+  if(dirtyCharIds.size > 0 || dirtyCharPatches.size > 0) return true;
+  return (state.characters || []).some(function(c){
+    return c && c._isDirty && (typeof canEditChar !== "function" || canEditChar(c));
+  });
+}
+
 function updateSyncBadge(st){
   var el = document.getElementById("syncBadge");
   if(!el) return;

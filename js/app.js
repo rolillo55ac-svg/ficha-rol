@@ -265,11 +265,16 @@ function init(){
       e.target.value="";
     });
 
-    window.addEventListener("beforeunload", function(){
+    window.addEventListener("beforeunload", function(e){
       if(document.activeElement && document.activeElement.matches("input, textarea, select")){
-        try { document.activeElement.blur(); } catch(e){}
+        try { document.activeElement.blur(); } catch(err){}
       }
       flushPendingSync();
+      // Aviso del navegador solo si queda algo sin subir a la nube
+      if(currentUser && typeof hasPendingSaves === "function" && hasPendingSaves()){
+        e.preventDefault();
+        e.returnValue = "";
+      }
     });
     window.addEventListener("pagehide", function(){
       flushPendingSync();
