@@ -1,6 +1,6 @@
 {
-  "version": "1.4.53.0",
-  "build": "2026.10.15.15",
-  "updatedAt": "2026-10-15T15:00:00Z",
-  "changelog": "Invocaciones: nuevo botón \"Enseñar\" en Aprendizaje. Lo que le enseñas queda en \"Aprendiendo\" hasta marcar \"Ya lo sabe\". Se quita el bloque Entrenando de la tarjeta (el entrenamiento sigue en su pestaña)."
+  "version": "1.4.54.0",
+  "build": "2026.10.15.16",
+  "updatedAt": "2026-10-15T16:00:00Z",
+  "changelog": "Las partidas nuevas empiezan sin la misión ni la casa de ejemplo de Krysalis; el bestiario conserva la foto de la Kimera."
 }
