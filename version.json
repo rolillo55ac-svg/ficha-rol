@@ -1,6 +1,6 @@
 {
-  "version": "1.4.42.0",
-  "build": "2026.10.14.17",
-  "updatedAt": "2026-10-14T17:00:00Z",
-  "changelog": "La app ya no se recarga sola al volver a ella: si hay versión nueva sale una barra con «Actualizar». La orden de actualizar del máster avisa con 10 s y espera a que cierres la ventana abierta. Al salir solo se avisa si queda algo por guardar."
+  "version": "1.4.43.0",
+  "build": "2026.10.14.18",
+  "updatedAt": "2026-10-14T18:00:00Z",
+  "changelog": "Al volver a la app tras un rato (o al volver la conexión) se pone al día sola, sin recargar: fichas, compendio, misiones, mapa, reloj y La Casa. Si se corta la conexión sale arriba «Sin conexión» o «Reconectando…»."
 }
