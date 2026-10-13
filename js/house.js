@@ -4538,25 +4538,6 @@ function renderHouseView(){
 
   var html = '<div class="house-container">';
 
-  // 1. Cabecera Principal
-  html += '<div class="house-header">';
-  html += '  <div class="house-header-top">';
-  html += '    <div class="house-title-group">';
-  html += '      <h1 class="house-title"><span>🏠</span> ' + esc(h.name || "La Casa Andante") + '</h1>';
-  html += '      <span class="house-beta-badge">🧪 BETA</span>';
-  html += '    </div>';
-  html += '    <button class="house-back-btn" data-action="back-from-house-view" title="Volver a la ficha de personaje">';
-  html += '      <span>← Volver a la Ficha</span>';
-  html += '    </button>';
-  html += '  </div>';
-
-  if(h.description) html += '  <div class="house-desc" id="houseDescDisplay">' + esc(h.description) + '</div>';
-  if(gmMode){
-    html += '  <div style="margin-top:6px;"><button class="btn-compact" data-action="open-edit-house-desc" style="font-size:0.7rem;padding:2px 8px;">✏️ Editar descripción (GM)</button></div>';
-  }
-
-  html += '</div>';
-
   // Mejoras y misiones de la casa (los niveles los da el máster con misiones)
   html += renderHouseUpgradesBox();
   html += renderHouseQuestsBox();
