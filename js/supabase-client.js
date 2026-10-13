@@ -37,6 +37,23 @@ function subscribeToActiveCharacter(charDbId){
   } catch(e){
     console.error('Error suscribiendo a Realtime de personaje:', e);
   }
+  // La copia local puede ser vieja (otro la cambió sin estar suscritos): se trae la de la nube
+  refreshCharFromServer(charDbId);
+}
+
+async function refreshCharFromServer(charDbId){
+  if(!supabaseClient || !charDbId) return;
+  try {
+    var res = await supabaseClient.from('characters').select('*').eq('id', charDbId).maybeSingle();
+    var row = res && res.data;
+    if(!row || !row.data) return;
+    var local = (state.characters||[]).find(function(x){ return x.db_id === row.id; });
+    var ts = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+    if(local && local._serverUpdatedAt && ts && ts <= local._serverUpdatedAt) return;
+    handleRemoteCharacterChange({ eventType: 'UPDATE', new: row });
+  } catch(e){
+    console.warn('No se pudo refrescar la ficha:', e);
+  }
 }
 
 function subscribeToCampaignMap(){
@@ -147,9 +164,18 @@ function handleRemoteCharStatUpdate(data){
   var target = (state.characters||[]).find(function(x){ return x.id === data.charId || x.db_id === data.charId; });
   if(target){
     if(canEditChar(target) && target._lastLocalEdit && Date.now() - target._lastLocalEdit < 1500) return;
-    if(data.combat) target.combat = Object.assign(target.combat||{}, data.combat);
-    target._isDirty = false;
-    dirtyCharIds.delete(target.id);
+    // Vida/maná pendientes de guardar aquí: no pisarlos con los de otro
+    if(canEditChar(target) && Array.isArray(target._pendingKeys) && target._pendingKeys.indexOf("combat") !== -1) return;
+    if(data.combat){
+      target.combat = Object.assign(target.combat||{}, data.combat);
+      if(target._lastSyncedData){
+        try { target._lastSyncedData.combat = JSON.parse(JSON.stringify(target.combat)); } catch(e){}
+      }
+    }
+    if(!Array.isArray(target._pendingKeys) || !target._pendingKeys.length){
+      target._isDirty = false;
+      dirtyCharIds.delete(target.id);
+    }
     saveState(true);
     if(state.activeId === data.charId || state.activeId === target.id){
       renderTopbar();
@@ -249,7 +275,12 @@ function handleRemoteCharacterChange(payload){
         dirtyCharIds.delete(localChar.id);
         if(localChar.db_id) dirtyCharIds.delete(localChar.db_id);
         if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(localChar.id);
+        // Cambios locales aún sin confirmar (p. ej. varios toques rápidos): se mantienen y se reenvían
+        var keptPending = carryCharPending(localChar, updated);
         state.characters[idx] = updated;
+        if(keptPending){
+          saveState(false);
+        }
       } else {
         dirtyCharIds.delete(c.id);
         if(c.db_id) dirtyCharIds.delete(c.db_id);

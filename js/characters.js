@@ -753,6 +753,11 @@ async function pullAllFromSupabase(){
         var hasDirty = localC && (localC._isDirty || dirtyCharIds.has(localC.id) || (typeof dirtyCharPatches !== 'undefined' && dirtyCharPatches.has(localC.id)));
         var localIsNewer = localC && localC._lastLocalEdit && (!remoteC._serverUpdatedAt || localC._lastLocalEdit > remoteC._serverUpdatedAt);
 
+        // Cambios locales sin confirmar (también tras recargar): datos de la nube + esas claves locales
+        if(localC && carryCharPending(localC, remoteC)){
+          return remoteC;
+        }
+
         // Si tenemos cambios locales más recientes o no sincronizados y tenemos permiso para editar, PRESERVAR LOS CAMBIOS LOCALES
         if(localC && canEditChar(localC) && (hasDirty || localIsNewer)){
           localC._isDirty = true;
@@ -864,6 +869,7 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
     if(c.db_id) dirtyCharIds.delete(c.db_id);
     if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
     c._isDirty = false;
+    delete c._pendingKeys;
     return;
   }
 
@@ -874,6 +880,8 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
     delete cleanData._lastLocalEdit;
     delete cleanData._serverUpdatedAt;
     delete cleanData._lastSyncedData;
+    delete cleanData._pendingKeys;
+    delete cleanData._saveRetries;
 
     var ownerId = (currentUser && currentUser.id) ? currentUser.id : c.owner_id;
     c.owner_id = ownerId;
@@ -890,6 +898,7 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
       var insertRes = await supabaseClient.from('characters').insert(payload).select();
       if(insertRes.error){
         console.error('Error creando personaje en Supabase:', insertRes.error);
+        notifyCharSaveFailed(c);
         return;
       }
       if(insertRes.data && insertRes.data[0]){
@@ -898,19 +907,40 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
         if(typeof snapshotCharacterSynced === 'function') snapshotCharacterSynced(c);
         if(typeof subscribeToActiveCharacter === 'function') subscribeToActiveCharacter(c.db_id);
       }
-      c._isDirty = false;
-      dirtyCharIds.delete(c.id);
-      if(c.db_id) dirtyCharIds.delete(c.db_id);
-      if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
+      clearCharPending(c);
+      c._saveRetries = 0;
       saveState(true);
       updateSyncBadge("synced");
     }catch(errIns){
       console.error('Excepción insertando personaje:', errIns);
+      notifyCharSaveFailed(c);
     }
     return;
   }
 
   // 2. PERSONAJE EXISTENTE: NUNCA enviar data completo, solo las claves modificadas
+  // Un envío por ficha a la vez: si no, varios toques rápidos pueden llegar desordenados a la nube.
+  // Lo cambiado mientras tanto ya está en dirtyCharPatches y sale en el siguiente envío.
+  if(charPushInFlight[c.id]){
+    charPushQueued[c.id] = true;
+    return;
+  }
+  charPushInFlight[c.id] = true;
+  try {
+    await pushExistingCharacter(c, explicitPatch);
+  } finally {
+    delete charPushInFlight[c.id];
+    if(charPushQueued[c.id]){
+      delete charPushQueued[c.id];
+      pushCharacterById(c.id);
+    }
+  }
+}
+
+var charPushInFlight = {};
+var charPushQueued = {};
+
+async function pushExistingCharacter(c, explicitPatch){
   var patchToPush = explicitPatch;
   if(!patchToPush || Object.keys(patchToPush).length === 0){
     var accumulated = (typeof dirtyCharPatches !== 'undefined' && dirtyCharPatches.get(c.id)) ? dirtyCharPatches.get(c.id) : {};
@@ -918,11 +948,16 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
     patchToPush = Object.assign({}, accumulated, diffPatch);
   }
 
+  // Copia de lo que se envía: los objetos de la ficha pueden cambiar mientras llega la respuesta
+  try { patchToPush = JSON.parse(JSON.stringify(patchToPush || {})); } catch(eClone){}
+
   // Sanitizar parche: retirar campos volátiles de memoria
   delete patchToPush._isDirty;
   delete patchToPush._lastLocalEdit;
   delete patchToPush._serverUpdatedAt;
   delete patchToPush._lastSyncedData;
+  delete patchToPush._pendingKeys;
+  delete patchToPush._saveRetries;
   delete patchToPush.db_id;
 
   if(!patchToPush || Object.keys(patchToPush).length === 0){
@@ -954,6 +989,8 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
         delete cleanC._lastLocalEdit;
         delete cleanC._serverUpdatedAt;
         delete cleanC._lastSyncedData;
+        delete cleanC._pendingKeys;
+        delete cleanC._saveRetries;
         delete cleanC.db_id;
 
         var directRes = await supabaseClient.from('characters').update({
@@ -975,32 +1012,52 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
     }
 
     if(updateSuccess && serverRow){
-      c._serverUpdatedAt = serverRow.updated_at ? new Date(serverRow.updated_at).getTime() : Date.now();
-      if(!c._lastSyncedData) c._lastSyncedData = {};
+      // La ficha puede haber sido sustituida en memoria (tiempo real) mientras se enviaba
+      var cur = (state.characters||[]).find(function(x){ return x.id === c.id || (c.db_id && x.db_id === c.db_id); }) || c;
+      cur._serverUpdatedAt = serverRow.updated_at ? new Date(serverRow.updated_at).getTime() : Date.now();
+      cur._saveRetries = 0;
+      if(!cur._lastSyncedData) cur._lastSyncedData = {};
+      // Solo se da por guardado lo que se envió; lo cambiado mientras tanto sigue pendiente
+      var stillPending = Array.isArray(cur._pendingKeys) ? cur._pendingKeys.slice() : [];
       Object.keys(patchToPush).forEach(function(k){
-        try{
-          c._lastSyncedData[k] = JSON.parse(JSON.stringify(c[k]));
-        }catch(e){
-          c._lastSyncedData[k] = c[k];
+        var sent = JSON.stringify(patchToPush[k]);
+        cur._lastSyncedData[k] = JSON.parse(sent);
+        if(JSON.stringify(cur[k]) === sent){
+          stillPending = stillPending.filter(function(x){ return x !== k; });
         }
       });
-
-      c._isDirty = false;
-      dirtyCharIds.delete(c.id);
-      if(c.db_id) dirtyCharIds.delete(c.db_id);
-      if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(c.id);
-      saveState(true);
+      var acc = dirtyCharPatches.get(cur.id);
+      if(acc){
+        Object.keys(acc).forEach(function(k){
+          if(stillPending.indexOf(k) === -1 && JSON.stringify(acc[k]) === JSON.stringify(patchToPush[k])) delete acc[k];
+        });
+      }
+      var moreDiff = Object.keys(getCharacterDiffPatch(cur));
+      if(!stillPending.length && !moreDiff.length && (!acc || !Object.keys(acc).length)){
+        clearCharPending(cur);
+        saveState(true);
+      } else {
+        cur._pendingKeys = stillPending;
+        addCharPendingKeys(cur, moreDiff);
+        cur._isDirty = true;
+        dirtyCharIds.add(cur.id);
+        saveState(false);
+      }
       updateSyncBadge("synced");
     } else {
       // Si falló el guardado remoto (offline o error de permisos remotos),
       // NO descartar los datos locales: conservarlos seguros en localStorage y marcados
-      updateSyncBadge("local");
+      c._isDirty = true;
+      addCharPendingKeys(c, Object.keys(patchToPush));
       saveState(true);
+      notifyCharSaveFailed(c);
     }
   }catch(e){
     console.error('Supabase update_character_data error general:', e);
-    updateSyncBadge("local");
+    c._isDirty = true;
+    addCharPendingKeys(c, Object.keys(patchToPush));
     saveState(true);
+    notifyCharSaveFailed(c);
   }
 }
 
