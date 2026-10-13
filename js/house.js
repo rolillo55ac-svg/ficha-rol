@@ -4537,6 +4537,13 @@ function renderHouseView(){
     loadHouseLocalData();
     h = houseState.house;
   }
+  // La pestaña Casa no pasa por openHouseView: la primera vez se trae La Casa de la nube
+  if(!houseState.remote && !houseState._remoteFetchStarted){
+    houseState._remoteFetchStarted = true;
+    fetchHouseRemoteData().then(function(){
+      if(houseState.remote && (houseState.active || (typeof state !== "undefined" && state.activeTab === "casa"))) renderHouseView();
+    });
+  }
 
   var gmMode = (typeof isGM === "function" && isGM());
   var canEditPlan = canUserEditPlan();
