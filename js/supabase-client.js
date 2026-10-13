@@ -22,7 +22,7 @@ function subscribeToActiveCharacter(charDbId){
   }
 
   try {
-    activeCharChannel = supabaseClient.channel(topicName)
+    activeCharChannel = supabaseClient.channel(topicName, { config: { private: true } })
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -61,7 +61,7 @@ async function refreshCharFromServer(charDbId){
 function subscribeToCampaignMap(){
   if(!supabaseClient || campaignMapChannel) return;
   try {
-    campaignMapChannel = supabaseClient.channel('realtime_campaign_map')
+    campaignMapChannel = supabaseClient.channel('realtime_campaign_map', { config: { private: true } })
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -195,7 +195,7 @@ function startRealtime(){
   try {
     if(!realtimeChannel){
       realtimeChannel = supabaseClient.channel('realtime_broadcasts', {
-        config: { broadcast: { self: false } }
+        config: { broadcast: { self: false }, private: true }
       })
         .on('broadcast', { event: 'dice_roll' }, function(payload){
           if(payload && payload.payload) handleRemoteDiceRoll(payload.payload);

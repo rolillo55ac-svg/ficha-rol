@@ -2110,7 +2110,7 @@ function initHouseRealtimeSync(){
   if(typeof supabaseClient !== "undefined" && supabaseClient && !houseState._subscribedRealtime){
     try {
       houseState._subscribedRealtime = true;
-      supabaseClient.channel("realtime_house_rooms")
+      supabaseClient.channel("realtime_house_rooms", { config: { private: true } })
         .on("postgres_changes", { event: "*", schema: "public", table: "house_rooms" }, function(payload){
           if(payload && payload.new && payload.new.id){
             handleRemoteHouseRoomUpdate(payload.new);

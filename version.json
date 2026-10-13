@@ -1,6 +1,6 @@
 {
-  "version": "1.4.37.0",
-  "build": "2026.10.14.12",
-  "updatedAt": "2026-10-14T12:00:00Z",
-  "changelog": "Misiones de tipo Casa: el máster marca qué misiones son de la casa (botón y filtro en Misiones) y La Casa muestra solo esas."
+  "version": "1.4.39.0",
+  "build": "2026.10.14.14",
+  "updatedAt": "2026-10-14T14:00:00Z",
+  "changelog": "El tiempo real (tiradas, estadísticas, sonidos, La Casa, mapa y reloj) va por canales privados: solo lo reciben los usuarios con sesión."
 }

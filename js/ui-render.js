@@ -57,7 +57,7 @@ function renderTopbar(){
         '<span class="'+crestClass+'"'+crestStyle+'>'+crestContent+'</span>'+
         '<span class="char-info-box">'+
           '<div class="'+nameClass+'">'+esc(c.name)+'</div>'+
-          '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · ')+esc(c.trabajo||"Aventurero")+'</div>'+
+          '<div class="char-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · '+(c.titulo?esc(c.titulo)+' · ':''))+esc(c.trabajo||"Aventurero")+'</div>'+
         '</span>'+
       '</button>'+
       '<div class="topbar-actions">'+
@@ -258,6 +258,7 @@ function tplFicha(c){
           field("Nombre", "name", c.name, "text", ro)+
           (isGM() && !c.isNPC ? '<div class="field"><label>👤 Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
           '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(isGM() ? '' : 'readonly')+'>'+levelControl+'</div></div>'+
+          '<div class="field"><label>Título</label><input type="text" data-bind="titulo" value="'+esc(c.titulo||"")+'" placeholder="ej: Vástago" '+(isGM() ? '' : 'readonly')+'></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text", ro)+
           field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text", ro)+
           field("Altura","altura",c.altura,"text", ro)+
