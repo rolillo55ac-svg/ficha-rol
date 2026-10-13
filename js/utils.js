@@ -823,9 +823,6 @@ async function broadcastForceAppUpdate(){
     showToast("Solo el Administrador puede forzar la actualización a los jugadores.", "warning");
     return;
   }
-  if(!confirm("¿Deseas enviar una orden inmediata a todos los jugadores conectados para que actualicen su versión y limpien caché?")){
-    return;
-  }
   if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
     try {
       await realtimeChannel.send({
@@ -846,3 +843,10 @@ async function broadcastForceAppUpdate(){
   }
 }
 window.broadcastForceAppUpdate = broadcastForceAppUpdate;
+
+function soundEnabled(){
+  try { return localStorage.getItem("krysalis_sound_off") !== "1"; } catch(e){ return true; }
+}
+function setSoundEnabled(on){
+  try { if(on) localStorage.removeItem("krysalis_sound_off"); else localStorage.setItem("krysalis_sound_off", "1"); } catch(e){}
+}

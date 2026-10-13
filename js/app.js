@@ -149,6 +149,7 @@ function init(){
             }
 
             try {
+              if(!soundEnabled()) throw 0;
               var a = new Audio(url);
               a.volume = 0.65;
               a.play().catch(function(){});

@@ -2,6 +2,7 @@
 
 var audioCtx = null;
 function getAudioCtx(){
+  if(!soundEnabled()) return null;
   if(!audioCtx){
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -273,7 +274,7 @@ var TOPBAR_AUDIO_MAP = {
 var topbarAudioInstances = {};
 
 function playTopbarTabSound(tabId){
-  if(!tabId) return;
+  if(!tabId || !soundEnabled()) return;
   try {
     var fileSrc = TOPBAR_AUDIO_MAP[tabId];
     if(!fileSrc) return;
@@ -432,6 +433,7 @@ function playCharacterSound(c, isRemote){
     showToast(icon + " " + c.name + " emite: " + sName, "info");
   }
 
+  if(!soundEnabled()) return;
   var playedFile = false;
   var isBat = (sound.type === "bat") || (sound.name && sound.name.toLowerCase().indexOf("murci") !== -1);
 

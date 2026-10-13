@@ -1,6 +1,6 @@
 {
-  "version": "1.4.46.0",
-  "build": "2026.10.14.21",
-  "updatedAt": "2026-10-14T21:00:00Z",
-  "changelog": "Aviso único en el navegador para instalar la web como app (va más fluida y no se recarga sin querer)."
+  "version": "1.4.47.0",
+  "build": "2026.10.14.22",
+  "updatedAt": "2026-10-14T22:00:00Z",
+  "changelog": "Ajustes nuevos: lista como en el móvil, interruptor de sonidos, versión, almacenamiento y copia de seguridad en apartados."
 }
