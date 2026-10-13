@@ -42,6 +42,39 @@
 [data-theme="orange"], .char-list-item[data-theme="orange"], body[data-theme="orange"]{--blood:#8B4513;--blood-light:#D2691E;--accent-rgb:139,69,19;}
 [data-theme="teal"], .char-list-item[data-theme="teal"], body[data-theme="teal"]{--blood:#3D6E60;--blood-light:#76AC9D;--accent-rgb:61,110,96;}
 
+/* Pantalla de entrada: sin sesión no se ve la app */
+body.auth-locked #app{display:none;}
+.login-gate{
+  position:fixed;inset:0;z-index:9000;overflow-y:auto;
+  background:radial-gradient(circle at 50% 35%, #1F1510 0%, #120D0A 60%, #080504 100%);
+  display:flex;align-items:center;justify-content:center;padding:20px 16px;
+}
+.login-gate[hidden]{display:none;}
+.login-gate-card{
+  width:100%;max-width:360px;display:flex;flex-direction:column;
+  padding:26px 20px;border-radius:14px;background:rgba(35,24,18,0.92);
+  border:1px solid rgba(176,141,87,0.35);box-shadow:0 10px 30px rgba(0,0,0,0.6);
+}
+.login-gate-brand{
+  font-family:var(--font-display);font-size:1.6rem;font-weight:700;letter-spacing:0.22em;
+  color:var(--gold-light);text-align:center;margin:0;text-shadow:0 0 18px rgba(176,141,87,0.4);
+}
+.login-gate-sub{text-align:center;color:var(--ink-dim);font-size:0.95rem;margin:8px 0 18px;}
+.login-gate-label{color:var(--gold-light);font-size:0.9rem;margin:10px 0 6px;}
+.login-gate-input{
+  min-height:48px;padding:10px 12px;font-size:16px;border-radius:10px;
+  background:var(--bg);color:var(--ink);border:1px solid rgba(176,141,87,0.4);
+}
+.login-gate-input:focus{outline:none;border-color:var(--gold-light);}
+.login-gate-enter{
+  margin-top:20px;min-height:50px;border-radius:10px;font-size:1.05rem;font-weight:700;cursor:pointer;
+  background:linear-gradient(180deg, var(--gold-light), var(--gold));color:#1A120D;border:none;
+}
+.login-gate-signup{
+  margin-top:10px;min-height:44px;border-radius:10px;font-size:0.95rem;cursor:pointer;
+  background:transparent;color:var(--ink-dim);border:1px solid rgba(176,141,87,0.3);
+}
+
 /* Pantalla de carga prémium Krysalis */
 .loading-screen{
   position:fixed;inset:0;z-index:99999;
