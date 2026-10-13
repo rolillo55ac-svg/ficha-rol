@@ -1,6 +1,6 @@
 {
-  "version": "1.4.33.0",
-  "build": "2026.10.14.04",
-  "updatedAt": "2026-10-14T04:00:00Z",
-  "changelog": "Dados: el panel de tirada cabe entero en la pantalla, sin desplazar. Dado más pequeño, resultado y desglose más compactos, bonificadores con el nombre completo y los botones siempre abajo. En horizontal, el dado a la izquierda y el resultado a la derecha."
+  "version": "1.4.34.0",
+  "build": "2026.10.14.05",
+  "updatedAt": "2026-10-14T05:00:00Z",
+  "changelog": "Fichas: las subidas y bajadas de nivel, los puntos y las habilidades se guardan siempre, también con varios toques seguidos, al cerrar la app justo después o con la ficha abierta en dos móviles. Si no se puede guardar en la nube sale un aviso rojo y se reintenta solo."
 }

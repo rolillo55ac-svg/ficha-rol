@@ -83,6 +83,60 @@ function markCharDirty(charId, patchOrKey){
         }
       }
     }
+    // Claves pendientes de confirmar por la nube: se guardan en localStorage y sobreviven a recargas
+    addCharPendingKeys(target, Object.keys(p).concat(Object.keys(getCharacterDiffPatch(target))));
+  }
+}
+
+function addCharPendingKeys(c, keys){
+  if(!c) return;
+  var list = Array.isArray(c._pendingKeys) ? c._pendingKeys : [];
+  (keys || []).forEach(function(k){
+    if(k && k.charAt(0) !== "_" && k !== "db_id" && list.indexOf(k) === -1) list.push(k);
+  });
+  c._pendingKeys = list;
+}
+
+function clearCharPending(c){
+  if(!c) return;
+  c._isDirty = false;
+  delete c._pendingKeys;
+  dirtyCharIds.delete(c.id);
+  if(c.db_id) dirtyCharIds.delete(c.db_id);
+  dirtyCharPatches.delete(c.id);
+}
+
+// Pasa a "target" (datos recién llegados de la nube) los cambios locales aún sin confirmar de "local"
+function carryCharPending(local, target){
+  if(!local || !target || !Array.isArray(local._pendingKeys) || !local._pendingKeys.length) return false;
+  if(!canEditChar(local)) return false;
+  var p = {};
+  local._pendingKeys.forEach(function(k){
+    if(local[k] === undefined) return;
+    try { target[k] = JSON.parse(JSON.stringify(local[k])); } catch(e){ target[k] = local[k]; }
+    p[k] = target[k];
+  });
+  target._pendingKeys = local._pendingKeys.slice();
+  target._isDirty = true;
+  target._lastLocalEdit = local._lastLocalEdit || Date.now();
+  dirtyCharIds.add(target.id);
+  if(target.db_id) dirtyCharIds.add(target.db_id);
+  dirtyCharPatches.set(target.id, Object.assign(dirtyCharPatches.get(target.id) || {}, p));
+  return true;
+}
+
+// Ficha que no se ha podido guardar en la nube: aviso rojo y reintento (los datos siguen en local)
+var lastCharSaveFailToast = 0;
+function notifyCharSaveFailed(c){
+  updateSyncBadge("local");
+  if(Date.now() - lastCharSaveFailToast > 5000){
+    lastCharSaveFailToast = Date.now();
+    showToast("No se ha guardado " + ((c && c.name) ? "la ficha de " + c.name : "la ficha") + " en la nube. Revisa la conexión; se reintentará.", "error");
+  }
+  if(!c) return;
+  c._saveRetries = (c._saveRetries || 0) + 1;
+  if(c._saveRetries <= 3){
+    setTimeout(function(){ flushPendingSync(); }, 4000 * c._saveRetries);
   }
 }
 
@@ -100,6 +154,7 @@ function flushPendingSync(){
     else {
       dirtyCharIds.delete(cid);
       dirtyCharPatches.delete(cid);
+      if(c) delete c._pendingKeys;
     }
   });
 
@@ -108,6 +163,7 @@ function flushPendingSync(){
       if(canEditChar(c)) toPush.add(c.id);
       else {
         c._isDirty = false;
+        delete c._pendingKeys;
         dirtyCharIds.delete(c.id);
         dirtyCharPatches.delete(c.id);
       }

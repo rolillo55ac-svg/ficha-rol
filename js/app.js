@@ -274,10 +274,18 @@ function init(){
     window.addEventListener("pagehide", function(){
       flushPendingSync();
     });
+    var hiddenSince = 0;
     document.addEventListener("visibilitychange", function(){
       if(document.visibilityState === "hidden"){
+        hiddenSince = Date.now();
         flushPendingSync();
       } else if(document.visibilityState === "visible"){
+        // Tras un rato en segundo plano el tiempo real puede haberse cortado: ficha activa al día
+        if(hiddenSince && Date.now() - hiddenSince > 20000 && typeof refreshCharFromServer === "function"){
+          var curVis = activeChar();
+          if(curVis && curVis.db_id) refreshCharFromServer(curVis.db_id);
+        }
+        hiddenSince = 0;
         if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
         if(typeof navigator !== "undefined" && "serviceWorker" in navigator){
           navigator.serviceWorker.getRegistrations().then(function(regs){
