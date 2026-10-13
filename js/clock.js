@@ -92,7 +92,7 @@ async function loadGameClock(){
 function subscribeGameClock(){
   if(!supabaseClient || gameClockChannel) return;
   try {
-    gameClockChannel = supabaseClient.channel("realtime_game_clock")
+    gameClockChannel = supabaseClient.channel("realtime_game_clock", { config: { private: true } })
       .on("postgres_changes", { event: "*", schema: "public", table: "game_clock", filter: "campaign_id=eq." + GAME_CLOCK_CAMPAIGN_ID }, function(payload){
         if(!payload || !payload.new) return;
         if(payload.new.distill_hours !== undefined && JSON.stringify(payload.new.distill_hours) !== JSON.stringify(gameDistillHours)) setGameDistillHours(payload.new.distill_hours);
