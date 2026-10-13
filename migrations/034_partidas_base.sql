@@ -36,14 +36,14 @@ BEGIN;
 CREATE TABLE IF NOT EXISTS public.campaigns (
   id          text PRIMARY KEY,
   name        text NOT NULL,
-  created_by  uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_by  uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   archived    boolean NOT NULL DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS public.campaign_members (
   campaign_id  text NOT NULL REFERENCES public.campaigns(id) ON DELETE RESTRICT,
-  user_id      uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id      uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   role         text NOT NULL CHECK (role IN ('GM', 'PLAYER')),
   created_at   timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (campaign_id, user_id)
@@ -54,10 +54,10 @@ CREATE TABLE IF NOT EXISTS public.campaign_invites (
   code         text PRIMARY KEY,
   campaign_id  text NOT NULL REFERENCES public.campaigns(id) ON DELETE RESTRICT,
   role         text NOT NULL DEFAULT 'PLAYER' CHECK (role IN ('GM', 'PLAYER')),
-  created_by   uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_by   uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at   timestamptz NOT NULL DEFAULT now(),
   expires_at   timestamptz NOT NULL DEFAULT (now() + interval '7 days'),
-  used_by      uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  used_by      uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   used_at      timestamptz
 );
 
@@ -101,13 +101,11 @@ INSERT INTO public.campaign_members (campaign_id, user_id, role)
 SELECT 'c0000000-0000-0000-0000-000000000001', p.id,
        CASE WHEN p.role = 'gm' THEN 'GM' ELSE 'PLAYER' END
 FROM public.profiles p
-JOIN auth.users u ON u.id = p.id
 ON CONFLICT (campaign_id, user_id) DO NOTHING;
 
 INSERT INTO public.campaign_members (campaign_id, user_id, role)
 SELECT c.id, p.id, CASE WHEN p.role = 'gm' THEN 'GM' ELSE 'PLAYER' END
 FROM public.profiles p
-JOIN auth.users u ON u.id = p.id
 CROSS JOIN (VALUES ('prueba-campaign'), ('prueba-campaign-b')) AS c(id)
 WHERE p.email LIKE 'prueba-%@example.com'
   AND (c.id = 'prueba-campaign' OR p.role = 'gm')
