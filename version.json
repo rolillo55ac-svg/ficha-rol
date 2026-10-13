@@ -1,6 +1,6 @@
 {
-  "version": "1.4.50.0",
-  "build": "2026.10.15.12",
-  "updatedAt": "2026-10-15T12:00:00Z",
-  "changelog": "Invocaciones nuevas: se ven y se usan sin casillas, botón Editar, pestañas por familiar, vida con botones, rasgos en lista y Aprendizaje (lo aprendido y lo que está entrenando)."
+  "version": "1.4.51.0",
+  "build": "2026.10.15.13",
+  "updatedAt": "2026-10-15T13:00:00Z",
+  "changelog": "Preparado para varias partidas: cada una guarda sus datos aparte en el móvil. Con una sola partida no cambia nada."
 }

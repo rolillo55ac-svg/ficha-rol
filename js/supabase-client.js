@@ -140,9 +140,11 @@ function isOffline(err){
 
 function hasStoredSession(){
   try {
+    // Solo la sesión del proyecto de la partida elegida
+    var ref = SUPABASE_URL.replace(/^https?:\/\//, '').split('.')[0];
     for(var i = 0; i < localStorage.length; i++){
       var k = localStorage.key(i);
-      if(/^sb-.*-auth-token$/.test(k)){
+      if(k === 'sb-' + ref + '-auth-token'){
         var v = JSON.parse(localStorage.getItem(k) || 'null');
         if(v && (v.refresh_token || (v.currentSession && v.currentSession.refresh_token))) return true;
       }
@@ -156,6 +158,15 @@ function showLoginGate(){
   document.body.classList.add('auth-locked');
   var gate = document.getElementById('loginGate');
   if(gate) gate.hidden = false;
+  var wrap = document.getElementById('gatePartidaWrap');
+  var sel = document.getElementById('gatePartida');
+  if(wrap && sel && PARTIDAS.length > 1){
+    sel.innerHTML = PARTIDAS.map(function(p){
+      return '<option value="' + esc(p.id) + '"' + (p.id === PARTIDA_ACTUAL.id ? ' selected' : '') + '>' + esc(p.nombre) + '</option>';
+    }).join('');
+    sel.onchange = function(){ cambiarPartida(sel.value); };
+    wrap.hidden = false;
+  }
   if(typeof hideLoadingScreen === 'function') hideLoadingScreen();
 }
 

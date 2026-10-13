@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.50.0";
-var APP_BUILD = "2026.10.15.12";
+var APP_VERSION = "1.4.51.0";
+var APP_BUILD = "2026.10.15.13";
 
 var state = null;
 var supabaseClient = null;
@@ -1400,9 +1400,9 @@ function loadState(){
         delete c._lastLocalEdit;
       });
     }
-    var savedActiveId = localStorage.getItem("krysalis_active_id");
-    var savedActiveDbId = localStorage.getItem("krysalis_active_db_id");
-    var savedActiveName = localStorage.getItem("krysalis_active_name");
+    var savedActiveId = localStorage.getItem(pkey("krysalis_active_id"));
+    var savedActiveDbId = localStorage.getItem(pkey("krysalis_active_db_id"));
+    var savedActiveName = localStorage.getItem(pkey("krysalis_active_name"));
 
     if(loaded && loaded.characters && loaded.characters.length){
       var matched = null;
@@ -1424,7 +1424,7 @@ function loadState(){
     if(tabParam){
       loaded.activeTab = tabParam;
     } else {
-      var savedTab = localStorage.getItem("krysalis_active_tab");
+      var savedTab = localStorage.getItem(pkey("krysalis_active_tab"));
       if(savedTab){
         loaded.activeTab = savedTab;
       }
