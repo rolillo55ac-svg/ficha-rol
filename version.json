@@ -1,6 +1,6 @@
 {
-  "version": "1.4.36.0",
-  "build": "2026.10.14.07",
-  "updatedAt": "2026-10-14T07:00:00Z",
-  "changelog": "La Casa empieza directamente por las mejoras y las misiones: se quita el recuadro de arriba (título, volver a la ficha y descripción)."
+  "version": "1.4.37.0",
+  "build": "2026.10.14.12",
+  "updatedAt": "2026-10-14T12:00:00Z",
+  "changelog": "Misiones de tipo Casa: el máster marca qué misiones son de la casa (botón y filtro en Misiones) y La Casa muestra solo esas."
 }
