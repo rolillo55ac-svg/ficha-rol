@@ -81,9 +81,9 @@ function getUserCharacters(){
 
 function activeChar(){
   var chars = getUserCharacters();
-  var savedActiveId = (typeof state !== 'undefined' && state.activeId) ? state.activeId : localStorage.getItem("krysalis_active_id");
-  var savedActiveDbId = localStorage.getItem("krysalis_active_db_id");
-  var savedActiveName = localStorage.getItem("krysalis_active_name");
+  var savedActiveId = (typeof state !== 'undefined' && state.activeId) ? state.activeId : localStorage.getItem(pkey("krysalis_active_id"));
+  var savedActiveDbId = localStorage.getItem(pkey("krysalis_active_db_id"));
+  var savedActiveName = localStorage.getItem(pkey("krysalis_active_name"));
 
   var found = null;
   if(savedActiveId){

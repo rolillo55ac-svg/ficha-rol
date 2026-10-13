@@ -197,7 +197,7 @@ function settingsRow(action, screen, icon, title, sub, val, extraClass){
 
 function settingsLastBackupText(){
   var iso = null;
-  try { iso = localStorage.getItem("krysalis_last_weekly_backup"); } catch(e){}
+  try { iso = localStorage.getItem(pkey("krysalis_last_weekly_backup")); } catch(e){}
   if(!iso) return "Aún sin copias desde este dispositivo";
   var d = new Date(iso);
   if(isNaN(d.getTime())) return "Aún sin copias desde este dispositivo";
@@ -208,7 +208,7 @@ function settingsScreenTitle(screen){
   return {
     version: "Versión", storage: "Almacenamiento", backup: "Copia de seguridad", help: "Ayuda y sugerencias",
     cloud: "Copia en la nube", broadcast: "Avisar para que actualicen",
-    donate: "Apoya el proyecto"
+    donate: "Apoya el proyecto", partida: "Partida"
   }[screen] || "Ajustes";
 }
 
@@ -231,6 +231,11 @@ function openDataModal(screen){
       '<div class="settings-profile-info"><div class="settings-profile-mail">'+esc(email || "Sin sesión")+'</div>'+
       '<span class="settings-chip'+(gm ? ' gm' : '')+'">'+(gm ? 'Máster' : 'Jugador')+'</span></div>'+
     '</div>';
+    if(PARTIDAS.length > 1){
+      html += '<div class="settings-list">'+
+        settingsRow("settings-go", "partida", "🗺️", "Partida: "+esc(PARTIDA_ACTUAL.nombre), "Cambiar")+
+      '</div>';
+    }
     html += '<div class="settings-group-title">Preferencias</div><div class="settings-list">'+
       '<button type="button" class="settings-row" data-action="toggle-sound" role="switch" aria-checked="'+(soundEnabled() ? 'true' : 'false')+'">'+
         '<span class="settings-row-ico">🔊</span>'+
@@ -254,6 +259,15 @@ function openDataModal(screen){
       settingsRow("auth-logout", "", "🚪", "Cerrar sesión", "", "", "settings-row-danger")+
     '</div>';
     html += '<div class="settings-foot">Rol Krysalis · v'+esc(curVerStr)+'</div>';
+  }
+
+  else if(screen === "partida"){
+    html += '<div class="settings-panel"><p>Al cambiar de partida se cierra la sesión y entras con tu cuenta de esa partida.</p></div>';
+    html += '<div class="settings-list">'+
+      PARTIDAS.map(function(p){
+        return settingsRow("partida-pick", "", p.id === PARTIDA_ACTUAL.id ? "✅" : "🗺️", esc(p.nombre), p.id === PARTIDA_ACTUAL.id ? "Partida actual" : "").replace('data-action="partida-pick"', 'data-action="partida-pick" data-partida="'+esc(p.id)+'"');
+      }).join("")+
+    '</div>';
   }
 
   else if(screen === "version"){
@@ -597,6 +611,7 @@ function modalClick(e){
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
   if(action==="settings-go"){ openDataModal(btn.getAttribute("data-screen")); return; }
+  if(action==="partida-pick"){ cambiarPartida(btn.getAttribute("data-partida")); return; }
   if(action==="toggle-sound"){
     setSoundEnabled(!soundEnabled());
     var swOn = soundEnabled();
@@ -627,9 +642,9 @@ function modalClick(e){
     if(pickedChar){
       state.activeId = pickedChar.id;
       try{
-        localStorage.setItem("krysalis_active_id", pickedChar.id);
-        if(pickedChar.db_id) localStorage.setItem("krysalis_active_db_id", pickedChar.db_id);
-        if(pickedChar.name) localStorage.setItem("krysalis_active_name", pickedChar.name);
+        localStorage.setItem(pkey("krysalis_active_id"), pickedChar.id);
+        if(pickedChar.db_id) localStorage.setItem(pkey("krysalis_active_db_id"), pickedChar.db_id);
+        if(pickedChar.name) localStorage.setItem(pkey("krysalis_active_name"), pickedChar.name);
       }catch(errStorage){}
     }
     saveState(true);
@@ -1310,7 +1325,7 @@ function getCategoryLabel(cat){
 
 function getPlayerTickets(){
   try {
-    return JSON.parse(localStorage.getItem("krysalis_player_tickets") || "[]");
+    return JSON.parse(localStorage.getItem(pkey("krysalis_player_tickets")) || "[]");
   } catch(e){
     return [];
   }
@@ -1318,7 +1333,7 @@ function getPlayerTickets(){
 
 function savePlayerTickets(tickets){
   try {
-    localStorage.setItem("krysalis_player_tickets", JSON.stringify(tickets.slice(0, 50)));
+    localStorage.setItem(pkey("krysalis_player_tickets"), JSON.stringify(tickets.slice(0, 50)));
   } catch(e){}
 }
 
@@ -1895,7 +1910,7 @@ async function sendDiscordWebhookReport(report){
     avatar_url: "https://rolillo55ac-svg.github.io/ficha-rol/images/icon-192.png",
     embeds: [
       {
-        title: "[" + ticketTag + "] " + report.categoryLabel + ": " + report.title,
+        title: "[" + PARTIDA_ACTUAL.nombre + "] [" + ticketTag + "] " + report.categoryLabel + ": " + report.title,
         description: "**Mensaje del Jugador:**\n> " + report.description.split("\n").join("\n> "),
         color: embedColor,
         fields: [
@@ -1975,7 +1990,7 @@ async function sendDiscordWebhookReply(ticket, replyText){
     username: "Krysalis • Panel de Administración",
     avatar_url: "https://rolillo55ac-svg.github.io/ficha-rol/images/icon-192.png",
     embeds: [{
-      title: "🛡️ Respuesta Enviada al Jugador [" + ticketTag + "]",
+      title: "[" + PARTIDA_ACTUAL.nombre + "] 🛡️ Respuesta Enviada al Jugador [" + ticketTag + "]",
       description: "**Asunto:** " + (ticket.title || "Incidencia") + "\n\n**💬 Respuesta Oficial del Administrador:**\n> " + String(replyText).split("\n").join("\n> "),
       color: 0x10B981,
       fields: [

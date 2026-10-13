@@ -1,4 +1,6 @@
 function getOfficialCharacters(){
+  // Las fichas oficiales son de Krysalis: una partida nueva empieza sin ellas
+  if(PARTIDA_ACTUAL.id !== "krysalis") return [];
   return [
     // 1. CHERK
     {
@@ -809,9 +811,9 @@ async function pullAllFromSupabase(){
       });
 
       var validChars = getUserCharacters();
-      var savedActiveId = localStorage.getItem("krysalis_active_id") || state.activeId;
-      var savedActiveDbId = localStorage.getItem("krysalis_active_db_id");
-      var savedActiveName = localStorage.getItem("krysalis_active_name");
+      var savedActiveId = localStorage.getItem(pkey("krysalis_active_id")) || state.activeId;
+      var savedActiveDbId = localStorage.getItem(pkey("krysalis_active_db_id"));
+      var savedActiveName = localStorage.getItem(pkey("krysalis_active_name"));
       var matchedChar = null;
 
       if(savedActiveId){

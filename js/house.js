@@ -384,7 +384,7 @@ function migrateRoomsTo16Cols(rooms){
 function loadHouseLocalData(){
   houseState.remote = false;
   try {
-    var raw = localStorage.getItem("krysalis_house_beta_v1");
+    var raw = localStorage.getItem(pkey("krysalis_house_beta_v1"));
     if(raw){
       var parsed = JSON.parse(raw);
       if(parsed && parsed.house && Array.isArray(parsed.rooms)){
@@ -419,7 +419,7 @@ function saveHouseLocalData(){
       perks: houseState.perks,
       events: houseState.events
     };
-    localStorage.setItem("krysalis_house_beta_v1", JSON.stringify(payload));
+    localStorage.setItem(pkey("krysalis_house_beta_v1"), JSON.stringify(payload));
   } catch(e){
     console.warn("No se pudo guardar localmente La Casa:", e);
   }
@@ -1950,7 +1950,7 @@ function handleRemoteHouseItemChange(payload){
 
 // Subir a la nube la Casa guardada en este dispositivo: solo para el máster, solo si la nube no
 // tiene Casa en la campaña y solo se pregunta una vez por dispositivo (si dice que no, no vuelve a preguntar).
-var HOUSE_IMPORT_FLAG = "krysalis_house_import_asked";
+var HOUSE_IMPORT_FLAG = pkey("krysalis_house_import_asked");
 var houseImportRunning = false;
 
 function buildHouseImportPayload(parsed){
@@ -1992,7 +1992,7 @@ async function maybeOfferHouseImport(){
   var raw = null;
   try {
     if(localStorage.getItem(HOUSE_IMPORT_FLAG)) return;
-    raw = localStorage.getItem("krysalis_house_beta_v1");
+    raw = localStorage.getItem(pkey("krysalis_house_beta_v1"));
   } catch(e){ return; }
   if(!raw) return;
   var parsed = null;
@@ -2019,7 +2019,7 @@ async function maybeOfferHouseImport(){
 
     // Copia por si acaso: en este dispositivo y descargada en un .json
     var stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 13).replace("T", "_");
-    try { localStorage.setItem("krysalis_house_backup_" + stamp, raw); } catch(e){}
+    try { localStorage.setItem(pkey("krysalis_house_backup_" + stamp), raw); } catch(e){}
     downloadHouseBackup(raw, stamp);
 
     var res = await supabaseClient.rpc("import_house", { p_data: buildHouseImportPayload(parsed), p_campaign_id: HOUSE_CAMPAIGN_ID });

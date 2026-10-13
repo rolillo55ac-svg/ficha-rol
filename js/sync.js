@@ -1,6 +1,6 @@
-var STORAGE_KEY = "krysalisFichasV311";
-var SUPABASE_URL = "https://nwjbdevshaucnjrwebtb.supabase.co";
-var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY";
+var STORAGE_KEY = pkey("krysalisFichasV311");
+var SUPABASE_URL = PARTIDA_ACTUAL.url;
+var SUPABASE_ANON = PARTIDA_ACTUAL.anonKey;
 
 
 var syncDebounceTimer = null;
@@ -186,14 +186,14 @@ function saveState(skipRemote){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if(state.activeId){
-      localStorage.setItem("krysalis_active_id", state.activeId);
+      localStorage.setItem(pkey("krysalis_active_id"), state.activeId);
       var curC = (state.characters||[]).find(function(x){ return x.id === state.activeId || x.db_id === state.activeId; });
       if(curC){
-        if(curC.db_id) localStorage.setItem("krysalis_active_db_id", curC.db_id);
-        if(curC.name) localStorage.setItem("krysalis_active_name", curC.name);
+        if(curC.db_id) localStorage.setItem(pkey("krysalis_active_db_id"), curC.db_id);
+        if(curC.name) localStorage.setItem(pkey("krysalis_active_name"), curC.name);
       }
     }
-    if(state.activeTab) localStorage.setItem("krysalis_active_tab", state.activeTab);
+    if(state.activeTab) localStorage.setItem(pkey("krysalis_active_tab"), state.activeTab);
   }catch(e){
     console.error("Error al guardar en localStorage:", e);
     // Recuperación ante exceso de cuota (5MB): podar historial de dados local para asegurar guardado
@@ -298,7 +298,7 @@ function checkWeeklyBackup(){
   // Solo el máster con sesión: sin usuario isGM() es true y subiría el estado local de cualquiera
   if(!currentUser || !isGM()) return;
   try{
-    var lastBackupStr = localStorage.getItem("krysalis_last_weekly_backup");
+    var lastBackupStr = localStorage.getItem(pkey("krysalis_last_weekly_backup"));
     var now = Date.now();
     var ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
     if(!lastBackupStr || (now - new Date(lastBackupStr).getTime() > ONE_WEEK_MS)){
@@ -327,7 +327,7 @@ async function performCloudBackup(isAuto){
       updated_at: new Date().toISOString()
     });
     if(!res.error){
-      localStorage.setItem("krysalis_last_weekly_backup", new Date().toISOString());
+      localStorage.setItem(pkey("krysalis_last_weekly_backup"), new Date().toISOString());
       if(!isAuto) showToast("Copia de seguridad guardada en la nube con éxito", "success");
     } else {
       if(!isAuto) showToast("Error al guardar copia en la nube", "error");
