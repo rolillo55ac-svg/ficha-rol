@@ -234,6 +234,87 @@ function startRealtime(){
   }catch(e){ console.error('Supabase error:', e); }
 }
 
+// Aviso pequeño arriba: no se ve nada si todo va bien
+function setConnectionStatus(st){
+  var el = document.getElementById('connStatus');
+  if(st === 'ok'){ if(el) el.remove(); return; }
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'connStatus';
+    el.className = 'conn-status-pill';
+    el.setAttribute('role', 'status');
+    document.body.appendChild(el);
+  }
+  el.textContent = st === 'offline' ? 'Sin conexión' : 'Reconectando…';
+  el.classList.toggle('is-offline', st === 'offline');
+}
+
+// Canales caídos (móvil bloqueado, red cortada): se quitan y se vuelven a crear
+function reviveRealtimeChannels(){
+  if(!supabaseClient) return;
+  var rt = supabaseClient.realtime;
+  if(rt && typeof rt.isConnected === 'function' && !rt.isConnected()){
+    try { rt.connect(); } catch(e){}
+  }
+  var chans = typeof supabaseClient.getChannels === 'function' ? supabaseClient.getChannels().slice() : [];
+  // Un canal cerrado sale de la lista del cliente, pero puede seguir guardado en su variable
+  [realtimeChannel, activeCharChannel, campaignMapChannel, typeof gameClockChannel !== 'undefined' ? gameClockChannel : null].forEach(function(ch){
+    if(ch && chans.indexOf(ch) === -1) chans.push(ch);
+  });
+  var broadcastDown = false;
+  chans.forEach(function(ch){
+    if(ch.state === 'joined' || ch.state === 'joining') return;
+    try { supabaseClient.removeChannel(ch); } catch(e){}
+    if(ch === realtimeChannel){ realtimeChannel = null; broadcastDown = true; }
+    if(ch === activeCharChannel) activeCharChannel = null;
+    if(ch === campaignMapChannel) campaignMapChannel = null;
+    if(typeof gameClockChannel !== 'undefined' && ch === gameClockChannel) gameClockChannel = null;
+    if(ch.topic === 'realtime:realtime_house_rooms' && typeof houseState !== 'undefined') houseState._subscribedRealtime = false;
+  });
+  if(!realtimeChannel || !campaignMapChannel || !activeCharChannel) startRealtime();
+  if(typeof gameClockChannel !== 'undefined' && !gameClockChannel && typeof subscribeGameClock === 'function') subscribeGameClock();
+  if(typeof houseState !== 'undefined' && (broadcastDown || !houseState._subscribedRealtime) && typeof initHouseRealtimeSync === 'function'){
+    if(broadcastDown) houseState._settingsListener = false;
+    try { initHouseRealtimeSync(); } catch(e){}
+  }
+}
+
+// Al volver de segundo plano o de estar sin red: reconectar y volver a leer lo que se ve
+var catchUpRunning = false;
+async function catchUpWithServer(opts){
+  opts = opts || {};
+  if(!supabaseClient || !currentUser || appLocked) return false;
+  if(typeof navigator !== 'undefined' && navigator.onLine === false){
+    setConnectionStatus('offline');
+    return false;
+  }
+  if(catchUpRunning) return false;
+  catchUpRunning = true;
+  setConnectionStatus('reconnecting');
+  var ok = true;
+  try {
+    if(typeof flushPendingSync === 'function') flushPendingSync();
+    reviveRealtimeChannels();
+    var jobs = [pullAllFromSupabase()];
+    // Con guardados compartidos aún en camino no se pisa el compendio ni el mapa con la copia de la nube
+    if(!(typeof hasPendingSaves === 'function' && hasPendingSaves())){
+      jobs.push(pullSharedDataFromSupabase(), pullMapFromSupabase());
+    }
+    if(typeof loadGameClock === 'function') jobs.push(loadGameClock());
+    if(!opts.skipHouse && typeof houseState !== 'undefined' && houseState.active && typeof fetchHouseRemoteData === 'function'){
+      jobs.push(fetchHouseRemoteData().then(function(){ if(houseState.active) renderHouseView(); }));
+    }
+    await Promise.all(jobs.map(function(p){ return Promise.resolve(p).catch(function(){ ok = false; }); }));
+  } catch(e){
+    ok = false;
+    console.warn('No se pudo poner al día:', e);
+  }
+  catchUpRunning = false;
+  if(typeof navigator !== 'undefined' && navigator.onLine === false){ setConnectionStatus('offline'); return false; }
+  setConnectionStatus('ok');
+  return ok;
+}
+
 
 function broadcastCharStatUpdate(charId, combatObj){
   if(supabaseClient && realtimeChannel){

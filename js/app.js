@@ -285,10 +285,10 @@ function init(){
         hiddenSince = Date.now();
         flushPendingSync();
       } else if(document.visibilityState === "visible"){
-        // Tras un rato en segundo plano el tiempo real puede haberse cortado: ficha activa al día
-        if(hiddenSince && Date.now() - hiddenSince > 20000 && currentUser && typeof refreshCharFromServer === "function"){
-          var curVis = activeChar();
-          if(curVis && curVis.db_id) refreshCharFromServer(curVis.db_id);
+        // Tras un rato en segundo plano el tiempo real puede haberse cortado: reconectar y releer
+        // (La Casa ya se relee en su propio aviso de visibilidad)
+        if(hiddenSince && Date.now() - hiddenSince > 20000 && currentUser && typeof catchUpWithServer === "function"){
+          catchUpWithServer({ skipHouse: true });
         }
         hiddenSince = 0;
         if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
@@ -298,6 +298,13 @@ function init(){
           }).catch(function(){});
         }
       }
+    });
+
+    window.addEventListener("online", function(){
+      if(typeof catchUpWithServer === "function") catchUpWithServer();
+    });
+    window.addEventListener("offline", function(){
+      if(currentUser && typeof setConnectionStatus === "function") setConnectionStatus("offline");
     });
 
     updateLoadingProgress(85, "Conectando con la partida...");
