@@ -1,6 +1,6 @@
 {
-  "version": "1.4.40.0",
-  "build": "2026.10.14.15",
-  "updatedAt": "2026-10-14T15:00:00Z",
-  "changelog": "La Casa: el máster puede añadir, editar, ordenar y archivar las mejoras, y tiene un panel secreto (vida de la casa, notas y estadísticas de cada mejora) que los jugadores no pueden leer."
+  "version": "1.4.41.0",
+  "build": "2026.10.14.16",
+  "updatedAt": "2026-10-14T16:00:00Z",
+  "changelog": "Mapa: los jugadores ya pueden guardar sus marcadores para todos (no se pierden al recargar). Cada uno solo puede cambiar o quitar los suyos; el máster, todos."
 }
