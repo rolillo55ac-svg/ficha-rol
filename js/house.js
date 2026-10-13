@@ -4745,12 +4745,10 @@ function renderHouseUpgradesBox(){
   return html;
 }
 
-// Misiones del apartado Misiones que hablan de la casa (en el título o en la recompensa)
+// Misiones que el máster ha marcado como Casa en el apartado Misiones
 function getHouseQuests(){
   var list = (typeof state !== "undefined" && Array.isArray(state.quests)) ? state.quests : [];
-  return list.filter(function(q){
-    return q && /(^|[^a-záéíóúñ])casa([^a-záéíóúñ]|$)/i.test((q.title || "") + " · " + (q.reward || ""));
-  });
+  return list.filter(function(q){ return q && q.house === true; });
 }
 
 function renderHouseQuestsBox(){
@@ -4759,7 +4757,9 @@ function renderHouseQuestsBox(){
   var done = quests.filter(function(q){ return q.status === "completada"; });
   var html = '<div class="house-info-box" id="houseQuestsBox">';
   html += '  <h3 class="house-events-title">Misiones de la casa</h3>';
-  if(!active.length){
+  if(!quests.length){
+    html += '  <div class="house-info-empty">El máster puede marcar misiones como Casa en Misiones.</div>';
+  } else if(!active.length){
     html += '  <div class="house-info-empty">Ninguna misión de la casa en curso.</div>';
   }
   active.forEach(function(q){

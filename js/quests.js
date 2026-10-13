@@ -27,6 +27,7 @@ function renderQuestCard(q, canEdit){
     '<div class="quest-card-title-col">'+
       '<div class="quest-card-badge-row">'+
         '<span class="quest-type-badge '+qType+'">'+(isPrincipal ? '⭐ PRINCIPAL' : '◈ SECUNDARIA')+'</span>'+
+        (q.house===true ? '<span class="quest-type-badge secundaria">🏠 CASA</span>' : '')+
         (canEdit ?
           '<select class="quest-status-select" data-action="set-quest-status" data-id="'+q.id+'">'+
             '<option value="activa" '+(st==="activa"?"selected":"")+'>🟡 En curso</option>'+
@@ -49,6 +50,7 @@ function renderQuestCard(q, canEdit){
           '<option value="principal" '+(isPrincipal?'selected':'')+'>⭐ Principal</option>'+
           '<option value="secundaria" '+(!isPrincipal?'selected':'')+'>◈ Secundaria</option>'+
         '</select>'+
+        '<button type="button" class="btn-compact quest-house-toggle'+(q.house===true?' highlight':'')+'" data-action="toggle-quest-house" data-id="'+q.id+'" title="Marcar como misión de la Casa">🏠 '+(q.house===true?'Casa ✓':'Casa')+'</button>'+
         '<button class="row-del" data-action="del-quest" data-id="'+q.id+'" title="Eliminar misión">✕</button>'+
       '</div>' : ''
     )+
@@ -231,6 +233,8 @@ function tplMision(c, s){
     return qt === "secundaria";
   });
 
+  var houseQuests = quests.filter(function(q){ return q && q.house === true; });
+  var houseCount = houseQuests.length;
   var totalCount = quests.length;
   var mainCount = mainQuests.length;
   var sideCount = sideQuests.length;
@@ -389,6 +393,9 @@ function tplMision(c, s){
     '<button class="quest-filter-btn secundaria '+(filter==="secundaria"?"active":"")+'" data-action="filter-quest-type" data-filter="secundaria">'+
       '◈ Secundarias <span class="badge-count">'+sideCount+'</span>'+
     '</button>'+
+    '<button class="quest-filter-btn '+(filter==="casa"?"active":"")+'" data-action="filter-quest-type" data-filter="casa">'+
+      '🏠 Casa <span class="badge-count">'+houseCount+'</span>'+
+    '</button>'+
     '<button class="quest-filter-btn completed '+(filter==="completada"?"active":"")+'" data-action="filter-quest-type" data-filter="completada">'+
       '🟢 Completadas <span class="badge-count">'+completedCount+'</span>'+
     '</button>'+
@@ -434,6 +441,18 @@ function tplMision(c, s){
         html += '<div class="quest-empty-cat">No hay misiones principales.</div>';
       } else {
         mainQuests.forEach(function(q){
+          html += renderQuestCard(q, canEdit);
+        });
+      }
+
+    } else if(filter === "casa"){
+      html += '<div class="quest-section-header principal">'+
+        '<span>🏠 Misiones de la Casa ('+houseCount+')</span>'+
+      '</div>';
+      if(!houseQuests.length){
+        html += '<div class="quest-empty-cat">No hay misiones marcadas como Casa.</div>';
+      } else {
+        houseQuests.forEach(function(q){
           html += renderQuestCard(q, canEdit);
         });
       }
