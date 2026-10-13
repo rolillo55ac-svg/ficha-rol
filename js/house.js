@@ -21,6 +21,7 @@ var houseState = {
   house: null,
   rooms: [],
   upgrades: [],
+  perks: null, // mejoras de la casa (house_perks); null = aún sin tabla, se usan las de HOUSE_REAL_UPGRADES
   events: [],
   editMode: false,
   zoom: 1.0,
@@ -391,6 +392,7 @@ function loadHouseLocalData(){
         houseState.rooms = migrateRoomsTo16Cols(parsed.rooms);
         normalizeAllRoomLayouts();
         houseState.upgrades = parsed.upgrades || [];
+        houseState.perks = Array.isArray(parsed.perks) ? parsed.perks : null;
         houseState.events = parsed.events || [];
         return;
       }
@@ -414,6 +416,7 @@ function saveHouseLocalData(){
       house: houseState.house,
       rooms: houseState.rooms,
       upgrades: houseState.upgrades,
+      perks: houseState.perks,
       events: houseState.events
     };
     localStorage.setItem("krysalis_house_beta_v1", JSON.stringify(payload));
@@ -460,6 +463,10 @@ async function fetchHouseRemoteData(){
     if(!upgRes.error && upgRes.data){
       houseState.upgrades = upgRes.data;
     }
+
+    var perkRes = await supabaseClient.from("house_perks").select("*").eq("house_id", houseState.house.id).order("sort_order", { ascending: true });
+    houseState.perks = (!perkRes.error && perkRes.data) ? perkRes.data : null;
+    await fetchHouseSecrets();
 
     var evRes = await supabaseClient.from("house_events").select("*").eq("house_id", houseState.house.id).order("created_at", { ascending: false }).limit(25);
     if(!evRes.error && evRes.data){
@@ -4530,6 +4537,13 @@ function renderHouseView(){
     loadHouseLocalData();
     h = houseState.house;
   }
+  // La pestaña Casa no pasa por openHouseView: la primera vez se trae La Casa de la nube
+  if(!houseState.remote && !houseState._remoteFetchStarted){
+    houseState._remoteFetchStarted = true;
+    fetchHouseRemoteData().then(function(){
+      if(houseState.remote && (houseState.active || (typeof state !== "undefined" && state.activeTab === "casa"))) renderHouseView();
+    });
+  }
 
   var gmMode = (typeof isGM === "function" && isGM());
   var canEditPlan = canUserEditPlan();
@@ -4729,21 +4743,278 @@ function renderHouseStatCard(label, statKey, val, prog, max, desc, gmMode){
   return html;
 }
 
-// Mejoras que tiene de verdad la casa
+// Mejoras que tiene de verdad la casa (solo si aún no existe la tabla house_perks)
 var HOUSE_REAL_UPGRADES = [
   { icon: "🗡️", name: "Daga", desc: "Una daga que defiende la casa." },
   { icon: "🧭", name: "Buen camino", desc: "Al andar, la casa sabe por dónde ir para hacerse menos daño." }
 ];
 
+// Datos secretos del máster (house_secrets). Solo en memoria: nunca en localStorage ni en el tiempo real.
+var houseSecrets = {};
+
+function getActiveHousePerks(){
+  if(!Array.isArray(houseState.perks)){
+    return HOUSE_REAL_UPGRADES.map(function(u){ return { icon: u.icon, name: u.name, description: u.desc }; });
+  }
+  return houseState.perks.filter(function(p){ return !p.archived; }).sort(function(a, b){ return (a.sort_order || 0) - (b.sort_order || 0); });
+}
+
+function canEditHousePerks(){
+  return (typeof isGM === "function" && isGM()) && houseState.remote && Array.isArray(houseState.perks);
+}
+
 function renderHouseUpgradesBox(){
-  var html = '<div class="house-info-box">';
+  var html = '<div class="house-info-box" id="housePerksBox">';
   html += '  <h3 class="house-events-title">Mejoras de la casa</h3>';
-  HOUSE_REAL_UPGRADES.forEach(function(u){
-    html += '  <div class="house-info-row"><span class="house-info-icon">' + u.icon + '</span><span><b>' + esc(u.name) + '</b> · ' + esc(u.desc) + '</span></div>';
+  var perks = getActiveHousePerks();
+  if(!perks.length) html += '  <div class="house-info-empty">La casa todavía no tiene mejoras.</div>';
+  perks.forEach(function(p){
+    html += '  <div class="house-perk-card"><span class="house-perk-icon">' + esc(p.icon || "✨") + '</span>';
+    html += '<div class="house-perk-text"><div class="house-perk-name">' + esc(p.name || "") + '</div>';
+    if(p.description) html += '<div class="house-perk-desc">' + esc(p.description) + '</div>';
+    html += '</div></div>';
   });
+  if(canEditHousePerks()){
+    html += '  <div class="house-perk-gm-row">';
+    html += '    <button class="house-perk-gm-btn" data-action="open-house-perks-editor">✏️ Editar mejoras</button>';
+    html += '    <button class="house-perk-gm-btn" data-action="open-house-secrets">🔒 Panel secreto</button>';
+    html += '  </div>';
+  }
   html += '</div>';
   return html;
 }
+
+async function fetchHouseSecrets(){
+  houseSecrets = {};
+  if(!(typeof isGM === "function" && isGM()) || !houseState.house) return;
+  var res = await supabaseClient.from("house_secrets").select("id,data").eq("house_id", houseState.house.id);
+  if(res.error || !res.data) return;
+  res.data.forEach(function(row){ houseSecrets[row.id] = row.data || {}; });
+}
+
+function openHouseGmModal(title, bodyHtml){
+  var old = document.getElementById("houseGmModalOverlay");
+  var scroll = 0;
+  if(old){
+    var oldBox = old.querySelector(".house-modal-box");
+    if(oldBox) scroll = oldBox.scrollTop;
+    old.remove();
+  }
+  var overlay = document.createElement("div");
+  overlay.className = "house-modal-overlay";
+  overlay.id = "houseGmModalOverlay";
+  overlay.innerHTML = '<div class="house-modal-box">' +
+    '  <div class="house-modal-header">' +
+    '    <h3 class="house-modal-title">' + title + '</h3>' +
+    '    <button class="house-perk-close" data-action="close-house-modal" aria-label="Cerrar">&times;</button>' +
+    '  </div>' + bodyHtml + '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector(".house-modal-box").scrollTop = scroll;
+}
+
+function openHousePerksEditor(){
+  var all = Array.isArray(houseState.perks) ? houseState.perks : [];
+  var active = getActiveHousePerks();
+  var archived = all.filter(function(p){ return p.archived; });
+  var html = '';
+  active.forEach(function(p, i){
+    html += '<div class="house-perk-edit" data-perk-id="' + esc(p.id) + '">';
+    html += '  <div class="house-perk-edit-top">';
+    html += '    <input type="text" class="house-perk-in-icon" maxlength="4" value="' + esc(p.icon || "") + '" aria-label="Icono">';
+    html += '    <input type="text" class="house-perk-in-name" maxlength="60" value="' + esc(p.name || "") + '" placeholder="Nombre" aria-label="Nombre">';
+    html += '  </div>';
+    html += '  <textarea class="house-perk-in-desc" rows="2" maxlength="300" placeholder="Descripción corta" aria-label="Descripción">' + esc(p.description || "") + '</textarea>';
+    html += '  <div class="house-perk-edit-btns">';
+    html += '    <button class="house-perk-mini" data-action="house-perk-move" data-perk-id="' + esc(p.id) + '" data-dir="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="Subir">▲</button>';
+    html += '    <button class="house-perk-mini" data-action="house-perk-move" data-perk-id="' + esc(p.id) + '" data-dir="1"' + (i === active.length - 1 ? ' disabled' : '') + ' aria-label="Bajar">▼</button>';
+    html += '    <button class="house-perk-mini" data-action="house-perk-archive" data-perk-id="' + esc(p.id) + '">Archivar</button>';
+    html += '    <button class="house-perk-mini gold" data-action="house-perk-save" data-perk-id="' + esc(p.id) + '">Guardar</button>';
+    html += '  </div>';
+    html += '</div>';
+  });
+  html += '<div class="house-perk-edit house-perk-new">';
+  html += '  <div class="house-info-sub">Nueva mejora</div>';
+  html += '  <div class="house-perk-edit-top">';
+  html += '    <input type="text" id="housePerkNewIcon" class="house-perk-in-icon" maxlength="4" value="✨" aria-label="Icono">';
+  html += '    <input type="text" id="housePerkNewName" class="house-perk-in-name" maxlength="60" placeholder="Nombre" aria-label="Nombre">';
+  html += '  </div>';
+  html += '  <textarea id="housePerkNewDesc" class="house-perk-in-desc" rows="2" maxlength="300" placeholder="Descripción corta" aria-label="Descripción"></textarea>';
+  html += '  <div class="house-perk-edit-btns"><button class="house-perk-mini gold" data-action="house-perk-add">➕ Añadir</button></div>';
+  html += '</div>';
+  if(archived.length){
+    html += '<div class="house-info-sub">Archivadas</div>';
+    archived.forEach(function(p){
+      html += '<div class="house-perk-archived"><span>' + esc(p.icon || "") + ' ' + esc(p.name || "") + '</span>';
+      html += '<button class="house-perk-mini" data-action="house-perk-restore" data-perk-id="' + esc(p.id) + '">Recuperar</button></div>';
+    });
+  }
+  openHouseGmModal("✏️ Mejoras de la casa", html);
+}
+
+async function refreshHousePerksAfterChange(reopen){
+  if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
+    try { realtimeChannel.send({ type: "broadcast", event: "house_general_update", payload: {} }).catch(function(){}); } catch(e){}
+  }
+  var res = await supabaseClient.from("house_perks").select("*").eq("house_id", houseState.house.id).order("sort_order", { ascending: true });
+  if(!res.error && res.data) houseState.perks = res.data;
+  saveHouseLocalData();
+  if(houseState.active) renderHouseView();
+  if(reopen) reopen();
+}
+
+async function updateHousePerk(id, fields){
+  fields.updated_at = new Date().toISOString();
+  var res = await supabaseClient.from("house_perks").update(fields).eq("id", id).select();
+  if(res.error || !res.data || !res.data.length){
+    if(typeof showToast === "function") showToast("No se ha podido guardar la mejora.", "warning");
+    return false;
+  }
+  return true;
+}
+
+async function handleHousePerkAction(act, btn){
+  if(!canEditHousePerks()) return;
+  var perkId = btn.getAttribute("data-perk-id");
+  if(act === "open-house-perks-editor"){
+    openHousePerksEditor();
+  } else if(act === "house-perk-save"){
+    var box = btn.closest(".house-perk-edit");
+    var name = box.querySelector(".house-perk-in-name").value.trim();
+    if(!name){ if(typeof showToast === "function") showToast("Ponle un nombre a la mejora.", "warning"); return; }
+    if(await updateHousePerk(perkId, {
+      icon: box.querySelector(".house-perk-in-icon").value.trim() || "✨",
+      name: name,
+      description: box.querySelector(".house-perk-in-desc").value.trim()
+    })){
+      if(typeof showToast === "function") showToast("Mejora guardada.", "success");
+      await refreshHousePerksAfterChange(openHousePerksEditor);
+    }
+  } else if(act === "house-perk-move"){
+    var list = getActiveHousePerks().slice();
+    var idx = list.findIndex(function(p){ return p.id === perkId; });
+    var to = idx + parseInt(btn.getAttribute("data-dir"), 10);
+    if(idx < 0 || to < 0 || to >= list.length) return;
+    var moved = list.splice(idx, 1)[0];
+    list.splice(to, 0, moved);
+    for(var i = 0; i < list.length; i++){
+      if(list[i].sort_order !== i + 1) await updateHousePerk(list[i].id, { sort_order: i + 1 });
+    }
+    await refreshHousePerksAfterChange(openHousePerksEditor);
+  } else if(act === "house-perk-archive" || act === "house-perk-restore"){
+    var restore = act === "house-perk-restore";
+    var fields = { archived: !restore };
+    if(restore) fields.sort_order = getActiveHousePerks().length + 1;
+    if(await updateHousePerk(perkId, fields)) await refreshHousePerksAfterChange(openHousePerksEditor);
+  } else if(act === "house-perk-add"){
+    var newName = document.getElementById("housePerkNewName").value.trim();
+    if(!newName){ if(typeof showToast === "function") showToast("Ponle un nombre a la mejora.", "warning"); return; }
+    var maxOrder = (houseState.perks || []).reduce(function(m, p){ return Math.max(m, p.sort_order || 0); }, 0);
+    var ins = await supabaseClient.from("house_perks").insert({
+      house_id: houseState.house.id,
+      icon: document.getElementById("housePerkNewIcon").value.trim() || "✨",
+      name: newName,
+      description: document.getElementById("housePerkNewDesc").value.trim(),
+      sort_order: maxOrder + 1
+    }).select();
+    if(ins.error){
+      if(typeof showToast === "function") showToast("No se ha podido añadir la mejora.", "warning");
+      return;
+    }
+    await refreshHousePerksAfterChange(openHousePerksEditor);
+  } else if(act === "open-house-secrets"){
+    await fetchHouseSecrets();
+    openHouseSecretsPanel();
+  } else if(act === "house-secret-hp"){
+    var cur = document.getElementById("houseSecretHp");
+    var max = document.getElementById("houseSecretHpMax");
+    var target = btn.getAttribute("data-field") === "max" ? max : cur;
+    target.value = Math.max(0, (parseInt(target.value, 10) || 0) + parseInt(btn.getAttribute("data-delta"), 10));
+    await saveHouseSecretRow("house:" + houseState.house.id, readHouseSecretHouseForm(), false);
+  } else if(act === "house-secret-stat-add"){
+    var rows = btn.closest(".house-secret-perk").querySelector(".house-secret-stats");
+    rows.insertAdjacentHTML("beforeend", renderHouseSecretStatRow({ name: "", value: "" }));
+    var inputs = rows.querySelectorAll(".house-secret-stat-name");
+    if(inputs.length) inputs[inputs.length - 1].focus();
+  } else if(act === "house-secret-stat-remove"){
+    btn.closest(".house-secret-stat").remove();
+  } else if(act === "house-secrets-save"){
+    var ok = await saveHouseSecretRow("house:" + houseState.house.id, readHouseSecretHouseForm(), true);
+    var perkBoxes = document.querySelectorAll("#houseGmModalOverlay .house-secret-perk[data-perk-id]");
+    for(var k = 0; k < perkBoxes.length; k++){
+      var stats = [];
+      perkBoxes[k].querySelectorAll(".house-secret-stat").forEach(function(row){
+        var n = row.querySelector(".house-secret-stat-name").value.trim();
+        var v = row.querySelector(".house-secret-stat-value").value.trim();
+        if(n || v) stats.push({ name: n, value: v });
+      });
+      var data = { stats: stats, notes: perkBoxes[k].querySelector(".house-secret-perk-notes").value };
+      ok = (await saveHouseSecretRow("perk:" + perkBoxes[k].getAttribute("data-perk-id"), data, true)) && ok;
+    }
+    if(typeof showToast === "function") showToast(ok ? "Panel secreto guardado." : "No se ha podido guardar todo el panel secreto.", ok ? "success" : "warning");
+    if(ok) openHouseSecretsPanel();
+  }
+}
+
+function readHouseSecretHouseForm(){
+  return {
+    hp: parseInt(document.getElementById("houseSecretHp").value, 10) || 0,
+    hp_max: parseInt(document.getElementById("houseSecretHpMax").value, 10) || 0,
+    notes: document.getElementById("houseSecretNotes").value
+  };
+}
+
+async function saveHouseSecretRow(id, data, quiet){
+  var res = await supabaseClient.from("house_secrets").upsert({
+    id: id,
+    house_id: houseState.house.id,
+    data: data,
+    updated_at: new Date().toISOString()
+  }).select();
+  if(res.error || !res.data || !res.data.length){
+    if(!quiet && typeof showToast === "function") showToast("No se ha podido guardar el panel secreto.", "warning");
+    return false;
+  }
+  houseSecrets[id] = data;
+  return true;
+}
+
+function renderHouseSecretStatRow(s){
+  return '<div class="house-secret-stat">' +
+    '<input type="text" class="house-secret-stat-name" maxlength="40" placeholder="Estadística" value="' + esc(s.name || "") + '" aria-label="Estadística">' +
+    '<input type="text" class="house-secret-stat-value" maxlength="40" placeholder="Valor" value="' + esc(s.value || "") + '" aria-label="Valor">' +
+    '<button class="house-perk-mini" data-action="house-secret-stat-remove" aria-label="Quitar">✕</button></div>';
+}
+
+function openHouseSecretsPanel(){
+  var hs = houseSecrets["house:" + houseState.house.id] || {};
+  var html = '<div class="house-secret-note">Solo lo ves tú. Los jugadores no reciben nada de esto.</div>';
+  html += '<div class="house-secret-perk">';
+  html += '  <div class="house-perk-name">🏠 La casa</div>';
+  [["", "Vida", "houseSecretHp", hs.hp], ["max", "Vida máxima", "houseSecretHpMax", hs.hp_max]].forEach(function(f){
+    html += '  <div class="house-secret-hp-row"><span class="house-secret-hp-label">' + f[1] + '</span>';
+    html += '<button class="house-perk-mini" data-action="house-secret-hp" data-field="' + f[0] + '" data-delta="-1" aria-label="Restar">−</button>';
+    html += '<input type="number" id="' + f[2] + '" class="house-secret-hp-in" min="0" value="' + (parseInt(f[3], 10) || 0) + '" aria-label="' + f[1] + '">';
+    html += '<button class="house-perk-mini" data-action="house-secret-hp" data-field="' + f[0] + '" data-delta="1" aria-label="Sumar">+</button></div>';
+  });
+  html += '  <textarea id="houseSecretNotes" class="house-perk-in-desc" rows="3" placeholder="Notas del máster sobre la casa" aria-label="Notas de la casa">' + esc(hs.notes || "") + '</textarea>';
+  html += '</div>';
+  getActiveHousePerks().forEach(function(p){
+    var ps = houseSecrets["perk:" + p.id] || {};
+    html += '<div class="house-secret-perk" data-perk-id="' + esc(p.id) + '">';
+    html += '  <div class="house-perk-name">' + esc(p.icon || "") + ' ' + esc(p.name || "") + '</div>';
+    html += '  <div class="house-secret-stats">';
+    (Array.isArray(ps.stats) ? ps.stats : []).forEach(function(s){ html += renderHouseSecretStatRow(s); });
+    html += '  </div>';
+    html += '  <button class="house-perk-mini" data-action="house-secret-stat-add">➕ Estadística</button>';
+    html += '  <textarea class="house-perk-in-desc house-secret-perk-notes" rows="2" placeholder="Notas secretas" aria-label="Notas secretas">' + esc(ps.notes || "") + '</textarea>';
+    html += '</div>';
+  });
+  html += '<button class="house-perk-gm-btn gold" data-action="house-secrets-save">Guardar panel secreto</button>';
+  openHouseGmModal("🔒 Panel secreto", html);
+}
+
+var HOUSE_PERK_ACTIONS = ["open-house-perks-editor", "house-perk-save", "house-perk-move", "house-perk-archive", "house-perk-restore", "house-perk-add",
+  "open-house-secrets", "house-secret-hp", "house-secret-stat-add", "house-secret-stat-remove", "house-secrets-save"];
 
 // Misiones que el máster ha marcado como Casa en el apartado Misiones
 function getHouseQuests(){
@@ -5747,6 +6018,8 @@ function closeHouseModal(){
   if(o4) o4.remove();
   var o5 = document.getElementById("houseItemModalOverlay");
   if(o5) o5.remove();
+  var o6 = document.getElementById("houseGmModalOverlay");
+  if(o6) o6.remove();
 }
 
 async function saveHouseDescAction(){
@@ -5990,7 +6263,8 @@ function backFromHouseView(){
   if(typeof renderTab === "function") renderTab();
 }
 
-var HOUSE_GM_ONLY_ACTIONS = ["quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit"];
+var HOUSE_GM_ONLY_ACTIONS = ["open-house-perks-editor", "house-perk-save", "house-perk-move", "house-perk-archive", "house-perk-restore", "house-perk-add",
+  "open-house-secrets", "house-secret-hp", "house-secret-stat-add", "house-secret-stat-remove", "house-secrets-save", "quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit"];
 var HOUSE_ROOM_EDIT_ACTIONS = ["quick-rename-selected-room", "quick-step-room-size", "quick-toggle-texture-menu", "quick-toggle-color-menu", "quick-toggle-icon-menu", "nudge-room", "resize-room", "set-room-color", "open-edit-room-modal",
   "canva-insert-asset", "canva-rotate-item", "canva-duplicate-item", "canva-delete-item", "canva-change-w", "canva-change-h", "canva-nudge-item",
   "canva-size-view", "canva-nudge-view", "canva-relocate-item", "canva-undo", "canva-redo", "canva-open-catalog", "canva-rename-start", "canva-rename-save"];
@@ -6032,6 +6306,12 @@ document.addEventListener("click", function(e){
   if(act === "open-house-quest"){
     e.preventDefault();
     openHouseQuest(btn.getAttribute("data-quest-id"));
+    return;
+  }
+
+  if(HOUSE_PERK_ACTIONS.indexOf(act) !== -1){
+    e.preventDefault();
+    handleHousePerkAction(act, btn);
     return;
   }
 
