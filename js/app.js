@@ -41,15 +41,15 @@ function init(){
     updateLoadingProgress(60, "Preparando compendio...");
     var lv = document.querySelector(".loading-version");
     if(lv && typeof APP_VERSION !== "undefined") lv.textContent = "v" + APP_VERSION;
-    renderTopbar();
-    renderTabbar();
-    renderTab();
+    // No se pinta nada hasta saber si hay sesión (enterApp en supabase-client.js)
 
     function safeListen(id, ev, fn, opt){
       var el = document.getElementById(id);
       if(el && typeof el.addEventListener === "function") el.addEventListener(ev, fn, opt);
     }
 
+    safeListen("loginGate", "submit", handleLoginGateSubmit);
+    safeListen("loginGate", "click", handleLoginGateSubmit);
     safeListen("main", "click", handleClick);
     safeListen("main", "change", handleChange);
     safeListen("main", "input", handleChange);
@@ -281,7 +281,7 @@ function init(){
         flushPendingSync();
       } else if(document.visibilityState === "visible"){
         // Tras un rato en segundo plano el tiempo real puede haberse cortado: ficha activa al día
-        if(hiddenSince && Date.now() - hiddenSince > 20000 && typeof refreshCharFromServer === "function"){
+        if(hiddenSince && Date.now() - hiddenSince > 20000 && currentUser && typeof refreshCharFromServer === "function"){
           var curVis = activeChar();
           if(curVis && curVis.db_id) refreshCharFromServer(curVis.db_id);
         }
@@ -298,8 +298,6 @@ function init(){
     updateLoadingProgress(85, "Conectando con la partida...");
     initSupabase();
     setTimeout(function(){
-      if(typeof syncPlayerTicketsWithSupabase === "function") syncPlayerTicketsWithSupabase();
-      if(typeof syncAdminTicketsWithSupabase === "function" && typeof isGM === "function" && isGM()) syncAdminTicketsWithSupabase();
       if(typeof checkForAppUpdates === "function") checkForAppUpdates(false);
     }, 1500);
 

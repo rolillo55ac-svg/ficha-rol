@@ -1,5 +1,7 @@
 var activeCharChannel = null;
 var campaignMapChannel = null;
+var appLocked = true;
+var appStarted = false;
 
 function subscribeToActiveCharacter(charDbId){
   if(!supabaseClient) return;
@@ -78,7 +80,7 @@ function subscribeToCampaignMap(){
 }
 
 function initSupabase(){
-  if(!window.supabase) return;
+  if(!window.supabase){ checkSessionGate(); return; }
   try{
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: {
@@ -88,6 +90,109 @@ function initSupabase(){
       }
     });
     
+    checkSessionGate();
+
+    supabaseClient.auth.onAuthStateChange(function(e, session){
+      var prevUserId = currentUser ? currentUser.id : null;
+      currentUser = session ? session.user : null;
+      // Otra cuenta o sin sesión: fuera cualquier rol heredado hasta leer el perfil
+      if(!currentUser || currentUser.id !== prevUserId) resetSessionRole();
+      if(currentUser){
+        if(appLocked) enterApp(); else fetchUserProfile();
+      } else if(e === 'SIGNED_OUT' && !appLocked){
+        lockApp();
+      }
+    });
+  }catch(e){
+    console.error('Supabase error:', e);
+    checkSessionGate();
+  }
+}
+
+// Sin sesión no se pinta ni se pide nada: solo la pantalla de entrada.
+// Sin red pero con sesión guardada, se entra con lo que hay en caché.
+function checkSessionGate(){
+  if(!supabaseClient){
+    if(hasStoredSession()) enterApp(); else showLoginGate();
+    return;
+  }
+  supabaseClient.auth.getSession().then(function(res){
+    var session = res && res.data && res.data.session;
+    if(!appLocked) return;
+    if(session){
+      currentUser = session.user;
+      enterApp();
+    } else if(isOffline(res && res.error) && hasStoredSession()){
+      enterApp();
+    } else {
+      showLoginGate();
+    }
+  }).catch(function(e){
+    console.error('Supabase error:', e);
+    if(isOffline(e) && hasStoredSession()) enterApp(); else showLoginGate();
+  });
+}
+
+function isOffline(err){
+  if(typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+  return !!(err && (err.name === 'AuthRetryableFetchError' || /fetch|network/i.test(err.message || '')));
+}
+
+function hasStoredSession(){
+  try {
+    for(var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if(/^sb-.*-auth-token$/.test(k)){
+        var v = JSON.parse(localStorage.getItem(k) || 'null');
+        if(v && (v.refresh_token || (v.currentSession && v.currentSession.refresh_token))) return true;
+      }
+    }
+  } catch(e){}
+  return false;
+}
+
+function showLoginGate(){
+  appLocked = true;
+  document.body.classList.add('auth-locked');
+  var gate = document.getElementById('loginGate');
+  if(gate) gate.hidden = false;
+  if(typeof hideLoadingScreen === 'function') hideLoadingScreen();
+}
+
+function enterApp(){
+  var firstTime = !appStarted;
+  appLocked = false;
+  appStarted = true;
+  document.body.classList.remove('auth-locked');
+  var gate = document.getElementById('loginGate');
+  if(gate) gate.hidden = true;
+  renderTopbar();
+  renderTabbar();
+  renderTab();
+  if(firstTime) startRealtime();
+  if(currentUser) fetchUserProfile();
+  if(firstTime){
+    setTimeout(function(){
+      if(typeof syncPlayerTicketsWithSupabase === 'function') syncPlayerTicketsWithSupabase();
+      if(typeof syncAdminTicketsWithSupabase === 'function' && typeof isGM === 'function' && isGM()) syncAdminTicketsWithSupabase();
+    }, 1500);
+  }
+}
+
+// Al cerrar sesión se vacía la pantalla al momento y se recarga para no dejar datos ni canales en memoria
+function lockApp(){
+  if(typeof closeModals === 'function') try { closeModals(); } catch(e){}
+  ['topbar', 'tabbar', 'main'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.innerHTML = '';
+  });
+  showLoginGate();
+  setTimeout(function(){ location.reload(); }, 400);
+}
+
+function startRealtime(){
+  if(!supabaseClient) return;
+  try {
     if(!realtimeChannel){
       realtimeChannel = supabaseClient.channel('realtime_broadcasts', {
         config: { broadcast: { self: false } }
@@ -126,23 +231,6 @@ function initSupabase(){
 
     var cur = (typeof activeChar === 'function') ? activeChar() : null;
     if(cur && cur.db_id) subscribeToActiveCharacter(cur.db_id);
-
-    pullMapFromSupabase();
-    pullSharedDataFromSupabase();
-    pullAllFromSupabase();
-
-    supabaseClient.auth.getSession().then(function(res){
-      if(res.data && res.data.session){ currentUser = res.data.session.user; fetchUserProfile(); }
-      else { updateSyncBadge("synced"); }
-    }).catch(function(e){ console.error('Supabase error:', e); });
-
-    supabaseClient.auth.onAuthStateChange(function(e, session){
-      var prevUserId = currentUser ? currentUser.id : null;
-      currentUser = session ? session.user : null;
-      // Otra cuenta o sin sesión: fuera cualquier rol heredado hasta leer el perfil
-      if(!currentUser || currentUser.id !== prevUserId) resetSessionRole();
-      if(currentUser){ fetchUserProfile(); } else { updateSyncBadge("synced"); renderTopbar(); renderTab(); }
-    });
   }catch(e){ console.error('Supabase error:', e); }
 }
 

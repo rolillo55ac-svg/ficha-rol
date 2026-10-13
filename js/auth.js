@@ -164,6 +164,18 @@ async function supabaseLogout(){
   } catch(e) {
     console.error('Supabase error:', e);
   }
-  currentUser=null; resetSessionRole(); closeModals(); updateSyncBadge("local"); renderTopbar(); renderTabbar(); renderTab();
-  showToast("Sesión cerrada", "info");
+  currentUser=null; resetSessionRole();
+  if(typeof lockApp === "function" && appLocked === false) lockApp();
+}
+
+// Pantalla de entrada (sin sesión no se ve nada más)
+function handleLoginGateSubmit(e){
+  var signup = e.type === "click" && e.target.closest && e.target.closest("[data-gate=signup]");
+  if(e.type === "click" && !signup) return;
+  e.preventDefault();
+  var em = (document.getElementById("gateEmail").value || "").trim();
+  var pw = document.getElementById("gatePass").value || "";
+  if(!em || !pw){ showToast("Escribe tu email y tu contraseña", "warning"); return; }
+  if(!supabaseClient){ showToast("Sin conexión: no se puede entrar ahora", "error"); return; }
+  if(signup) supabaseSignup(em, pw); else supabaseLogin(em, pw);
 }
