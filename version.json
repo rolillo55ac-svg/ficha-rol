@@ -1,6 +1,6 @@
 {
-  "version": "1.4.45.0",
-  "build": "2026.10.14.20",
-  "updatedAt": "2026-10-14T20:00:00Z",
-  "changelog": "Si recargas justo después de un cambio en la ficha (veneno, piedras...) ya no se pierde: se sube al volver. Mejorar un buffo de La Casa ahora se guarda también en la nube."
+  "version": "1.4.46.0",
+  "build": "2026.10.14.21",
+  "updatedAt": "2026-10-14T21:00:00Z",
+  "changelog": "Aviso único en el navegador para instalar la web como app (va más fluida y no se recarga sin querer)."
 }
