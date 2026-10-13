@@ -9477,3 +9477,11 @@ button.alq-step { cursor: pointer; }
 .psn-pick { display: flex; flex-direction: column; align-items: flex-start; text-align: left; flex: 0 0 auto; }
 .psn-pick small { font-weight: 400; font-size: .78rem; color: var(--ink-dim); }
 .psn-ready b { color: var(--ink); }
+
+/* Aviso de conexión (solo aparece si se cortó el tiempo real o no hay red) */
+.conn-status-pill{
+  position:fixed;top:calc(env(safe-area-inset-top, 0px) + 6px);left:50%;transform:translateX(-50%);z-index:9500;
+  font-size:.75rem;font-family:var(--font-mono);padding:3px 10px;border-radius:20px;pointer-events:none;
+  background:rgba(20,16,10,0.92);border:1px solid var(--gold);color:var(--gold-light);white-space:nowrap;
+}
+.conn-status-pill.is-offline{border-color:#a94442;color:#f0a8a6;}
