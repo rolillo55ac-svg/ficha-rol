@@ -5,6 +5,12 @@ var PARTIDAS = [
     nombre: "Krysalis",
     url: "https://nwjbdevshaucnjrwebtb.supabase.co",
     anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53amJkZXZzaGF1Y25qcndlYnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwMzA4OTIsImV4cCI6MjEwMzYwNjg5Mn0.WUISbOthy-5hTZ69p5lydHxHP4ZfAM4nLFa13lKPoeY"
+  },
+  {
+    id: "partida2",
+    nombre: "Partida 2",
+    url: "https://teyxwlezzpongijlslty.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRleXh3bGV6enBvbmdpamxzbHR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MTg4NDMsImV4cCI6MjEwNzQ5NDg0M30.BslXL77ijWeuOTlAtvLr7_m-16mzz2Vr-Te5FPGIQq8"
   }
 ];
 
