@@ -2945,6 +2945,102 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 }
 .bg3-btn-submit-mod:hover { background: var(--gold-light); }
 
+/* Panel de tirada compacto: cabe entero en la pantalla sin scroll y los botones quedan siempre abajo */
+.bg3-chamber {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 28px);
+  max-height: calc(100dvh - 28px);
+  padding: clamp(12px, 2.4dvh, 22px) 14px clamp(10px, 2dvh, 20px);
+}
+.bg3-header { flex-shrink: 0; margin-bottom: clamp(6px, 1.2dvh, 12px); }
+.bg3-title { font-size: clamp(1.15rem, 3.2dvh, 1.45rem); padding: 0 30px; }
+.bg3-mode-bar { flex-shrink: 0; width: 100%; margin-bottom: clamp(4px, 1.2dvh, 14px); }
+.bg3-sanctuary { flex: 1 1 auto; min-height: 0; margin: 0 0 4px; }
+.bg3-astrolabe {
+  width: clamp(120px, 26dvh, 220px);
+  height: clamp(120px, 26dvh, 220px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+.bg3-dice-stage { min-height: 0; }
+.bg3-die-slot { width: clamp(72px, 15dvh, 130px); height: clamp(72px, 15dvh, 130px); }
+.bg3-die-wrap, .bg3-die-canvas { width: clamp(66px, 14dvh, 120px); height: clamp(66px, 14dvh, 120px); }
+.bg3-prompt-wrap { margin-top: clamp(2px, 1dvh, 8px); }
+.bg3-prompt-banner { padding: 6px 14px; font-size: 0.8rem; }
+.bg3-verdict-plate {
+  flex-shrink: 0;
+  width: 100%;
+  margin: 2px auto 6px;
+  padding: clamp(6px, 1.2dvh, 14px) 10px clamp(6px, 1dvh, 12px);
+}
+.bg3-verdict-hero { margin-bottom: 2px; }
+.bg3-verdict-score { font-size: clamp(2rem, 6.5dvh, 3.8rem); }
+.bg3-verdict-badge { font-size: 0.9rem; padding: 2px 12px; margin-bottom: clamp(4px, 1dvh, 10px); }
+.bg3-verdict-breakdown .v-chip { padding: 3px 7px; font-size: 0.8rem; }
+.bg3-verdict-breakdown .v-chip-label { font-size: 0.68rem; }
+.bg3-shelf { flex-shrink: 0; margin-top: 2px; }
+.bg3-mod-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+  min-height: 0;
+  max-height: 34dvh;
+  overflow-y: auto;
+  margin-bottom: 4px;
+  padding-top: 5px;
+}
+.bg3-card {
+  width: auto;
+  height: auto;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-areas: "val lbl" "icon lbl";
+  align-items: center;
+  column-gap: 6px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  text-align: left;
+}
+.bg3-card-val { grid-area: val; font-size: 1rem; text-align: center; }
+.bg3-card-icon { grid-area: icon; width: 30px; height: 18px; font-size: 0.95rem; }
+.bg3-card-icon svg { width: 18px; height: 18px; }
+.bg3-card-lbl {
+  grid-area: lbl;
+  max-width: none;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  text-align: left;
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+.bg3-total-divider { margin: 2px auto 6px; }
+.bg3-actions-bar { flex-shrink: 0; }
+.bg3-btn-secondary, .bg3-btn-primary { min-height: 44px; }
+
+/* En horizontal: el dado a la izquierda y el resultado, los bonos y los botones a la derecha */
+@media (orientation: landscape) and (max-height: 520px) {
+  .bg3-chamber {
+    max-width: min(860px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: 16px;
+    align-content: start;
+  }
+  .bg3-header { grid-column: 1; grid-row: 1; }
+  .bg3-mode-bar { grid-column: 1; grid-row: 2; width: 100%; }
+  .bg3-sanctuary { grid-column: 1; grid-row: 3; }
+  .bg3-verdict-plate { grid-column: 2; grid-row: 1 / 3; align-self: start; }
+  .bg3-shelf { grid-column: 2; grid-row: 3; align-self: end; }
+  .bg3-mod-cards { max-height: 40dvh; }
+  .bg3-die-slot { width: clamp(72px, 27dvh, 130px); height: clamp(72px, 27dvh, 130px); }
+  .bg3-die-wrap, .bg3-die-canvas { width: clamp(66px, 25dvh, 120px); height: clamp(66px, 25dvh, 120px); }
+}
+
 /* Tarjetas de Atributo Rollables */
 .attr-card.rollable {
   cursor: pointer;
