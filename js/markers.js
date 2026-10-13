@@ -242,56 +242,60 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
   document.getElementById("pinModalOverlay").classList.remove("hidden");
 }
 
+// Un solo marcador por RPC (save_map_marker / delete_map_marker): el jugador puede con los suyos y el máster con todos.
+// Devuelve true si la nube lo ha guardado.
 async function pushSingleMarker(marker, mapId){
-  if(!supabaseClient) return;
+  if(!supabaseClient) return false;
   try{
-    var isValidUUID = function(s){ return typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s); };
-    var creator = (currentUser && isValidUUID(currentUser.id)) ? currentUser.id : (isValidUUID(marker.created_by) ? marker.created_by : null);
-    
-    var typeDef = getMarkerTypeDef(marker.kind);
-    var baseKind = typeDef ? typeDef.baseKind : "Punto de Interés";
-    var pinColor = marker.color || typeDef.color || "#2A9D8F";
-    var encodedNotes = encodePinNotesWithMeta(marker.notes, marker.kind, marker.icon || typeDef.icon, pinColor);
-
     var payload = {
       id: marker.id,
-      map_id: mapId,
-      campaign_id: 'c0000000-0000-0000-0000-000000000001',
       x: Number(marker.x),
       y: Number(marker.y),
       name: marker.name,
-      kind: baseKind,
-      notes: encodedNotes,
-      created_by: creator,
-      updated_at: new Date().toISOString()
+      kind: marker.kind,
+      icon: marker.icon || null,
+      color: marker.color || null,
+      notes: marker.notes || "",
+      created_by: marker.created_by || null
     };
-    var res = await supabaseClient.from('map_markers').upsert(payload);
-    if(res.error){
-      console.warn("Granular map_markers fallback:", res.error);
-      pushMapsData(true);
-    } else {
-      updateSyncBadge("synced");
-    }
+    var res = await supabaseClient.rpc('save_map_marker', { p_map_id: mapId, p_marker: payload });
+    if(res.error){ console.warn("save_map_marker:", res.error); return false; }
+    if(res.data && res.data.created_by) marker.created_by = res.data.created_by;
+    updateSyncBadge("synced");
+    return true;
   }catch(e){
-    console.warn("Granular pushSingleMarker fallback:", e);
-    pushMapsData(true);
+    console.warn("pushSingleMarker:", e);
+    return false;
   }
 }
 
 async function deleteSingleMarker(markerId, mapId){
-  if(!supabaseClient) return;
+  if(!supabaseClient) return false;
   try{
-    var res = await supabaseClient.from('map_markers').delete().eq('id', markerId);
-    if(res.error){
-      console.warn("Granular map_markers delete fallback:", res.error);
-      pushMapsData(true);
-    } else {
-      updateSyncBadge("synced");
-    }
+    var res = await supabaseClient.rpc('delete_map_marker', { p_map_id: mapId, p_marker_id: markerId });
+    if(res.error){ console.warn("delete_map_marker:", res.error); return false; }
+    updateSyncBadge("synced");
+    return true;
   }catch(e){
-    console.warn("Granular deleteSingleMarker fallback:", e);
-    pushMapsData(true);
+    console.warn("deleteSingleMarker:", e);
+    return false;
   }
+}
+
+// Igual que la base: el máster puede con todos y el jugador solo con los que creó él
+function canEditMarker(marker){
+  if(!currentUser || isGM()) return true;
+  return !!marker && marker.created_by === currentUser.id;
+}
+
+// Resultado del guardado de un marcador del mapa de campaña
+function markerCloudToast(ok, msg, type){
+  if(ok){ showToast(msg, type); return; }
+  if(currentUser && !isGM()){
+    showToast(msg + " solo en este dispositivo: no se ha podido guardar en la nube", "warning");
+    return;
+  }
+  notifyCloudSaveFailed();
 }
 
 // Los jugadores no pueden guardar mapas en la nube (RLS de campaign_map): avisar en vez de dar por guardado
@@ -440,6 +444,7 @@ function pinModalClick(e){
     var curM = (state.maps || []).find(function(m){ return m.id === ctxId || m.id === state.activeMapId; });
     if(curM){
       var existing = (curM.markers||[]).find(function(p){ return p.id === pid; });
+      if(existing && !canEditMarker(existing)){ showToast("Solo puedes cambiar tus propios marcadores", "warning"); return; }
       var pData = existing || { id: pid, x: parseFloat(btn.getAttribute("data-x"))||50, y: parseFloat(btn.getAttribute("data-y"))||50 };
       
       pData.name = document.getElementById("pinInputName").value.trim() || "Punto de Interés";
@@ -456,11 +461,17 @@ function pinModalClick(e){
       saveState(true);
       closeModals();
       renderTab();
-      pinChangeToast("Marcador guardado", "success");
-      pushSingleMarker(pData, curM.id);
-      pushMapsData(true);
+      pushSingleMarker(pData, curM.id).then(function(ok){
+        saveState(true);
+        markerCloudToast(ok, "Marcador guardado", "success");
+      });
       return;
     }
+    // El mapa ya no existe (cambió de id o lo borraron mientras estaba abierta la ventana)
+    closeModals();
+    renderTab();
+    showToast("No se ha guardado: ese mapa ya no existe. Vuelve a abrirlo y prueba otra vez.", "warning");
+    return;
   }
 
   if(action==="del-pin"){
@@ -493,14 +504,20 @@ function pinModalClick(e){
 
     var curMD = (state.maps || []).find(function(m){ return m.id === ctxIdD || m.id === state.activeMapId; });
     if(curMD){
+      var delMarker = (curMD.markers||[]).find(function(p){ return p.id === delPid; });
+      if(delMarker && !canEditMarker(delMarker)){ showToast("Solo puedes quitar tus propios marcadores", "warning"); return; }
       curMD.markers = (curMD.markers||[]).filter(function(p){ return p.id !== delPid; });
       saveState(true);
       closeModals();
       renderTab();
-      pinChangeToast("Marcador eliminado", "info");
-      deleteSingleMarker(delPid, curMD.id);
-      pushMapsData(true);
+      deleteSingleMarker(delPid, curMD.id).then(function(ok){
+        markerCloudToast(ok, "Marcador eliminado", "info");
+      });
       return;
     }
+    closeModals();
+    renderTab();
+    showToast("No se ha quitado: ese mapa ya no existe.", "warning");
+    return;
   }
 }
