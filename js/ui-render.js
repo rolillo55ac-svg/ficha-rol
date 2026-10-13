@@ -2280,161 +2280,409 @@ function serializeSummonRolls(items){
   }).join(", ");
 }
 
+// Rasgos como lista: si aún no hay rasgosList, se sacan del texto viejo (una línea por rasgo), que se conserva tal cual
+function getSummonTraitList(s){
+  if(Array.isArray(s.rasgosList)) return s.rasgosList.slice();
+  var txt = splitSummonHabilidades(s).rasgos || "";
+  return String(txt).split(/\n+/).map(function(l){ return l.replace(/^\s*[-•*·]+\s*/, "").trim(); }).filter(Boolean);
+}
+
+// Vida: "vida" es el máximo; "vidaActual" la que le queda (si no existe, está entera)
+function getSummonHp(s){
+  var max = num(s.vida, 0);
+  var cur = (s.vidaActual === undefined || s.vidaActual === null || s.vidaActual === "") ? max : num(s.vidaActual, max);
+  return { cur: Math.max(0, Math.min(max, cur)), max: max };
+}
+
+function isSummonCombatRoll(label){
+  var l = String(label || "").toLowerCase();
+  return /mel[eé]|ataque|mordisco|garra|picotazo|esquiv|evasi|da[ñn]o|defens|bloque|embest|zarpazo|disparo|punter/.test(l);
+}
+
+// Entrenamientos de la pestaña Entrenamiento enlazados a este familiar
+function getSummonTrainings(c, s){
+  return (c.trainings || []).filter(function(t){ return t.linkedId === s.id || t.linkedId === "summon:" + s.id; });
+}
+
+function getActiveSummon(c){
+  var list = c.summons || [];
+  var map = state._summonActive || {};
+  return list.find(function(x){ return x.id === map[c.id]; }) || list[0] || null;
+}
+
 function tplInvocaciones(c){
   c.summons = c.summons || [];
   var canEdit = canEditChar(c);
+  var editing = !!(state._summonEdit && canEdit);
+  var active = getActiveSummon(c);
   var html = '';
+
   if(!canEdit && currentUser){
-    html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni gestionar invocaciones en esta ficha.</span>'+
+    html += '<div class="spectator-banner">' +
+      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni gestionar invocaciones en esta ficha.</span>' +
     '</div>';
   }
-  html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Invocaciones y Familiares</span></div>';
 
-  if((c.summons||[]).length === 0){
-    html += '<div style="font-size:0.82rem;color:var(--ink-faint);text-align:center;padding:16px 8px;font-style:italic;">No hay invocaciones ni familiares registrados.</div>';
+  html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">';
+  html += '<div class="section-title">';
+  html += '<span>Invocaciones y familiares</span>';
+  if(canEdit && c.summons.length > 0){
+    html += '<button type="button" class="btn-compact" data-action="toggle-summon-edit">' + (editing ? '✓ Listo' : '✎ Editar') + '</button>';
+  }
+  html += '</div>';
+
+  if(c.summons.length === 0){
+    html += '<div class="summon-empty">No hay invocaciones ni familiares registrados.</div>';
+    if(canEdit){
+      html += '<button type="button" class="btn-compact summon-btn-add-initial" data-action="add-summon">+ Nuevo</button>';
+    }
+    html += '</div>';
+    return html;
   }
 
-  (c.summons||[]).forEach(function(s){
-    var split = splitSummonHabilidades(s);
-    var tiradasVal = split.tiradas;
-    var rasgosVal = split.rasgos;
-    var imgStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
-    var isEditingSkills = !!(state._summonEditingSkills && state._summonEditingSkills[s.id]);
+  html += '<div class="summon-tabs" role="tablist">';
+  c.summons.forEach(function(s){
+    var isAct = active && (s.id === active.id);
+    var miniStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
+    html += '<button type="button" class="summon-tab" role="tab" aria-selected="' + (isAct ? 'true' : 'false') + '" data-action="select-summon" data-id="' + s.id + '">';
+    html += '<span class="summon-tab-mini"' + miniStyle + '>' + (s.image ? '' : '🐾') + '</span>';
+    html += '<span class="summon-tab-name">' + esc(s.name || 'Sin nombre') + '</span>';
+    html += '</button>';
+  });
+  if(canEdit){
+    html += '<button type="button" class="summon-tab summon-tab-add" data-action="add-summon">+ Nuevo</button>';
+  }
+  html += '</div>';
 
-    var rollPills = getSummonRollList(tiradasVal);
-    if(s.dano && /(\d*d\d+)/i.test(s.dano)){
-      var hasDano = rollPills.some(function(it){ return it.label.toLowerCase().includes("daño") || it.label.toLowerCase().includes("dano"); });
-      if(!hasDano){
-        rollPills.push({
-          raw: "Daño " + s.dano,
-          label: "Daño",
-          formula: s.dano,
-          icon: "🩸"
-        });
-      }
+  if(!active){
+    html += '</div>';
+    return html;
+  }
+
+  var s = active;
+  var imgStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
+
+  html += '<div class="creature-card summon-card">';
+
+  // 1. Cabecera
+  html += '<div class="summon-header">';
+  if(canEdit){
+    html += '<button type="button" class="summon-avatar-btn"' + imgStyle + ' data-action="summon-photo-menu" data-id="' + s.id + '" aria-label="Cambiar foto">' +
+      (s.image ? '' : '🐾') +
+      '<span class="summon-cam-badge">📷</span>' +
+    '</button>';
+  } else {
+    html += '<div class="summon-avatar-img"' + imgStyle + '>' +
+      (s.image ? '' : '🐾') +
+    '</div>';
+  }
+
+  html += '<div class="summon-header-info">';
+  if(editing){
+    html += '<input type="text" class="summon-name-input" data-bind="summons.' + s.id + '.name" value="' + esc(s.name || '') + '" placeholder="Nombre">' +
+      '<input type="text" class="summon-kind-input" data-bind="summons.' + s.id + '.tipo" value="' + esc(s.tipo || '') + '" placeholder="Tipo (ej: Hurón)">';
+  } else {
+    var tipoText = s.tipo || ('Familiar de ' + (c.name || ''));
+    html += '<h2 class="summon-name-title">' + esc(s.name || 'Sin nombre') + '</h2>' +
+      '<div class="summon-kind-title">' + esc(tipoText) + '</div>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // 2. Vida
+  var hp = getSummonHp(s);
+  var hpPct = hp.max > 0 ? Math.min(100, Math.max(0, Math.round((hp.cur / hp.max) * 100))) : 0;
+  html += '<div class="summon-hp-wrap">' +
+    '<div class="summon-hp-header">' +
+      '<span class="summon-hp-label">Vida</span>' +
+      '<span class="summon-hp-values">' + hp.cur + ' / ' + hp.max + '</span>' +
+    '</div>' +
+    '<div class="summon-hp-bar"><i style="width:' + hpPct + '%;"></i></div>';
+  if(canEdit){
+    html += '<div class="summon-hp-grid">' +
+      '<button type="button" class="btn-compact summon-hp-btn" data-action="summon-hp" data-id="' + s.id + '" data-delta="-5">−5</button>' +
+      '<button type="button" class="btn-compact summon-hp-btn" data-action="summon-hp" data-id="' + s.id + '" data-delta="-1">−1</button>' +
+      '<button type="button" class="btn-compact summon-hp-btn" data-action="summon-hp" data-id="' + s.id + '" data-delta="1">+1</button>' +
+      '<button type="button" class="btn-compact summon-hp-btn" data-action="summon-hp" data-id="' + s.id + '" data-delta="5">+5</button>' +
+    '</div>';
+  }
+  html += '</div>';
+
+  // 3. Estadísticas
+  var movN = s.casillasMovimiento || (s.movilidad ? (s.movilidad.match(/\d+/)?s.movilidad.match(/\d+/)[0]:'6') : '6');
+  if(editing){
+    html += '<div class="creature-grid summon-edit-grid">' +
+      creatureField("Vida máx.", "summons." + s.id + ".vida", s.vida, false) +
+      creatureField("Defensa", "summons." + s.id + ".defensa", s.defensa, false) +
+      creatureField("Absorción", "summons." + s.id + ".absorcion", s.absorcion, false) +
+      creatureField("Daño", "summons." + s.id + ".dano", s.dano, false) +
+      creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia, false) +
+      '<div class="creature-field beast-mobility-cell">' +
+        '<label>Movilidad (Casillas)</label>' +
+        '<button type="button" class="beast-mov-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">' +
+          '<span class="beast-mov-label">🏃 <strong>' + esc(movN) + '</strong> casillas</span>' +
+          (s.movilidad && s.movilidad.includes('(') ? (' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>') : '') +
+          '<span class="beast-mov-chevron">▾</span>' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  } else {
+    html += '<div class="summon-chips-row">';
+    if(s.defensa !== "" && s.defensa !== undefined && s.defensa !== null){
+      html += '<span class="summon-chip">🛡️ Def <b>' + esc(s.defensa) + '</b></span>';
+    }
+    if(s.absorcion !== "" && s.absorcion !== undefined && s.absorcion !== null){
+      html += '<span class="summon-chip">🧱 Abs <b>' + esc(s.absorcion) + '</b></span>';
+    }
+    if(s.dano !== "" && s.dano !== undefined && s.dano !== null){
+      html += '<span class="summon-chip">🗡️ <b>' + esc(s.dano) + '</b></span>';
+    }
+    if(canEdit){
+      html += '<button type="button" class="summon-chip summon-chip-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">🏃 <b>' + esc(movN) + '</b> <small>casillas</small></button>';
+    } else {
+      html += '<span class="summon-chip">🏃 <b>' + esc(movN) + '</b> <small>casillas</small></span>';
+    }
+    if(s.inteligencia !== "" && s.inteligencia !== undefined && s.inteligencia !== null){
+      html += '<span class="summon-chip">🧠 Int <b>' + esc(s.inteligencia) + '</b></span>';
+    }
+    html += '</div>';
+  }
+
+  // 4. Bloque Tiradas
+  var split = splitSummonHabilidades(s);
+  var rollList = getSummonRollList(split.tiradas);
+  var combatRolls = [];
+  var skillRolls = [];
+
+  rollList.forEach(function(rp, idx){
+    var entry = { item: rp, originalIndex: idx };
+    if(isSummonCombatRoll(rp.label)){
+      combatRolls.push(entry);
+    } else {
+      skillRolls.push(entry);
+    }
+  });
+
+  if(!editing && s.dano && /(\d*d\d+)/i.test(s.dano)){
+    var hasDano = rollList.some(function(rp){
+      var lbl = rp.label.toLowerCase();
+      return lbl.indexOf("daño") !== -1 || lbl.indexOf("dano") !== -1;
+    });
+    if(!hasDano){
+      combatRolls.push({
+        item: { raw: "Daño " + s.dano, label: "Daño", formula: s.dano, icon: "🩸" },
+        originalIndex: -1
+      });
+    }
+  }
+
+  html += '<div class="summon-block summon-rolls-block">' +
+    '<div class="summon-block-header">' +
+      '<span class="summon-block-title">⚔️ Tiradas</span>' +
+      (editing ? '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '">+ Añadir</button>' : '') +
+    '</div>';
+
+  if(combatRolls.length === 0 && skillRolls.length === 0){
+    html += '<div class="summon-empty-text">Sin tiradas registradas.</div>';
+  } else {
+    if(combatRolls.length > 0){
+      html += '<div class="summon-group-label">Combate</div>';
+      html += '<div class="summon-rolls-grid">';
+      combatRolls.forEach(function(r){
+        var it = r.item;
+        if(editing){
+          html += '<div class="summon-roll-box-edit">' +
+            '<input type="text" class="summon-skill-input-name" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.label) + '" placeholder="Nombre">' +
+            '<input type="text" class="summon-skill-input-formula" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.formula) + '" placeholder="Fórmula">' +
+            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">✕</button>' +
+          '</div>';
+        } else {
+          var fStr = it.formula || it.raw;
+          html += '<button type="button" class="summon-roll-btn" data-action="roll-summon-action" data-summon-name="' + esc(s.name || 'Invocación') + '" data-action-name="' + esc(it.label) + '" data-formula="' + esc(fStr) + '">' +
+            '<span class="summon-roll-name">' + esc(it.label) + '</span>' +
+            (it.formula ? ('<span class="pill-formula">' + esc(it.formula) + '</span>') : '') +
+          '</button>';
+        }
+      });
+      html += '</div>';
     }
 
-    var skillsContentHtml = '';
-    if(isEditingSkills && canEdit){
-      skillsContentHtml = '<div class="summon-skills-editor-table">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(176,141,87,0.2);">' +
-          '<span style="font-size:0.72rem;color:var(--gold-light);font-weight:700;">Edita el nombre o bono de cada tirada:</span>' +
-          '<button type="button" class="btn-compact" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" style="padding:2px 8px;font-size:0.68rem;">✕ Cerrar</button>' +
-        '</div>' +
-        (rollPills.length > 0 ? rollPills.map(function(rp, idx){
-          return '<div class="summon-skill-edit-row">' +
-            '<span class="summon-skill-row-icon">' + rp.icon + '</span>' +
-            '<input type="text" class="summon-skill-input-name" placeholder="Nombre (ej: Melé)" value="' + esc(rp.label) + '" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + idx + '">' +
-            '<input type="text" class="summon-skill-input-formula" placeholder="Fórmula (ej: 8+1d10)" value="' + esc(rp.formula) + '" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + idx + '">' +
-            '<button type="button" class="row-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + idx + '" title="Eliminar ' + esc(rp.label) + '">✕</button>' +
+    if(skillRolls.length > 0){
+      html += '<div class="summon-group-label">Habilidades</div>';
+      html += '<div class="summon-rolls-grid">';
+      skillRolls.forEach(function(r){
+        var it = r.item;
+        if(editing){
+          html += '<div class="summon-roll-box-edit">' +
+            '<input type="text" class="summon-skill-input-name" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.label) + '" placeholder="Nombre">' +
+            '<input type="text" class="summon-skill-input-formula" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.formula) + '" placeholder="Fórmula">' +
+            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">✕</button>' +
           '</div>';
-        }).join('') : '<div style="font-size:0.75rem;color:var(--ink-faint);padding:6px 0;font-style:italic;">No hay tiradas todavía. Pulsa "+ Añadir tirada" para crear una.</div>') +
-        '<div class="summon-skills-editor-actions" style="display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap;">' +
-          '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '">+ Añadir tirada</button>' +
-          '<button type="button" class="btn-solid-gold" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" style="padding:6px 14px;font-size:0.75rem;">✓ Guardar y Ver Botones</button>' +
+        } else {
+          var fStr = it.formula || it.raw;
+          html += '<button type="button" class="summon-roll-btn" data-action="roll-summon-action" data-summon-name="' + esc(s.name || 'Invocación') + '" data-action-name="' + esc(it.label) + '" data-formula="' + esc(fStr) + '">' +
+            '<span class="summon-roll-name">' + esc(it.label) + '</span>' +
+            (it.formula ? ('<span class="pill-formula">' + esc(it.formula) + '</span>') : '') +
+          '</button>';
+        }
+      });
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+
+  // 5. Bloque Rasgos y pasivas
+  var traits = getSummonTraitList(s);
+  html += '<div class="summon-block summon-traits-block">' +
+    '<div class="summon-block-header">' +
+      '<span class="summon-block-title">Rasgos y pasivas</span>' +
+    '</div>';
+
+  if(traits.length === 0){
+    html += '<div class="summon-empty-text">Sin rasgos registrados.</div>';
+  } else {
+    html += '<ul class="summon-list">';
+    traits.forEach(function(t, tIdx){
+      html += '<li>' +
+        '<span class="summon-list-text">' + esc(t) + '</span>' +
+        (editing ? ('<button type="button" class="row-del" data-action="del-summon-trait" data-id="' + s.id + '" data-index="' + tIdx + '" aria-label="Quitar">✕</button>') : '') +
+      '</li>';
+    });
+    html += '</ul>';
+  }
+
+  if(editing){
+    html += '<div class="summon-add-row">' +
+      '<input type="text" id="summonNewTrait-' + s.id + '" placeholder="Nuevo rasgo">' +
+      '<button type="button" class="btn-compact" data-action="add-summon-trait" data-id="' + s.id + '">Añadir</button>' +
+    '</div>';
+  }
+  html += '</div>';
+
+  // 6. Bloque Aprendizaje
+  var learnedList = Array.isArray(s.aprendido) ? s.aprendido : [];
+  var trainingsList = getSummonTrainings(c, s);
+
+  html += '<div class="summon-block summon-learned-block">' +
+    '<div class="summon-block-header">' +
+      '<span class="summon-block-title">Aprendizaje</span>' +
+    '</div>' +
+    '<div class="summon-group-label">Aprendido</div>';
+
+  if(learnedList.length === 0){
+    html += '<div class="summon-empty-text">Todavía no ha aprendido nada.</div>';
+  } else {
+    html += '<ul class="summon-list">';
+    learnedList.forEach(function(l, lIdx){
+      var lId = (l && l.id) ? l.id : lIdx;
+      var lTxt = (l && l.texto) ? l.texto : (Array.isArray(l) ? l[0] : String(l || ''));
+      var lDia = (l && l.dia !== undefined && l.dia !== null && l.dia !== '') ? l.dia : (Array.isArray(l) ? l[1] : null);
+      var lPor = (l && l.por) ? l.por : (Array.isArray(l) ? l[2] : '');
+      var diaText = '';
+      if(lDia !== null && lDia !== undefined && lDia !== ''){
+        diaText = String(lDia).toLowerCase().indexOf('d') === 0 ? String(lDia) : ('Día ' + lDia);
+      }
+
+      html += '<li>' +
+        '<div class="summon-list-body">' +
+          '<div class="summon-list-text">' + esc(lTxt) + '</div>' +
+          (lPor ? ('<div class="summon-list-by">apuntado por ' + esc(lPor) + '</div>') : '') +
+        '</div>' +
+        (diaText ? ('<span class="summon-list-dia">' + esc(diaText) + '</span>') : '') +
+        (canEdit ? ('<button type="button" class="row-del" data-action="del-summon-learned" data-id="' + s.id + '" data-lid="' + esc(lId) + '" aria-label="Quitar">✕</button>') : '') +
+      '</li>';
+    });
+    html += '</ul>';
+  }
+
+  if(canEdit){
+    html += '<div class="summon-add-row">' +
+      '<input type="text" id="summonNewLearn-' + s.id + '" placeholder="Qué ha aprendido…">' +
+      '<button type="button" class="btn-solid-gold" data-action="add-summon-learned" data-id="' + s.id + '">Apuntar</button>' +
+    '</div>';
+  }
+
+  html += '<div class="summon-group-label summon-group-train">Entrenando</div>';
+  if(trainingsList.length === 0){
+    html += '<div class="summon-empty-text">Sin entrenamientos. Se crean en la pestaña Entrenamiento.</div>';
+  } else {
+    trainingsList.forEach(function(t){
+      var pts = num(t.points, 0);
+      var sides = t.sides || (t.type === "new" ? 20 : 10);
+      var barPct = 0;
+      var metaText = '';
+      if(isGM()){
+        var goal = num(t.targetGoal, 100);
+        barPct = Math.min(100, Math.max(0, Math.round((pts / goal) * 100)));
+        metaText = pts + ' / ' + goal + ' puntos · tirada d' + sides;
+      } else {
+        barPct = Math.min(100, Math.max(8, pts * 2));
+        metaText = pts + ' puntos · tirada d' + sides;
+      }
+
+      html += '<div class="summon-train-card">' +
+        '<div class="summon-train-top">' +
+          '<b>' + esc(t.name || 'Entrenamiento') + '</b>' +
+          (canEdit ? ('<button type="button" class="btn-compact" data-action="roll-training" data-id="' + t.id + '">🎲 Entrenar</button>') : '') +
+        '</div>' +
+        '<div class="summon-train-bar"><i style="width:' + barPct + '%;"></i></div>' +
+        '<div class="summon-train-meta">' + metaText + '</div>' +
+      '</div>';
+    });
+  }
+  html += '</div>';
+
+  // 7. Notas
+  if(editing){
+    html += '<div class="summon-block summon-notes-block">' +
+      '<div class="summon-block-header">' +
+        '<span class="summon-block-title">Notas</span>' +
+      '</div>' +
+      '<div class="summon-notes-box">' +
+        '<textarea class="summon-notes-textarea" placeholder="Notas sobre el familiar..." data-bind="summons.' + s.id + '.notas">' + esc(s.notas || '') + '</textarea>' +
+      '</div>' +
+    '</div>';
+  } else if(s.notas && s.notas.trim()){
+    html += '<div class="summon-block summon-notes-block">' +
+      '<div class="summon-block-header">' +
+        '<span class="summon-block-title">Notas</span>' +
+      '</div>' +
+      '<div class="summon-notes-box">' +
+        '<div class="summon-notes-text">' + esc(s.notas) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // 8. Borrar familiar (solo en modo Editar)
+  if(editing){
+    var delName = s.name || 'este familiar';
+    if(state._summonConfirmDel === s.id){
+      html += '<div class="summon-confirm-del-box">' +
+        '<div class="summon-confirm-del-text">¿Borrar a ' + esc(delName) + '? No se puede deshacer.</div>' +
+        '<div class="summon-confirm-del-actions">' +
+          '<button type="button" class="btn-compact summon-btn-danger" data-action="del-summon" data-id="' + s.id + '">Sí, borrar</button>' +
+          '<button type="button" class="btn-compact" data-action="cancel-del-summon">Cancelar</button>' +
         '</div>' +
       '</div>';
     } else {
-      var pillsHtml = '';
-      if(rollPills.length > 0){
-        pillsHtml = rollPills.map(function(rp, idx){
-          var actName = rp.label;
-          var fStr = rp.formula || rp.raw;
-          return '<div class="summon-roll-pill" title="' + esc(actName) + ' (' + esc(fStr) + ')">' +
-            '<button type="button" class="pill-roll-act" data-action="roll-summon-action" data-summon-name="' + esc(s.name || 'Invocación') + '" data-action-name="' + esc(actName) + '" data-formula="' + esc(fStr) + '">' +
-              '<span class="pill-icon">' + rp.icon + '</span>' +
-              '<span class="pill-label">' + esc(actName) + '</span>' +
-              (rp.formula ? ('<span class="pill-formula">' + esc(rp.formula) + '</span>') : '') +
-            '</button>' +
-            (canEdit ? ('<button type="button" class="pill-edit-act" data-action="edit-summon-roll" data-summon-id="' + s.id + '" data-action-name="' + esc(actName) + '" data-formula="' + esc(rp.formula || fStr) + '" data-index="' + idx + '" title="Modificar bono de ' + esc(actName) + '">✏️</button>') : '') +
-          '</div>';
-        }).join('');
-      } else {
-        pillsHtml = '<span style="font-size:0.75rem;color:var(--ink-faint);font-style:italic;">' + (canEdit ? 'Sin tiradas configuradas. Pulsa [+ Añadir] para crearlas.' : 'Sin tiradas registradas.') + '</span>';
-      }
-      skillsContentHtml = '<div class="summon-pills-wrap">' + pillsHtml + '</div>';
+      html += '<button type="button" class="btn-compact summon-btn-danger" data-action="ask-del-summon" data-id="' + s.id + '">Borrar a ' + esc(delName) + '</button>';
     }
-
-    html += '<div class="creature-card summon-card">' +
-      '<div class="summon-card-top">' +
-        '<div class="summon-profile-box">' +
-          '<div class="summon-avatar-img"' + imgStyle + ' title="' + esc(s.name || 'Invocación') + '">' + (s.image ? '' : '🐾') + '</div>' +
-          (canEdit ? ('<div class="summon-img-actions">' +
-            '<button class="btn-compact" data-action="upload-summon-img" data-id="' + s.id + '" title="Subir foto desde archivo">Foto</button>' +
-            '<button class="btn-compact" data-action="url-summon-img" data-id="' + s.id + '" title="Pegar URL de foto">URL</button>' +
-            (s.image ? ('<button class="btn-compact" data-action="remove-summon-img" data-id="' + s.id + '" title="Quitar foto">✕</button>') : '') +
-          '</div>') : '') +
-        '</div>' +
-        '<div class="summon-stats-col">' +
-          '<div class="creature-card-header" style="margin-bottom:6px;">' +
-            '<input type="text" class="creature-name-input" placeholder="Nombre de la Invocación / Familiar" data-bind="summons.' + s.id + '.name" value="' + esc(s.name) + '"' + (!canEdit ? ' readonly' : '') + '>' +
-            (canEdit ? ('<button class="row-del" data-action="del-summon" data-id="' + s.id + '" aria-label="Eliminar invocación">✕</button>') : '') +
-          '</div>' +
-          '<div class="creature-grid summon-stats-grid">' +
-            creatureField("Vida", "summons." + s.id + ".vida", s.vida, !canEdit) +
-            creatureField("Defensa", "summons." + s.id + ".defensa", s.defensa, !canEdit) +
-            creatureField("Absorción", "summons." + s.id + ".absorcion", s.absorcion, !canEdit) +
-            creatureField("Daño", "summons." + s.id + ".dano", s.dano, !canEdit) +
-            '<div class="creature-field beast-mobility-cell">' +
-              '<label>Movilidad (Casillas)</label>' +
-              '<button type="button" class="beast-mov-btn" ' + (canEdit ? 'data-action="pick-summon-mov" data-id="' + s.id + '"' : 'disabled style="cursor:default;"') + ' title="Casillas de movimiento">' +
-                '<span class="beast-mov-label">🏃 <strong>' + esc(s.casillasMovimiento || (s.movilidad ? (s.movilidad.match(/\d+/)?s.movilidad.match(/\d+/)[0]:'6') : '6')) + '</strong> casillas</span>' +
-                (s.movilidad && s.movilidad.includes('(') ? (' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>') : '') +
-                (canEdit ? '<span class="beast-mov-chevron">▾</span>' : '') +
-              '</button>' +
-            '</div>' +
-            creatureField("Inteligencia", "summons." + s.id + ".inteligencia", s.inteligencia, !canEdit) +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="summon-modules-container">' +
-        '<div class="summon-block summon-rolls-block">' +
-          '<div class="summon-block-header">' +
-            '<div class="summon-block-title-wrap">' +
-              '<span class="summon-block-title">⚔️ Tiradas y Habilidades</span>' +
-              '<span class="summon-block-sub">Toca para tirar</span>' +
-            '</div>' +
-            (canEdit ? ('<div class="summon-block-actions">' +
-              '<button type="button" class="btn-compact summon-action-btn' + (isEditingSkills ? ' btn-solid-gold' : '') + '" data-action="toggle-summon-skills-edit" data-id="' + s.id + '" title="Editar lista de habilidades">' +
-                (isEditingSkills ? '✓ Ver Botones' : '✏️ Editar Habilidades') +
-              '</button>' +
-              '<button type="button" class="btn-compact summon-action-btn" data-action="add-summon-skill" data-id="' + s.id + '" title="Añadir nueva tirada">+ Añadir</button>' +
-            '</div>') : '') +
-          '</div>' +
-          skillsContentHtml +
-        '</div>' +
-
-        '<div class="summon-block summon-traits-block">' +
-          '<div class="summon-block-header">' +
-            '<span class="summon-block-title">✨ Rasgos Especiales y Pasivas</span>' +
-            '<span class="summon-block-sub">Efectos</span>' +
-          '</div>' +
-          '<div class="summon-traits-box">' +
-            (canEdit ? ('<textarea class="summon-traits-textarea" placeholder="Rasgos pasivos y efectos de la criatura (ej: Obtienen un +1 a acertar los ataques cuando otra rata o Ink están al lado...)" data-bind="summons.' + s.id + '.rasgos">' + esc(rasgosVal) + '</textarea>') :
-              (rasgosVal ? ('<div class="summon-traits-text">' + esc(rasgosVal) + '</div>') : '<div style="font-size:0.75rem;color:var(--ink-faint);font-style:italic;">Sin rasgos especiales registrados.</div>')) +
-          '</div>' +
-        '</div>' +
-
-        ((canEdit || s.notas) ? ('<div class="summon-block summon-notes-block">' +
-          '<div class="summon-block-header">' +
-            '<span class="summon-block-title">📝 Notas Tácticas / Comportamiento</span>' +
-            '<span class="summon-block-sub">Táctica</span>' +
-          '</div>' +
-          '<div class="summon-notes-box">' +
-            (canEdit ? ('<textarea class="summon-notes-textarea" placeholder="Notas sobre el estado, táctica o invocador..." data-bind="summons.' + s.id + '.notas">' + esc(s.notas || '') + '</textarea>') :
-              ('<div class="summon-notes-text">' + esc(s.notas || '') + '</div>')) +
-          '</div>' +
-        '</div>') : '') +
-      '</div>' +
-    '</div>';
-  });
-
-  if(canEdit){
-    html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-summon">+ Añadir invocación</button>';
   }
+
   html += '</div>';
+  html += '</div>';
+
+  // 9. Menú de foto (modal inferior fijo)
+  if(canEdit && state._summonPhotoMenu === s.id){
+    html += '<div class="summon-photo-backdrop" data-action="close-summon-photo-menu"></div>' +
+      '<div class="summon-photo-sheet" role="dialog" aria-label="Foto">' +
+        '<button type="button" class="btn-compact summon-sheet-btn" data-action="upload-summon-img" data-id="' + s.id + '">📷 Cambiar foto</button>' +
+        '<button type="button" class="btn-compact summon-sheet-btn" data-action="url-summon-img" data-id="' + s.id + '">🔗 Pegar URL</button>' +
+        (s.image ? ('<button type="button" class="btn-compact summon-sheet-btn summon-sheet-btn-danger" data-action="remove-summon-img" data-id="' + s.id + '">Quitar foto</button>') : '') +
+        '<button type="button" class="btn-compact summon-sheet-btn" data-action="close-summon-photo-menu">Cancelar</button>' +
+      '</div>';
+  }
+
   return html;
 }
 

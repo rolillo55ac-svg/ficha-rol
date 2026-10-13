@@ -1,6 +1,6 @@
 {
-  "version": "1.4.49.0",
-  "build": "2026.10.15.11",
-  "updatedAt": "2026-10-15T11:00:00Z",
-  "changelog": "Nuevo en Ajustes: \"Apoya el proyecto\" con Haku y sus croquetas."
+  "version": "1.4.50.0",
+  "build": "2026.10.15.12",
+  "updatedAt": "2026-10-15T12:00:00Z",
+  "changelog": "Invocaciones nuevas: se ven y se usan sin casillas, botón Editar, pestañas por familiar, vida con botones, rasgos en lista y Aprendizaje (lo aprendido y lo que está entrenando)."
 }

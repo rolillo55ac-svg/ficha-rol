@@ -1356,19 +1356,91 @@ function handleClick(e){
   }
   if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; var newSt = {id:"stn_" + uid(),estado:"en_bruto",color:"blanca",origen:"Minas / Cuevas",calidad:null,progDescubrimiento:"sin_descubrir",efectoConcreto:"",notasInvestigacion:""}; c.stones.push(newSt); renderTab(); manageListItemRPC(c, 'stones', 'add', newSt); return; }
   if(action==="del-stone"){ if(!c || !canEditChar(c)) return; var sid = btn.getAttribute("data-id"); c.stones = (c.stones || []).filter(function(s){return s.id!==sid;}); renderTab(); manageListItemRPC(c, 'stones', 'remove', null, sid); return; }
-  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",casillasMovimiento:"6",inteligencia:"",habilidades:"",tiradas:"",rasgos:"",notas:"",image:null}; c.summons.push(newSm); renderTab(); manageListItemRPC(c, 'summons', 'add', newSm); return; }
-  if(action==="del-summon"){ if(!c || !canEditChar(c)) return; var smId = btn.getAttribute("data-id"); c.summons = (c.summons || []).filter(function(s){return s.id!==smId;}); renderTab(); manageListItemRPC(c, 'summons', 'remove', null, smId); return; }
+  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",casillasMovimiento:"6",inteligencia:"",habilidades:"",tiradas:"",rasgos:"",notas:"",image:null}; c.summons.push(newSm); state._summonActive = state._summonActive || {}; state._summonActive[c.id] = newSm.id; state._summonEdit = true; renderTab(); manageListItemRPC(c, 'summons', 'add', newSm); return; }
+  if(action==="del-summon"){ if(!c || !canEditChar(c)) return; var smId = btn.getAttribute("data-id"); c.summons = (c.summons || []).filter(function(s){return s.id!==smId;}); state._summonConfirmDel = null; renderTab(); manageListItemRPC(c, 'summons', 'remove', null, smId); return; }
+  if(action==="toggle-summon-edit"){ if(!c || !canEditChar(c)) return; state._summonEdit = !state._summonEdit; state._summonConfirmDel = null; renderTab(); return; }
+  if(action==="select-summon"){ if(!c) return; state._summonActive = state._summonActive || {}; state._summonActive[c.id] = btn.getAttribute("data-id"); state._summonConfirmDel = null; state._summonPhotoMenu = null; renderTab(); return; }
+  if(action==="summon-photo-menu"){ if(!c || !canEditChar(c)) return; state._summonPhotoMenu = btn.getAttribute("data-id"); renderTab(); return; }
+  if(action==="close-summon-photo-menu"){ state._summonPhotoMenu = null; renderTab(); return; }
+  if(action==="ask-del-summon"){ if(!c || !canEditChar(c)) return; state._summonConfirmDel = btn.getAttribute("data-id"); renderTab(); return; }
+  if(action==="cancel-del-summon"){ state._summonConfirmDel = null; renderTab(); return; }
+  if(action==="summon-hp"){
+    if(!c || !canEditChar(c)) return;
+    var hpSm = (c.summons || []).find(function(x){ return x.id === btn.getAttribute("data-id"); });
+    if(!hpSm) return;
+    var hp = getSummonHp(hpSm);
+    hpSm.vidaActual = Math.max(0, Math.min(hp.max, hp.cur + num(btn.getAttribute("data-delta"), 0)));
+    saveState(false);
+    manageListItemRPC(c, 'summons', 'update_item', hpSm, hpSm.id);
+    renderTab();
+    return;
+  }
+  if(action==="add-summon-trait" || action==="del-summon-trait"){
+    if(!c || !canEditChar(c)) return;
+    var trSm = (c.summons || []).find(function(x){ return x.id === btn.getAttribute("data-id"); });
+    if(!trSm) return;
+    var traits = getSummonTraitList(trSm);
+    if(action==="add-summon-trait"){
+      var trInp = document.getElementById("summonNewTrait-" + trSm.id);
+      var trTxt = trInp ? trInp.value.trim() : "";
+      if(!trTxt){ showToast("Escribe el rasgo", "info"); return; }
+      traits.push(trTxt);
+    } else {
+      var trIdx = parseInt(btn.getAttribute("data-index"), 10);
+      if(!(trIdx >= 0 && trIdx < traits.length)) return;
+      traits.splice(trIdx, 1);
+    }
+    trSm.rasgosList = traits;
+    saveState(false);
+    manageListItemRPC(c, 'summons', 'update_item', trSm, trSm.id);
+    renderTab();
+    return;
+  }
+  if(action==="add-summon-learned" || action==="del-summon-learned"){
+    if(!c || !canEditChar(c)) return;
+    var lnSm = (c.summons || []).find(function(x){ return x.id === btn.getAttribute("data-id"); });
+    if(!lnSm) return;
+    lnSm.aprendido = Array.isArray(lnSm.aprendido) ? lnSm.aprendido : [];
+    if(action==="add-summon-learned"){
+      var lnInp = document.getElementById("summonNewLearn-" + lnSm.id);
+      var lnTxt = lnInp ? lnInp.value.trim() : "";
+      if(!lnTxt){ showToast("Escribe qué ha aprendido", "info"); return; }
+      var hours = (typeof getGameClockHours === "function") ? getGameClockHours() : null;
+      lnSm.aprendido.push({
+        id: uid(),
+        texto: lnTxt,
+        dia: hours === null ? null : gameClockParts(hours).day,
+        horas: hours,
+        por: isGM() ? "máster" : (c.name || "jugador"),
+        porId: currentUser ? currentUser.id : null,
+        ts: Date.now()
+      });
+      showToast("Apuntado: " + lnTxt, "success");
+    } else {
+      var lnId = btn.getAttribute("data-lid");
+      lnSm.aprendido = lnSm.aprendido.filter(function(x){ return x.id !== lnId; });
+      showToast("Quitado de lo aprendido", "info");
+    }
+    saveState(false);
+    manageListItemRPC(c, 'summons', 'update_item', lnSm, lnSm.id);
+    renderTab();
+    return;
+  }
   if(action==="upload-summon-img"){
     if(!c || !canEditChar(c)) return;
     pendingSummonId = btn.getAttribute("data-id");
+    state._summonPhotoMenu = null;
     var smFileEl = document.getElementById("summonFileInput");
     if(smFileEl) smFileEl.click();
+    renderTab();
     return;
   }
   if(action==="url-summon-img"){
     if(!c || !canEditChar(c)) return;
     var smId = btn.getAttribute("data-id");
     var sm = (c.summons || []).find(function(s){return s.id===smId;});
+    state._summonPhotoMenu = null;
+    renderTab();
     if(sm){
       var prevSmImg = sm.image || "";
       var smLink = prompt("Introduce el enlace de la imagen de la invocación (GitHub, Imgur, web, etc.):", prevSmImg.startsWith("data:")?"":prevSmImg);
@@ -1386,6 +1458,7 @@ function handleClick(e){
     if(!c || !canEditChar(c)) return;
     var smId2 = btn.getAttribute("data-id");
     var sm2 = (c.summons || []).find(function(s){return s.id===smId2;});
+    state._summonPhotoMenu = null;
     if(sm2){
       sm2.image = null;
       saveState(true); pushSharedData();
@@ -1455,19 +1528,18 @@ function handleClick(e){
     var smId = btn.getAttribute("data-id");
     var sm = (c.summons || []).find(function(x){ return x.id === smId; });
     if(!sm) return;
-    var newName = prompt("Nombre de la nueva habilidad o tirada (ej: Mordisco, Sigilo, Esquivar):");
-    if(newName && newName.trim()){
-      var newFormula = prompt("Bono o fórmula para '" + newName.trim() + "' (ej: 8+1d10, 1d6+2, 4+1d10):", "1d10");
+    var newName = "Nueva tirada";
+    if(newName){
       var split = splitSummonHabilidades(sm);
       var list = getSummonRollList(split.tiradas);
-      list.push({ label: newName.trim(), formula: (newFormula && newFormula.trim()) ? newFormula.trim() : "1d10" });
+      list.push({ label: newName, formula: "0+1d10" });
       sm.tiradas = serializeSummonRolls(list);
       sm.habilidades = (sm.tiradas ? sm.tiradas.trim() : "") + (sm.rasgos ? (sm.tiradas ? ". " : "") + sm.rasgos.trim() : "");
       saveState(true);
       pushSharedData();
       manageListItemRPC(c, 'summons', 'update_item', sm, sm.id);
       renderTab();
-      showToast("Habilidad '" + newName.trim() + "' creada", "success");
+      showToast("Tirada añadida: cambia su nombre y su fórmula", "success");
     }
     return;
   }
