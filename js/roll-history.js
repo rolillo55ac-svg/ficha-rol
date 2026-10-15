@@ -175,31 +175,21 @@ function rollHistoryItemHtml(r){
     '</div>';
 }
 
-function ensureRollHistoryModal(){
-  var overlay = document.getElementById("rollHistoryOverlay");
-  if(overlay) return overlay;
-  overlay = document.createElement("div");
-  overlay.className = "modal-overlay hidden";
-  overlay.id = "rollHistoryOverlay";
-  overlay.innerHTML = '<div class="modal roll-history-modal" id="rollHistoryModal"></div>';
-  overlay.addEventListener("click", function(e){ if(e.target === overlay) closeRollHistoryModal(); });
-  overlay.addEventListener("change", function(e){
-    if(e.target && e.target.id === "rollHistoryChar"){ rollHistoryView.charName = e.target.value; reloadRollHistoryView(); }
-    if(e.target && e.target.id === "rollHistoryRequested"){ rollHistoryView.onlyRequested = !!e.target.checked; reloadRollHistoryView(); }
-  });
-  document.body.appendChild(overlay);
-  return overlay;
-}
+document.addEventListener("change", function(e){
+  if(e.target && e.target.id === "rollHistoryChar"){ rollHistoryView.charName = e.target.value; reloadRollHistoryView(); }
+  if(e.target && e.target.id === "rollHistoryRequested"){ rollHistoryView.onlyRequested = !!e.target.checked; reloadRollHistoryView(); }
+});
 
+// Se pinta dentro del menú de dados (pestaña Historial)
 function renderRollHistoryModal(){
-  var modal = document.getElementById("rollHistoryModal");
-  if(!modal) return;
+  var modal = document.getElementById("diceMenuBody");
+  if(!modal || typeof diceMenuTab === "undefined" || diceMenuTab !== "historial") return;
   var v = rollHistoryView;
   var names = [];
   (state.characters || []).forEach(function(c){ if(c && c.name && names.indexOf(c.name) < 0) names.push(c.name); });
   v.items.forEach(function(r){ if(r.charName && names.indexOf(r.charName) < 0) names.push(r.charName); });
   if(v.charName && names.indexOf(v.charName) < 0) names.push(v.charName);
-  var html = '<h2>📜 Historial de tiradas<button type="button" data-action="close-roll-history" aria-label="Cerrar">&times;</button></h2>';
+  var html = '';
   if(rollHistoryTableMissing){
     html += '<p class="game-clock-note">El historial de la partida aún no está activado; se muestran las tiradas de este dispositivo.</p>';
   } else {
@@ -252,16 +242,11 @@ function reloadRollHistoryView(){
 }
 
 function openRollHistoryModal(){
-  var overlay = ensureRollHistoryModal();
-  var dm = document.getElementById("diceModalOverlay");
-  if(dm) dm.classList.add("hidden");
-  overlay.classList.remove("hidden");
-  reloadRollHistoryView();
+  openDiceModal("historial");
 }
 
-function closeRollHistoryModal(){
-  var overlay = document.getElementById("rollHistoryOverlay");
-  if(overlay) overlay.classList.add("hidden");
+function showRollHistoryInMenu(){
+  reloadRollHistoryView();
 }
 
 async function deleteRollFromHistory(id){
@@ -279,11 +264,6 @@ document.addEventListener("click", function(e){
   if(!btn) return;
   var action = btn.getAttribute("data-action");
   if(action === "open-roll-history"){ openRollHistoryModal(); return; }
-  if(action === "close-roll-history"){ closeRollHistoryModal(); return; }
   if(action === "roll-history-more"){ loadRollHistoryPage(); return; }
   if(action === "roll-history-delete"){ deleteRollFromHistory(btn.getAttribute("data-roll-id")); }
-});
-
-document.addEventListener("keydown", function(e){
-  if(e.key === "Escape") closeRollHistoryModal();
 });

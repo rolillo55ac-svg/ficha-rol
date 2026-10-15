@@ -1626,6 +1626,8 @@ function openBg3RollModal(cfg){
   bg3RollState.modifiers = Array.isArray(cfg.modifiers) ? cfg.modifiers.slice() : [];
   var rollAc = (typeof activeChar === "function") ? activeChar() : null;
   bg3RollState.charId = cfg.charId || ((rollAc && rollAc.name && bg3RollState.charName.indexOf(rollAc.name) >= 0) ? rollAc.db_id : null);
+  bg3RollState.requestId = cfg.requestId || null;
+  bg3RollState.requestDc = (typeof cfg.requestDc === "number") ? cfg.requestDc : null;
   bg3RollState.onResolve = cfg.onResolve || null;
   bg3RollState.rerollFn = cfg.rerollFn || null;
   bg3RollState.rolling = false;
@@ -1963,6 +1965,11 @@ function triggerBg3Roll(launchIntensity){
         modifier: modSum,
         mode: bg3RollState.mode
       };
+      if(bg3RollState.requestId){
+        rollItem.requestId = bg3RollState.requestId;
+        if(bg3RollState.requestDc !== null){ rollItem.dc = bg3RollState.requestDc; rollItem.success = grandTotal >= bg3RollState.requestDc; }
+        if(typeof noteRollRequestAnswer === "function") noteRollRequestAnswer(rollItem);
+      }
       state.rollLog.unshift(rollItem);
       if(state.rollLog.length > 20) state.rollLog.length = 20;
       saveState();
@@ -1990,7 +1997,7 @@ function closeBg3Roll(){
 
 /* --- LANZADORES ESPECÍFICOS --- */
 
-function openBg3SkillRoll(c, sdef){
+function openBg3SkillRoll(c, sdef, extra){
   if(!c || !sdef) return;
   var attrKey = sdef.attr !== "hybrid" ? sdef.attr : ((c.skillHybrid && c.skillHybrid[sdef.id]) || sdef.hybridOptions[0]);
   var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
@@ -2058,7 +2065,7 @@ function openBg3SkillRoll(c, sdef){
     });
   }
 
-  openBg3RollModal({
+  openBg3RollModal(Object.assign({
     title: sdef.name,
     subtitle: "Tirada de " + sdef.name + " (1d10)",
     sides: 10,
@@ -2068,7 +2075,7 @@ function openBg3SkillRoll(c, sdef){
     mode: "normal",
     charName: c.name,
     modifiers: modifiers
-  });
+  }, extra || {}));
 }
 
 function openBg3CustomSkillRoll(c, cs){
@@ -2138,7 +2145,7 @@ function openBg3CustomSkillRoll(c, cs){
   });
 }
 
-function openBg3AttrRoll(c, attrKey){
+function openBg3AttrRoll(c, attrKey, extra){
   if(!c || !attrKey) return;
   var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
   var attrName = ATTR_LABELS[attrKey] || "Atributo";
@@ -2187,7 +2194,7 @@ function openBg3AttrRoll(c, attrKey){
     });
   }
 
-  openBg3RollModal({
+  openBg3RollModal(Object.assign({
     title: "Prueba de " + attrName,
     subtitle: "Tirada de Atributo (1d10)",
     sides: 10,
@@ -2197,7 +2204,7 @@ function openBg3AttrRoll(c, attrKey){
     mode: "normal",
     charName: c.name,
     modifiers: modifiers
-  });
+  }, extra || {}));
 }
 
 function openBg3WeaponAttackRoll(c, wpn){
@@ -2493,6 +2500,7 @@ function handleRemoteDiceRoll(rollObj){
   if(state.rollLog.length > 20) state.rollLog.length = 20;
   saveState(true);
   if(typeof addRemoteRollToHistory === "function") addRemoteRollToHistory(rollObj);
+  if(typeof noteRollRequestAnswer === "function") noteRollRequestAnswer(rollObj);
 
   var critText = rollObj.isCrit ? " ¡Éxito Crítico!" : (rollObj.isFumble ? " ¡Pifia!" : "");
   var toastType = rollObj.isCrit ? "success" : (rollObj.isFumble ? "error" : "info");
@@ -2515,8 +2523,34 @@ var diceConfig = {
   mod: 0,
   mode: "normal"
 };
+var diceMenuTab = "tirar";
 
-function openDiceModal(){
+// Menú de dados: pestañas Tirar, Historial y (solo el máster, con la tabla creada) Pedir tirada
+function openDiceModal(tab){
+  if(typeof tab === "string") diceMenuTab = tab;
+  var canAsk = isGM() && typeof rollRequestsAvailable === "function" && rollRequestsAvailable();
+  if(diceMenuTab === "pedir" && !canAsk) diceMenuTab = "tirar";
+  var tabs = [{ id: "tirar", txt: "🎲 Tirar" }, { id: "historial", txt: "📜 Historial" }];
+  if(canAsk) tabs.push({ id: "pedir", txt: "📣 Pedir tirada" });
+  var tabsHtml = '<div class="dice-menu-tabs" role="tablist">' + tabs.map(function(t){
+    return '<button type="button" role="tab" class="dice-menu-tab' + (diceMenuTab === t.id ? ' active' : '') + '" aria-selected="' + (diceMenuTab === t.id) + '" data-action="dice-menu-tab" data-tab="' + t.id + '">' + t.txt + '</button>';
+  }).join('') + '</div>';
+  var closeBtn = '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>';
+  document.getElementById("diceModalOverlay").classList.remove("hidden");
+  if(diceMenuTab !== "tirar"){
+    document.getElementById("diceModal").innerHTML =
+      '<div class="cup-modal-header">'+
+        '<div class="cup-modal-title"><h3>' + (diceMenuTab === "pedir" ? 'Pedir tirada' : 'Historial de tiradas') + '</h3></div>'+ closeBtn +
+      '</div>' + tabsHtml + '<div id="diceMenuBody"></div>';
+    if(diceMenuTab === "pedir") renderRollRequestTab();
+    else if(typeof showRollHistoryInMenu === "function") showRollHistoryInMenu();
+    return;
+  }
+  diceMenuTab = "tirar";
+  renderDiceRollTab(tabsHtml, closeBtn);
+}
+
+function renderDiceRollTab(tabsHtml, closeBtn){
   var sidesList = [
     { sides: 4, name: "d4", geom: "Tetraedro" },
     { sides: 6, name: "d6", geom: "Cubo" },
@@ -2549,8 +2583,8 @@ function openDiceModal(){
         '<h3>Lanzador de Dados</h3>'+
         '<div class="cup-modal-sub">Elige tu dado, modalidad y lanza</div>'+
       '</div>'+
-      '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>'+
-    '</div>'+
+      closeBtn+
+    '</div>'+ tabsHtml +
     '<div class="dice-mode-pills">'+
       '<button type="button" class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">⚔️ Normal</button>'+
       '<button type="button" class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">🍀 Ventaja</button>'+
@@ -2586,10 +2620,7 @@ function openDiceModal(){
         '</div>'+
       '</div>'+
     '</div>'+
-    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>'+
-    '<button type="button" class="btn-compact roll-history-open" data-action="open-roll-history">📜 Historial de tiradas</button>';
-
-  document.getElementById("diceModalOverlay").classList.remove("hidden");
+    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>';
 }
 
 function diceModalClick(e){
@@ -2609,6 +2640,8 @@ function diceModalClick(e){
   }
 
   if(action==="close-modal"){ closeModals(); return; }
+  if(action==="dice-menu-tab"){ openDiceModal(btn.getAttribute("data-tab")); return; }
+  if(diceMenuTab !== "tirar") return;
   if(action==="set-dice-mode"){ diceConfig.mode = btn.getAttribute("data-mode"); openDiceModal(); return; }
   if(action==="inc-dice-qty"){ diceConfig.qty = Math.min(20, (diceConfig.qty||1)+1); openDiceModal(); return; }
   if(action==="dec-dice-qty"){ diceConfig.qty = Math.max(1, (diceConfig.qty||1)-1); openDiceModal(); return; }
@@ -2631,7 +2664,7 @@ function rollLogHtml(){
   if(!state) return '';
   state.rollLog = state.rollLog || [];
   var logs = (typeof recentRollsForLog === "function" ? recentRollsForLog() : state.rollLog).slice(0,5);
-  var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span><button type="button" class="btn-compact roll-history-open" data-action="open-roll-history">Ver todo</button></div>';
+  var html = '<div class="section"><div class="section-title"><span>Historial de Tiradas</span></div>';
   if(!logs.length){ html += '<div class="roll-empty">Sin tiradas recientes.</div>'; }
   else {
     html += '<div class="roll-log">'+logs.map(function(r){
