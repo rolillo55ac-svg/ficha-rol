@@ -4596,3 +4596,89 @@ body:has(#canvaStudio) .fab-dice {
     white-space: normal;
   }
 }
+
+/* ==========================================================================
+   ACABADO DE LA CASA: marco, pestañas, mejoras y misiones
+   ========================================================================== */
+.house-container { padding: 8px; }
+.house-section { margin-bottom: 0; display: flex; flex-direction: column; gap: 12px; }
+.house-section .house-head { display: block; padding: 0; min-height: 0; }
+.house-section .house-head .section-title { margin-bottom: 8px; }
+.house-section .house-head .section-title > span:first-child::before { content: none; }
+.house-title-icon { width: 20px; height: 20px; filter: drop-shadow(0 0 4px rgba(176, 141, 87, 0.5)); }
+.house-section .house-head-lock { margin-left: 0; }
+.house-head-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.house-level-pill.pill-formula { background: rgba(176, 141, 87, 0.2); border: 1px solid var(--gold); color: var(--gold-light); }
+.house-last-quest { font-size: 0.78rem; color: var(--ink-dim); min-width: 0; overflow-wrap: anywhere; }
+
+.house-section .house-tabs { background: transparent; border: 0; padding: 0; gap: var(--spacing-xs); }
+.house-section .house-tab-btn {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  padding: var(--spacing-xs);
+}
+.house-section .house-tab-btn.active {
+  background: linear-gradient(135deg, rgba(176, 141, 87, 0.35), rgba(90, 65, 30, 0.45));
+  border-color: var(--gold);
+  box-shadow: 0 0 10px -2px rgba(176, 141, 87, 0.4);
+}
+
+.house-section .house-info-box { background: transparent; border: 0; padding: 0; }
+.house-section .house-perk-card {
+  position: relative;
+  align-items: center;
+  background: linear-gradient(155deg, rgba(28, 19, 14, 0.98), rgba(16, 11, 8, 0.98));
+  border: 1.5px solid rgba(176, 141, 87, 0.3);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.85);
+}
+.house-section .house-perk-icon {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: radial-gradient(circle at 30% 20%, rgba(176, 141, 87, 0.18), transparent 65%), var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 0 0 2px rgba(18, 13, 10, 0.5);
+}
+.house-section .house-perk-text { flex: 1; }
+.house-section .house-perk-name { font-family: var(--font-display); }
+.house-section .house-perk-desc { color: var(--ink-dim); }
+.house-perk-more { flex: 0 0 auto; min-width: 44px; min-height: 44px; margin-left: auto; }
+
+.house-empty-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 8px; text-align: center; }
+.house-empty-icon { width: 48px; height: 48px; opacity: 0.35; }
+.house-empty-text { margin: 0; font-size: 0.9rem; color: var(--ink-dim); font-style: italic; }
+
+.house-section .house-quest-card {
+  border: 1.5px solid rgba(176, 141, 87, 0.3);
+  border-left: 3px solid var(--gold-light);
+  background: linear-gradient(155deg, rgba(28, 19, 14, 0.98), rgba(16, 11, 8, 0.98));
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.85);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.house-section .house-quest-title { font-family: var(--font-display); }
+.house-progress { height: 8px; border-radius: 999px; background: var(--bg-elev); border: 1px solid var(--line); overflow: hidden; }
+.house-progress > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+
+.house-timeline { position: relative; display: flex; flex-direction: column; gap: 8px; margin-left: 6px; padding-left: 16px; border-left: 2px solid rgba(176, 141, 87, 0.35); }
+.house-timeline > .house-hist-item { position: relative; }
+.house-timeline > .house-hist-item::before {
+  content: '';
+  position: absolute;
+  left: -23px;
+  top: 17px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--bg-card);
+}

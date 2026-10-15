@@ -243,10 +243,18 @@ function openDataModal(screen){
         '<span class="settings-switch'+(soundEnabled() ? ' on' : '')+'"></span>'+
       '</button></div>';
     html += '<div class="settings-group-title">App</div><div class="settings-list">'+
+      (DONATE_PAYPAL_ME ?
+        '<button type="button" class="settings-row settings-donate-card" data-action="settings-go" data-screen="donate">'+
+          '<img src="images/haku-donaciones.jpg" alt="Haku" class="settings-donate-thumb" width="44" height="44">'+
+          '<span class="settings-row-txt">'+
+            '<span class="settings-row-title">¿Invitas a Haku a una croqueta?</span>'+
+            '<span class="settings-row-sub">Mantiene viva la web</span>'+
+          '</span>'+
+          '<span class="settings-row-chev">›</span>'+
+        '</button>' : '')+
       settingsRow("settings-go", "version", "🚀", "Versión", "", '<span class="settings-row-val" id="settingsVerState">v'+esc(curVerStr)+'</span>')+
       settingsRow("settings-go", "storage", "💾", "Almacenamiento", "Espacio en el móvil y en la nube")+
       settingsRow("settings-go", "backup", "📥", "Copia de seguridad", "Descargar mis datos")+
-      (DONATE_PAYPAL_ME ? settingsRow("settings-go", "donate", "🦴", "Apoya el proyecto", "") : '')+
       settingsRow("settings-go", "help", "📬", "Ayuda y sugerencias", "")+
     '</div>';
     if(gm){
@@ -378,6 +386,7 @@ function openDataModal(screen){
           '<span class="donate-opt-amount">?</span>'+
         '</a>'+
       '</div>'+
+      '<div class="donate-preview"><video src="images/haku-gracias.mp4" autoplay loop muted playsinline preload="metadata" aria-label="Haku bailando con chubasquero amarillo y gorro de rana"></video><p class="settings-note">Esto pasa cuando alguien dona 🕺</p></div>'+
       '<p class="settings-note donate-fine">Es totalmente voluntario y la web seguirá siendo gratis para todos.<br>Haku va a poner esa cara igual, pero con croquetas la pone más contento.</p>'+
     '</div>';
   }
