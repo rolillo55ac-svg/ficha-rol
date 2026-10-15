@@ -97,14 +97,14 @@ function renderTopbar(){
 }
 
 var PLAYER_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
+  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenar"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"lapidario",label:"Piedras"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
 var GM_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
+  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenar"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"lapidario",label:"Piedras"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
@@ -643,8 +643,8 @@ function tplEntrenamiento(c){
   
   html += '<div class="section-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
     '<span>🥋 Entrenamiento y Progresión</span>' +
-    (canEdit ? '<button class="btn-compact" data-action="add-training">+ Nuevo Entrenamiento</button>' : '') +
-  '</div>';
+  '</div>' +
+  (canEdit ? '<button class="btn-solid-gold btn-add-training" data-action="add-training">+ Nuevo Entrenamiento</button>' : '');
 
   if(!canEdit && currentUser){
     html += '<div class="tr-spectator-banner">' +

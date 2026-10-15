@@ -359,7 +359,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 
 /* MAIN */
-main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
+main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow-y:auto;}
 .section{
   position:relative;background:linear-gradient(155deg, rgba(255,255,255,0.02), transparent 42%), var(--bg-card);
   border:1px solid var(--line);border-radius:var(--radius);
@@ -10467,3 +10467,24 @@ html,body{overscroll-behavior-y:contain;}
   text-align: center;
 }
 
+
+/* Fase 1 UX: espacios, cortes y detalles (cada regla solo toca su componente) */
+@media(max-width:768px){
+  .tabbar{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);}
+}
+.backpack-tabs-bar{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 18px),transparent 100%);}
+.tr-cat-select{padding-right:22px !important;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
+.tr-name-input{min-width:0;text-overflow:ellipsis;}
+.tr-progress-caption{gap:10px !important;}
+.tr-progress-caption > span,.tr-progress-caption > div{min-width:0;}
+.tr-progress-caption > span:last-child{flex:0 0 auto;text-align:right;}
+.skills-orig-attr-card{padding:5px 6px;}
+.skills-orig-attr-card label{margin-bottom:1px;}
+.skills-orig-attr-card .attr-roll-hint{margin-top:1px;}
+.money-field{padding:5px 10px;}
+.money-field input{min-height:28px;}
+.roll-history-check input{accent-color:var(--gold);}
+.spell-notes{resize:none;}
+.skill-bonus-ctrl button:disabled,.skills-orig-data .skill-bonus-ctrl button:disabled{opacity:0.45;}
+.alq-top-actions .alq-btn.gold{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1 1 100%;white-space:nowrap;}
+.btn-add-training{display:block;width:100%;min-height:44px;margin-top:8px;}
