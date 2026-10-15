@@ -1,6 +1,6 @@
 {
-  "version": "1.4.57.0",
-  "build": "2026.10.15.22",
-  "updatedAt": "2026-10-15T22:00:00Z",
-  "changelog": "Historial de tiradas guardado en la base: nadie pierde tiradas aunque no tenga la web abierta."
+  "version": "1.4.58.0",
+  "build": "2026.10.15.23",
+  "updatedAt": "2026-10-15T23:30:00Z",
+  "changelog": "Menú de dados con pestañas: Tirar, Historial y (cuando esté lista la base) Pedir tirada para el máster."
 }
