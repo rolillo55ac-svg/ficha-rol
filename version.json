@@ -1,6 +1,6 @@
 {
-  "version": "1.4.58.0",
-  "build": "2026.10.15.23",
-  "updatedAt": "2026-10-15T23:30:00Z",
-  "changelog": "Menú de dados con pestañas: Tirar, Historial y (cuando esté lista la base) Pedir tirada para el máster."
+  "version": "1.4.59.0",
+  "build": "2026.10.16.1",
+  "updatedAt": "2026-10-16T00:10:00Z",
+  "changelog": "Pestaña Tiradas en la barra (Tirar, Historial, Pedir tirada) y historial de una línea por tirada con detalle al tocar."
 }

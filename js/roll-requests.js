@@ -192,10 +192,7 @@ function handleRemoteRollRequest(){
 
 function refreshRollRequestViews(){
   renderRollRequestNotice();
-  if(typeof diceMenuTab !== "undefined" && diceMenuTab === "pedir"){
-    var ov = document.getElementById("diceModalOverlay");
-    if(ov && !ov.classList.contains("hidden")) renderRollRequestTab();
-  }
+  if(typeof diceMenuTab !== "undefined" && diceMenuTab === "pedir" && document.getElementById("tiradasPage")) renderRollRequestTab();
 }
 
 /* --- Interfaz --- */
