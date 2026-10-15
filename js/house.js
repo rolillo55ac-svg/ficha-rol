@@ -13,6 +13,13 @@ var HOUSE_CAMPAIGN_ID = "c0000000-0000-0000-0000-000000000001";
 var houseState = {
   active: false,
   previousTab: "ficha",
+  tab: (function(){
+    try {
+      var t = localStorage.getItem("krysalisHouseTab");
+      if(t === "plano" || t === "mejoras" || t === "misiones") return t;
+    } catch(e){}
+    return "plano";
+  })(),
   selectedRoomId: null,
   activeFloor: 1,
   inspectorTab: "estancia", // "estancia" | "muebles" | "buffs"
@@ -1010,7 +1017,7 @@ function drawHouseDoors(rooms){
 }
 
 function renderKonvaRooms(){
-  if(!houseKonvaLayer || !houseKonvaStage) return;
+  if(!houseKonvaLayer || !houseKonvaStage || !document.getElementById("canvasWrap")) return;
 
   // Sacar el transformador antes de vaciar la capa: si se destruye pierde sus tiradores de tamaño
   houseKonvaTransformer.remove();
@@ -1343,7 +1350,7 @@ function selectKonvaRoom(group, r){
     }
   }
 
-  if(houseKonvaLayer) houseKonvaLayer.draw();
+  if(houseKonvaLayer && document.getElementById("canvasWrap")) houseKonvaLayer.draw();
 }
 
 function deselectKonvaRoom(){
@@ -1365,7 +1372,7 @@ function deselectKonvaRoom(){
     insp.innerHTML = '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl y de quién es.</div>';
   }
 
-  if(houseKonvaLayer) houseKonvaLayer.draw();
+  if(houseKonvaLayer && document.getElementById("canvasWrap")) houseKonvaLayer.draw();
 }
 
 function updateQuickRoomBar(r){
@@ -1447,7 +1454,7 @@ function startKonvaRename(group, r){
 }
 
 function zoomFitHouse(){
-  if(!houseKonvaStage) return;
+  if(!houseKonvaStage || !document.getElementById("canvasWrap")) return;
   var allRooms = houseState.rooms || [];
   var curFloor = houseState.activeFloor || 1;
   var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
@@ -1484,7 +1491,7 @@ function zoomFitHouse(){
 }
 
 function applyHouseKonvaZoom(newZoom, centerPos){
-  if(!houseKonvaStage) return;
+  if(!houseKonvaStage || !document.getElementById("canvasWrap")) return;
   newZoom = Math.max(0.3, Math.min(2.5, newZoom));
   var oldZoom = houseKonvaStage.scaleX();
 
@@ -4555,132 +4562,141 @@ function renderHouseView(){
     });
   }
 
+  // Si houseState.studioRoomId está activo se sigue pintando el estudio como ahora, y en ese caso no se pintan cabecera ni pestañas
+  if(houseState.studioRoomId){
+    var studioHtml = '<div class="house-container">';
+    studioHtml += renderCanvaStudio(houseState.studioRoomId);
+    studioHtml += '</div>';
+    main.innerHTML = studioHtml;
+    canvaAfterRender();
+    return;
+  }
+
   var gmMode = (typeof isGM === "function" && isGM());
   var canEditPlan = canUserEditPlan();
   if(!canEditPlan) houseState.editMode = false;
   var curFloor = houseState.activeFloor || 1;
 
+  var tab = houseState.tab;
+  if(tab !== "plano" && tab !== "mejoras" && tab !== "misiones"){
+    try {
+      tab = localStorage.getItem("krysalisHouseTab");
+    } catch(e){}
+    if(tab !== "plano" && tab !== "mejoras" && tab !== "misiones"){
+      tab = "plano";
+    }
+    houseState.tab = tab;
+  }
+
   var html = '<div class="house-container">';
 
-  // Mejoras y misiones de la casa (los niveles los da el máster con misiones)
-  html += renderHouseUpgradesBox();
-  html += renderHouseQuestsBox();
-
-  // 3. Sección del Plano Arquitectónico 2D con Konva y Texturas de Suelo
-  html += '<div class="house-blueprint-section">';
-
-  // Topbar del plano
-  html += '<div class="house-topbar">';
-  html += '  <div class="house-topbar-row">';
-  html += '    <div class="house-crest">🏠</div>';
-  html += '    <div class="house-topbar-title">';
-  html += '      <div class="t1">Plano Cenital · ' + esc(h.name || "La Casa Andante") + '</div>';
-  var floorRoomCount = (houseState.rooms || []).filter(function(r){ return isRoomOnFloor(r, curFloor); }).length;
-  html += '      <div class="t2">' + floorRoomCount + (floorRoomCount === 1 ? ' estancia' : ' estancias') + (houseState.editMode ? ' · Modo Editar' : '') + '</div>';
-  html += '    </div>';
-  if(canEditPlan){
-    html += '    <div class="house-mode-switch" role="group" aria-label="Modo del plano">';
-    html += '      <button class="house-mode-btn' + (!houseState.editMode ? ' active' : '') + '" data-action="set-house-mode" data-mode="ver">Ver</button>';
-    html += '      <button class="house-mode-btn' + (houseState.editMode ? ' active' : '') + '" data-action="set-house-mode" data-mode="editar">Editar</button>';
-    html += '    </div>';
+  // 1. Cabecera compacta
+  html += '<div class="house-head">';
+  html += '  <span class="house-head-title">🏠 La Casa</span>';
+  html += '  <span class="house-level-pill">Nivel ' + getHouseLevel() + '</span>';
+  if(canEditHousePerks()){
+    html += '  <button class="btn-compact house-head-lock" data-action="open-house-secrets" title="Panel secreto">🔒</button>';
   }
-  html += '  </div>';
-  if(gmMode){
-    var pce = housePlayersCanEdit();
-    html += '  <button class="house-players-edit-btn' + (pce ? ' on' : '') + '" data-action="toggle-house-players-edit">';
-    html += '    <span class="dot"></span> Jugadores: ' + (pce ? 'pueden editar su habitación' : 'solo ver');
-    html += '  </button>';
-  }
+  html += '</div>';
 
-  // Toolbar con selector de plantas y controles de zoom
-  html += '  <div class="house-toolbar">';
-  var floors = getHouseFloors();
-  floors.forEach(function(fl){
-    var isFlActive = isRoomOnFloor({ floor: houseState.activeFloor }, fl.id);
-    html += '    <button class="house-floor-tab-btn' + (isFlActive ? ' active' : '') + '" data-action="switch-house-floor" data-floor="' + fl.id + '">';
-    html += '      <div class="fmain">' + esc(fl.name) + '</div>';
-    html += '      <div class="fsub">' + esc(fl.sub || "") + '</div>';
-    html += '    </button>';
-  });
-  if(gmMode && houseState.editMode){
-    html += '    <button class="house-add-floor-btn" data-action="open-add-floor-modal" title="Crear nueva planta">+ Nueva Planta</button>';
-  }
+  // 2. Tres pestañas segmentadas
+  html += '<div class="house-tabs" role="tablist">';
+  html += '  <button class="house-tab-btn' + (tab === "plano" ? ' active' : '') + '" data-action="set-house-tab" data-tab="plano">Plano</button>';
+  html += '  <button class="house-tab-btn' + (tab === "mejoras" ? ' active' : '') + '" data-action="set-house-tab" data-tab="mejoras">Mejoras</button>';
+  html += '  <button class="house-tab-btn' + (tab === "misiones" ? ' active' : '') + '" data-action="set-house-tab" data-tab="misiones">Misiones</button>';
+  html += '</div>';
 
-  html += '    <div class="house-toolbar-spacer"></div>';
-
-  html += '    <div class="house-zoom-group">';
-  html += '      <button data-action="zoom-house-out" title="Alejar plano">−</button>';
-  html += '      <span class="zlabel" id="zoomLabel">' + Math.round((houseKonvaZoom || 1.0) * 100) + '%</span>';
-  html += '      <button data-action="zoom-house-in" title="Acercar plano">+</button>';
-  html += '      <button data-action="zoom-house-fit" title="Ajustar estancias a pantalla">📱 Ajustar</button>';
-  html += '    </div>';
-  html += '  </div>';
-
-  // Fila de acciones principales (solo en modo Editar; crear y borrar estancias solo el máster)
-  if(houseState.editMode){
-  html += '  <div class="house-action-row">';
-  if(gmMode){
-  html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">➕ Añadir habitación</button>';
-  html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>✕ Eliminar seleccionada</button>';
-  }
-  html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: casilla' : '🖐️ Rejilla: Libre') + '</button>';
-  html += '  </div>';
-  }
-
-  // Barra de herramientas contextual de habitación seleccionada
-  var selRoom = houseState.selectedRoomId ? (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; }) : null;
-  var selBarVis = (selRoom && houseState.editMode && canUserEditRoomGeometry(selRoom)) ? ' visible' : '';
-  var selTexName = selRoom ? (HOUSE_TEXTURES.find(function(t){ return t.id === (selRoom.texture || inferRoomTexture(selRoom)); })?.name || "Madera") : "Madera";
-  var selIconName = selRoom ? ((selRoom.icon ? selRoom.icon + " " : "") + selRoom.name) : "Habitación";
-
-  // La barra de herramientas de estancia solo existe en modo Editar
-  if(houseState.editMode){
-  html += '  <div class="house-quick-tools' + selBarVis + '" id="roomQuickBar">';
-  html += '    <div class="house-quick-tools-title">🎯 <b id="rqRoomName">' + esc(selIconName) + '</b></div>';
-  html += '    <div class="house-quick-tools-group">';
-  html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">✏️ Renombrar</button>';
-  html += '      <div class="house-tool-stepper" title="Ancho de la habitación">';
-  html += '        <span>↔️</span>';
-  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="-40" title="Reducir ancho">➖</button>';
-  html += '        <span id="rqWidthLabel">' + (selRoom ? Math.max(1, selRoom.width || Math.round((selRoom.w || 160)/40)) : 4) + '</span>';
-  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="40" title="Aumentar ancho">➕</button>';
-  html += '      </div>';
-  html += '      <div class="house-tool-stepper" title="Alto de la habitación">';
-  html += '        <span>↕️</span>';
-  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="-40" title="Reducir alto">➖</button>';
-  html += '        <span id="rqHeightLabel">' + (selRoom ? Math.max(1, selRoom.height || Math.round((selRoom.h || 120)/40)) : 3) + '</span>';
-  html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="40" title="Aumentar alto">➕</button>';
-  html += '      </div>';
-  html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
-  html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
-  html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
-  html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">Editar muebles</button>';
-  if(gmMode){
-  html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
-  html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
-  html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">🗑️</button>';
-  }
-  html += '    </div>';
-  html += '  </div>';
-
-  }
-
-  html += '</div>'; // Fin house-topbar
-
-  // Si el usuario está dentro del Estudio Canva interior de una habitación
-  if(houseState.studioRoomId){
-    html += renderCanvaStudio(houseState.studioRoomId);
+  // Solo se pinta el contenido de la pestaña activa (las otras NO se generan en el HTML)
+  if(tab === "mejoras"){
+    html += renderHouseUpgradesBox();
+  } else if(tab === "misiones"){
+    html += renderHouseQuestsBox();
   } else {
-    // Lienzo Konva 2D
+    // Pestaña "plano"
+    html += '<div class="house-blueprint-section">';
+
+    // Topbar del plano
+    html += '<div class="house-topbar">';
+    html += '  <div class="house-toolbar">';
+    var floors = getHouseFloors();
+    floors.forEach(function(fl){
+      var isFlActive = isRoomOnFloor({ floor: houseState.activeFloor }, fl.id);
+      html += '    <button class="house-floor-tab-btn' + (isFlActive ? ' active' : '') + '" data-action="switch-house-floor" data-floor="' + fl.id + '">' + esc(fl.name) + '</button>';
+    });
+    if(gmMode && houseState.editMode){
+      html += '    <button class="house-add-floor-btn" data-action="open-add-floor-modal" title="Crear nueva planta">+ Nueva Planta</button>';
+    }
+    if(canEditPlan){
+      html += '    <button class="btn-compact house-mode-toggle-btn' + (houseState.editMode ? ' active' : '') + '" data-action="set-house-mode" data-mode="' + (houseState.editMode ? 'ver' : 'editar') + '">' + (houseState.editMode ? 'Salir de editar' : 'Editar') + '</button>';
+    }
+    html += '  </div>';
+
+    // Fila de acciones principales (solo en modo Editar; crear y borrar estancias solo el máster)
+    if(houseState.editMode){
+      html += '  <div class="house-action-row">';
+      if(gmMode){
+        html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">➕ Añadir habitación</button>';
+        html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>✕ Eliminar seleccionada</button>';
+      }
+      html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: casilla' : '🖐️ Rejilla: Libre') + '</button>';
+      html += '  </div>';
+    }
+
+    // Barra de herramientas contextual de habitación seleccionada
+    var selRoom = houseState.selectedRoomId ? (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; }) : null;
+    var selBarVis = (selRoom && houseState.editMode && canUserEditRoomGeometry(selRoom)) ? ' visible' : '';
+    var selTexName = selRoom ? (HOUSE_TEXTURES.find(function(t){ return t.id === (selRoom.texture || inferRoomTexture(selRoom)); })?.name || "Madera") : "Madera";
+    var selIconName = selRoom ? ((selRoom.icon ? selRoom.icon + " " : "") + selRoom.name) : "Habitación";
+
+    // La barra de herramientas de estancia solo existe en modo Editar
+    if(houseState.editMode){
+      html += '  <div class="house-quick-tools' + selBarVis + '" id="roomQuickBar">';
+      html += '    <div class="house-quick-tools-title">🎯 <b id="rqRoomName">' + esc(selIconName) + '</b></div>';
+      html += '    <div class="house-quick-tools-group">';
+      html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">✏️ Renombrar</button>';
+      html += '      <div class="house-tool-stepper" title="Ancho de la habitación">';
+      html += '        <span>↔️</span>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="-40" title="Reducir ancho">➖</button>';
+      html += '        <span id="rqWidthLabel">' + (selRoom ? Math.max(1, selRoom.width || Math.round((selRoom.w || 160)/40)) : 4) + '</span>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="40" title="Aumentar ancho">➕</button>';
+      html += '      </div>';
+      html += '      <div class="house-tool-stepper" title="Alto de la habitación">';
+      html += '        <span>↕️</span>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="-40" title="Reducir alto">➖</button>';
+      html += '        <span id="rqHeightLabel">' + (selRoom ? Math.max(1, selRoom.height || Math.round((selRoom.h || 120)/40)) : 3) + '</span>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="40" title="Aumentar alto">➕</button>';
+      html += '      </div>';
+      html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
+      html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
+      html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
+      html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">Editar muebles</button>';
+      if(gmMode){
+        html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">🗑️</button>';
+      }
+      html += '    </div>';
+      html += '  </div>';
+    }
+
+    html += '</div>'; // Fin house-topbar
+
+    // Lienzo Konva 2D con zoom flotante en la esquina
     html += '<div class="canvas-wrap' + (houseState.editMode ? '' : ' is-view') + '" id="canvasWrap">';
+    html += '  <div class="house-zoom-group">';
+    html += '    <button data-action="zoom-house-out" title="Alejar plano">−</button>';
+    html += '    <span class="zlabel" id="zoomLabel">' + Math.round((houseKonvaZoom || 1.0) * 100) + '%</span>';
+    html += '    <button data-action="zoom-house-in" title="Acercar plano">+</button>';
+    html += '    <button data-action="zoom-house-fit" title="Ajustar estancias a pantalla">📱 Ajustar</button>';
+    html += '  </div>';
     html += '  <div id="stage-container"></div>';
     html += '</div>';
 
     // Barra de consejos interactiva (solo en modo Editar)
     if(houseState.editMode){
-    html += '<div class="house-hint-bar">';
-    html += '  En <b>modo Editar</b>: arrastra una habitación para moverla (se ajusta a la casilla), tira de cualquiera de sus 8 esquinas y bordes o usa ➖/➕ en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
-    html += '</div>';
+      html += '<div class="house-hint-bar">';
+      html += '  En <b>modo Editar</b>: arrastra una habitación para moverla (se ajusta a la casilla), tira de cualquiera de sus 8 esquinas y bordes o usa ➖/➕ en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
+      html += '</div>';
     }
 
     // Popovers de texturas, color, icono, plantas
@@ -4712,21 +4728,17 @@ function renderHouseView(){
       html += '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl y de quién es.</div>';
     }
     html += '</div>';
+
+    html += '</div>'; // Fin house-blueprint-section
   }
-
-  html += '</div>'; // Fin house-blueprint-section
-
-  // El historial solo guardaba niveles y mejoras, que ya no se muestran (los datos siguen en la base)
 
   html += '</div>'; // Fin house-container
   main.innerHTML = html;
 
-  if(!houseState.studioRoomId){
+  if(tab === "plano"){
     setTimeout(function(){
       initOrRenderHouseKonvaStage();
     }, 10);
-  } else {
-    canvaAfterRender();
   }
 }
 
@@ -4775,7 +4787,11 @@ function canEditHousePerks(){
 
 function renderHouseUpgradesBox(){
   var html = '<div class="house-info-box" id="housePerksBox">';
-  html += '  <h3 class="house-events-title">Mejoras de la casa</h3>';
+  if(canEditHousePerks()){
+    html += '  <div class="house-perks-toolbar">';
+    html += '    <button class="btn-compact" data-action="open-house-perks-editor" title="Editar mejoras">✎</button>';
+    html += '  </div>';
+  }
   var perks = getActiveHousePerks();
   if(!perks.length) html += '  <div class="house-info-empty">La casa todavía no tiene mejoras.</div>';
   perks.forEach(function(p){
@@ -4784,12 +4800,6 @@ function renderHouseUpgradesBox(){
     if(p.description) html += '<div class="house-perk-desc">' + esc(p.description) + '</div>';
     html += '</div></div>';
   });
-  if(canEditHousePerks()){
-    html += '  <div class="house-perk-gm-row">';
-    html += '    <button class="house-perk-gm-btn" data-action="open-house-perks-editor">✏️ Editar mejoras</button>';
-    html += '    <button class="house-perk-gm-btn" data-action="open-house-secrets">🔒 Panel secreto</button>';
-    html += '  </div>';
-  }
   html += '</div>';
   return html;
 }
@@ -5032,30 +5042,118 @@ function getHouseQuests(){
   return list.filter(function(q){ return q && q.house === true; });
 }
 
+// Nivel de la casa calculado a partir de misiones cumplidas
+function getHouseLevel(){
+  var done = getHouseQuests().filter(function(q){ return q && q.status === "completada"; });
+  if(!done.length) return 0;
+  var maxLvl = -1;
+  var regex = /nivel\s*(\d+)/i;
+  done.forEach(function(q){
+    var m1 = q.reward ? String(q.reward).match(regex) : null;
+    var m2 = q.title ? String(q.title).match(regex) : null;
+    if(m1){
+      var n1 = parseInt(m1[1], 10);
+      if(!isNaN(n1) && n1 > maxLvl) maxLvl = n1;
+    }
+    if(m2){
+      var n2 = parseInt(m2[1], 10);
+      if(!isNaN(n2) && n2 > maxLvl) maxLvl = n2;
+    }
+  });
+  if(maxLvl >= 0) return maxLvl;
+  return done.length;
+}
+
+function isHouseTaskDone(t){
+  if(!t) return false;
+  if(t.done) return true;
+  var target = parseInt(t.target, 10) || 0;
+  var cur = parseInt(t.current, 10) || 0;
+  if(target > 1 && cur >= target) return true;
+  return false;
+}
+
 function renderHouseQuestsBox(){
   var quests = getHouseQuests();
   var active = quests.filter(function(q){ return !q.status || q.status === "activa"; });
   var done = quests.filter(function(q){ return q.status === "completada"; });
   var html = '<div class="house-info-box" id="houseQuestsBox">';
-  html += '  <h3 class="house-events-title">Misiones de la casa</h3>';
+
+  // Sección "En curso"
+  html += '  <div class="house-info-sub">En curso</div>';
   if(!quests.length){
     html += '  <div class="house-info-empty">El máster puede marcar misiones como Casa en Misiones.</div>';
   } else if(!active.length){
     html += '  <div class="house-info-empty">Ninguna misión de la casa en curso.</div>';
-  }
-  active.forEach(function(q){
-    html += '  <div class="house-quest-card">';
-    html += '    <div class="house-quest-title">' + esc(q.title || "Misión") + '</div>';
-    if(q.reward) html += '    <div class="house-quest-reward">Recompensa: ' + esc(q.reward) + '</div>';
-    html += '    <button class="house-quest-open-btn" data-action="open-house-quest" data-quest-id="' + esc(q.id || "") + '">Abrir en Misiones</button>';
-    html += '  </div>';
-  });
-  if(done.length){
-    html += '  <div class="house-info-sub">Cumplidas</div>';
-    done.forEach(function(q){
-      html += '  <button class="house-quest-done-row" data-action="open-house-quest" data-quest-id="' + esc(q.id || "") + '">✅ ' + esc(q.title || "Misión") + (q.reward ? ' · ' + esc(q.reward) : '') + '</button>';
+  } else {
+    active.forEach(function(q){
+      var tasks = Array.isArray(q.tasks) ? q.tasks : [];
+      var doneCount = 0;
+      tasks.forEach(function(t){ if(isHouseTaskDone(t)) doneCount++; });
+      var progressText = doneCount + "/" + tasks.length + " tareas";
+
+      html += '  <div class="house-quest-card">';
+      html += '    <div class="house-quest-header">';
+      html += '      <div class="house-quest-title">' + esc(q.title || "Misión") + '</div>';
+      if(q.reward){
+        html += '      <span class="house-reward-pill">' + esc(q.reward) + '</span>';
+      }
+      html += '    </div>';
+      html += '    <div class="house-quest-tasks-info">' + progressText + '</div>';
+      html += '    <button class="house-quest-open-btn" data-action="open-house-quest" data-quest-id="' + esc(q.id || "") + '">Abrir en Misiones</button>';
+      html += '  </div>';
     });
   }
+
+  // Sección "Historial"
+  if(done.length){
+    html += '  <div class="house-info-sub" style="margin-top:10px;">Historial</div>';
+    var doneWithOrder = done.map(function(q, idx){
+      return { quest: q, orderNum: idx + 1 };
+    });
+    var historyList = doneWithOrder.slice().reverse();
+    var regex = /nivel\s*(\d+)/i;
+
+    historyList.forEach(function(item){
+      var q = item.quest;
+      var orderNum = item.orderNum;
+      var m1 = q.reward ? String(q.reward).match(regex) : null;
+      var m2 = q.title ? String(q.title).match(regex) : null;
+      var levelNum = m1 ? parseInt(m1[1], 10) : (m2 ? parseInt(m2[1], 10) : null);
+
+      var pillText = "";
+      if(q.reward && !/nivel/i.test(q.reward)){
+        pillText = q.reward;
+      } else if(levelNum !== null && !isNaN(levelNum)){
+        pillText = "⬆ Nivel " + levelNum;
+      } else {
+        pillText = "⬆ Nivel " + orderNum;
+      }
+
+      var tasks = Array.isArray(q.tasks) ? q.tasks : [];
+      var doneCount = 0;
+      tasks.forEach(function(t){ if(isHouseTaskDone(t)) doneCount++; });
+      var progressText = doneCount + "/" + tasks.length + " tareas";
+
+      html += '  <details class="house-hist-item">';
+      html += '    <summary>';
+      html += '      <span class="house-reward-pill big">' + esc(pillText) + '</span>';
+      html += '      <span class="house-hist-title">' + esc(q.title || "Misión") + '</span>';
+      html += '      <span class="house-hist-tasks-badge">' + progressText + '</span>';
+      html += '    </summary>';
+      if(tasks.length){
+        html += '    <ul class="house-hist-task-list">';
+        tasks.forEach(function(t){
+          var isDone = isHouseTaskDone(t);
+          var taskName = t.text || t.title || t.name || "Tarea";
+          html += '      <li class="house-hist-task' + (isDone ? ' is-done' : '') + '">' + (isDone ? '✓ ' : '○ ') + esc(taskName) + '</li>';
+        });
+        html += '    </ul>';
+      }
+      html += '  </details>';
+    });
+  }
+
   html += '</div>';
   return html;
 }
@@ -6297,7 +6395,17 @@ document.addEventListener("click", function(e){
     if(!guardRoom || !canUserEditRoomGeometry(guardRoom)) return;
   }
 
-  if(act === "set-house-mode"){
+  if(act === "set-house-tab"){
+    var targetTab = btn.getAttribute("data-tab");
+    if(targetTab === "plano" || targetTab === "mejoras" || targetTab === "misiones"){
+      houseState.tab = targetTab;
+      try {
+        localStorage.setItem("krysalisHouseTab", targetTab);
+      } catch(e){}
+      renderHouseView();
+    }
+    return;
+  } else if(act === "set-house-mode"){
     houseState.editMode = (btn.getAttribute("data-mode") === "editar") && canUserEditPlan();
     houseState.selectedRoomId = null;
     renderHouseView();

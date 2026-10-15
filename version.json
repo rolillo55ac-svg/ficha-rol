@@ -1,6 +1,6 @@
 {
-  "version": "1.4.54.0",
-  "build": "2026.10.15.16",
-  "updatedAt": "2026-10-15T16:00:00Z",
-  "changelog": "Las partidas nuevas empiezan sin la misión ni la casa de ejemplo de Krysalis; el bestiario conserva la foto de la Kimera."
+  "version": "1.4.55.0",
+  "build": "2026.10.15.20",
+  "updatedAt": "2026-10-15T20:00:00Z",
+  "changelog": "La Casa más clara: cabecera con el nivel y pestañas Plano, Mejoras y Misiones."
 }
