@@ -10488,3 +10488,102 @@ html,body{overscroll-behavior-y:contain;}
 .skill-bonus-ctrl button:disabled,.skills-orig-data .skill-bonus-ctrl button:disabled{opacity:0.45;}
 .alq-top-actions .alq-btn.gold{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1 1 100%;white-space:nowrap;}
 .btn-add-training{display:block;width:100%;min-height:44px;margin-top:8px;}
+
+/* Pestañas internas unificadas (.k-seg): mismo aspecto que las de Tiradas */
+.k-seg {
+  display: flex;
+  gap: var(--spacing-xs);
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin-bottom: var(--spacing-sm);
+}
+.k-seg-grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.k-seg-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.k-seg-scroll::-webkit-scrollbar { display: none; }
+.k-seg > button.k-seg-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: var(--spacing-xs);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  overflow-wrap: anywhere;
+  box-shadow: none;
+  transform: none;
+}
+.k-seg-scroll > button.k-seg-btn { flex: 1 0 auto; white-space: nowrap; overflow-wrap: normal; }
+.k-seg > button.k-seg-btn.active {
+  background: linear-gradient(135deg, rgba(176, 141, 87, 0.35), rgba(90, 65, 30, 0.45));
+  color: var(--gold-light);
+  font-weight: 700;
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 10px -2px rgba(176, 141, 87, 0.4);
+}
+
+/* Tirada libre: Cantidad y Modificador, una fila cada uno (etiqueta a la izquierda, controles a la derecha) */
+.dice-controls-grid { grid-template-columns: 1fr; gap: 8px; }
+.dice-controls-grid .dice-ctrl-col {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dice-controls-grid .dice-ctrl-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.dice-controls-grid .qty-control-row,
+.dice-controls-grid .mod-control-row { flex: none; flex-wrap: nowrap; }
+.dice-controls-grid .dice-num-input {
+  background: rgba(0, 0, 0, 0.14);
+  border: none;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 3px 3px 0 0;
+}
+.dice-controls-grid .dice-num-input:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+  background: rgba(176, 141, 87, 0.06);
+}
+
+/* Campos con el aspecto de la Ficha (.k-input): borde inferior y foco dorado; el tamaño lo sigue marcando cada componente */
+.k-input.k-input {
+  background: rgba(0, 0, 0, 0.14);
+  border: none;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 3px 3px 0 0;
+  color: var(--ink);
+}
+textarea.k-input.k-input {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.k-input.k-input:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+  background: rgba(176, 141, 87, 0.06);
+}

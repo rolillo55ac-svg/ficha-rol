@@ -2565,8 +2565,8 @@ function renderTiradasPage(){
   try { localStorage.setItem(tiradasSubKey(), diceMenuTab); } catch(e){}
   var tabs = [{ id: "tirar", txt: "🎲 Tirar" }, { id: "historial", txt: "📜 Historial" }];
   if(canAsk) tabs.push({ id: "pedir", txt: "📣 Pedir tirada" });
-  var tabsHtml = '<div class="dice-menu-tabs" role="tablist">' + tabs.map(function(t){
-    return '<button type="button" role="tab" class="dice-menu-tab' + (diceMenuTab === t.id ? ' active' : '') + '" aria-selected="' + (diceMenuTab === t.id) + '" data-action="dice-menu-tab" data-tab="' + t.id + '">' + t.txt + '</button>';
+  var tabsHtml = '<div class="dice-menu-tabs k-seg" role="tablist">' + tabs.map(function(t){
+    return '<button type="button" role="tab" class="dice-menu-tab k-seg-btn' + (diceMenuTab === t.id ? ' active' : '') + '" aria-selected="' + (diceMenuTab === t.id) + '" data-action="dice-menu-tab" data-tab="' + t.id + '">' + t.txt + '</button>';
   }).join('') + '</div>';
   main.innerHTML = '<div id="tiradasPage" class="section"><div class="section-title">🎲 Tiradas</div>' + tabsHtml + '<div id="diceMenuBody"></div></div>';
   if(diceMenuTab === "pedir") renderRollRequestTab();

@@ -4612,10 +4612,10 @@ function renderHouseView(){
   html += '</div>';
 
   // 2. Tres pestañas segmentadas
-  html += '<div class="house-tabs" role="tablist">';
-  html += '  <button class="house-tab-btn' + (tab === "plano" ? ' active' : '') + '" data-action="set-house-tab" data-tab="plano">🗺 Plano</button>';
-  html += '  <button class="house-tab-btn' + (tab === "mejoras" ? ' active' : '') + '" data-action="set-house-tab" data-tab="mejoras">✨ Mejoras</button>';
-  html += '  <button class="house-tab-btn' + (tab === "misiones" ? ' active' : '') + '" data-action="set-house-tab" data-tab="misiones">📜 Misiones</button>';
+  html += '<div class="house-tabs k-seg" role="tablist">';
+  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "plano" ? ' active' : '') + '" data-action="set-house-tab" data-tab="plano">🗺 Plano</button>';
+  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "mejoras" ? ' active' : '') + '" data-action="set-house-tab" data-tab="mejoras">✨ Mejoras</button>';
+  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "misiones" ? ' active' : '') + '" data-action="set-house-tab" data-tab="misiones">📜 Misiones</button>';
   html += '</div>';
 
   // Solo se pinta el contenido de la pestaña activa (las otras NO se generan en el HTML)
@@ -4631,10 +4631,12 @@ function renderHouseView(){
     html += '<div class="house-topbar">';
     html += '  <div class="house-toolbar">';
     var floors = getHouseFloors();
+    html += '    <div class="k-seg k-seg-grid3" style="flex:1 1 100%">';
     floors.forEach(function(fl){
       var isFlActive = isRoomOnFloor({ floor: houseState.activeFloor }, fl.id);
-      html += '    <button class="house-floor-tab-btn' + (isFlActive ? ' active' : '') + '" data-action="switch-house-floor" data-floor="' + fl.id + '">' + esc(fl.name) + '</button>';
+      html += '    <button class="house-floor-tab-btn k-seg-btn' + (isFlActive ? ' active' : '') + '" data-action="switch-house-floor" data-floor="' + fl.id + '">' + esc(fl.name) + '</button>';
     });
+    html += '    </div>';
     if(gmMode && houseState.editMode){
       html += '    <button class="house-add-floor-btn" data-action="open-add-floor-modal" title="Crear nueva planta">+ Nueva Planta</button>';
     }
