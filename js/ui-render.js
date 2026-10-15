@@ -698,7 +698,7 @@ function tplEntrenamiento(c){
       if(catId === "spell_summon"){
         secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
           '<label>Elemento a Mejorar</label>' +
-          '<select class="tr-cat-select" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+          '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
             '<option value="">-- Seleccionar Hechizo o Invocación --</option>' +
             '<optgroup label="✨ Hechizos">' +
               (c.spells || []).map(function(sp){
@@ -716,7 +716,7 @@ function tplEntrenamiento(c){
         var curTargetStat = t.targetStat || "+10 PV";
         secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
           '<label>Atributo o Estadística</label>' +
-          '<select class="tr-cat-select" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+          '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
             '<option value="stat:pv" ' + (curTargetStat === "+10 PV" || t.linkedId === "stat:pv" ? 'selected' : '') + '>❤️ Vida (+10 PV)</option>' +
             '<option value="stat:mana" ' + (curTargetStat === "+5 Maná" || t.linkedId === "stat:mana" ? 'selected' : '') + '>🔷 Maná (+5 Maná)</option>' +
             '<option value="stat:defensa" ' + (curTargetStat === "+1 Defensa" || t.linkedId === "stat:defensa" ? 'selected' : '') + '>🛡️ Defensa (+1)</option>' +
@@ -731,7 +731,7 @@ function tplEntrenamiento(c){
       } else if(catId === "skill"){
         secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
           '<label>Habilidad a Desarrollar</label>' +
-          '<select class="tr-cat-select" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+          '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
             '<option value="">-- Seleccionar Habilidad --</option>' +
             (typeof SKILL_DEFS !== "undefined" ? SKILL_DEFS : []).map(function(sdef){
               return '<option value="skill:' + sdef.id + '" ' + (t.linkedId === sdef.id || t.linkedId === "skill:" + sdef.id ? 'selected' : '') + '>🎯 ' + esc(sdef.name) + '</option>';
@@ -816,7 +816,7 @@ function tplEntrenamiento(c){
         '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
           '<div class="creature-field" style="flex:1;min-width:130px;">' +
             '<label>Categoría</label>' +
-            '<select class="tr-cat-select" data-action="set-training-category" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
+            '<select class="tr-cat-select k-input" data-action="set-training-category" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
               '<option value="skill" ' + (catId === 'skill' ? 'selected' : '') + '>🎯 Habilidad</option>' +
               '<option value="spell_summon" ' + (catId === 'spell_summon' ? 'selected' : '') + '>✨ Magia / Hechizo</option>' +
               '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>⚔️ Atributo / Combate</option>' +
@@ -852,7 +852,7 @@ function tplEntrenamiento(c){
                 '🎲 Tirar Automático (d' + sides + ')' +
               '</button>' +
               '<div class="tr-manual-group" style="display:inline-flex;align-items:center;gap:3px;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:2px 4px;">' +
-                '<input type="number" min="1" max="' + sides + '" class="tr-manual-input" data-manual-for="' + t.id + '" placeholder="1-' + sides + '" title="Tirada de dado físico" style="width:44px;background:none;border:none;color:var(--ink);font-family:var(--font-mono);font-size:.8rem;text-align:center;">' +
+                '<input type="number" min="1" max="' + sides + '" class="tr-manual-input k-input" data-manual-for="' + t.id + '" placeholder="1-' + sides + '" title="Tirada de dado físico" style="width:44px;background:none;border:none;color:var(--ink);font-family:var(--font-mono);font-size:.8rem;text-align:center;">' +
                 '<button type="button" class="btn-compact tr-manual-btn" data-action="add-manual-training-roll" data-id="' + t.id + '" title="Registrar tirada física" style="padding:3px 6px;font-size:.7rem;">+ Manual</button>' +
               '</div>' +
             '</div>'
@@ -878,9 +878,9 @@ function tplCombate(c){
   var html = '';
 
   // 1. Subnavegación rápida entre Combate y Estados
-  html += '<div class="combat-subnav-pills">'+
-    '<button type="button" class="subnav-pill active" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
-    '<button type="button" class="subnav-pill" data-action="switch-tab" data-tab="estados">💫 Estados y Buffs ('+assignedBuffs.length+')</button>'+
+  html += '<div class="combat-subnav-pills k-seg">'+
+    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="estados">💫 Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
@@ -982,9 +982,9 @@ function tplEstados(c){
   var html = '';
 
   // 1. Subnavegación rápida entre Combate y Estados
-  html += '<div class="combat-subnav-pills">'+
-    '<button type="button" class="subnav-pill" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
-    '<button type="button" class="subnav-pill active" data-action="switch-tab" data-tab="estados">💫 Estados y Buffs ('+assignedBuffs.length+')</button>'+
+  html += '<div class="combat-subnav-pills k-seg">'+
+    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="estados">💫 Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
@@ -1221,7 +1221,7 @@ function renderSpellsGrimoire(c, canEdit){
           '<div class="creature-field"><label>Modificador de Stat</label><input type="text" placeholder="+2, -1, +1d4..." data-bind="spells.' + s.id + '.statMod" value="' + esc(s.statMod) + '" ' + (canEdit ? '' : 'readonly') + '></div>' +
         '</div>' +
         '<div class="creature-field" style="margin-top:6px;"><label>Efecto y Descripción Narrativa</label>' +
-          '<textarea class="spell-notes" placeholder="Efectos mágicos, reglas específicas o descripción..." data-bind="spells.' + s.id + '.efecto" ' + (canEdit ? '' : 'readonly') + '>' + esc(s.efecto) + '</textarea>' +
+          '<textarea class="spell-notes k-input" placeholder="Efectos mágicos, reglas específicas o descripción..." data-bind="spells.' + s.id + '.efecto" ' + (canEdit ? '' : 'readonly') + '>' + esc(s.efecto) + '</textarea>' +
         '</div>' +
       '</div>';
     });
@@ -1614,7 +1614,7 @@ document.addEventListener("gameclockchange", function(){
 function tplAlquimiaHoras(){
   var rows = Object.keys(DISTILL_HOURS_DEFAULT).map(function(r, i){
     return '<label class="alq-note" for="alq-hours-' + i + '">' + esc(r) + '</label>' +
-      '<input type="number" class="alq-hours-input" id="alq-hours-' + i + '" data-rarity="' + esc(r) + '" min="0" max="999" inputmode="numeric" value="' + getDistillHours(r) + '">';
+      '<input type="number" class="alq-hours-input k-input" id="alq-hours-' + i + '" data-rarity="' + esc(r) + '" min="0" max="999" inputmode="numeric" value="' + getDistillHours(r) + '">';
   }).join('');
   return '<div class="alq-sheet-bg" data-action="alchemy-close-hours">' +
     '<div class="alq-sheet" role="dialog" aria-label="Horas de destilado">' +
@@ -1642,9 +1642,9 @@ function tplAlquimia(c){
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">';
   html += '<div class="section-title"><span>Alquimia</span></div>';
 
-  html += '<div class="filter-pills alq-views">' +
-    '<button class="f-pill ' + (alchemyView === 'recetario' ? 'active' : '') + '" data-action="set-alchemy-view" data-val="recetario">🧪 Sustancias</button>' +
-    '<button class="f-pill ' + (alchemyView === 'taller' ? 'active' : '') + '" data-action="set-alchemy-view" data-val="taller">⚗️ Mesa de elaboración</button>' +
+  html += '<div class="filter-pills alq-views k-seg">' +
+    '<button class="f-pill k-seg-btn ' + (alchemyView === 'recetario' ? 'active' : '') + '" data-action="set-alchemy-view" data-val="recetario">🧪 Sustancias</button>' +
+    '<button class="f-pill k-seg-btn ' + (alchemyView === 'taller' ? 'active' : '') + '" data-action="set-alchemy-view" data-val="taller">⚗️ Mesa de elaboración</button>' +
   '</div>';
 
   if(alchemyView === "taller"){
@@ -1689,7 +1689,7 @@ function tplAlquimiaRecetario(c, canEdit){
 
   var nF = alchemyActiveFilterCount();
   html += '<div class="alq-search">' +
-    '<input type="text" class="alchemy-search-input" id="alchemySearchInput" value="' + esc(alchemySearch) + '" placeholder="🔍 Buscar sustancia, efecto o terreno" data-action="search-alchemy">' +
+    '<input type="text" class="alchemy-search-input k-input" id="alchemySearchInput" value="' + esc(alchemySearch) + '" placeholder="🔍 Buscar sustancia, efecto o terreno" data-action="search-alchemy">' +
     '<button type="button" class="alq-btn alq-filter-btn' + (nF ? ' on' : '') + '" data-action="alchemy-open-filters">Filtros' + (nF ? ' (' + nF + ')' : '') + '</button>' +
   '</div>';
   if(canEdit){
@@ -2091,11 +2091,11 @@ function tplInventario(c){
         '<div class="backpack-capacity-tag">🎒 <span>Objetos guardados: <b>'+c.inventory.length+'</b></span></div>'+
         (canEdit ? '<button class="btn-solid-gold" data-action="add-inventory-slot" style="padding:4px 12px;font-size:0.75rem;">+ Añadir Objeto</button>' : '')+
       '</div>'+
-      '<div class="backpack-tabs-bar">';
+      '<div class="backpack-tabs-bar k-seg k-seg-scroll">';
 
     groupsDef.forEach(function(g){
       var isActive = (currentGroup === g.id);
-      html += '<button type="button" class="backpack-tab-btn '+(isActive?'active':'')+'" data-action="set-inv-group" data-val="'+g.id+'">'+
+      html += '<button type="button" class="backpack-tab-btn k-seg-btn '+(isActive?'active':'')+'" data-action="set-inv-group" data-val="'+g.id+'">'+
         '<span>'+g.icon+'</span> <span>'+g.label+'</span> <span class="backpack-tab-count">'+g.count+'</span>'+
       '</button>';
     });

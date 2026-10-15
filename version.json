@@ -1,6 +1,6 @@
 {
-  "version": "1.4.63.0",
-  "build": "2026.10.16.5",
-  "updatedAt": "2026-10-16T09:00:00Z",
-  "changelog": "Mejoras de espacio y cortes: margen bajo el dado, degradado en barras, Entrenar más compacto."
+  "version": "1.4.64.0",
+  "build": "2026.10.16.6",
+  "updatedAt": "2026-10-16T12:00:00Z",
+  "changelog": "Pestañas internas con un solo estilo, campos como en la Ficha y tirada libre en filas."
 }
