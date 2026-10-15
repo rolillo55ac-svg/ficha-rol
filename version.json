@@ -1,6 +1,6 @@
 {
-  "version": "1.4.62.0",
-  "build": "2026.10.16.4",
-  "updatedAt": "2026-10-16T03:00:00Z",
-  "changelog": "Nuevo sonido de puerta al abrir La Casa."
+  "version": "1.4.63.0",
+  "build": "2026.10.16.5",
+  "updatedAt": "2026-10-16T09:00:00Z",
+  "changelog": "Mejoras de espacio y cortes: margen bajo el dado, degradado en barras, Entrenar más compacto."
 }
