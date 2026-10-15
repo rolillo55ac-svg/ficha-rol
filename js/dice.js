@@ -2629,26 +2629,18 @@ function renderDiceRollTab(tabsHtml, closeBtn){
         '<div class="dice-ctrl-col">'+
           '<div class="dice-ctrl-label"><span>Cantidad de Dados</span><span class="dice-ctrl-val" id="qtyDisplay">'+diceConfig.qty+'d'+diceConfig.sides+'</span></div>'+
           '<div class="qty-control-row">'+
-            '<button type="button" class="qty-btn" data-action="dec-dice-qty" aria-label="Menos">-</button>'+
+            '<button type="button" class="qty-btn dice-step" data-action="dec-dice-qty" aria-label="Menos">-</button>'+
             '<input type="number" min="1" max="20" id="diceQty" value="'+diceConfig.qty+'" class="dice-num-input">'+
-            '<button type="button" class="qty-btn" data-action="inc-dice-qty" aria-label="Más">+</button>'+
-            '<div class="quick-qty-chips">'+
-              [1,2,3,4,6].map(function(q){
-                return '<button type="button" class="qty-chip '+(diceConfig.qty===q?'active':'')+'" data-action="set-dice-qty" data-qty="'+q+'">x'+q+'</button>';
-              }).join('')+
-            '</div>'+
+            '<button type="button" class="qty-btn dice-step" data-action="inc-dice-qty" aria-label="Más">+</button>'+
           '</div>'+
         '</div>'
       )+
       '<div class="dice-ctrl-col '+(diceConfig.sides===100?'full-width':'')+'">'+
         '<div class="dice-ctrl-label"><span>Modificador</span><span class="dice-ctrl-val" id="modDisplay">'+(diceConfig.mod>=0?('+'+diceConfig.mod):diceConfig.mod)+'</span></div>'+
         '<div class="mod-control-row">'+
+          '<button type="button" class="qty-btn dice-step" data-action="dec-dice-mod" aria-label="Menos uno">-1</button>'+
           '<input type="number" id="diceMod" value="'+diceConfig.mod+'" class="dice-num-input mod-input">'+
-          '<div class="quick-mod-chips">'+
-            [-2,0,1,2,3,5].map(function(m){
-              return '<button type="button" class="mod-chip '+(diceConfig.mod===m?'active':'')+'" data-action="set-dice-mod" data-mod="'+m+'">'+(m>0?'+'+m:m)+'</button>';
-            }).join('')+
-          '</div>'+
+          '<button type="button" class="qty-btn dice-step" data-action="inc-dice-mod" aria-label="Más uno">+1</button>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -2680,6 +2672,8 @@ function diceModalClick(e){
   if(action==="set-dice-mode"){ diceConfig.mode = btn.getAttribute("data-mode"); diceRerender(); return; }
   if(action==="inc-dice-qty"){ diceConfig.qty = Math.min(20, (diceConfig.qty||1)+1); diceRerender(); return; }
   if(action==="dec-dice-qty"){ diceConfig.qty = Math.max(1, (diceConfig.qty||1)-1); diceRerender(); return; }
+  if(action==="dec-dice-mod"){ diceConfig.mod = Math.max(-99, (diceConfig.mod||0)-1); diceRerender(); return; }
+  if(action==="inc-dice-mod"){ diceConfig.mod = Math.min(99, (diceConfig.mod||0)+1); diceRerender(); return; }
   if(action==="set-dice-qty"){ diceConfig.qty = parseInt(btn.getAttribute("data-qty"),10)||1; diceRerender(); return; }
   if(action==="set-dice-mod"){ diceConfig.mod = parseInt(btn.getAttribute("data-mod"),10)||0; diceRerender(); return; }
   if(action==="pick-die"){ diceConfig.sides = parseInt(btn.getAttribute("data-sides"),10); diceRerender(); return; }

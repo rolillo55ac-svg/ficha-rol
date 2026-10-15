@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tiradas">
+  <title>Tiradas</title>
+  <g stroke="#2A1C12" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+    <!-- dado de 10 caras (vista frontal, dos caras visibles) -->
+    <path d="M32 5L54 27L32 35Z" fill="#A07E4C"/>
+    <path d="M32 5L10 27L32 35Z" fill="#C9A86E"/>
+    <path d="M10 27L32 35L32 59Z" fill="#8A6A3F"/>
+    <path d="M54 27L32 35L32 59Z" fill="#6E5132"/>
+    <path d="M32 5L32 35" fill="none" stroke="#DEC392" stroke-width="1.4"/>
+    <path d="M10 27L32 35L54 27" fill="none" stroke="#DEC392" stroke-width="1.4"/>
+    <!-- número tallado -->
+    <circle cx="23" cy="25" r="2.2" fill="#2A1C12" stroke="none"/>
+    <circle cx="41" cy="25" r="2.2" fill="#2A1C12" stroke="none"/>
+    <!-- brillo -->
+    <path d="M19 22l5-5" fill="none" stroke="#F3EADB" stroke-width="1.4" opacity=".7"/>
+  </g>
+  <!-- chispas -->
+  <path d="M52 8l1.2 3 3 1.2-3 1.2-1.2 3-1.2-3-3-1.2 3-1.2Z" fill="#DEC392"/>
+  <path d="M12 46l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z" fill="#DEC392"/>
+</svg>

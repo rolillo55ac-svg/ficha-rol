@@ -8,7 +8,7 @@ var PARTIDAS = [
   },
   {
     id: "partida2",
-    nombre: "Partida 2",
+    nombre: "Venda2",
     url: "https://teyxwlezzpongijlslty.supabase.co",
     anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRleXh3bGV6enBvbmdpamxzbHR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MTg4NDMsImV4cCI6MjEwNzQ5NDg0M30.BslXL77ijWeuOTlAtvLr7_m-16mzz2Vr-Te5FPGIQq8"
   }
