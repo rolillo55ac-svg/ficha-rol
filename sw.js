@@ -1,7 +1,7 @@
 // Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
 // Modo offline y carga rapida
 
-const CACHE_NAME = 'rol-krysalis-v1.4.55.0';
+const CACHE_NAME = 'rol-krysalis-v1.4.56.0';
 
 const PRECACHE_ASSETS = [
   './',
@@ -12,6 +12,7 @@ const PRECACHE_ASSETS = [
   './favicon.ico',
   './favicon.svg',
   './images/krysalis-icon.svg',
+  './images/iconos/casa.svg',
   './images/apple-touch-icon.png',
   './images/icon-192.png',
   './images/icon-512.png',
