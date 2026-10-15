@@ -1,6 +1,6 @@
 {
-  "version": "1.4.59.0",
-  "build": "2026.10.16.1",
-  "updatedAt": "2026-10-16T00:10:00Z",
-  "changelog": "Pestaña Tiradas en la barra (Tirar, Historial, Pedir tirada) y historial de una línea por tirada con detalle al tocar."
+  "version": "1.4.60.0",
+  "build": "2026.10.16.2",
+  "updatedAt": "2026-10-16T01:00:00Z",
+  "changelog": "La Casa con el mismo acabado que el resto, sonido de puerta al abrir la pestaña Casa y tarjeta de donaciones más atractiva en Ajustes."
 }

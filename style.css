@@ -10384,3 +10384,81 @@ html,body{overscroll-behavior-y:contain;}
   padding: 6px 0;
   overflow-wrap: anywhere;
 }
+
+/* ==========================================================================
+   DONACIONES DESTACADAS (Ajustes y Pantalla Donaciones)
+   ========================================================================== */
+
+#dataModal .settings-donate-card,
+.settings-donate-card {
+  background: var(--bg-elev);
+  animation: donateBreathe 3.5s ease-in-out infinite;
+}
+
+.settings-donate-card .settings-row-title {
+  line-height: 1.25;
+}
+
+.settings-donate-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold);
+  flex: none;
+}
+
+@keyframes donateBreathe {
+  0%, 100% {
+    box-shadow: inset 0 0 0 transparent, 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: inset 0 0 12px var(--line-strong), 0 0 8px var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #dataModal .settings-donate-card,
+  .settings-donate-card {
+    animation: none;
+  }
+}
+
+.donate-panel .donate-polaroid {
+  width: min(86%, 360px);
+  transform: rotate(-2deg);
+}
+
+.donate-opt-amount,
+.donate-panel .donate-opt-amount {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.donate-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0;
+}
+
+.donate-preview video {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+.donate-preview .settings-note {
+  margin: 0;
+  text-align: center;
+}
+

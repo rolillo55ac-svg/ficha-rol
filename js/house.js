@@ -4589,21 +4589,33 @@ function renderHouseView(){
   }
 
   var html = '<div class="house-container">';
+  html += '<div class="section house-section">';
 
   // 1. Cabecera compacta
   html += '<div class="house-head">';
-  html += '  <span class="house-head-title">🏠 La Casa</span>';
-  html += '  <span class="house-level-pill">Nivel ' + getHouseLevel() + '</span>';
+  html += '  <div class="section-title">';
+  html += '    <span><img src="images/iconos/casa.svg" alt="" class="house-title-icon" width="20" height="20"> LA CASA</span>';
   if(canEditHousePerks()){
-    html += '  <button class="btn-compact house-head-lock" data-action="open-house-secrets" title="Panel secreto">🔒</button>';
+    html += '    <button class="btn-compact house-head-lock" data-action="open-house-secrets" title="Panel secreto">🔒</button>';
   }
+  html += '  </div>';
+  html += '  <div class="house-head-meta">';
+  html += '    <span class="house-level-pill pill-formula">Nivel ' + getHouseLevel() + '</span>';
+  var doneQuests = (typeof getHouseQuests === "function" ? getHouseQuests() : []).filter(function(q){
+    return q && q.status === "completada";
+  });
+  var lastDoneQuest = doneQuests.length ? doneQuests[doneQuests.length - 1] : null;
+  if(lastDoneQuest && lastDoneQuest.title){
+    html += '    <span class="house-last-quest">Último hito: ' + esc(lastDoneQuest.title) + '</span>';
+  }
+  html += '  </div>';
   html += '</div>';
 
   // 2. Tres pestañas segmentadas
   html += '<div class="house-tabs" role="tablist">';
-  html += '  <button class="house-tab-btn' + (tab === "plano" ? ' active' : '') + '" data-action="set-house-tab" data-tab="plano">Plano</button>';
-  html += '  <button class="house-tab-btn' + (tab === "mejoras" ? ' active' : '') + '" data-action="set-house-tab" data-tab="mejoras">Mejoras</button>';
-  html += '  <button class="house-tab-btn' + (tab === "misiones" ? ' active' : '') + '" data-action="set-house-tab" data-tab="misiones">Misiones</button>';
+  html += '  <button class="house-tab-btn' + (tab === "plano" ? ' active' : '') + '" data-action="set-house-tab" data-tab="plano">🗺 Plano</button>';
+  html += '  <button class="house-tab-btn' + (tab === "mejoras" ? ' active' : '') + '" data-action="set-house-tab" data-tab="mejoras">✨ Mejoras</button>';
+  html += '  <button class="house-tab-btn' + (tab === "misiones" ? ' active' : '') + '" data-action="set-house-tab" data-tab="misiones">📜 Misiones</button>';
   html += '</div>';
 
   // Solo se pinta el contenido de la pestaña activa (las otras NO se generan en el HTML)
@@ -4732,6 +4744,7 @@ function renderHouseView(){
     html += '</div>'; // Fin house-blueprint-section
   }
 
+  html += '</div>'; // Fin section house-section
   html += '</div>'; // Fin house-container
   main.innerHTML = html;
 
@@ -4787,18 +4800,25 @@ function canEditHousePerks(){
 
 function renderHouseUpgradesBox(){
   var html = '<div class="house-info-box" id="housePerksBox">';
-  if(canEditHousePerks()){
-    html += '  <div class="house-perks-toolbar">';
-    html += '    <button class="btn-compact" data-action="open-house-perks-editor" title="Editar mejoras">✎</button>';
+  var perks = getActiveHousePerks();
+  var canEdit = canEditHousePerks();
+  if(!perks.length){
+    html += '  <div class="house-info-empty house-empty-state">';
+    html += '    <img src="images/iconos/casa.svg" alt="" class="house-empty-icon" width="48" height="48">';
+    html += '    <p class="house-empty-text">Aún no hay mejoras. Cuando la casa suba de nivel, aparecerán aquí.</p>';
     html += '  </div>';
   }
-  var perks = getActiveHousePerks();
-  if(!perks.length) html += '  <div class="house-info-empty">La casa todavía no tiene mejoras.</div>';
   perks.forEach(function(p){
-    html += '  <div class="house-perk-card"><span class="house-perk-icon">' + esc(p.icon || "✨") + '</span>';
-    html += '<div class="house-perk-text"><div class="house-perk-name">' + esc(p.name || "") + '</div>';
-    if(p.description) html += '<div class="house-perk-desc">' + esc(p.description) + '</div>';
-    html += '</div></div>';
+    html += '  <div class="house-perk-card">';
+    html += '    <span class="house-perk-icon">' + esc(p.icon || "✨") + '</span>';
+    html += '    <div class="house-perk-text">';
+    html += '      <div class="house-perk-name">' + esc(p.name || "") + '</div>';
+    if(p.description) html += '      <div class="house-perk-desc">' + esc(p.description) + '</div>';
+    html += '    </div>';
+    if(canEdit){
+      html += '    <button type="button" class="btn-compact house-perk-more" data-action="open-house-perks-editor" aria-label="Editar mejoras" title="Editar mejoras">⋯</button>';
+    }
+    html += '  </div>';
   });
   html += '</div>';
   return html;
@@ -5082,14 +5102,21 @@ function renderHouseQuestsBox(){
   // Sección "En curso"
   html += '  <div class="house-info-sub">En curso</div>';
   if(!quests.length){
-    html += '  <div class="house-info-empty">El máster puede marcar misiones como Casa en Misiones.</div>';
+    html += '  <div class="house-info-empty house-empty-state">';
+    html += '    <img src="images/iconos/casa.svg" alt="" class="house-empty-icon" width="48" height="48">';
+    html += '    <p class="house-empty-text">El máster puede marcar misiones como Casa en Misiones.</p>';
+    html += '  </div>';
   } else if(!active.length){
-    html += '  <div class="house-info-empty">Ninguna misión de la casa en curso.</div>';
+    html += '  <div class="house-info-empty house-empty-state">';
+    html += '    <img src="images/iconos/casa.svg" alt="" class="house-empty-icon" width="48" height="48">';
+    html += '    <p class="house-empty-text">Ninguna misión de la casa en curso.</p>';
+    html += '  </div>';
   } else {
     active.forEach(function(q){
       var tasks = Array.isArray(q.tasks) ? q.tasks : [];
       var doneCount = 0;
       tasks.forEach(function(t){ if(isHouseTaskDone(t)) doneCount++; });
+      var pct = tasks.length > 0 ? Math.min(100, Math.round((doneCount / tasks.length) * 100)) : 0;
       var progressText = doneCount + "/" + tasks.length + " tareas";
 
       html += '  <div class="house-quest-card">';
@@ -5100,6 +5127,7 @@ function renderHouseQuestsBox(){
       }
       html += '    </div>';
       html += '    <div class="house-quest-tasks-info">' + progressText + '</div>';
+      html += '    <div class="house-progress"><span style="width:' + pct + '%"></span></div>';
       html += '    <button class="house-quest-open-btn" data-action="open-house-quest" data-quest-id="' + esc(q.id || "") + '">Abrir en Misiones</button>';
       html += '  </div>';
     });
@@ -5108,6 +5136,7 @@ function renderHouseQuestsBox(){
   // Sección "Historial"
   if(done.length){
     html += '  <div class="house-info-sub" style="margin-top:10px;">Historial</div>';
+    html += '  <div class="house-timeline">';
     var doneWithOrder = done.map(function(q, idx){
       return { quest: q, orderNum: idx + 1 };
     });
@@ -5152,6 +5181,7 @@ function renderHouseQuestsBox(){
       }
       html += '  </details>';
     });
+    html += '  </div>';
   }
 
   html += '</div>';
