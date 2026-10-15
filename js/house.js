@@ -1157,6 +1157,12 @@ function renderKonvaRooms(){
       nameText.width(maxW);
       nameText.wrap("word");
     }
+    // Antes de cortar con "…", se reduce un poco la letra (mínimo 75 %)
+    var minFs = nameText.fontSize() * 0.75;
+    while(!iconOnly && nameText.height() > maxH && nameText.fontSize() > minFs){
+      nameText.fontSize(nameText.fontSize() - 0.5 * u);
+      nameText.height("auto");
+    }
     if(!iconOnly && nameText.height() > maxH){
       nameText.height(maxH);
       nameText.ellipsis(true);
@@ -4695,14 +4701,16 @@ function renderHouseView(){
 
     html += '</div>'; // Fin house-topbar
 
-    // Lienzo Konva 2D con zoom flotante en la esquina
-    html += '<div class="canvas-wrap' + (houseState.editMode ? '' : ' is-view') + '" id="canvasWrap">';
+    // Barra de zoom propia y lienzo Konva 2D debajo
+    html += '<div class="house-zoom-bar">';
     html += '  <div class="house-zoom-group">';
     html += '    <button data-action="zoom-house-out" title="Alejar plano">−</button>';
     html += '    <span class="zlabel" id="zoomLabel">' + Math.round((houseKonvaZoom || 1.0) * 100) + '%</span>';
     html += '    <button data-action="zoom-house-in" title="Acercar plano">+</button>';
     html += '    <button data-action="zoom-house-fit" title="Ajustar estancias a pantalla">📱 Ajustar</button>';
     html += '  </div>';
+    html += '</div>';
+    html += '<div class="canvas-wrap' + (houseState.editMode ? '' : ' is-view') + '" id="canvasWrap">';
     html += '  <div id="stage-container"></div>';
     html += '</div>';
 
