@@ -97,14 +97,14 @@ function renderTopbar(){
 }
 
 var PLAYER_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"🎲 Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
+  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"lapidario",label:"Piedras"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"}, {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
 var GM_TABS = [
-  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"🎲 Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
+  {id:"ficha",label:"Ficha"}, {id:"tiradas",label:"Tiradas"}, {id:"mision",label:"Misión"}, {id:"casa",label:"Casa"}, {id:"habilidades",label:"Habilidades"}, {id:"entrenamiento",label:"Entrenamiento"}, {id:"combate",label:"Combate"}, {id:"estados",label:"Estados"},
   {id:"inventario",label:"Inventario"}, {id:"magia",label:"Magia"}, {id:"alquimia",label:"Alquimia"},
   {id:"lapidario",label:"Piedras"},
   {id:"invocaciones",label:"Invocaciones"}, {id:"bestiario",label:"Bestiario"},
@@ -120,7 +120,7 @@ function renderTabbar(){
     var isActive = state.activeTab===t.id;
     // Contador de veredictos de talla pendientes para el máster
     var count = (t.id === "lapidario" && isGM() && typeof getPendingLapidaryVerdicts === "function") ? getPendingLapidaryVerdicts().length : 0;
-    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+(count ? ' ('+count+' pendientes)' : '')+'">'+(t.id==='casa' ? '<img class="tab-ico-img" src="images/iconos/casa.svg" alt="" width="30" height="30" decoding="async">' : '')+'<span>'+t.label+'</span>'+(count ? '<span class="tab-count">'+count+'</span>' : '')+'</button>';
+    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+(count ? ' ('+count+' pendientes)' : '')+'">'+((t.id==='casa' || t.id==='tiradas') ? '<img class="tab-ico-img" src="images/iconos/'+t.id+'.svg" alt="" width="30" height="30" decoding="async">' : '')+'<span>'+t.label+'</span>'+(count ? '<span class="tab-count">'+count+'</span>' : '')+'</button>';
   }).join('');
 }
 
