@@ -1,6 +1,6 @@
 {
-  "version": "1.4.56.0",
-  "build": "2026.10.15.21",
-  "updatedAt": "2026-10-15T21:00:00Z",
-  "changelog": "Icono nuevo de La Casa en la barra de abajo."
+  "version": "1.4.57.0",
+  "build": "2026.10.15.22",
+  "updatedAt": "2026-10-15T22:00:00Z",
+  "changelog": "Historial de tiradas guardado en la base: nadie pierde tiradas aunque no tenga la web abierta."
 }

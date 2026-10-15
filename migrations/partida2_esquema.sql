@@ -1,5 +1,5 @@
 -- Partida 2: esquema completo para un proyecto de Supabase NUEVO y vacío (ficha-rol-partida2, ref teyxwlezzpongijlslty).
--- Copia de la estructura de Krysalis a 14/10/2026 (migraciones 001-033), SIN datos de Krysalis y SIN la 034 (partidas).
+-- Copia de la estructura de Krysalis a 14/10/2026 (migraciones 001-033 y 035), SIN datos de Krysalis y SIN la 034 (partidas).
 -- Se pega entero en el SQL Editor del proyecto nuevo. Se puede ejecutar dos veces sin romper nada.
 -- NO ejecutar en el proyecto de Krysalis (nwjbdevshaucnjrwebtb).
 --
@@ -993,6 +993,63 @@ DROP POLICY IF EXISTS "Permitir subida de imagenes" ON storage.objects;
 CREATE POLICY "Permitir subida de imagenes" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'images');
 DROP POLICY IF EXISTS "Permitir actualizar imagenes" ON storage.objects;
 CREATE POLICY "Permitir actualizar imagenes" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'images');
+
+-- ============================================================
+-- 7b. Historial de tiradas (migración 035)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.dice_rolls (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL DEFAULT auth.uid(),
+  character_id uuid,
+  char_name text,
+  label text,
+  kind text,
+  sides int,
+  qty int,
+  dice jsonb,
+  modifier int,
+  total int,
+  mode text,
+  dc int,
+  success boolean,
+  is_crit boolean NOT NULL DEFAULT false,
+  is_fumble boolean NOT NULL DEFAULT false,
+  formula_text text,
+  hidden boolean NOT NULL DEFAULT false,
+  game_hours int,
+  request_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS dice_rolls_created_at_idx ON public.dice_rolls (created_at DESC);
+CREATE INDEX IF NOT EXISTS dice_rolls_character_idx ON public.dice_rolls (character_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS dice_rolls_request_idx ON public.dice_rolls (request_id) WHERE request_id IS NOT NULL;
+
+ALTER TABLE public.dice_rolls ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "tiradas: se leen las visibles" ON public.dice_rolls;
+CREATE POLICY "tiradas: se leen las visibles" ON public.dice_rolls FOR SELECT TO authenticated
+  USING (hidden = false OR user_id = auth.uid() OR public.is_gm());
+
+DROP POLICY IF EXISTS "tiradas: cada uno inserta las suyas" ON public.dice_rolls;
+CREATE POLICY "tiradas: cada uno inserta las suyas" ON public.dice_rolls FOR INSERT TO authenticated
+  WITH CHECK (
+    user_id = auth.uid()
+    AND (hidden = false OR public.is_gm())
+    AND (
+      character_id IS NULL
+      OR public.is_gm()
+      OR EXISTS (SELECT 1 FROM public.characters c WHERE c.id = character_id AND c.owner_id = auth.uid())
+    )
+  );
+
+DROP POLICY IF EXISTS "tiradas: solo el máster borra" ON public.dice_rolls;
+CREATE POLICY "tiradas: solo el máster borra" ON public.dice_rolls FOR DELETE TO authenticated
+  USING (public.is_gm());
+
+REVOKE ALL ON public.dice_rolls FROM anon;
+GRANT SELECT, INSERT, DELETE ON public.dice_rolls TO authenticated;
 
 -- ============================================================
 -- 8. Filas mínimas para arrancar (vacías)

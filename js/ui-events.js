@@ -2657,7 +2657,15 @@ function handleClick(e){
       formulaText: formula,
       isCrit: d === 10,
       isFumble: d === 1,
-      ts: Date.now()
+      ts: Date.now(),
+      charId: c.db_id || null,
+      kind: "tame",
+      sides: 10,
+      qty: 1,
+      dice: [d],
+      modifier: bestBonus,
+      dc: diff,
+      success: isSuccess
     };
     state.rollLog.unshift(rollItem);
     if(state.rollLog.length > 20) state.rollLog.length = 20;
