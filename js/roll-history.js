@@ -151,28 +151,55 @@ function rollModeText(mode){
   return "";
 }
 
+// Una línea por tirada; al tocarla se despliega el detalle
 function rollHistoryItemHtml(r){
   var when = new Date(r.ts || Date.now());
-  var meta = [when.toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + " " + when.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })];
-  if(r.gameHours !== null && r.gameHours !== undefined && typeof formatGameClock === "function") meta.push("🕰️ " + formatGameClock(r.gameHours));
+  var realTime = when.toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + ", " + when.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  var icons = '';
+  if(r.success === true) icons += '<span title="CD superada">✅</span>';
+  else if(r.success === false) icons += '<span title="CD fallada">❌</span>';
+  if(r.requestId) icons += '<span title="Pedida por el máster">📣</span>';
+  if(r.mode === "adv") icons += '<span title="Ventaja">⬆</span>';
+  else if(r.mode === "disadv") icons += '<span title="Desventaja">⬇</span>';
+  var det = [];
+  det.push('<div class="rl-formula rh-num">' + esc(r.formulaText) + (r.isCrit ? " · ¡Crítico!" : (r.isFumble ? " · ¡Pifia!" : "")) + '</div>');
+  if(r.dc !== null && r.dc !== undefined) det.push('<div class="rl-formula">CD ' + esc(r.dc) + (r.success === true ? " · superada" : (r.success === false ? " · fallada" : "")) + '</div>');
   var modeTxt = rollModeText(r.mode);
-  if(modeTxt) meta.push(modeTxt);
-  if(r.requestId) meta.push("📣 Pedida por el máster");
-  if(r.hidden) meta.push("🙈 Oculta");
-  var dcTxt = "";
-  if(r.dc !== null && r.dc !== undefined){
-    dcTxt = '<div class="rl-formula">CD ' + esc(r.dc) + (r.success === true ? " · ✅ Superada" : (r.success === false ? " · ❌ Fallada" : "")) + '</div>';
-  }
-  var critTxt = r.isCrit ? " · ¡Crítico!" : (r.isFumble ? " · ¡Pifia!" : "");
+  if(modeTxt) det.push('<div class="rl-formula">' + modeTxt + '</div>');
+  if(r.requestId) det.push('<div class="rl-formula">Pedida por el máster</div>');
+  if(r.hidden) det.push('<div class="rl-formula">🙈 Oculta</div>');
+  det.push('<div class="rl-formula">' + esc(realTime) + '</div>');
   var delBtn = (isGM() && !rollHistoryTableMissing && /^[0-9a-f-]{36}$/i.test(String(r.id))) ?
     '<button type="button" class="game-clock-btn roll-history-del" data-action="roll-history-delete" data-roll-id="' + esc(r.id) + '" aria-label="Borrar tirada">🗑</button>' : '';
-  return '<div class="roll-log-item roll-history-item">' +
-      '<div class="rl-info"><span class="rl-char">' + esc(r.charName) + '</span> — <span class="rl-label">' + esc(r.label) + '</span>' +
-        '<div class="rl-formula">' + esc(r.formulaText) + esc(critTxt) + '</div>' + dcTxt +
-        '<div class="rl-formula">' + esc(meta.join(" · ")) + '</div>' +
-      '</div>' +
-      '<div class="rl-result-badge" title="Resultado">' + esc(r.total) + '</div>' + delBtn +
-    '</div>';
+  return '<details class="roll-history-item rh-line">' +
+      '<summary class="rh-sum">' +
+        '<span class="rh-name"><span class="rl-char">' + esc(r.charName) + '</span> · <span class="rl-label">' + esc(r.label) + '</span></span>' +
+        '<span class="rh-icons">' + icons + '</span>' +
+        '<span class="rh-total rh-num">' + esc(r.total) + '</span>' +
+      '</summary>' +
+      '<div class="rh-detail">' + det.join('') + delBtn + '</div>' +
+    '</details>';
+}
+
+// Separador de día: Hoy, Ayer o "13 oct"
+function rollHistoryDayLabel(ts){
+  var d = new Date(ts || Date.now());
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var day = new Date(d); day.setHours(0, 0, 0, 0);
+  var diff = Math.round((today - day) / 86400000);
+  if(diff === 0) return "Hoy";
+  if(diff === 1) return "Ayer";
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
+
+function rollHistoryListHtml(items){
+  var last = null, html = '';
+  items.forEach(function(r){
+    var lbl = rollHistoryDayLabel(r.ts);
+    if(lbl !== last){ html += '<div class="rh-day">' + esc(lbl) + '</div>'; last = lbl; }
+    html += rollHistoryItemHtml(r);
+  });
+  return html;
 }
 
 document.addEventListener("change", function(e){
@@ -197,13 +224,13 @@ function renderRollHistoryModal(){
         '<select id="rollHistoryChar" class="game-clock-input" aria-label="Filtrar por personaje"><option value="">Todos los personajes</option>' +
           names.map(function(n){ return '<option value="' + esc(n) + '"' + (n === v.charName ? " selected" : "") + '>' + esc(n) + '</option>'; }).join("") +
         '</select>' +
-        '<label class="roll-history-check"><input type="checkbox" id="rollHistoryRequested"' + (v.onlyRequested ? " checked" : "") + '> Solo las pedidas por el máster</label>' +
+        '<label class="roll-history-check"><input type="checkbox" id="rollHistoryRequested"' + (v.onlyRequested ? " checked" : "") + '> Solo 📣 del máster</label>' +
       '</div>';
   }
-  html += '<div class="roll-log roll-history-list">';
+  html += '<div class="roll-history-list">';
   if(v.loading && !v.items.length) html += '<div class="roll-empty">Cargando…</div>';
   else if(!v.items.length) html += '<div class="roll-empty">Sin tiradas.</div>';
-  else html += v.items.map(rollHistoryItemHtml).join("");
+  else html += rollHistoryListHtml(v.items);
   html += '</div>';
   if(v.more) html += '<button type="button" class="game-clock-btn roll-history-more" data-action="roll-history-more"' + (v.loading ? " disabled" : "") + '>Ver más</button>';
   modal.innerHTML = html;
@@ -242,7 +269,7 @@ function reloadRollHistoryView(){
 }
 
 function openRollHistoryModal(){
-  openDiceModal("historial");
+  goTiradasTab("historial");
 }
 
 function showRollHistoryInMenu(){

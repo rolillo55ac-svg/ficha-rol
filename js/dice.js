@@ -2523,34 +2523,63 @@ var diceConfig = {
   mod: 0,
   mode: "normal"
 };
-var diceMenuTab = "tirar";
+var diceMenuTab = "tirar";   // sub-pestaña de la pestaña Tiradas: tirar, historial o pedir
+var tiradasSubLoaded = false;
+var diceCtx = "modal";       // dónde se pinta el lanzador: "modal" (dado flotante) o "page" (pestaña Tiradas)
 
-// Menú de dados: pestañas Tirar, Historial y (solo el máster, con la tabla creada) Pedir tirada
-function openDiceModal(tab){
-  if(typeof tab === "string") diceMenuTab = tab;
-  var canAsk = isGM() && typeof rollRequestsAvailable === "function" && rollRequestsAvailable();
-  if(diceMenuTab === "pedir" && !canAsk) diceMenuTab = "tirar";
+function tiradasSubKey(){ return (typeof pkey === "function") ? pkey("krysalis_tiradas_sub") : "krysalis_tiradas_sub"; }
+
+function canAskRolls(){
+  return isGM() && typeof rollRequestsAvailable === "function" && rollRequestsAvailable();
+}
+
+// Dado flotante: solo tirada rápida
+function openDiceModal(){
+  diceCtx = "modal";
+  document.getElementById("diceModalOverlay").classList.remove("hidden");
+  var closeBtn = '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>';
+  renderDiceRollTab('', closeBtn);
+}
+
+// Va a la pestaña Tiradas de la barra (con la sub-pestaña indicada o la última usada)
+function goTiradasTab(sub){
+  closeModals();
+  if(typeof sub === "string"){ diceMenuTab = sub; tiradasSubLoaded = true; }
+  state.activeTab = "tiradas";
+  saveState(true);
+  renderTabbar();
+  renderTab();
+}
+
+function renderTiradasPage(){
+  var main = document.getElementById("main");
+  if(!main) return;
+  diceCtx = "page";
+  if(!tiradasSubLoaded){
+    tiradasSubLoaded = true;
+    try { diceMenuTab = localStorage.getItem(tiradasSubKey()) || "tirar"; } catch(e){ diceMenuTab = "tirar"; }
+  }
+  var canAsk = canAskRolls();
+  if(["tirar", "historial", "pedir"].indexOf(diceMenuTab) < 0 || (diceMenuTab === "pedir" && !canAsk)) diceMenuTab = "tirar";
+  try { localStorage.setItem(tiradasSubKey(), diceMenuTab); } catch(e){}
   var tabs = [{ id: "tirar", txt: "🎲 Tirar" }, { id: "historial", txt: "📜 Historial" }];
   if(canAsk) tabs.push({ id: "pedir", txt: "📣 Pedir tirada" });
   var tabsHtml = '<div class="dice-menu-tabs" role="tablist">' + tabs.map(function(t){
     return '<button type="button" role="tab" class="dice-menu-tab' + (diceMenuTab === t.id ? ' active' : '') + '" aria-selected="' + (diceMenuTab === t.id) + '" data-action="dice-menu-tab" data-tab="' + t.id + '">' + t.txt + '</button>';
   }).join('') + '</div>';
-  var closeBtn = '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>';
-  document.getElementById("diceModalOverlay").classList.remove("hidden");
-  if(diceMenuTab !== "tirar"){
-    document.getElementById("diceModal").innerHTML =
-      '<div class="cup-modal-header">'+
-        '<div class="cup-modal-title"><h3>' + (diceMenuTab === "pedir" ? 'Pedir tirada' : 'Historial de tiradas') + '</h3></div>'+ closeBtn +
-      '</div>' + tabsHtml + '<div id="diceMenuBody"></div>';
-    if(diceMenuTab === "pedir") renderRollRequestTab();
-    else if(typeof showRollHistoryInMenu === "function") showRollHistoryInMenu();
-    return;
-  }
-  diceMenuTab = "tirar";
-  renderDiceRollTab(tabsHtml, closeBtn);
+  main.innerHTML = '<div id="tiradasPage" class="section"><div class="section-title">🎲 Tiradas</div>' + tabsHtml + '<div id="diceMenuBody"></div></div>';
+  if(diceMenuTab === "pedir") renderRollRequestTab();
+  else if(diceMenuTab === "historial"){ if(typeof showRollHistoryInMenu === "function") showRollHistoryInMenu(); }
+  else renderDiceRollTab();
+}
+
+// Vuelve a pintar el lanzador donde esté abierto
+function diceRerender(){
+  if(diceCtx === "page") renderTiradasPage(); else openDiceModal();
 }
 
 function renderDiceRollTab(tabsHtml, closeBtn){
+  var inPage = diceCtx === "page";
   var sidesList = [
     { sides: 4, name: "d4", geom: "Tetraedro" },
     { sides: 6, name: "d6", geom: "Cubo" },
@@ -2576,7 +2605,7 @@ function renderDiceRollTab(tabsHtml, closeBtn){
 
   var fullFormula = formulaText + modText + modeSuffix;
 
-  document.getElementById("diceModal").innerHTML =
+  var rollHead = inPage ? '' :
     '<div class="cup-modal-header">'+
       '<div class="cup-modal-icon">'+getDieSvg(diceConfig.sides)+'</div>'+
       '<div class="cup-modal-title">'+
@@ -2584,7 +2613,9 @@ function renderDiceRollTab(tabsHtml, closeBtn){
         '<div class="cup-modal-sub">Elige tu dado, modalidad y lanza</div>'+
       '</div>'+
       closeBtn+
-    '</div>'+ tabsHtml +
+    '</div>';
+  var rollHtml =
+    rollHead +
     '<div class="dice-mode-pills">'+
       '<button type="button" class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">⚔️ Normal</button>'+
       '<button type="button" class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">🍀 Ventaja</button>'+
@@ -2621,11 +2652,14 @@ function renderDiceRollTab(tabsHtml, closeBtn){
       '</div>'+
     '</div>'+
     '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>';
+  if(inPage){ var body = document.getElementById("diceMenuBody"); if(body) body.innerHTML = rollHtml; }
+  else document.getElementById("diceModal").innerHTML = rollHtml;
 }
 
 function diceModalClick(e){
   var btn = e.target.closest("[data-action]"); if(!btn) return;
   var action = btn.getAttribute("data-action");
+  diceCtx = btn.closest("#tiradasPage") ? "page" : "modal";
 
   // Preservar valores si se escribieron a mano en los inputs antes del click
   var currentQtyInput = document.getElementById("diceQty");
@@ -2640,14 +2674,14 @@ function diceModalClick(e){
   }
 
   if(action==="close-modal"){ closeModals(); return; }
-  if(action==="dice-menu-tab"){ openDiceModal(btn.getAttribute("data-tab")); return; }
-  if(diceMenuTab !== "tirar") return;
-  if(action==="set-dice-mode"){ diceConfig.mode = btn.getAttribute("data-mode"); openDiceModal(); return; }
-  if(action==="inc-dice-qty"){ diceConfig.qty = Math.min(20, (diceConfig.qty||1)+1); openDiceModal(); return; }
-  if(action==="dec-dice-qty"){ diceConfig.qty = Math.max(1, (diceConfig.qty||1)-1); openDiceModal(); return; }
-  if(action==="set-dice-qty"){ diceConfig.qty = parseInt(btn.getAttribute("data-qty"),10)||1; openDiceModal(); return; }
-  if(action==="set-dice-mod"){ diceConfig.mod = parseInt(btn.getAttribute("data-mod"),10)||0; openDiceModal(); return; }
-  if(action==="pick-die"){ diceConfig.sides = parseInt(btn.getAttribute("data-sides"),10); openDiceModal(); return; }
+  if(action==="dice-menu-tab"){ diceMenuTab = btn.getAttribute("data-tab"); renderTiradasPage(); return; }
+  if(diceCtx === "page" && diceMenuTab !== "tirar") return;
+  if(action==="set-dice-mode"){ diceConfig.mode = btn.getAttribute("data-mode"); diceRerender(); return; }
+  if(action==="inc-dice-qty"){ diceConfig.qty = Math.min(20, (diceConfig.qty||1)+1); diceRerender(); return; }
+  if(action==="dec-dice-qty"){ diceConfig.qty = Math.max(1, (diceConfig.qty||1)-1); diceRerender(); return; }
+  if(action==="set-dice-qty"){ diceConfig.qty = parseInt(btn.getAttribute("data-qty"),10)||1; diceRerender(); return; }
+  if(action==="set-dice-mod"){ diceConfig.mod = parseInt(btn.getAttribute("data-mod"),10)||0; diceRerender(); return; }
+  if(action==="pick-die"){ diceConfig.sides = parseInt(btn.getAttribute("data-sides"),10); diceRerender(); return; }
   if(action==="roll-dice-btn"){
     var modInput = document.getElementById("diceMod");
     if(modInput) diceConfig.mod = parseInt(modInput.value,10)||0;
@@ -2659,6 +2693,11 @@ function diceModalClick(e){
     return;
   }
 }
+
+document.addEventListener("click", function(e){
+  var btn = e.target.closest ? e.target.closest("#tiradasPage [data-action]") : null;
+  if(btn) diceModalClick(e);
+});
 
 function rollLogHtml(){
   if(!state) return '';
