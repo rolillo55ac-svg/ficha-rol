@@ -1426,6 +1426,80 @@ function handleClick(e){
     renderTab();
     return;
   }
+  if(action==="toggle-summon-teach"){
+    if(!c || !canEditChar(c)) return;
+    var tId = btn.getAttribute("data-id");
+    state._summonTeachOpen = (state._summonTeachOpen === tId) ? null : tId;
+    renderTab();
+    return;
+  }
+  if(action==="save-summon-teach"){
+    if(!c || !canEditChar(c)) return;
+    var tcSm = (c.summons || []).find(function(x){ return x.id === btn.getAttribute("data-id"); });
+    if(!tcSm) return;
+    var tcTxtInp = document.getElementById("summonTeachText-" + tcSm.id);
+    var tcNoteInp = document.getElementById("summonTeachNote-" + tcSm.id);
+    var tcTxt = tcTxtInp ? tcTxtInp.value.trim().slice(0, 80) : "";
+    var tcNote = tcNoteInp ? tcNoteInp.value.trim().slice(0, 200) : "";
+    if(!tcTxt){ showToast("Escribe qué le enseñas", "info"); return; }
+    tcSm.learning = Array.isArray(tcSm.learning) ? tcSm.learning : [];
+    var tcHours = (typeof getGameClockHours === "function") ? getGameClockHours() : null;
+    tcSm.learning.push({
+      id: uid(),
+      texto: tcTxt,
+      nota: tcNote,
+      dia: tcHours === null ? null : gameClockParts(tcHours).day,
+      horas: tcHours,
+      por: isGM() ? "máster" : (c.name || "jugador"),
+      porId: currentUser ? currentUser.id : null,
+      ts: Date.now()
+    });
+    state._summonTeachOpen = null;
+    saveState(false);
+    manageListItemRPC(c, 'summons', 'update_item', tcSm, tcSm.id);
+    renderTab();
+    showToast("Enseñando: " + tcTxt, "success");
+    return;
+  }
+  if(action==="learned-summon-teach"){
+    if(!c || !canEditChar(c)) return;
+    var ltcSm = (c.summons || []).find(function(x){ return x.id === btn.getAttribute("data-id"); });
+    if(!ltcSm) return;
+    var ltcId = btn.getAttribute("data-lid");
+    ltcSm.learning = Array.isArray(ltcSm.learning) ? ltcSm.learning : [];
+    var ltcItem = ltcSm.learning.find(function(x){ return x && x.id === ltcId; });
+    if(!ltcItem) return;
+    ltcSm.learning = ltcSm.learning.filter(function(x){ return x && x.id !== ltcId; });
+    ltcSm.aprendido = Array.isArray(ltcSm.aprendido) ? ltcSm.aprendido : [];
+    var ltcHours = (typeof getGameClockHours === "function") ? getGameClockHours() : null;
+    ltcSm.aprendido.push({
+      id: uid(),
+      texto: ltcItem.texto,
+      dia: ltcHours === null ? null : gameClockParts(ltcHours).day,
+      horas: ltcHours,
+      por: ltcItem.por || (isGM() ? "máster" : (c.name || "jugador")),
+      porId: ltcItem.porId !== undefined ? ltcItem.porId : (currentUser ? currentUser.id : null),
+      ts: Date.now()
+    });
+    saveState(false);
+    manageListItemRPC(c, 'summons', 'update_item', ltcSm, ltcSm.id);
+    renderTab();
+    showToast("Ya lo sabe: " + ltcItem.texto, "success");
+    return;
+  }
+  if(action==="del-summon-teach"){
+    if(!c || !canEditChar(c)) return;
+    var dtcSm = (c.summons || []).find(function(x){ return x.id === btn.getAttribute("data-id"); });
+    if(!dtcSm) return;
+    var dtcId = btn.getAttribute("data-lid");
+    dtcSm.learning = Array.isArray(dtcSm.learning) ? dtcSm.learning : [];
+    dtcSm.learning = dtcSm.learning.filter(function(x){ return x && x.id !== dtcId; });
+    saveState(false);
+    manageListItemRPC(c, 'summons', 'update_item', dtcSm, dtcSm.id);
+    renderTab();
+    showToast("Quitado", "info");
+    return;
+  }
   if(action==="upload-summon-img"){
     if(!c || !canEditChar(c)) return;
     pendingSummonId = btn.getAttribute("data-id");

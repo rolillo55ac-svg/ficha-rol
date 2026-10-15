@@ -1,6 +1,6 @@
 {
-  "version": "1.4.52.0",
-  "build": "2026.10.15.14",
-  "updatedAt": "2026-10-15T14:00:00Z",
-  "changelog": "Nueva partida: en el login ya se puede elegir \"Partida 2\", con su propia base de datos aparte. Krysalis sigue igual."
+  "version": "1.4.57.0",
+  "build": "2026.10.15.22",
+  "updatedAt": "2026-10-15T22:00:00Z",
+  "changelog": "Historial de tiradas guardado en la base: nadie pierde tiradas aunque no tenga la web abierta."
 }

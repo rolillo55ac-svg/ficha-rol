@@ -2628,7 +2628,9 @@ main{flex:1;padding:16px 10px 110px;overflow-y:auto;}
 .tab-btn[data-tab="extra"]::before{content:'🔮';}
 .tab-btn[data-tab="mundo"]::before{content:'🗺️';}
 .tab-btn[data-tab="lapidario"]::before{content:'💎';}
-.tab-btn[data-tab="casa"]::before{content:'🏠';}
+.tab-btn[data-tab="casa"]::before{content:none;}
+.tab-ico-img{width:30px;height:30px;display:block;margin:0 auto;filter:saturate(.55) brightness(.8);pointer-events:none;transition:transform var(--transition-fast);}
+.tab-btn.active .tab-ico-img{filter:none;transform:scale(1.08);}
 .tab-btn:hover{color:var(--ink-dim);background:rgba(176,141,87,0.05);}
 .tab-btn:hover::before{filter:grayscale(.2) opacity(.9);}
 .tab-btn.active{color:var(--gold-light);font-weight:700;background:rgba(176,141,87,0.08);}

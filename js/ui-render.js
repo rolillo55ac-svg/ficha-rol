@@ -120,7 +120,7 @@ function renderTabbar(){
     var isActive = state.activeTab===t.id;
     // Contador de veredictos de talla pendientes para el máster
     var count = (t.id === "lapidario" && isGM() && typeof getPendingLapidaryVerdicts === "function") ? getPendingLapidaryVerdicts().length : 0;
-    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+(count ? ' ('+count+' pendientes)' : '')+'"><span>'+t.label+'</span>'+(count ? '<span class="tab-count">'+count+'</span>' : '')+'</button>';
+    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+(count ? ' ('+count+' pendientes)' : '')+'">'+(t.id==='casa' ? '<img class="tab-ico-img" src="images/iconos/casa.svg" alt="" width="30" height="30" decoding="async">' : '')+'<span>'+t.label+'</span>'+(count ? '<span class="tab-count">'+count+'</span>' : '')+'</button>';
   }).join('');
 }
 
@@ -2561,13 +2561,61 @@ function tplInvocaciones(c){
 
   // 6. Bloque Aprendizaje
   var learnedList = Array.isArray(s.aprendido) ? s.aprendido : [];
-  var trainingsList = getSummonTrainings(c, s);
+  var learningList = Array.isArray(s.learning) ? s.learning : [];
 
   html += '<div class="summon-block summon-learned-block">' +
     '<div class="summon-block-header">' +
       '<span class="summon-block-title">Aprendizaje</span>' +
+      (canEdit ? ('<button type="button" class="btn-compact" data-action="toggle-summon-teach" data-id="' + s.id + '">📖 Enseñar</button>') : '') +
+    '</div>';
+
+  if(canEdit && state._summonTeachOpen === s.id){
+    html += '<div class="summon-add-row">' +
+      '<input type="text" id="summonTeachText-' + s.id + '" maxlength="80" placeholder="¿Qué le enseñas?">' +
     '</div>' +
-    '<div class="summon-group-label">Aprendido</div>';
+    '<div class="summon-add-row">' +
+      '<input type="text" id="summonTeachNote-' + s.id + '" maxlength="200" placeholder="Nota (opcional)">' +
+    '</div>' +
+    '<div class="summon-add-row">' +
+      '<button type="button" class="btn-solid-gold" data-action="save-summon-teach" data-id="' + s.id + '">Guardar</button>' +
+      '<button type="button" class="btn-compact" data-action="toggle-summon-teach" data-id="' + s.id + '">Cancelar</button>' +
+    '</div>';
+  }
+
+  if(learningList.length > 0){
+    html += '<div class="summon-group-label">Aprendiendo</div>' +
+      '<ul class="summon-list">';
+    learningList.forEach(function(item, idx){
+      var itemId = (item && item.id) ? item.id : idx;
+      var itemTxt = (item && item.texto) ? item.texto : String(item || '');
+      var itemNota = (item && item.nota) ? item.nota : '';
+      var itemDia = (item && item.dia !== undefined && item.dia !== null && item.dia !== '') ? item.dia : null;
+      var itemPor = (item && item.por) ? item.por : '';
+      var diaText = '';
+      if(itemDia !== null && itemDia !== undefined && itemDia !== ''){
+        diaText = String(itemDia).toLowerCase().indexOf('d') === 0 ? String(itemDia) : ('Día ' + itemDia);
+      }
+
+      html += '<li>' +
+        '<div class="summon-list-body">' +
+          '<div class="summon-list-text">' + esc(itemTxt) + '</div>' +
+          (itemPor ? ('<div class="summon-list-by">le enseña ' + esc(itemPor) + '</div>') : '') +
+          (itemNota ? ('<div class="summon-list-by">' + esc(itemNota) + '</div>') : '') +
+          // Día y botones en otra fila para que el texto no se estreche en móvil
+          ((diaText || canEdit) ? ('<div class="summon-add-row">' +
+            (diaText ? ('<span class="summon-list-dia">' + esc(diaText) + '</span>') : '') +
+            (canEdit ? (
+              '<button type="button" class="btn-compact" data-action="learned-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '">✓ Ya lo sabe</button>' +
+              '<button type="button" class="row-del" data-action="del-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '" aria-label="Quitar">✕</button>'
+            ) : '') +
+          '</div>') : '') +
+        '</div>' +
+      '</li>';
+    });
+    html += '</ul>';
+  }
+
+  html += '<div class="summon-group-label">Aprendido</div>';
 
   if(learnedList.length === 0){
     html += '<div class="summon-empty-text">Todavía no ha aprendido nada.</div>';
@@ -2600,35 +2648,6 @@ function tplInvocaciones(c){
       '<input type="text" id="summonNewLearn-' + s.id + '" placeholder="Qué ha aprendido…">' +
       '<button type="button" class="btn-solid-gold" data-action="add-summon-learned" data-id="' + s.id + '">Apuntar</button>' +
     '</div>';
-  }
-
-  html += '<div class="summon-group-label summon-group-train">Entrenando</div>';
-  if(trainingsList.length === 0){
-    html += '<div class="summon-empty-text">Sin entrenamientos. Se crean en la pestaña Entrenamiento.</div>';
-  } else {
-    trainingsList.forEach(function(t){
-      var pts = num(t.points, 0);
-      var sides = t.sides || (t.type === "new" ? 20 : 10);
-      var barPct = 0;
-      var metaText = '';
-      if(isGM()){
-        var goal = num(t.targetGoal, 100);
-        barPct = Math.min(100, Math.max(0, Math.round((pts / goal) * 100)));
-        metaText = pts + ' / ' + goal + ' puntos · tirada d' + sides;
-      } else {
-        barPct = Math.min(100, Math.max(8, pts * 2));
-        metaText = pts + ' puntos · tirada d' + sides;
-      }
-
-      html += '<div class="summon-train-card">' +
-        '<div class="summon-train-top">' +
-          '<b>' + esc(t.name || 'Entrenamiento') + '</b>' +
-          (canEdit ? ('<button type="button" class="btn-compact" data-action="roll-training" data-id="' + t.id + '">🎲 Entrenar</button>') : '') +
-        '</div>' +
-        '<div class="summon-train-bar"><i style="width:' + barPct + '%;"></i></div>' +
-        '<div class="summon-train-meta">' + metaText + '</div>' +
-      '</div>';
-    });
   }
   html += '</div>';
 

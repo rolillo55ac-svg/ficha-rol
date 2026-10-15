@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.52.0";
-var APP_BUILD = "2026.10.15.14";
+var APP_VERSION = "1.4.57.0";
+var APP_BUILD = "2026.10.15.22";
 
 var state = null;
 var supabaseClient = null;
@@ -210,7 +210,7 @@ function ensureCharDefaults(c){
 
 function getSeedBestiary(){
   return [
-    {id:uid(),nombre:"Kimera",continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",casillasMovimiento:"10",doma:"5",montable:true,rarity:"Muy rara",habilidades:"Doma: 5. Cabalgar: 1/1. Terreno: T/V. Nada a mitad de mov.",visible:true},
+    {id:uid(),nombre:"Kimera",image:(typeof PARTIDA_ACTUAL!=="undefined"&&PARTIDA_ACTUAL.id!=="krysalis")?"https://nwjbdevshaucnjrwebtb.supabase.co/storage/v1/object/public/images/bestiario/criatura_mtudnb51.jpg":undefined,continente:"Vetrys",vida:"70",defensa:"15",absorcion:"3",dano:"1d6+3",movilidad:"10 (T/V)",casillasMovimiento:"10",doma:"5",montable:true,rarity:"Muy rara",habilidades:"Doma: 5. Cabalgar: 1/1. Terreno: T/V. Nada a mitad de mov.",visible:true},
     {id:uid(),nombre:"Anaconda G.",continente:"Tryssar",vida:"60",defensa:"16",absorcion:"4",dano:"1d6+2",movilidad:"8 (T)",casillasMovimiento:"8",doma:"5",montable:true,rarity:"Rara",habilidades:"Doma: 5. Cabalgar: 5. Carga pesada. Nada.",visible:true},
     {id:uid(),nombre:"Infernal",continente:"Labrys",vida:"70",defensa:"16",absorcion:"4",dano:"2d6",movilidad:"12 (T)",casillasMovimiento:"12",doma:"5",montable:true,rarity:"Muy rara",habilidades:"Doma: 5. Cabalgar: 1. Carga pesada. No puede nadar.",visible:true},
     {id:uid(),nombre:"Pegaso",continente:"Labrys",vida:"60",defensa:"15",absorcion:"3",dano:"1d6+2",movilidad:"10/12 (T/V)",casillasMovimiento:"12",doma:"5",montable:true,rarity:"Legendaria",habilidades:"Doma: 5. Cabalgar: 2. Montura voladora. Nada a mitad de mov.",visible:true},
@@ -980,6 +980,8 @@ function getSeedLore(){
 
 
 function getSeedQuests(){
+  // Las misiones de ejemplo son de Krysalis
+  if(PARTIDA_ACTUAL.id !== "krysalis") return [];
   return [
     {
       id: "quest_trysar_infil",
@@ -1002,6 +1004,7 @@ function getSeedQuests(){
 }
 
 function getSeedQuestClues(){
+  if(PARTIDA_ACTUAL.id !== "krysalis") return [];
   return [
     { id: "clue_sello_purpura", title: "Sello de cera púrpura", desc: "Encontrado en una carta interceptada con la marca de Krysalis.", image: null }
   ];
