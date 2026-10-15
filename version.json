@@ -1,6 +1,6 @@
 {
-  "version": "1.4.64.0",
-  "build": "2026.10.16.6",
+  "version": "1.4.65.0",
+  "build": "2026.10.16.7",
   "updatedAt": "2026-10-16T12:00:00Z",
-  "changelog": "Pestañas internas con un solo estilo, campos como en la Ficha y tirada libre en filas."
+  "changelog": "La Casa: barra de zoom encima del plano y nombres de estancias más legibles."
 }

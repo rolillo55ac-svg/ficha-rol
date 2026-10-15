@@ -220,11 +220,13 @@
   min-height: 44px;
 }
 
-.canvas-wrap .house-zoom-group {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 25;
+.house-zoom-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.house-zoom-bar .house-zoom-group {
   background: rgba(18, 13, 10, 0.88);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
