@@ -120,6 +120,7 @@ async function fetchUserProfile(){
     pullSharedDataFromSupabase();
     if(typeof loadGameClock === "function") loadGameClock();
     if(typeof loadRollHistory === "function") loadRollHistory();
+    if(typeof loadRollRequests === "function") setTimeout(loadRollRequests, 1200);
     if(typeof loadAlchemySecrets === "function") loadAlchemySecrets();
     // Si este dispositivo tiene una Casa guardada y la nube no, se ofrece subirla (solo el máster)
     if(typeof maybeOfferHouseImport === "function") setTimeout(maybeOfferHouseImport, 1500);

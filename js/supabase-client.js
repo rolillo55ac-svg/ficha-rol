@@ -211,6 +211,9 @@ function startRealtime(){
         .on('broadcast', { event: 'dice_roll' }, function(payload){
           if(payload && payload.payload) handleRemoteDiceRoll(payload.payload);
         })
+        .on('broadcast', { event: 'roll_request' }, function(payload){
+          if(typeof handleRemoteRollRequest === 'function') handleRemoteRollRequest(payload && payload.payload);
+        })
         .on('broadcast', { event: 'char_stat_update' }, function(payload){
           if(payload && payload.payload) handleRemoteCharStatUpdate(payload.payload);
         })
@@ -313,6 +316,7 @@ async function catchUpWithServer(opts){
     }
     if(typeof loadGameClock === 'function') jobs.push(loadGameClock());
     if(typeof loadRollHistory === 'function') jobs.push(loadRollHistory());
+    if(typeof loadRollRequests === 'function') jobs.push(loadRollRequests());
     if(!opts.skipHouse && typeof houseState !== 'undefined' && houseState.active && typeof fetchHouseRemoteData === 'function'){
       jobs.push(fetchHouseRemoteData().then(function(){ if(houseState.active) renderHouseView(); }));
     }

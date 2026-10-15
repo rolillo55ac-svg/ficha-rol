@@ -1,7 +1,7 @@
 // Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
 // Modo offline y carga rapida
 
-const CACHE_NAME = 'rol-krysalis-v1.4.57.0';
+const CACHE_NAME = 'rol-krysalis-v1.4.58.0';
 
 const PRECACHE_ASSETS = [
   './',
@@ -54,6 +54,7 @@ const PRECACHE_ASSETS = [
   './js/house.js',
   './js/dice.js',
   './js/roll-history.js',
+  './js/roll-requests.js',
   './js/lapidary.js',
   './js/discord-config.js',
   './js/ui-modals.js',
