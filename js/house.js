@@ -725,6 +725,10 @@ function getHouseFloors(){
   if(Array.isArray(houseState.floors) && houseState.floors.length > 0){
     return houseState.floors;
   }
+  // Plantas guardadas en la casa (nombre y sitio extra de cada una); vacío = las de siempre
+  if(houseState.house && Array.isArray(houseState.house.floors) && houseState.house.floors.length > 0){
+    return houseState.house.floors;
+  }
   return [
     { id: 1, name: "Planta 1", sub: "Principal" },
     { id: 2, name: "Planta 2", sub: "Aposentos" },
@@ -748,9 +752,91 @@ function addHouseFloor(name){
   var nextId = houseState.floors.length + 1;
   houseState.floors.push({ id: nextId, name: name, sub: "Ampliación" });
   houseState.activeFloor = nextId;
-  saveHouseLocalData();
+  saveHouseFloors(houseState.floors);
   renderHouseView();
   if(typeof showToast === "function") showToast("Planta '" + name + "' añadida a la casa.", "success");
+}
+
+// Guarda la lista de plantas (con su sitio extra) en la casa: solo el máster puede escribirla
+function saveHouseFloors(floors){
+  houseState.floors = null;
+  if(!houseState.house) houseState.house = {};
+  houseState.house.floors = floors;
+  saveHouseLocalData();
+  if(typeof supabaseClient === "undefined" || !supabaseClient || !houseState.house.id || !navigator.onLine) return;
+  supabaseClient.from("house").update({ floors: floors, updated_at: new Date().toISOString() })
+    .eq("id", houseState.house.id)
+    .then(function(res){
+      if(res && res.error) console.warn("Aviso guardando las plantas de La Casa:", res.error.message || res.error);
+    });
+  if(typeof realtimeChannel !== "undefined" && realtimeChannel){
+    try {
+      realtimeChannel.send({
+        type: "broadcast",
+        event: "house_settings_update",
+        payload: { players_can_edit: !!houseState.house.players_can_edit, floors: floors }
+      }).catch(function(){});
+    } catch(e){}
+  }
+}
+
+// Casillas que ocupan las estancias de una planta (más su sitio extra en modo Editar)
+function getHouseFloorCellExtent(floorId, withArea){
+  var e = null;
+  (houseState.rooms || []).forEach(function(r){
+    if(!isRoomOnFloor(r, floorId)) return;
+    var x0 = r.pos_x || 0, y0 = r.pos_y || 0;
+    var x1 = x0 + Math.max(1, r.width || 2), y1 = y0 + Math.max(1, r.height || 2);
+    if(!e) e = { x0: x0, y0: y0, x1: x1, y1: y1 };
+    else { e.x0 = Math.min(e.x0, x0); e.y0 = Math.min(e.y0, y0); e.x1 = Math.max(e.x1, x1); e.y1 = Math.max(e.y1, y1); }
+  });
+  if(withArea){
+    var fl = getHouseFloors().find(function(f){ return isRoomOnFloor({ floor: floorId }, f.id); });
+    var a = fl && fl.area;
+    if(a && typeof a.x0 === "number"){
+      if(!e) e = { x0: a.x0, y0: a.y0, x1: a.x1, y1: a.y1 };
+      else { e.x0 = Math.min(e.x0, a.x0); e.y0 = Math.min(e.y0, a.y0); e.x1 = Math.max(e.x1, a.x1); e.y1 = Math.max(e.y1, a.y1); }
+    }
+  }
+  return e;
+}
+
+// "Ampliar planta": una fila o columna más por el lado elegido; "fit" quita el sitio vacío
+function expandHouseFloor(side){
+  if(!canUserEditPlan() || !(typeof isGM === "function" && isGM())) return;
+  var curFloor = houseState.activeFloor || 1;
+  var e = getHouseFloorCellExtent(curFloor, true) || { x0: 0, y0: 0, x1: 4, y1: 4 };
+  if(side === "left") e.x0 -= 1;
+  else if(side === "right") e.x1 += 1;
+  else if(side === "up") e.y0 -= 1;
+  else if(side === "down") e.y1 += 1;
+  var floors = JSON.parse(JSON.stringify(getHouseFloors()));
+  var fl = floors.find(function(f){ return isRoomOnFloor({ floor: curFloor }, f.id); });
+  if(!fl) return;
+  if(side === "fit") delete fl.area;
+  else fl.area = e;
+  saveHouseFloors(floors);
+  initOrRenderHouseKonvaStage();
+  if(side === "fit" && typeof showToast === "function") showToast("Planta ajustada a sus estancias.", "success");
+}
+
+// Primer hueco libre de la planta para una estancia nueva; si no cabe, a la derecha de todo
+function findFreeHouseRoomSpot(floorId, w, h){
+  var e = getHouseFloorCellExtent(floorId, true);
+  if(!e) return { x: 0, y: 0 };
+  var rooms = (houseState.rooms || []).filter(function(r){ return isRoomOnFloor(r, floorId); });
+  function free(x, y){
+    return !rooms.some(function(o){
+      var ox = o.pos_x || 0, oy = o.pos_y || 0;
+      return x < ox + Math.max(1, o.width || 2) && x + w > ox && y < oy + Math.max(1, o.height || 2) && y + h > oy;
+    });
+  }
+  for(var y = e.y0; y + h <= e.y1; y++){
+    for(var x = e.x0; x + w <= e.x1; x++){
+      if(free(x, y)) return { x: x, y: y };
+    }
+  }
+  return { x: e.x1, y: e.y0 };
 }
 
 /* ---- CONTROLADOR DEL ESCENARIO KONVA ---- */
@@ -777,15 +863,13 @@ function syncRoomPixelRect(r){
 
 function getHouseFloorBounds(){
   var curFloor = houseState.activeFloor || 1;
-  var rooms = (houseState.rooms || []).filter(function(r){ return isRoomOnFloor(r, curFloor); });
-  if(rooms.length === 0) return null;
-  var b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
-  rooms.forEach(function(r){
-    syncRoomPixelRect(r);
-    b.minX = Math.min(b.minX, r.x); b.minY = Math.min(b.minY, r.y);
-    b.maxX = Math.max(b.maxX, r.x + r.w); b.maxY = Math.max(b.maxY, r.y + r.h);
-  });
-  return b;
+  var isEdit = !!houseState.editMode && canUserEditPlan();
+  var e = getHouseFloorCellExtent(curFloor, isEdit);
+  if(!e) return null;
+  // En modo Editar, una casilla de margen alrededor: soltar una estancia ahí amplía la planta
+  if(isEdit){ e.x0 -= 1; e.y0 -= 1; e.x1 += 1; e.y1 += 1; }
+  var C = HOUSE_CELL_PX;
+  return { minX: (e.x0 + 1) * C, minY: (e.y0 + 1) * C, maxX: (e.x1 + 1) * C, maxY: (e.y1 + 1) * C };
 }
 
 // Alto del lienzo según la forma de la casa, para que en el móvil no quede hueco vacío
@@ -1029,18 +1113,46 @@ function renderKonvaRooms(){
   var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
   var isEdit = !!houseState.editMode && canUserEditPlan();
 
-  // Tablero con marco bajo las estancias
+  // En modo Editar: solar de la planta con su rejilla (incluye el sitio extra y una casilla de margen)
   var bounds = getHouseFloorBounds();
-  if(bounds){
-    houseKonvaLayer.add(new Konva.Rect({
-      x: bounds.minX - 14, y: bounds.minY - 14,
-      width: bounds.maxX - bounds.minX + 28, height: bounds.maxY - bounds.minY + 28,
-      cornerRadius: 8,
-      fill: "#3B342E",
-      stroke: "#1A120D", strokeWidth: 6,
-      shadowColor: "black", shadowBlur: 24, shadowOpacity: 0.6, shadowOffsetY: 8,
-      listening: false
+  if(bounds && isEdit){
+    var solar = new Konva.Group({ listening: false });
+    solar.add(new Konva.Rect({
+      x: bounds.minX, y: bounds.minY,
+      width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY,
+      fill: "rgba(212,175,55,0.04)",
+      stroke: "rgba(212,175,55,0.45)", strokeWidth: 2, dash: [8, 6]
     }));
+    for(var gx = bounds.minX + HOUSE_CELL_PX; gx < bounds.maxX; gx += HOUSE_CELL_PX){
+      solar.add(new Konva.Line({ points: [gx, bounds.minY, gx, bounds.maxY], stroke: "rgba(212,175,55,0.12)", strokeWidth: 1 }));
+    }
+    for(var gy = bounds.minY + HOUSE_CELL_PX; gy < bounds.maxY; gy += HOUSE_CELL_PX){
+      solar.add(new Konva.Line({ points: [bounds.minX, gy, bounds.maxX, gy], stroke: "rgba(212,175,55,0.12)", strokeWidth: 1 }));
+    }
+    houseKonvaLayer.add(solar);
+  }
+
+  // Muro exterior con la forma de las estancias (unión de rectángulos): primero el borde y la sombra,
+  // después el relleno un poco más pequeño, que tapa los bordes que quedan por dentro
+  if(rooms.length > 0){
+    var outline = new Konva.Group({ listening: false });
+    var fillPass = new Konva.Group({ listening: false });
+    rooms.forEach(function(r){
+      syncRoomPixelRect(r);
+      outline.add(new Konva.Rect({
+        x: r.x - 14, y: r.y - 14, width: r.w + 28, height: r.h + 28,
+        cornerRadius: 8,
+        fill: "#3B342E",
+        stroke: "#1A120D", strokeWidth: 6,
+        shadowColor: "black", shadowBlur: 24, shadowOpacity: 0.6, shadowOffsetY: 8
+      }));
+      fillPass.add(new Konva.Rect({
+        x: r.x - 11, y: r.y - 11, width: r.w + 22, height: r.h + 22,
+        cornerRadius: 6,
+        fill: "#3B342E"
+      }));
+    });
+    houseKonvaLayer.add(outline, fillPass);
   }
 
   rooms.forEach(function(r){
@@ -1255,6 +1367,8 @@ function renderKonvaRooms(){
       r.pos_y = Math.round((r.y - 40) / 40);
       saveRoomChangesToRemoteAndBroadcast(r, "geometry");
       updateQuickRoomBar(r);
+      // Si se ha soltado en el margen, el solar de la planta crece con ella
+      renderKonvaRooms();
     });
 
     // Clic / Tap
@@ -1461,17 +1575,13 @@ function startKonvaRename(group, r){
 
 function zoomFitHouse(){
   if(!houseKonvaStage || !document.getElementById("canvasWrap")) return;
-  var allRooms = houseState.rooms || [];
-  var curFloor = houseState.activeFloor || 1;
-  var rooms = allRooms.filter(function(r){ return isRoomOnFloor(r, curFloor); });
-
-  if(!rooms || rooms.length === 0){
+  var b = getHouseFloorBounds();
+  if(!b){
     houseKonvaStage.position({ x: 0, y: 0 });
     applyHouseKonvaZoom(1.0);
     return;
   }
 
-  var b = getHouseFloorBounds();
   var minX = b.minX, minY = b.minY, maxX = b.maxX, maxY = b.maxY;
 
   var boundW = maxX - minX + 48;
@@ -1480,7 +1590,7 @@ function zoomFitHouse(){
   var stageH = houseKonvaStage.height();
 
   var fitZoom = Math.min(1.5, Math.min(stageW / boundW, stageH / boundH));
-  fitZoom = Math.max(0.35, fitZoom);
+  fitZoom = Math.max(0.15, fitZoom);
 
   var centerX = (minX + maxX) / 2;
   var centerY = (minY + maxY) / 2;
@@ -1498,7 +1608,7 @@ function zoomFitHouse(){
 
 function applyHouseKonvaZoom(newZoom, centerPos){
   if(!houseKonvaStage || !document.getElementById("canvasWrap")) return;
-  newZoom = Math.max(0.3, Math.min(2.5, newZoom));
+  newZoom = Math.max(0.15, Math.min(2.5, newZoom));
   var oldZoom = houseKonvaStage.scaleX();
 
   var mousePos = centerPos || { x: houseKonvaStage.width() / 2, y: houseKonvaStage.height() / 2 };
@@ -1525,9 +1635,10 @@ function quickAddRoomPreset(preset){
 
   var nextX = 60, nextY = 60;
   if(rooms.length > 0){
-    var last = rooms[rooms.length - 1];
-    nextX = (last.x || 40) + 40;
-    nextY = (last.y || 40) + 40;
+    // Primer hueco libre de la planta (con su sitio extra); si no hay, al lado de la casa
+    var spot = findFreeHouseRoomSpot(curFloor, Math.round((preset.w || 220) / 40), Math.round((preset.h || 160) / 40));
+    nextX = (spot.x + 1) * 40;
+    nextY = (spot.y + 1) * 40;
   }
 
   var newRoom = {
@@ -2111,6 +2222,10 @@ function initHouseRealtimeSync(){
         realtimeChannel.on("broadcast", { event: "house_settings_update" }, function(msg){
           if(!msg || !msg.payload || !houseState.house) return;
           houseState.house.players_can_edit = !!msg.payload.players_can_edit;
+          if(Array.isArray(msg.payload.floors)){
+            houseState.floors = null;
+            houseState.house.floors = msg.payload.floors;
+          }
           if(!canUserEditPlan()) houseState.editMode = false;
           saveHouseLocalData();
           if(houseState.active) renderHouseView();
@@ -4660,6 +4775,17 @@ function renderHouseView(){
       }
       html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: casilla' : '🖐️ Rejilla: Libre') + '</button>';
       html += '  </div>';
+      // Ampliar la planta por cualquier lado para hacer sitio antes de colocar (solo el máster)
+      if(gmMode){
+        html += '  <div class="house-action-row house-expand-row">';
+        html += '    <span class="house-expand-label">Ampliar planta:</span>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="left" title="Una columna más a la izquierda" aria-label="Ampliar planta a la izquierda">⬅️</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="right" title="Una columna más a la derecha" aria-label="Ampliar planta a la derecha">➡️</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="up" title="Una fila más arriba" aria-label="Ampliar planta por arriba">⬆️</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="down" title="Una fila más abajo" aria-label="Ampliar planta por abajo">⬇️</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="fit" title="Quitar el sitio vacío que sobra alrededor de las estancias">Quitar vacío</button>';
+        html += '  </div>';
+      }
     }
 
     // Barra de herramientas contextual de habitación seleccionada
@@ -6412,7 +6538,7 @@ function backFromHouseView(){
 }
 
 var HOUSE_GM_ONLY_ACTIONS = ["open-house-perks-editor", "house-perk-save", "house-perk-move", "house-perk-archive", "house-perk-restore", "house-perk-add",
-  "open-house-secrets", "house-secret-hp", "house-secret-stat-add", "house-secret-stat-remove", "house-secrets-save", "quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit"];
+  "open-house-secrets", "house-secret-hp", "house-secret-stat-add", "house-secret-stat-remove", "house-secrets-save", "quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit", "expand-house-floor"];
 var HOUSE_ROOM_EDIT_ACTIONS = ["quick-rename-selected-room", "quick-step-room-size", "quick-toggle-texture-menu", "quick-toggle-color-menu", "quick-toggle-icon-menu", "nudge-room", "resize-room", "set-room-color", "open-edit-room-modal",
   "canva-insert-asset", "canva-rotate-item", "canva-duplicate-item", "canva-delete-item", "canva-change-w", "canva-change-h", "canva-nudge-item",
   "canva-size-view", "canva-nudge-view", "canva-relocate-item", "canva-undo", "canva-redo", "canva-open-catalog", "canva-rename-start", "canva-rename-save"];
@@ -6551,6 +6677,8 @@ document.addEventListener("click", function(e){
     }
   } else if(act === "zoom-house-fit"){
     zoomFitHouse();
+  } else if(act === "expand-house-floor"){
+    expandHouseFloor(btn.getAttribute("data-side"));
   } else if(act === "select-house-room"){
     if(houseSuppressNextClick){
       e.preventDefault();
