@@ -269,7 +269,8 @@ var TOPBAR_AUDIO_MAP = {
   bestiario: 'sounds/bestiario_paginas.mp3',
   extra: 'sounds/extra_dados.mp3',
   mundo: 'sounds/mundo_viento.mp3',
-  casa: 'sounds/casa_puerta.mp3'
+  casa: 'sounds/casa_puerta.mp3',
+  tiradas: 'sounds/tiradas_dados.mp3'
 };
 
 var topbarAudioInstances = {};

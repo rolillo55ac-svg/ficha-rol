@@ -224,7 +224,7 @@ function renderRollHistoryModal(){
         '<select id="rollHistoryChar" class="game-clock-input" aria-label="Filtrar por personaje"><option value="">Todos los personajes</option>' +
           names.map(function(n){ return '<option value="' + esc(n) + '"' + (n === v.charName ? " selected" : "") + '>' + esc(n) + '</option>'; }).join("") +
         '</select>' +
-        '<label class="roll-history-check"><input type="checkbox" id="rollHistoryRequested"' + (v.onlyRequested ? " checked" : "") + '> Solo 📣 del máster</label>' +
+        '<label class="roll-history-check"><input type="checkbox" id="rollHistoryRequested" class="k-check"' + (v.onlyRequested ? " checked" : "") + '> Solo 📣 del máster</label>' +
       '</div>';
   }
   html += '<div class="roll-history-list">';

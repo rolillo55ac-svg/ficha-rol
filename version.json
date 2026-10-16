@@ -1,6 +1,6 @@
 {
-  "version": "1.4.70.0",
-  "build": "2026.10.17.2",
-  "updatedAt": "2026-10-17T08:00:00Z",
-  "changelog": "Arreglo pequeño: al tocar botones en el móvil apaisado ya no aparece un desplazamiento lateral."
+  "version": "1.4.71.0",
+  "build": "2026.10.17.3",
+  "updatedAt": "2026-10-17T12:00:00Z",
+  "changelog": "Casillas doradas en toda la web, sonido de dados al entrar en Tiradas, historial que ya no queda bajo el dado y Estadísticas de combate con el mismo estilo que las Tiradas de combate."
 }

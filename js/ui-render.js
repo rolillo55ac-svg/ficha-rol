@@ -939,7 +939,7 @@ function tplCombate(c){
 
   // 4. Estadísticas de Combate
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Estadísticas de Combate</span></div>'+
-    '<div class="combat-grid">'+
+    '<div class="combat-grid k-stat-grid">'+
       combatStat("Iniciativa","iniciativa",cb.iniciativa,true)+
       combatStat("Movilidad","movilidad",cb.movilidad,false)+
       combatStat("Defensa","defensa",cb.defensa,false)+
@@ -1170,8 +1170,8 @@ function combatStat(label,bind,val,rollable){
   var eff = getEffectiveCombatStat(bind, c);
   var diff = eff - num(val, 0);
   var diffBadge = diff !== 0 ? '<span class="stat-eff-tag '+(diff>0?'pos':'neg')+'" title="Valor efectivo">'+(diff>0?'+'+diff:diff)+' (Total: '+eff+')</span>' : '';
-  return '<div class="combat-stat"><label>'+esc(label)+diffBadge+'</label>'+
-    '<input type="number" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'" '+(canEdit?'':'readonly')+'>'+
+  return '<div class="combat-stat k-stat"><label class="k-stat-label">'+esc(label)+diffBadge+'</label>'+
+    '<input type="number" class="k-stat-value" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'" '+(canEdit?'':'readonly')+'>'+
     (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa" title="Tirar Iniciativa (1d10 + '+eff+')">&#127922;</button>':'')+
   '</div>';
 }
