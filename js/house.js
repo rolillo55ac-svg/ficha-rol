@@ -5332,6 +5332,8 @@ function openHouseQuest(questId){
   houseState.selectedRoomId = null;
   state.activeTab = "mision";
   state.questTypeFilter = "all";
+  var hq = (state.quests || []).find(function(x){ return x.id === questId; });
+  if(hq){ state.questStatusFilter = questStatusOf(hq); state.questOpenId = hq.id; }
   if(typeof saveState === "function") saveState(true);
   if(typeof renderTabbar === "function") renderTabbar();
   if(typeof renderTab === "function") renderTab();
