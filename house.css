@@ -3196,6 +3196,18 @@
   margin-top: 6px;
 }
 
+.house-expand-row {
+  gap: 6px;
+}
+
+.house-expand-label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+  color: var(--ink-dim, #C2B196);
+}
+
 .house-act-btn {
   border-radius: var(--radius-sm, 6px);
   padding: 8px 12px;
