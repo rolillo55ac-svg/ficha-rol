@@ -10733,6 +10733,7 @@ textarea.k-input.k-input {
 /* 2. Host y Ripple */
 .juice-host {
   clip-path: inset(0);
+  contain: paint;
 }
 
 .juice-ripple {

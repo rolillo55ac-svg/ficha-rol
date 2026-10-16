@@ -1,6 +1,6 @@
 {
-  "version": "1.4.69.0",
-  "build": "2026.10.17.1",
+  "version": "1.4.70.0",
+  "build": "2026.10.17.2",
   "updatedAt": "2026-10-17T08:00:00Z",
-  "changelog": "Las tarjetas nuevas (misiones, entrenamientos, objetos, invocaciones, tiradas) destellan en dorado y las barras brillan al cambiar. Vibración en muchos más botones. Pedir tirada y filtros de Inventario con mejor aspecto."
+  "changelog": "Arreglo pequeño: al tocar botones en el móvil apaisado ya no aparece un desplazamiento lateral."
 }
