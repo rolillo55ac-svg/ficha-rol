@@ -3506,9 +3506,9 @@
 /* Modal Selector de Plantillas de Habitación */
 .house-preset-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 4px;
 }
 
 .house-preset-card {
@@ -3521,6 +3521,10 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.house-preset-card {
+  min-height: 44px;
 }
 
 .house-preset-card:hover {
