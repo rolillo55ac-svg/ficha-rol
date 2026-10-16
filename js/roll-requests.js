@@ -265,7 +265,7 @@ function renderRollRequestTab(){
         '<div class="field"><label for="rollReqDc">CD · dificultad (opcional)</label>' +
           '<input type="number" id="rollReqDc" class="game-clock-input" inputmode="numeric" value="' + esc(d.dc) + '">' +
           '<span class="roll-request-hint">Número que hay que igualar o superar</span></div>' +
-        '<label class="roll-history-check"><input type="checkbox" id="rollReqDcVisible"' + (d.dcVisible ? " checked" : "") + '> CD visible</label>' +
+        '<label class="roll-history-check"><input type="checkbox" id="rollReqDcVisible" class="k-check"' + (d.dcVisible ? " checked" : "") + '> CD visible</label>' +
       '</div>' +
       '<div class="dice-mode-pills">' +
         '<button type="button" class="dmode-pill ' + (d.mode === "normal" ? "active" : "") + '" data-action="roll-request-mode" data-mode="normal">⚔️ Normal</button>' +
@@ -276,7 +276,7 @@ function renderRollRequestTab(){
       '<input type="text" id="rollReqNote" class="game-clock-input" maxlength="120" value="' + esc(d.note) + '"></div>' +
       '<div class="dice-ctrl-label"><span>¿A quién?</span><button type="button" class="btn-compact roll-request-all" data-action="roll-request-all">Todos</button></div>' +
       (chars.length ? chars.map(function(c){
-        return '<label class="roll-history-check"><input type="checkbox" class="roll-req-target" value="' + esc(c.db_id) + '"' + (targets.indexOf(c.db_id) >= 0 ? " checked" : "") + '> ' + esc(c.name || "Ficha") + '</label>';
+        return '<label class="roll-history-check"><input type="checkbox" class="roll-req-target k-check" value="' + esc(c.db_id) + '"' + (targets.indexOf(c.db_id) >= 0 ? " checked" : "") + '> ' + esc(c.name || "Ficha") + '</label>';
       }).join("") : '<div class="roll-empty">No hay fichas de jugadores.</div>') +
       '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-request-send">📣 Pedir tirada</button>' +
     '</div>';

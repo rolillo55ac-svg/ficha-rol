@@ -11036,3 +11036,134 @@ html.juice-off .juice-spark {
     display: none;
   }
 }
+
+/* Tarea 49: casillas .k-check y estadísticas .k-stat */
+.k-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.k-check:checked {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.k-check:checked::before {
+  content: "✓";
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.k-check:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.k-check:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.quest-task-cb.k-check {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+
+#tiradasPage .roll-history-list {
+  max-height: none;
+  overflow: visible;
+}
+
+#tiradasPage .rh-icons {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.combat-grid.k-stat-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 320px) {
+  .combat-grid.k-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.combat-grid.k-stat-grid > .k-stat:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.combat-stat.k-stat {
+  background: linear-gradient(160deg, var(--bg-elev), var(--bg-card));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px 8px;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.combat-stat.k-stat .k-stat-label {
+  font-size: .68rem;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.combat-stat.k-stat .k-stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  text-shadow: 0 0 12px rgba(176,141,87,0.3);
+  background: none;
+  border: none;
+  text-align: center;
+  width: 100%;
+  padding: 0;
+  min-height: 0;
+  box-shadow: none;
+}
+
+.combat-stat.k-stat .mini-roll {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.combat-stat.k-stat .stat-eff-tag {
+  display: inline-block;
+  margin-left: 4px;
+}
+

@@ -144,7 +144,7 @@ function renderQuestCard(q, canEdit){
 
       html += '<li class="quest-task-item'+(isDone?' done':'')+(hasCounter?' with-counter':'')+'" id="quest-task-'+tk.id+'">'+
         '<div class="quest-task-main-row">'+
-          '<input type="checkbox" class="quest-task-cb" data-action="toggle-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" '+(isDone?'checked':'')+(canEdit?'':' disabled title="Solo el Máster puede marcar objetivos"')+'>'+
+          '<input type="checkbox" class="quest-task-cb k-check" data-action="toggle-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" '+(isDone?'checked':'')+(canEdit?'':' disabled title="Solo el Máster puede marcar objetivos"')+'>'+
           (canEdit ?
             '<span class="quest-task-text editable" data-action="edit-quest-task-text" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Clic para editar texto del objetivo">'+esc(tk.text)+'</span>' :
             '<span class="quest-task-text">'+esc(tk.text)+'</span>'
