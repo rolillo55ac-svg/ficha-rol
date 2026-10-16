@@ -10613,3 +10613,400 @@ textarea.k-input.k-input {
   border-bottom-color: var(--gold);
   background: rgba(176, 141, 87, 0.06);
 }
+
+/* ===== UI JUICE ===== */
+:root {
+  --juice-up: #5FA777;
+  --juice-down: #C0525C;
+  --juice-arcane: #5E8EA8;
+  --juice-alchemy: #6FA86B;
+}
+
+/* 1. Botones y controles interactivos: escala :active y foco visible */
+.btn-compact:not(:disabled):not([disabled]):active,
+.btn-solid-gold:not(:disabled):not([disabled]):active,
+.btn:not(:disabled):not([disabled]):active,
+.tab-btn:not(:disabled):not([disabled]):active,
+.k-seg button:not(:disabled):not([disabled]):active,
+.fab-dice:not(:disabled):not([disabled]):active,
+[data-action]:not(:disabled):not([disabled]):active {
+  transform: scale(0.96);
+  transition: transform 80ms ease;
+}
+
+.btn-compact:focus-visible,
+.btn-solid-gold:focus-visible,
+.btn:focus-visible,
+.tab-btn:focus-visible,
+.k-seg button:focus-visible,
+.fab-dice:focus-visible,
+[data-action]:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Exclusión de La Casa, Lapidario y Joystick */
+[class*="house"] canvas,
+[class*="house"] .btn-compact:active,
+[class*="house"] .btn-solid-gold:active,
+[class*="house"] .btn:active,
+[class*="house"] .tab-btn:active,
+[class*="house"] .k-seg button:active,
+[class*="house"] .fab-dice:active,
+[class*="house"] [data-action]:active,
+.konvajs-content .btn-compact:active,
+.konvajs-content .btn-solid-gold:active,
+.konvajs-content .btn:active,
+.konvajs-content .tab-btn:active,
+.konvajs-content .k-seg button:active,
+.konvajs-content .fab-dice:active,
+.konvajs-content [data-action]:active,
+[class*="lapid"] .btn-compact:active,
+[class*="lapid"] .btn-solid-gold:active,
+[class*="lapid"] .btn:active,
+[class*="lapid"] .tab-btn:active,
+[class*="lapid"] .k-seg button:active,
+[class*="lapid"] .fab-dice:active,
+[class*="lapid"] [data-action]:active,
+[class*="lap-"] .btn-compact:active,
+[class*="lap-"] .btn-solid-gold:active,
+[class*="lap-"] .btn:active,
+[class*="lap-"] .tab-btn:active,
+[class*="lap-"] .k-seg button:active,
+[class*="lap-"] .fab-dice:active,
+[class*="lap-"] [data-action]:active,
+[class*="joystick"] .btn-compact:active,
+[class*="joystick"] .btn-solid-gold:active,
+[class*="joystick"] .btn:active,
+[class*="joystick"] .tab-btn:active,
+[class*="joystick"] .k-seg button:active,
+[class*="joystick"] .fab-dice:active,
+[class*="joystick"] [data-action]:active {
+  transform: none;
+  transition: none;
+}
+
+[class*="house"] .btn-compact:focus-visible,
+[class*="house"] .btn-solid-gold:focus-visible,
+[class*="house"] .btn:focus-visible,
+[class*="house"] .tab-btn:focus-visible,
+[class*="house"] .k-seg button:focus-visible,
+[class*="house"] .fab-dice:focus-visible,
+[class*="house"] [data-action]:focus-visible,
+.konvajs-content .btn-compact:focus-visible,
+.konvajs-content .btn-solid-gold:focus-visible,
+.konvajs-content .btn:focus-visible,
+.konvajs-content .tab-btn:focus-visible,
+.konvajs-content .k-seg button:focus-visible,
+.konvajs-content .fab-dice:focus-visible,
+.konvajs-content [data-action]:focus-visible,
+[class*="lapid"] .btn-compact:focus-visible,
+[class*="lapid"] .btn-solid-gold:focus-visible,
+[class*="lapid"] .btn:focus-visible,
+[class*="lapid"] .tab-btn:focus-visible,
+[class*="lapid"] .k-seg button:focus-visible,
+[class*="lapid"] .fab-dice:focus-visible,
+[class*="lapid"] [data-action]:focus-visible,
+[class*="lap-"] .btn-compact:focus-visible,
+[class*="lap-"] .btn-solid-gold:focus-visible,
+[class*="lap-"] .btn:focus-visible,
+[class*="lap-"] .tab-btn:focus-visible,
+[class*="lap-"] .k-seg button:focus-visible,
+[class*="lap-"] .fab-dice:focus-visible,
+[class*="lap-"] [data-action]:focus-visible,
+[class*="joystick"] .btn-compact:focus-visible,
+[class*="joystick"] .btn-solid-gold:focus-visible,
+[class*="joystick"] .btn:focus-visible,
+[class*="joystick"] .tab-btn:focus-visible,
+[class*="joystick"] .k-seg button:focus-visible,
+[class*="joystick"] .fab-dice:focus-visible,
+[class*="joystick"] [data-action]:focus-visible {
+  outline: none;
+}
+
+/* 2. Host y Ripple */
+.juice-host {
+  clip-path: inset(0);
+}
+
+.juice-ripple {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: var(--gold-light);
+  transform: translate(-50%, -50%) scale(0);
+  animation: kRipple 400ms ease-out forwards;
+}
+
+@keyframes kRipple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* 3. Números y Gauges */
+.juice-num {
+  display: inline-block;
+}
+
+.juice-num.juice-up,
+.juice-up {
+  display: inline-block;
+  animation: kPopUp 250ms ease-out;
+}
+
+@keyframes kPopUp {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 6px var(--juice-up));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+.juice-num.juice-down,
+.juice-down {
+  display: inline-block;
+  animation: kShakeDown 250ms ease-out;
+}
+
+@keyframes kShakeDown {
+  0% {
+    transform: translateX(0);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  20% {
+    transform: translateX(-2px);
+    filter: drop-shadow(0 0 5px var(--juice-down));
+  }
+  40% {
+    transform: translateX(2px);
+    filter: drop-shadow(0 0 2px transparent);
+  }
+  60% {
+    transform: translateX(-2px);
+    filter: drop-shadow(0 0 5px var(--juice-down));
+  }
+  80% {
+    transform: translateX(2px);
+    filter: drop-shadow(0 0 2px transparent);
+  }
+  100% {
+    transform: translateX(0);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+.juice-num.juice-gold,
+.juice-gold {
+  display: inline-block;
+  animation: kGlowGold 250ms ease-out;
+}
+
+@keyframes kGlowGold {
+  0% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    filter: drop-shadow(0 0 6px var(--gold-light));
+  }
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+}
+
+/* 4. Tarjetas nuevas */
+.juice-card-new {
+  animation: cardEnter 0.3s ease-out, cardDestello 0.6s ease-out;
+}
+
+@keyframes cardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardDestello {
+  0% {
+    box-shadow: 0 0 0 0 rgba(176, 141, 87, 0);
+  }
+  40% {
+    box-shadow: 0 0 14px 2px var(--gold);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(176, 141, 87, 0);
+  }
+}
+
+/* 5. Pulsos Arcane y Alchemy */
+.juice-pulse-arcane {
+  animation: kPulseArcane 600ms ease-out;
+}
+
+@keyframes kPulseArcane {
+  0% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  40% {
+    box-shadow: 0 0 14px 2px var(--juice-arcane);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.juice-pulse-alchemy {
+  animation: kPulseAlchemy 600ms ease-out;
+}
+
+@keyframes kPulseAlchemy {
+  0% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  40% {
+    box-shadow: 0 0 14px 2px var(--juice-alchemy);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* 6. Level Up y Chispas */
+.juice-levelup {
+  position: relative;
+  animation: kLevelUp 1.2s ease-in-out;
+}
+
+@keyframes kLevelUp {
+  0% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  25% {
+    box-shadow: 0 -3px 10px 1px var(--gold-light);
+  }
+  50% {
+    box-shadow: 3px 0 12px 2px var(--gold);
+  }
+  75% {
+    box-shadow: 0 3px 10px 1px var(--gold-light);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.juice-spark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 0 0 6px var(--gold);
+  pointer-events: none;
+  z-index: 9999;
+  animation: kSpark 1.3s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes kSpark {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* 7. Vista Entrante */
+.juice-view-in {
+  animation: kViewIn 150ms ease-out;
+}
+
+@keyframes kViewIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 8. Sin animaciones: html.juice-off y prefers-reduced-motion */
+html.juice-off .btn-compact:active,
+html.juice-off .btn-solid-gold:active,
+html.juice-off .btn:active,
+html.juice-off .tab-btn:active,
+html.juice-off .k-seg button:active,
+html.juice-off .fab-dice:active,
+html.juice-off [data-action]:active {
+  transform: none;
+}
+
+html.juice-off .juice-ripple,
+html.juice-off .juice-up,
+html.juice-off .juice-down,
+html.juice-off .juice-gold,
+html.juice-off .juice-card-new,
+html.juice-off .juice-pulse-arcane,
+html.juice-off .juice-pulse-alchemy,
+html.juice-off .juice-levelup,
+html.juice-off .juice-view-in {
+  animation: none;
+}
+
+html.juice-off .juice-ripple,
+html.juice-off .juice-spark {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-compact:active,
+  .btn-solid-gold:active,
+  .btn:active,
+  .tab-btn:active,
+  .k-seg button:active,
+  .fab-dice:active,
+  [data-action]:active {
+    transform: none;
+  }
+  .juice-ripple,
+  .juice-up,
+  .juice-down,
+  .juice-gold,
+  .juice-card-new,
+  .juice-pulse-arcane,
+  .juice-pulse-alchemy,
+  .juice-levelup,
+  .juice-view-in {
+    animation: none;
+  }
+  .juice-ripple,
+  .juice-spark {
+    display: none;
+  }
+}
