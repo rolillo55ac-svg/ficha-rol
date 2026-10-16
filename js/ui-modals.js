@@ -241,7 +241,19 @@ function openDataModal(screen){
         '<span class="settings-row-ico">🔊</span>'+
         '<span class="settings-row-txt"><span class="settings-row-title">Sonidos</span><span class="settings-row-sub">Dados, pestañas y sonidos de personaje</span></span>'+
         '<span class="settings-switch'+(soundEnabled() ? ' on' : '')+'"></span>'+
-      '</button></div>';
+      '</button>'+
+      (window.UIJuice ?
+        '<button type="button" class="settings-row" data-action="toggle-juice" data-juice="vib" role="switch" aria-checked="'+(UIJuice.vibOn() ? 'true' : 'false')+'">'+
+          '<span class="settings-row-ico">📳</span>'+
+          '<span class="settings-row-txt"><span class="settings-row-title">Vibración</span><span class="settings-row-sub">Pequeñas vibraciones al tocar y tirar dados</span></span>'+
+          '<span class="settings-switch'+(UIJuice.vibOn() ? ' on' : '')+'"></span>'+
+        '</button>'+
+        '<button type="button" class="settings-row" data-action="toggle-juice" data-juice="anim" role="switch" aria-checked="'+(UIJuice.animOn() ? 'true' : 'false')+'">'+
+          '<span class="settings-row-ico">✨</span>'+
+          '<span class="settings-row-txt"><span class="settings-row-title">Animaciones</span><span class="settings-row-sub">Destellos y movimientos al tocar y cambiar números</span></span>'+
+          '<span class="settings-switch'+(UIJuice.animOn() ? ' on' : '')+'"></span>'+
+        '</button>' : '')+
+      '</div>';
     html += '<div class="settings-group-title">App</div><div class="settings-list">'+
       (DONATE_PAYPAL_ME ?
         '<button type="button" class="settings-row settings-donate-card" data-action="settings-go" data-screen="donate">'+
@@ -627,6 +639,14 @@ function modalClick(e){
     btn.setAttribute("aria-checked", swOn ? "true" : "false");
     var sw = btn.querySelector(".settings-switch");
     if(sw) sw.classList.toggle("on", swOn);
+    return;
+  }
+  if(action==="toggle-juice"){
+    var jOn = btn.getAttribute("data-juice") === "vib" ? !UIJuice.vibOn() : !UIJuice.animOn();
+    if(btn.getAttribute("data-juice") === "vib") UIJuice.setVib(jOn); else UIJuice.setAnim(jOn);
+    btn.setAttribute("aria-checked", jOn ? "true" : "false");
+    var jsw = btn.querySelector(".settings-switch");
+    if(jsw) jsw.classList.toggle("on", jOn);
     return;
   }
   if(action==="check-app-update"){ checkForAppUpdates(true); return; }

@@ -1,6 +1,6 @@
 {
-  "version": "1.4.67.0",
-  "build": "2026.10.16.9",
-  "updatedAt": "2026-10-16T13:00:00Z",
-  "changelog": "Cabecera: toca la barra de Vida, Escudo o Maná para que salgan sus botones grandes; se cierran solos."
+  "version": "1.4.68.0",
+  "build": "2026.10.16.10",
+  "updatedAt": "2026-10-16T22:00:00Z",
+  "changelog": "Efectos al tocar: los botones reaccionan, los números de vida/escudo/maná destellan al subir o bajar y hay vibración. Se apagan en Ajustes (Vibración y Animaciones)."
 }
