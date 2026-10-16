@@ -3200,6 +3200,11 @@
   gap: 6px;
 }
 
+.house-expand-row .house-act-btn {
+  min-width: 44px;
+  justify-content: center;
+}
+
 .house-expand-label {
   font-size: 0.76rem;
   text-transform: uppercase;
