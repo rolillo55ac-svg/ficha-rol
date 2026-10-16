@@ -1,4 +1,6 @@
 var activeCharChannel = null;
+// Hora de servidor del último cambio de ficha aplicado (por id): los avisos que llegan desordenados y son más viejos se ignoran
+var lastRemoteCharTs = {};
 var campaignMapChannel = null;
 var appLocked = true;
 var appStarted = false;
@@ -427,6 +429,7 @@ function handleRemoteCharacterChange(payload){
   if(payload.eventType === 'DELETE'){
     var delId = payload.old ? payload.old.id : null;
     if(delId){
+      delete lastRemoteCharTs[delId];
       dirtyCharIds.delete(delId);
       if(typeof dirtyCharPatches !== 'undefined') dirtyCharPatches.delete(delId);
       var removed = (state.characters||[]).filter(function(x){ return x.db_id === delId || x.id === delId; });
@@ -447,6 +450,9 @@ function handleRemoteCharacterChange(payload){
   } else {
     var row = payload.new;
     if(row && row.data){
+      var rowTs = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+      if(rowTs && lastRemoteCharTs[row.id] && rowTs < lastRemoteCharTs[row.id]) return;
+      if(rowTs) lastRemoteCharTs[row.id] = rowTs;
       var c = row.data;
       c.db_id = row.id;
       c._isDirty = false;

@@ -1,6 +1,6 @@
 {
-  "version": "1.4.72.0",
-  "build": "2026.10.17.4",
-  "updatedAt": "2026-10-17T13:00:00Z",
-  "changelog": "La Casa: cada planta tiene su propio tamaño. El máster puede ampliarla por cualquier lado, las estancias nuevas buscan un hueco libre y la pared exterior sigue la forma de las habitaciones."
+  "version": "1.4.73.0",
+  "build": "2026.10.17.5",
+  "updatedAt": "2026-10-17T15:00:00Z",
+  "changelog": "Los cambios de una ficha que llegan en directo ya no se pisan entre sí: si dos avisos llegan desordenados, se queda siempre el más nuevo (antes, a veces, el otro jugador veía una cantidad o dato antiguo hasta recargar)."
 }
