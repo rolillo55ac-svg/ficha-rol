@@ -5160,6 +5160,14 @@ main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow
 .spell-btn-act.cancel{background:rgba(192,57,43,0.22);color:#FF7675;border:1px solid var(--danger);}
 .spell-btn-act.cancel:hover{background:var(--danger);color:#fff;box-shadow:0 0 8px rgba(192,57,43,0.5);}
 
+.spell-name-read{font-family:var(--font-display);font-size:0.98rem;color:var(--gold-light);font-weight:700;margin-bottom:6px;overflow-wrap:anywhere;}
+.spell-pills-read{margin-bottom:6px;}
+.spell-pill{font-size:0.7rem;padding:2px 8px;border-radius:999px;font-family:var(--font-mono);background:rgba(176,141,87,0.16);color:var(--gold-light);border:1px solid var(--line);white-space:nowrap;}
+.spell-efecto-read{font-size:0.82rem;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;cursor:pointer;min-height:44px;}
+.spell-efecto-read i{color:var(--ink-faint);}
+.spell-efecto-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.spell-act-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.spell-act-row .spell-btn-act,.spell-act-row .btn-compact{min-height:44px;}
 .spell-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
 .spell-notes{width:100%;font-size:0.78rem;min-height:42px;resize:vertical;border-radius:var(--radius-sm);padding:6px;background:var(--bg-card);}
 
@@ -9894,7 +9902,7 @@ textarea,
 .alq-empty { text-align: center; padding: 26px 10px; color: var(--ink-faint); background: rgba(0,0,0,.25); border-radius: 12px; border: 1px dashed var(--line); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .alq-empty .alq-btn { flex: none; }
 
-.alq-card { --rc: #B9A98F; background: var(--bg-elev); border: 1px solid var(--line); border-left: 4px solid var(--rc); border-radius: 14px; overflow: hidden; }
+.alq-card { --rc: #B9A98F; background: var(--bg-elev); border: 1px solid var(--line); box-shadow: inset 4px 0 0 var(--rc); border-radius: 14px; overflow: hidden; }
 .alq-card.alq-r-rara { --rc: #6FA8DC; }
 .alq-card.alq-r-muyrara { --rc: #B48AE0; }
 .alq-card.alq-r-legendaria { --rc: #E8C35A; }
@@ -9906,6 +9914,7 @@ textarea,
 .alq-tag { font-size: .74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); white-space: nowrap; }
 .alq-tag.e { border-color: rgba(200,75,87,.5); color: var(--blood-light); }
 .alq-tag.s { border-color: rgba(118,172,157,.5); color: var(--teal-light); }
+.alq-note-sum { display: block; font-size: .74rem; color: var(--ink-faint); margin-top: 3px; overflow-wrap: anywhere; }
 .alq-tag.wait { border-color: rgba(224,144,74,.5); color: var(--warning); }
 .alq-tag.ready { border-color: var(--gold); color: var(--gold-light); }
 .alq-dose { flex: none; min-width: 44px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--gold-light); }

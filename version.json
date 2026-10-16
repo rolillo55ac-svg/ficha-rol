@@ -1,6 +1,6 @@
 {
-  "version": "1.4.65.0",
-  "build": "2026.10.16.7",
+  "version": "1.4.66.0",
+  "build": "2026.10.16.8",
   "updatedAt": "2026-10-16T12:00:00Z",
-  "changelog": "La Casa: barra de zoom encima del plano y nombres de estancias más legibles."
+  "changelog": "Magia: hechizos en modo lectura con Editar por hechizo. Alquimia: etiquetas claras y resumen de tus notas."
 }

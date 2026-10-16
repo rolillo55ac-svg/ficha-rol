@@ -1194,6 +1194,7 @@ function renderSpellsGrimoire(c, canEdit){
       var statBadge = hasStatMod ? '<span class="spell-badge effect">✨ ' + esc(s.statMod) + ' ' + esc(s.statAttr) + (stacks > 1 ? ' (x' + stacks + ')' : '') + '</span>' : '';
       var activeBadge = isActive ? '<span class="spell-badge active">ACTIVO' + (stacks > 1 ? ' x' + stacks : '') + '</span>' : '';
 
+      if(canEdit && state._spellEdit && state._spellEdit[s.id]){
       html += '<div class="spell-card' + (isActive ? ' active-spell' : '') + '">' +
         '<div class="spell-card-header">' +
           '<input type="text" class="spell-name-input" placeholder="Nombre del Hechizo" data-bind="spells.' + s.id + '.name" value="' + esc(s.name) + '" ' + (canEdit ? '' : 'readonly') + '>' +
@@ -1205,6 +1206,7 @@ function renderSpellsGrimoire(c, canEdit){
               '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">✕ Quitar Carga (' + stacks + ')</button>' :
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">⚡ Activar (-' + num(s.coste, 1) + ' Maná)</button>'
             ) : '') +
+            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">✓ Listo</button>' +
             (canEdit ? '<button class="row-del" data-action="del-spell" data-id="' + s.id + '" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '') +
           '</div>' +
         '</div>' +
@@ -1224,6 +1226,25 @@ function renderSpellsGrimoire(c, canEdit){
           '<textarea class="spell-notes k-input" placeholder="Efectos mágicos, reglas específicas o descripción..." data-bind="spells.' + s.id + '.efecto" ' + (canEdit ? '' : 'readonly') + '>' + esc(s.efecto) + '</textarea>' +
         '</div>' +
       '</div>';
+      } else {
+        var spOpen = !!(state._spellOpen && state._spellOpen[s.id]);
+        html += '<div class="spell-card' + (isActive ? ' active-spell' : '') + '">' +
+          '<div class="spell-name-read">' + (esc(s.name) || 'Hechizo sin nombre') + '</div>' +
+          '<div class="summon-pills-wrap spell-pills-read">' + activeBadge +
+            '<span class="spell-pill">💧 ' + num(s.coste, 1) + ' maná</span>' +
+            (s.rango ? '<span class="spell-pill">🎯 ' + esc(s.rango) + '</span>' : '') +
+            statBadge +
+          '</div>' +
+          '<div class="spell-efecto-read' + (spOpen ? '' : ' spell-efecto-clamp') + '" data-action="toggle-spell-open" data-id="' + s.id + '">' + (s.efecto ? esc(s.efecto) : '<i>Sin descripción.</i>') + '</div>' +
+          (canEdit ? '<div class="spell-act-row">' + (canEdit ? (isActive ?
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '" title="Lanzar de nuevo y superponer">+ Superponer (-' + num(s.coste, 1) + ' Maná)</button>' +
+              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">✕ Quitar Carga (' + stacks + ')</button>' :
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">⚡ Activar (-' + num(s.coste, 1) + ' Maná)</button>'
+            ) : '') +
+            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">✏️ Editar</button>' +
+          '</div>' : '') +
+        '</div>';
+      }
     });
   }
 
@@ -1744,6 +1765,17 @@ function tplAlquimiaRecetario(c, canEdit){
   return html;
 }
 
+// Resumen corto de lo que el jugador ha anotado (nunca el efecto secreto del máster)
+function alqNoteSummary(p, showCherk){
+  var txt = '';
+  if(getAlchemyStageIndex(p.progEnemigo) >= 3 && p.efectoEnemigo) txt = '⚔️ ' + p.efectoEnemigo;
+  else if(showCherk && getAlchemyStageIndex(p.progCherk) >= 3 && p.efectoCherk) txt = '🧪 ' + p.efectoCherk;
+  txt = String(txt).replace(/\s+/g, ' ').trim();
+  if(!txt) return '';
+  if(txt.length > 70) txt = txt.slice(0, 68) + '…';
+  return '<span class="alq-note-sum">' + esc(txt) + '</span>';
+}
+
 function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
   var cat = findAlchemyCatalogItem(p);
   var typeIcon = p.type === 'Poción' ? '✨' : (p.type === 'Ungüento' ? '🌿' : '🧪');
@@ -1758,8 +1790,8 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
   var dosis = num(p.dosis, 0);
   var open = !!window.alchemyExpandedCards[p.id];
 
-  var tags = '<span class="alq-tag e">⚔️ ' + alchemyStageText(eIdx) + '</span>';
-  if(showCherk) tags += '<span class="alq-tag s">🛡️ ' + alchemyStageText(cIdx) + '</span>';
+  var tags = '<span class="alq-tag e">⚔️ Enemigos: ' + alchemyStageText(eIdx) + '</span>';
+  if(showCherk) tags += '<span class="alq-tag s">🧪 Cherk: ' + alchemyStageText(cIdx) + '</span>';
   if(base < 2) tags += '<span class="alq-tag">🌿 ' + (base === 1 ? 'Solo muestra' : 'Sin muestra') + '</span>';
   var dist = alchemyDistillState(p);
   if(dist) tags += dist.ready ? '<span class="alq-tag ready">✓ Lista</span>' : '<span class="alq-tag wait">⏳ faltan ' + dist.left + ' h</span>';
