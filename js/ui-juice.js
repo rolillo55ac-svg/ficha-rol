@@ -142,8 +142,9 @@
     // ----------------------------------------------------
     // 6. Toque pasivo (pointerdown) para Ripple y Vibración
     // ----------------------------------------------------
-    const shortVibeActions = ['hp-mod', 'shield-mod', 'mana-mod', 'mod-inv-qty', 'switch-tab', 'gauge-toggle'];
+    const midVibeRe = /^(add|new|create|confirm|save|submit|del|delete|remove|grant|apply|equip|craft)-|-(add|new|create|save|delete|confirm|complete|equip)$|^(set-quest-status|toggle-quest-task|alchemy-finish-distill|geode-finish)$/;
     const longVibeActions = [
+      'roll-request-send',
       'roll-skill', 'roll-custom-skill', 'roll-attr', 'roll-init',
       'roll-weapon-attack', 'roll-weapon', 'roll-training', 'roll-summon-action',
       'roll-tame', 'open-free-dice', 'cast-spell', 'grant-level'
@@ -163,12 +164,13 @@
         const actionEl = host.hasAttribute('data-action') ? host : host.closest('[data-action]');
         const action = actionEl ? actionEl.getAttribute('data-action') : '';
 
-        if (action) {
-          if (shortVibeActions.indexOf(action) !== -1) {
-            vibrar(9);
-          } else if (longVibeActions.indexOf(action) !== -1) {
-            vibrar([20, 40, 40]);
-          }
+        // Una sola vibración por toque: la del nivel más alto
+        if (host.classList.contains('fab-dice') || (action && longVibeActions.indexOf(action) !== -1)) {
+          vibrar([20, 40, 40]);
+        } else if (action && midVibeRe.test(action)) {
+          vibrar(15);
+        } else if (action || host.matches('.tab-btn, .k-seg button, .k-seg-btn, .dmode-pill, .skills-view-btn, .backpack-tab-btn')) {
+          vibrar(7);
         }
 
         // Ripple visual (solo si animOn())
@@ -250,6 +252,16 @@
         el.classList.remove('juice-up', 'juice-down', 'juice-gold');
         void el.offsetWidth;
         el.classList.add('juice-num', cls);
+        const barra = el.closest('.gauge-wrap');
+        const gauge = barra ? barra.querySelector('.gauge') : null;
+        if (gauge) {
+          gauge.classList.remove('juice-gauge-glow');
+          void gauge.offsetWidth;
+          gauge.classList.add('juice-gauge-glow');
+          setTimeout(function () {
+            try { gauge.classList.remove('juice-gauge-glow'); } catch (_) {}
+          }, 650);
+        }
 
         let done = false;
         const clean = function () {
@@ -296,6 +308,7 @@
       pendingMutations = [];
 
       try {
+        let rearmar = false;
         // 8.1. Verificar cambio de personaje activo
         const charNameEl = document.querySelector('.char-name');
         const currentCharName = charNameEl ? charNameEl.textContent.trim() : '';
@@ -305,6 +318,7 @@
           lastCharName = currentCharName;
           ultimos.clear();
           vistas.clear();
+          rearmar = true;
         }
 
         // 8.2. Cambio de pestaña activa
@@ -313,6 +327,7 @@
           lastActiveTab = currentTab;
         } else if (currentTab && currentTab !== lastActiveTab) {
           lastActiveTab = currentTab;
+          rearmar = true;
           if (animOn()) {
             const mainEl = document.querySelector('#main');
             if (mainEl && !isExcluded(mainEl)) {
@@ -328,7 +343,7 @@
 
         // 8.3. Tarjetas nuevas añadidas en este lote
         const newCards = [];
-        const cardSelector = '[data-quest-id],[data-training-id],[data-inv-id],[data-summon-id],[data-roll-id]';
+        const cardSelector = '[data-juice-card]';
         for (let m = 0; m < mutations.length; m++) {
           const mut = mutations[m];
           if (!mut.addedNodes || !mut.addedNodes.length) continue;
@@ -351,15 +366,30 @@
             for (let t = 0; t < targets.length; t++) {
               const card = targets[t];
               if (isExcluded(card)) continue;
-              const id = card.getAttribute('data-quest-id') ||
-                         card.getAttribute('data-training-id') ||
-                         card.getAttribute('data-inv-id') ||
-                         card.getAttribute('data-summon-id') ||
-                         card.getAttribute('data-roll-id');
+              const id = card.getAttribute('data-juice-card');
               if (id && !vistas.has(id)) {
                 vistas.add(id);
                 newCards.push(card);
               }
+            }
+          }
+        }
+
+        // Al abrir otra pestaña o ficha todo se repinta: se anotan las tarjetas sin animarlas
+        if (rearmar) {
+          document.querySelectorAll('[data-juice-card]').forEach(function (el) {
+            const id = el.getAttribute('data-juice-card');
+            if (id) vistas.add(id);
+          });
+          newCards.length = 0;
+        }
+
+        // Primer pintado de una lista de tiradas: no es una tirada nueva
+        if (newCards.length > 1) {
+          for (let c = newCards.length - 1; c >= 0; c--) {
+            const par = newCards[c].parentNode;
+            if ((newCards[c].getAttribute('data-juice-card') || '').charAt(0) === 'r' && par && par.querySelectorAll('[data-juice-card]').length === newCards.length) {
+              newCards.splice(c, 1);
             }
           }
         }
@@ -427,13 +457,9 @@
         const headerEl = document.querySelector('#topbar');
 
         // Registrar tarjetas iniciales en vistas para evitar animaciones masivas al abrir la app
-        const cardSelector = '[data-quest-id],[data-training-id],[data-inv-id],[data-summon-id],[data-roll-id]';
+        const cardSelector = '[data-juice-card]';
         document.querySelectorAll(cardSelector).forEach(function (el) {
-          const id = el.getAttribute('data-quest-id') ||
-                     el.getAttribute('data-training-id') ||
-                     el.getAttribute('data-inv-id') ||
-                     el.getAttribute('data-summon-id') ||
-                     el.getAttribute('data-roll-id');
+          const id = el.getAttribute('data-juice-card');
           if (id) vistas.add(id);
         });
 

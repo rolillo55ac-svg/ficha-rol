@@ -171,7 +171,7 @@ function rollHistoryItemHtml(r){
   det.push('<div class="rl-formula">' + esc(realTime) + '</div>');
   var delBtn = (isGM() && !rollHistoryTableMissing && /^[0-9a-f-]{36}$/i.test(String(r.id))) ?
     '<button type="button" class="game-clock-btn roll-history-del" data-action="roll-history-delete" data-roll-id="' + esc(r.id) + '" aria-label="Borrar tirada">🗑</button>' : '';
-  return '<details class="roll-history-item rh-line">' +
+  return '<details class="roll-history-item rh-line" data-juice-card="r' + esc(r.id) + '">' +
       '<summary class="rh-sum">' +
         '<span class="rh-name"><span class="rl-char">' + esc(r.charName) + '</span> · <span class="rl-label">' + esc(r.label) + '</span></span>' +
         '<span class="rh-icons">' + icons + '</span>' +

@@ -20,7 +20,7 @@ function renderQuestCard(q, canEdit){
 
   var cardClass = "quest-card " + qType + " " + (st === "completada" ? "completed" : (st === "fallida" ? "failed" : "active"));
 
-  var html = '<div class="'+cardClass+'" id="quest-'+q.id+'">';
+  var html = '<div class="'+cardClass+'" id="quest-'+q.id+'" data-juice-card="q'+q.id+'">';
 
   // Header de la tarjeta: Tipo, Título, Estado y Controles GM
   html += '<div class="quest-card-header">'+
