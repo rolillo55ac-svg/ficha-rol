@@ -562,16 +562,16 @@ var HOUSE_TEXTURES = [
 var HOUSE_ICONS = ["🔥","🍲","🌿","🩸","🔮","🌙","🧪","🛡️","🗡️","🚪","🪜","🛋️","📚","🗝️","🪑","🍺","🎨","🏹","💤","🪙","🧭","🕯️","🪵","🦴","⚓","💍","📜","💎","⏳","⛺","🏰","💀"];
 
 var HOUSE_PRESETS = [
-  { name: "Salón del Hogar Caliente", icon: "🔥", color: "blood", texture: "madera", w: 280, h: 200, type: "salon" },
-  { name: "Cocina del Caldero Errante", icon: "🍲", color: "gold", texture: "baldosas", w: 280, h: 200, type: "cocina" },
-  { name: "Rincón Botánico", icon: "🌿", color: "teal", texture: "musgo", w: 280, h: 220, type: "habitacion_personal" },
-  { name: "Aposentos Personales", icon: "🛏️", color: "blood", texture: "alfombra", w: 260, h: 200, type: "habitacion_personal" },
-  { name: "Biblioteca Arcana", icon: "🔮", color: "gold", texture: "arcano", w: 300, h: 200, type: "biblioteca" },
-  { name: "Bodega de Venenos", icon: "🧪", color: "gm", texture: "piedra", w: 320, h: 220, type: "bodega" },
-  { name: "Taller y Armería", icon: "⚙️", color: "gm", texture: "piedra", w: 280, h: 200, type: "taller" },
-  { name: "Escaleras Principales", icon: "🪜", color: "gold", texture: "piedra", w: 140, h: 140, type: "escaleras" },
-  { name: "Galería Conectora", icon: "✦", color: "gold", texture: "madera", w: 240, h: 80, type: "pasillo" },
-  { name: "Habitación Vacía", icon: "🚪", color: "teal", texture: "madera", w: 220, h: 160, type: "otro" }
+  { name: "Salón", icon: "🔥", color: "blood", texture: "madera", w: 280, h: 200, type: "salon" },
+  { name: "Cocina", icon: "🍲", color: "gold", texture: "baldosas", w: 280, h: 200, type: "cocina" },
+  { name: "Rincón botánico", icon: "🌿", color: "teal", texture: "musgo", w: 280, h: 220, type: "habitacion_personal" },
+  { name: "Dormitorio", icon: "🛏️", color: "blood", texture: "alfombra", w: 260, h: 200, type: "habitacion_personal" },
+  { name: "Biblioteca", icon: "🔮", color: "gold", texture: "arcano", w: 300, h: 200, type: "biblioteca" },
+  { name: "Bodega", icon: "🧪", color: "gm", texture: "piedra", w: 320, h: 220, type: "bodega" },
+  { name: "Taller", icon: "⚙️", color: "gm", texture: "piedra", w: 280, h: 200, type: "taller" },
+  { name: "Escaleras", icon: "🪜", color: "gold", texture: "piedra", w: 140, h: 140, type: "escaleras" },
+  { name: "Pasillo", icon: "✦", color: "gold", texture: "madera", w: 240, h: 80, type: "pasillo" },
+  { name: "Habitación vacía", icon: "🚪", color: "teal", texture: "madera", w: 220, h: 160, type: "otro" }
 ];
 
 var _houseTextureCache = {};
@@ -1883,25 +1883,26 @@ function openHousePresetModal(){
 
   var modal = document.createElement("div");
   modal.id = modalId;
-  modal.className = "preset-modal-backdrop visible";
+  modal.className = "house-modal-overlay";
+  modal.addEventListener("click", function(ev){ if(ev.target === modal) modal.remove(); });
 
   var gridHtml = '';
   HOUSE_PRESETS.forEach(function(pr, idx){
-    gridHtml += '<div class="preset-card" data-action="select-preset-room" data-preset-idx="' + idx + '">' +
-      '<div class="pi">' + pr.icon + '</div>' +
+    gridHtml += '<div class="house-preset-card" data-action="select-preset-room" data-preset-idx="' + idx + '">' +
+      '<div class="house-preset-icon">' + pr.icon + '</div>' +
       '<div>' +
-      '  <div class="pname">' + esc(pr.name) + '</div>' +
-      '  <div class="psub">' + (pr.texture || "madera").toUpperCase() + ' · ' + pr.w + 'x' + pr.h + '</div>' +
+      '  <div class="house-preset-name">' + esc(pr.name) + '</div>' +
+      '  <div class="house-preset-sub">' + pr.w + ' x ' + pr.h + '</div>' +
       '</div>' +
       '</div>';
   });
 
-  modal.innerHTML = '<div class="preset-modal">' +
-    '  <div class="preset-modal-title">' +
-    '    <span>Elige una Estancia para Añadir</span>' +
-    '    <button style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:1.4rem;" data-action="close-preset-room-modal">&times;</button>' +
+  modal.innerHTML = '<div class="house-modal-box">' +
+    '  <div class="house-modal-header">' +
+    '    <h3 class="house-modal-title">Elige una estancia para añadir</h3>' +
+    '    <button class="house-perk-close" data-action="close-preset-room-modal" aria-label="Cerrar">&times;</button>' +
     '  </div>' +
-    '  <div class="preset-grid">' + gridHtml + '</div>' +
+    '  <div class="house-preset-list">' + gridHtml + '</div>' +
     '</div>';
 
   document.body.appendChild(modal);

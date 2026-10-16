@@ -1,6 +1,6 @@
 {
-  "version": "1.4.73.0",
-  "build": "2026.10.17.5",
-  "updatedAt": "2026-10-17T15:00:00Z",
-  "changelog": "Los cambios de una ficha que llegan en directo ya no se pisan entre sí: si dos avisos llegan desordenados, se queda siempre el más nuevo (antes, a veces, el otro jugador veía una cantidad o dato antiguo hasta recargar)."
+  "version": "1.4.74.0",
+  "build": "2026.10.17.6",
+  "updatedAt": "2026-10-17T16:00:00Z",
+  "changelog": "El menú de Añadir estancia de La Casa vuelve a verse como el resto de ventanas (con su fondo, título, botón de cerrar y tarjetas grandes para el dedo), y las estancias tienen nombres sencillos: Salón, Cocina, Dormitorio, Biblioteca..."
 }
