@@ -69,31 +69,58 @@ function renderTopbar(){
       '</div>'+
     '</div>'+
     '<div class="gauges">'+
-      '<div class="gauge-wrap">'+
+      gaugeWrapHtml(canEdit, 'hp', 'Vida',
         '<div class="gauge-label"><span>Vida '+hpStatusBadge+hpDebuffBadge+'</span><span class="'+hpNumsClass+'">'+curPv+' / '+maxHp+'</span></div>'+
-        '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%;'+(curPv<=0?'background:#8C252F;':'')+'"></div></div>'+
-        (canEdit ? ('<div class="gauge-adjust">'+
-          '<button data-action="hp-mod" data-delta="-5" aria-label="Restar 5 vida">-5</button><button data-action="hp-mod" data-delta="-1" aria-label="Restar 1 vida">-1</button>'+
-          '<button data-action="hp-mod" data-delta="1" aria-label="Sumar 1 vida">+1</button><button data-action="hp-mod" data-delta="5" aria-label="Sumar 5 vida">+5</button>'+
-        '</div>') : '')+
-      '</div>'+
-      '<div class="gauge-wrap">'+
+        '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%;'+(curPv<=0?'background:#8C252F;':'')+'"></div></div>')+
+      gaugeWrapHtml(canEdit, 'shield', 'Escudo',
         '<div class="gauge-label"><span style="color:var(--shield-light);" title="El Escudo y la Vida Falsa son equivalentes">🛡️ Escudo</span><span class="gauge-nums">'+num(c.combat.escudoActual,0)+'</span></div>'+
-        '<div class="gauge"><div class="gauge-fill shield" style="width:'+clamp(num(c.combat.escudoActual,0)*10,0,100)+'%;"></div></div>'+
-        (canEdit ? ('<div class="gauge-adjust">'+
-          '<button data-action="shield-mod" data-delta="-3" aria-label="Restar 3 escudo">-3</button><button data-action="shield-mod" data-delta="-1" aria-label="Restar 1 escudo">-1</button>'+
-          '<button data-action="shield-mod" data-delta="1" aria-label="Sumar 1 escudo">+1</button><button data-action="shield-mod" data-delta="3" aria-label="Sumar 3 escudo">+3</button>'+
-        '</div>') : '')+
-      '</div>'+
-      '<div class="gauge-wrap">'+
+        '<div class="gauge"><div class="gauge-fill shield" style="width:'+clamp(num(c.combat.escudoActual,0)*10,0,100)+'%;"></div></div>')+
+      gaugeWrapHtml(canEdit, 'mana', 'Maná',
         '<div class="gauge-label"><span>Maná</span><span class="gauge-nums">'+num(c.combat.manaActual,0)+' / '+maxMana+'</span></div>'+
-        '<div class="gauge"><div class="gauge-fill mana" style="width:'+manaPct+'%;"></div></div>'+
-        (canEdit ? ('<div class="gauge-adjust">'+
-          '<button data-action="mana-mod" data-delta="-5" aria-label="Restar 5 maná">-5</button><button data-action="mana-mod" data-delta="-1" aria-label="Restar 1 maná">-1</button>'+
-          '<button data-action="mana-mod" data-delta="1" aria-label="Sumar 1 maná">+1</button><button data-action="mana-mod" data-delta="5" aria-label="Sumar 5 maná">+5</button>'+
-        '</div>') : '')+
-      '</div>'+
+        '<div class="gauge"><div class="gauge-fill mana" style="width:'+manaPct+'%;"></div></div>')+
+      (canEdit ? gaugeTrayHtml(gaugeTrayOpen, gaugeTrayOpen==='hp' ? curPv+' / '+maxHp : (gaugeTrayOpen==='shield' ? num(c.combat.escudoActual,0) : num(c.combat.manaActual,0)+' / '+maxMana)) : '')+
     '</div>';
+  if(!canEdit) gaugeTrayClose(false);
+}
+
+// Tira de botones que se despliega al tocar una barra (solo una abierta; se cierra sola a los 5 s)
+var gaugeTrayOpen = null;
+var gaugeTrayTimer = null;
+var GAUGE_TRAY_STEPS = {
+  hp: {action:"hp-mod", name:"vida", steps:[-5,-1,1,5]},
+  shield: {action:"shield-mod", name:"escudo", steps:[-3,-1,1,3]},
+  mana: {action:"mana-mod", name:"maná", steps:[-5,-1,1,5]}
+};
+
+function gaugeWrapHtml(canEdit, key, label, inner){
+  if(!canEdit) return '<div class="gauge-wrap">'+inner+'</div>';
+  var open = gaugeTrayOpen === key;
+  return '<div class="gauge-wrap"><button type="button" class="gauge-toggle" data-action="gauge-toggle" data-gauge="'+key+'" aria-expanded="'+open+'" aria-label="'+label+': ajustar">'+inner+'</button></div>';
+}
+
+function gaugeTrayHtml(key, current){
+  var cfg = GAUGE_TRAY_STEPS[key];
+  if(!cfg) return '';
+  var btnHtml = function(d){
+    return '<button type="button" class="gauge-tray-btn" data-action="'+cfg.action+'" data-delta="'+d+'" aria-label="'+(d<0?'Restar ':'Sumar ')+Math.abs(d)+' '+cfg.name+'">'+(d>0?'+':'')+d+'</button>';
+  };
+  return '<div class="gauge-tray gauge-tray-'+key+'" role="group" aria-label="Ajustar '+cfg.name+'">'+
+    btnHtml(cfg.steps[0])+btnHtml(cfg.steps[1])+
+    '<span class="gauge-tray-value">'+current+'</span>'+
+    btnHtml(cfg.steps[2])+btnHtml(cfg.steps[3])+
+  '</div>';
+}
+
+function gaugeTrayArm(){
+  if(gaugeTrayTimer) clearTimeout(gaugeTrayTimer);
+  gaugeTrayTimer = setTimeout(function(){ gaugeTrayClose(true); }, 5000);
+}
+
+function gaugeTrayClose(rerender){
+  if(gaugeTrayTimer){ clearTimeout(gaugeTrayTimer); gaugeTrayTimer = null; }
+  if(gaugeTrayOpen === null) return;
+  gaugeTrayOpen = null;
+  if(rerender) renderTopbar();
 }
 
 var PLAYER_TABS = [

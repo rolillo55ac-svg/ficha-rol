@@ -1,6 +1,6 @@
 {
-  "version": "1.4.66.0",
-  "build": "2026.10.16.8",
-  "updatedAt": "2026-10-16T12:00:00Z",
-  "changelog": "Magia: hechizos en modo lectura con Editar por hechizo. Alquimia: etiquetas claras y resumen de tus notas."
+  "version": "1.4.67.0",
+  "build": "2026.10.16.9",
+  "updatedAt": "2026-10-16T13:00:00Z",
+  "changelog": "Cabecera: toca la barra de Vida, Escudo o Maná para que salgan sus botones grandes; se cierran solos."
 }

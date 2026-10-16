@@ -306,7 +306,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .icon-btn:active{transform:scale(.94);}
 
 /* GAUGES */
-.gauges{display:grid;grid-template-columns:1fr 110px 1fr;gap:8px;margin-top:8px;}
+.gauges{position:relative;display:grid;grid-template-columns:1fr 110px 1fr;gap:8px;margin-top:8px;}
 .gauge-wrap{min-width:0;}
 .gauge-label{display:flex;justify-content:space-between;font-size:.66rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;letter-spacing:.03em;}
 .gauge-nums{font-family:var(--font-mono);color:var(--ink-dim);font-size:.72rem;}
@@ -316,13 +316,33 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .gauge-fill.hp{background:linear-gradient(90deg,var(--blood),var(--blood-light));}
 .gauge-fill.shield{background:linear-gradient(90deg,var(--shield),var(--shield-light));}
 .gauge-fill.mana{background:linear-gradient(90deg,#2D4B60,#5E8EA8);}
-.gauge-adjust{display:flex;gap:3px;margin-top:5px;}
-.gauge-adjust button{
-  flex:1;background:var(--bg-card);border:1px solid var(--line);color:var(--ink-dim);
-  border-radius:var(--radius-sm);padding:8px 0;font-size:.72rem;font-family:var(--font-mono);cursor:pointer;min-height:36px;
+.gauge-toggle{
+  background:none;border:none;padding:0;color:inherit;font-family:inherit;text-align:left;width:100%;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:center;min-height:44px;
+  -webkit-tap-highlight-color:transparent;
 }
-.gauge-adjust button:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.1);}
-.gauge-adjust button:active{transform:scale(.93);}
+.gauge-toggle:focus-visible{outline:1px solid var(--gold);}
+.gauge-toggle[aria-expanded="true"] .gauge{border-color:var(--gold);}
+.gauge-tray{
+  position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:5;
+  display:flex;gap:6px;padding:6px;
+  background:var(--bg-elev);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  box-shadow:0 10px 24px -12px rgba(0,0,0,0.7);
+}
+.gauge-tray-btn{
+  flex:1;min-height:44px;background:var(--bg-card);border:1px solid var(--line);
+  color:var(--ink-dim);border-radius:var(--radius-sm);font-family:var(--font-mono);
+  font-size:.95rem;cursor:pointer;padding:0;
+}
+.gauge-tray-btn:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(176,141,87,0.1);}
+.gauge-tray-btn:active{transform:scale(.93);border-color:var(--gold);color:var(--gold-light);}
+.gauge-tray-value{
+  flex:0 0 auto;min-width:64px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);color:var(--gold-light);font-size:.95rem;white-space:nowrap;
+}
+.gauge-tray-hp{border-color:var(--blood-light);}
+.gauge-tray-shield{border-color:var(--shield-light);}
+.gauge-tray-mana{border-color:#5E8EA8;}
 
 /* REGLAS RESPONSIVAS ESPECÍFICAS PARA TOPBAR EN MÓVIL */
 @media(max-width:600px){
@@ -345,15 +365,12 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   .gauge-label span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .gauge-nums{font-size:0.62rem;white-space:nowrap;}
   .gauge{height:8px;border-radius:4px;}
-  .gauge-adjust{gap:2px;margin-top:3px;}
-  .gauge-adjust button{min-height:24px;height:24px;padding:0;font-size:0.62rem;border-radius:4px;}
 }
 
 @media(max-width:600px){
   .char-name{font-size:0.86rem;max-width:130px;}
   .sync-status{display:none;}
   .gauges{grid-template-columns:1fr 85px 1fr;gap:4px;}
-  .gauge-adjust button{min-height:24px;height:24px;font-size:0.6rem;padding:2px 0;}
   main{padding:10px 6px 110px;}
   .section{padding:10px 8px 14px;}
 }

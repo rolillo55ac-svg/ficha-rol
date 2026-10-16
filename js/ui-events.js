@@ -232,6 +232,11 @@ function alchemyCollectDistill(c, pItem){
   showToast("⚗️ +1 dosis de '" + pItem.name + "'. Viales listos: " + pItem.dosis, "success");
 }
 
+// Tocar fuera de las barras cierra la tira de botones de vida/escudo/maná
+document.addEventListener("click", function(e){
+  if(gaugeTrayOpen && !(e.target.closest && e.target.closest(".gauges"))) gaugeTrayClose(true);
+}, true);
+
 function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
@@ -324,8 +329,18 @@ function handleClick(e){
     renderTab();
     return;
   }
+  if(action==="gauge-toggle"){
+    if(!canEditChar(c)) return;
+    var gKey = btn.getAttribute("data-gauge");
+    if(gaugeTrayOpen === gKey){ gaugeTrayClose(true); return; }
+    gaugeTrayOpen = gKey;
+    gaugeTrayArm();
+    renderTopbar();
+    return;
+  }
   if(action==="hp-mod"){
     if(!canEditChar(c)) return;
+    if(gaugeTrayOpen) gaugeTrayArm();
     var d1 = parseInt(btn.getAttribute("data-delta"),10);
     var maxHp = (typeof getEffectiveMaxHp === 'function' ? getEffectiveMaxHp(c) : (num(c.combat.pvMax,0) || 999));
     // Actualización visual optimista sin marcar dirty ni forzar guardado completo
@@ -339,6 +354,7 @@ function handleClick(e){
   }
   if(action==="shield-mod"){
     if(!canEditChar(c)) return;
+    if(gaugeTrayOpen) gaugeTrayArm();
     var ds = parseInt(btn.getAttribute("data-delta"),10);
     // Actualización visual optimista sin marcar dirty ni forzar guardado completo
     c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
@@ -350,6 +366,7 @@ function handleClick(e){
   }
   if(action==="mana-mod"){
     if(!canEditChar(c)) return;
+    if(gaugeTrayOpen) gaugeTrayArm();
     var d2 = parseInt(btn.getAttribute("data-delta"),10);
     var maxMana = (typeof getEffectiveMaxMana === 'function' ? getEffectiveMaxMana(c) : (num(c.combat.manaMax,0) || 999));
     // Actualización visual optimista sin marcar dirty ni forzar guardado completo
