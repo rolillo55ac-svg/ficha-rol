@@ -10383,10 +10383,12 @@ html,body{overscroll-behavior-y:contain;}
   align-items: center;
   gap: var(--spacing-sm);
 }
-.roll-request-dc input[type="number"] {
-  max-width: 50%;
-}
-.roll-request-all,
+.roll-request-dc .field { flex: 1 1 0; }
+.roll-request-dc .roll-history-check { flex: 0 0 auto; }
+.roll-request-hint { font-size: .66rem; color: var(--ink-faint); }
+.roll-request-form .field input,
+.roll-request-form .field select { padding: 8px 10px; }
+.roll-request-form .roll-history-check input { accent-color: var(--gold); }
 .roll-request-cancel {
   min-height: 44px;
 }
@@ -10499,6 +10501,10 @@ html,body{overscroll-behavior-y:contain;}
   .tabbar{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);}
 }
 .backpack-tabs-bar{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 18px),transparent 100%);}
+/* Filtros de Inventario: en filas, sin cortar ningún texto */
+.backpack-tabs-bar{flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;}
+.k-seg > button.k-seg-btn.backpack-tab-btn{flex:1 1 auto;min-height:40px;padding:4px 8px;font-family:var(--font-body);font-size:.74rem;white-space:nowrap;}
+.backpack-header-bar .btn-solid-gold{white-space:nowrap;}
 .tr-cat-select{padding-right:22px !important;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
 .tr-name-input{min-width:0;text-overflow:ellipsis;}
 .tr-progress-caption{gap:10px !important;}
@@ -10847,10 +10853,27 @@ textarea.k-input.k-input {
     box-shadow: 0 0 0 0 rgba(176, 141, 87, 0);
   }
   40% {
-    box-shadow: 0 0 14px 2px var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-light), 0 0 14px 4px var(--gold);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(176, 141, 87, 0);
+  }
+}
+
+/* Brillo en el borde de las barras de vida, escudo y maná al cambiar */
+.juice-gauge-glow {
+  animation: gaugeGlow 0.6s ease-out;
+}
+
+@keyframes gaugeGlow {
+  0% {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(176, 141, 87, 0);
+  }
+  40% {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 0 2px var(--gold-light), 0 0 12px 3px var(--gold);
+  }
+  100% {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(176, 141, 87, 0);
   }
 }
 
@@ -10972,6 +10995,7 @@ html.juice-off .juice-up,
 html.juice-off .juice-down,
 html.juice-off .juice-gold,
 html.juice-off .juice-card-new,
+html.juice-off .juice-gauge-glow,
 html.juice-off .juice-pulse-arcane,
 html.juice-off .juice-pulse-alchemy,
 html.juice-off .juice-levelup,
@@ -10999,6 +11023,7 @@ html.juice-off .juice-spark {
   .juice-down,
   .juice-gold,
   .juice-card-new,
+  .juice-gauge-glow,
   .juice-pulse-arcane,
   .juice-pulse-alchemy,
   .juice-levelup,

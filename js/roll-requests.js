@@ -259,10 +259,12 @@ function renderRollRequestTab(){
       return '<option value="' + v + '"' + (d.key === v ? " selected" : "") + '>' + esc(s.name) + '</option>';
     }).join("") + '</optgroup>';
   var html = '<div class="roll-request-form">' +
-      '<label class="dice-ctrl-label" for="rollReqKey"><span>Tirada</span></label>' +
-      '<select id="rollReqKey" class="game-clock-input">' + opts + '</select>' +
+      '<div class="field"><label for="rollReqKey">Tirada</label>' +
+      '<select id="rollReqKey" class="game-clock-input">' + opts + '</select></div>' +
       '<div class="roll-request-dc">' +
-        '<input type="number" id="rollReqDc" class="game-clock-input" inputmode="numeric" placeholder="CD (opcional)" value="' + esc(d.dc) + '">' +
+        '<div class="field"><label for="rollReqDc">CD · dificultad (opcional)</label>' +
+          '<input type="number" id="rollReqDc" class="game-clock-input" inputmode="numeric" value="' + esc(d.dc) + '">' +
+          '<span class="roll-request-hint">Número que hay que igualar o superar</span></div>' +
         '<label class="roll-history-check"><input type="checkbox" id="rollReqDcVisible"' + (d.dcVisible ? " checked" : "") + '> CD visible</label>' +
       '</div>' +
       '<div class="dice-mode-pills">' +
@@ -270,7 +272,8 @@ function renderRollRequestTab(){
         '<button type="button" class="dmode-pill ' + (d.mode === "adv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="adv">🍀 Ventaja</button>' +
         '<button type="button" class="dmode-pill ' + (d.mode === "disadv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="disadv">💀 Desventaja</button>' +
       '</div>' +
-      '<input type="text" id="rollReqNote" class="game-clock-input" maxlength="120" placeholder="Texto corto (opcional)" value="' + esc(d.note) + '">' +
+      '<div class="field"><label for="rollReqNote">Texto corto (opcional)</label>' +
+      '<input type="text" id="rollReqNote" class="game-clock-input" maxlength="120" value="' + esc(d.note) + '"></div>' +
       '<div class="dice-ctrl-label"><span>¿A quién?</span><button type="button" class="btn-compact roll-request-all" data-action="roll-request-all">Todos</button></div>' +
       (chars.length ? chars.map(function(c){
         return '<label class="roll-history-check"><input type="checkbox" class="roll-req-target" value="' + esc(c.db_id) + '"' + (targets.indexOf(c.db_id) >= 0 ? " checked" : "") + '> ' + esc(c.name || "Ficha") + '</label>';

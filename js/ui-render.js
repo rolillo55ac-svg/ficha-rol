@@ -826,7 +826,7 @@ function tplEntrenamiento(c){
       }
 
       // Tarjeta limpia estilo Invocaciones (.creature-card)
-      html += '<div class="creature-card training-card" data-id="' + t.id + '" style="background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-bottom:11px;box-shadow:0 4px 14px -6px rgba(0,0,0,0.7);">' +
+      html += '<div class="creature-card training-card" data-id="' + t.id + '" data-juice-card="t' + t.id + '" style="background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-bottom:11px;box-shadow:0 4px 14px -6px rgba(0,0,0,0.7);">' +
         // Fila 1: Encabezado (Nombre + PTS Badge + Del)
         '<div class="creature-card-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
           '<input type="text" class="creature-name-input" data-bind="trainings.' + t.id + '.name" value="' + esc(t.name) + '" placeholder="Nombre del entrenamiento (ej: Veneno de Seta)..." ' + (canEdit ? '' : 'readonly') + ' style="font-family:var(--font-display);font-size:1.02rem;color:var(--gold-light);background:none;border:none;border-bottom:1px solid var(--line-strong);padding:2px 4px;flex:1;min-width:0;">' +
@@ -2179,7 +2179,7 @@ function tplInventario(c){
         var qtyBadge = qty > 1 ? '<span class="slot-qty-badge">x'+qty+'</span>' : '';
         var descText = it.desc || it.notes || '';
 
-        html += '<div class="backpack-slot occupied" data-action="inspect-inv-item" data-id="'+it.id+'" role="button" tabindex="0" title="'+esc(it.name)+'">'+
+        html += '<div class="backpack-slot occupied" data-action="inspect-inv-item" data-id="'+it.id+'" data-juice-card="i'+it.id+'" role="button" tabindex="0" title="'+esc(it.name)+'">'+
           '<div class="slot-icon">'+icon+'</div>'+
           '<div class="slot-name-label">'+esc(it.name || 'Objeto')+'</div>'+
           qtyBadge+
@@ -2243,7 +2243,7 @@ function tplInventario(c){
       filteredListItems.forEach(function(it){
         var itCat = it.category || "Miscelánea";
         var icon = getItemIcon(it);
-        html += '<div class="list-row inv-row">'+
+        html += '<div class="list-row inv-row" data-juice-card="i'+it.id+'">'+
           '<button type="button" class="inv-row-icon-btn" data-action="inspect-inv-item" data-id="'+it.id+'" title="Ver / editar detalle e icono de '+esc(it.name)+'">'+icon+'</button>'+
           '<input type="text" placeholder="Nombre del objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" '+(canEdit?'':'readonly')+'>'+
           '<select class="inv-cat-select" data-bind="inventory.'+it.id+'.category" aria-label="Categoría" '+(canEdit?'':'disabled')+'>'+
@@ -2422,7 +2422,7 @@ function tplInvocaciones(c){
   var s = active;
   var imgStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
 
-  html += '<div class="creature-card summon-card">';
+  html += '<div class="creature-card summon-card" data-juice-card="s' + s.id + '">';
 
   // 1. Cabecera
   html += '<div class="summon-header">';

@@ -1,6 +1,6 @@
 {
-  "version": "1.4.68.0",
-  "build": "2026.10.16.10",
-  "updatedAt": "2026-10-16T22:00:00Z",
-  "changelog": "Efectos al tocar: los botones reaccionan, los números de vida/escudo/maná destellan al subir o bajar y hay vibración. Se apagan en Ajustes (Vibración y Animaciones)."
+  "version": "1.4.69.0",
+  "build": "2026.10.17.1",
+  "updatedAt": "2026-10-17T08:00:00Z",
+  "changelog": "Las tarjetas nuevas (misiones, entrenamientos, objetos, invocaciones, tiradas) destellan en dorado y las barras brillan al cambiar. Vibración en muchos más botones. Pedir tirada y filtros de Inventario con mejor aspecto."
 }
