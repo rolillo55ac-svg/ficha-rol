@@ -221,27 +221,6 @@ function tplMision(c, s){
   var clues = s.questClues;
   var qMap = s.questMap;
 
-  // Filtrado y estadísticas
-  var filter = state.questTypeFilter || "all";
-  
-  var mainQuests = quests.filter(function(q){
-    var qt = (q.type || q.category || "principal");
-    return qt !== "secundaria";
-  });
-  var sideQuests = quests.filter(function(q){
-    var qt = (q.type || q.category || "principal");
-    return qt === "secundaria";
-  });
-
-  var houseQuests = quests.filter(function(q){ return q && q.house === true; });
-  var houseCount = houseQuests.length;
-  var totalCount = quests.length;
-  var mainCount = mainQuests.length;
-  var sideCount = sideQuests.length;
-  var completedCount = quests.filter(function(q){ return q.status === "completada"; }).length;
-  var activeMain = mainQuests.filter(function(q){ return q.status === "activa" || !q.status; }).length;
-  var activeSide = sideQuests.filter(function(q){ return q.status === "activa" || !q.status; }).length;
-
   var html = '<div class="section'+(canEdit?' gm-section':'')+'">'+
     '<div class="section-title">'+
       '<span>🧭 Diario de Misión y Campaña'+(canEdit?' (GM)':'')+'</span>'+
@@ -382,107 +361,7 @@ function tplMision(c, s){
     '</div>';
   }
 
-  // Barra de pestañas / filtros de misión
-  html += '<div class="quest-filter-bar">'+
-    '<button class="quest-filter-btn '+(filter==="all"?"active":"")+'" data-action="filter-quest-type" data-filter="all">'+
-      'Todas <span class="badge-count">'+totalCount+'</span>'+
-    '</button>'+
-    '<button class="quest-filter-btn principal '+(filter==="principal"?"active":"")+'" data-action="filter-quest-type" data-filter="principal">'+
-      '⭐ Principales <span class="badge-count">'+mainCount+'</span>'+
-    '</button>'+
-    '<button class="quest-filter-btn secundaria '+(filter==="secundaria"?"active":"")+'" data-action="filter-quest-type" data-filter="secundaria">'+
-      '◈ Secundarias <span class="badge-count">'+sideCount+'</span>'+
-    '</button>'+
-    '<button class="quest-filter-btn '+(filter==="casa"?"active":"")+'" data-action="filter-quest-type" data-filter="casa">'+
-      '🏠 Casa <span class="badge-count">'+houseCount+'</span>'+
-    '</button>'+
-    '<button class="quest-filter-btn completed '+(filter==="completada"?"active":"")+'" data-action="filter-quest-type" data-filter="completada">'+
-      '🟢 Completadas <span class="badge-count">'+completedCount+'</span>'+
-    '</button>'+
-  '</div>';
-
-  // 3. Renderizado de misiones según filtro
-  if(!quests.length){
-    html += '<div class="quest-empty-box">'+
-      '<div style="font-size:1.8rem;margin-bottom:6px;">🧭</div>'+
-      '<div style="font-family:var(--font-display);font-size:1rem;color:var(--gold-light);">Sin misiones registradas</div>'+
-      '<p style="font-size:0.82rem;color:var(--ink-faint);margin:4px 0 0;">El Máster aún no ha asignado objetivos de campaña a los aventureros.</p>'+
-    '</div>';
-  } else {
-    if(filter === "all"){
-      // Vista agrupada: Misiones Principales + Misiones Secundarias
-      html += '<div class="quest-section-header principal">'+
-        '<span>⭐ Misiones Principales ('+activeMain+' activas / '+mainCount+' total)</span>'+
-      '</div>';
-      if(!mainQuests.length){
-        html += '<div class="quest-empty-cat">No hay misiones principales en curso.</div>';
-      } else {
-        mainQuests.forEach(function(q){
-          html += renderQuestCard(q, canEdit);
-        });
-      }
-
-      html += '<div class="quest-section-header secundaria" style="margin-top:18px;">'+
-        '<span>◈ Misiones Secundarias ('+activeSide+' activas / '+sideCount+' total)</span>'+
-      '</div>';
-      if(!sideQuests.length){
-        html += '<div class="quest-empty-cat">No hay misiones secundarias registradas.</div>';
-      } else {
-        sideQuests.forEach(function(q){
-          html += renderQuestCard(q, canEdit);
-        });
-      }
-
-    } else if(filter === "principal"){
-      html += '<div class="quest-section-header principal">'+
-        '<span>⭐ Misiones Principales ('+mainCount+')</span>'+
-      '</div>';
-      if(!mainQuests.length){
-        html += '<div class="quest-empty-cat">No hay misiones principales.</div>';
-      } else {
-        mainQuests.forEach(function(q){
-          html += renderQuestCard(q, canEdit);
-        });
-      }
-
-    } else if(filter === "casa"){
-      html += '<div class="quest-section-header principal">'+
-        '<span>🏠 Misiones de la Casa ('+houseCount+')</span>'+
-      '</div>';
-      if(!houseQuests.length){
-        html += '<div class="quest-empty-cat">No hay misiones marcadas como Casa.</div>';
-      } else {
-        houseQuests.forEach(function(q){
-          html += renderQuestCard(q, canEdit);
-        });
-      }
-
-    } else if(filter === "secundaria"){
-      html += '<div class="quest-section-header secundaria">'+
-        '<span>◈ Misiones Secundarias ('+sideCount+')</span>'+
-      '</div>';
-      if(!sideQuests.length){
-        html += '<div class="quest-empty-cat">No hay misiones secundarias.</div>';
-      } else {
-        sideQuests.forEach(function(q){
-          html += renderQuestCard(q, canEdit);
-        });
-      }
-
-    } else if(filter === "completada"){
-      var compQuests = quests.filter(function(q){ return q.status === "completada"; });
-      html += '<div class="quest-section-header completed">'+
-        '<span>🟢 Misiones Completadas ('+compQuests.length+')</span>'+
-      '</div>';
-      if(!compQuests.length){
-        html += '<div class="quest-empty-cat">Aún no hay misiones marcadas como completadas.</div>';
-      } else {
-        compQuests.forEach(function(q){
-          html += renderQuestCard(q, canEdit);
-        });
-      }
-    }
-  }
+  html += renderQuestBrowser(quests, canEdit);
 
   // 4. Pistas y Descubrimientos de la Sesión
   html += '<div class="section-title" style="margin-top:20px;">'+
@@ -534,4 +413,157 @@ function tplMision(c, s){
   '</div>';
 
   return html;
+}
+
+
+// ===== Lista de misiones: filtros de estado y tipo, buscador y filas plegables =====
+function questNorm(t){
+  return String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function questView(){
+  if(!state.questStatusFilter){
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem("krysalisQuestView") || "null"); } catch(e){}
+    state.questStatusFilter = (saved && saved.st) || "activa";
+    if(saved && saved.tp) state.questTypeFilter = saved.tp;
+  }
+  return { st: state.questStatusFilter, tp: state.questTypeFilter || "all" };
+}
+
+function saveQuestView(){
+  try { localStorage.setItem("krysalisQuestView", JSON.stringify({ st: state.questStatusFilter, tp: state.questTypeFilter || "all" })); } catch(e){}
+}
+
+function questStatusOf(q){
+  return q.status === "completada" ? "completada" : (q.status === "fallida" ? "fallida" : "activa");
+}
+
+function questTypeOf(q){
+  return (q.type || q.category || "principal") === "secundaria" ? "secundaria" : "principal";
+}
+
+function questProgress(q){
+  var tasks = q.tasks || [];
+  var done = tasks.filter(function(t){
+    var isTgt = typeof t.target === "number" && t.target > 1;
+    return Boolean(t.done || (isTgt && (t.current || 0) >= t.target));
+  }).length;
+  var sum = tasks.reduce(function(acc, t){
+    var tgt = Math.max(1, parseInt(t.target, 10) || 1);
+    var cur = (t.current !== undefined && t.current !== null) ? Math.max(0, parseInt(t.current, 10) || 0) : (t.done ? tgt : 0);
+    return acc + Math.min(1, cur / tgt);
+  }, 0);
+  return { done: done, total: tasks.length, pct: tasks.length ? Math.round(sum / tasks.length * 100) : (questStatusOf(q) === "completada" ? 100 : 0) };
+}
+
+function questMatchesSearch(q, needle){
+  if(!needle) return true;
+  var hay = [q.title, q.desc].concat((q.tasks || []).map(function(t){ return t.text; })).join(" ");
+  return questNorm(hay).indexOf(needle) !== -1;
+}
+
+function setQuestStatus(q, st){
+  q.status = st;
+  if(st === "completada"){
+    if(!q.completedAt) q.completedAt = Date.now();
+  } else {
+    delete q.completedAt;
+  }
+}
+
+function questDateLabel(ts){
+  if(!ts) return "";
+  try { return new Date(ts).toLocaleDateString("es-ES", { day: "numeric", month: "short" }); } catch(e){ return ""; }
+}
+
+function renderQuestRow(q, canEdit){
+  var qType = questTypeOf(q);
+  var st = questStatusOf(q);
+  var pr = questProgress(q);
+  var open = state.questOpenId === q.id;
+  var meta = st === "completada" ? '✓ Completada' + (q.completedAt ? ' · ' + questDateLabel(q.completedAt) : '')
+    : (st === "fallida" ? '✕ Fallida' : pr.done + '/' + pr.total + ' objetivos');
+  var html = '<div class="quest-row ' + qType + ' ' + st + (open ? ' is-open' : '') + '" id="questrow-'+q.id+'">'+
+    '<div class="quest-row-head" role="button" tabindex="0" aria-expanded="'+(open?'true':'false')+'" data-action="toggle-quest-open" data-id="'+q.id+'">'+
+      (q.image ? '<img class="quest-row-thumb" src="'+esc(q.image)+'" alt="" loading="lazy">' : '<span class="quest-row-icon">'+(q.house===true ? '🏠' : (qType === "principal" ? '⭐' : '◈'))+'</span>')+
+      '<div class="quest-row-main">'+
+        '<div class="quest-row-title">'+esc(q.title || "Misión sin título")+'</div>'+
+        '<div class="quest-row-bar"><div class="quest-row-fill" style="width:'+pr.pct+'%;"></div></div>'+
+        '<div class="quest-row-meta">'+meta+'</div>'+
+      '</div>'+
+      '<span class="quest-row-chevron">'+(open ? '▾' : '▸')+'</span>'+
+    '</div>';
+  if(open){
+    html += '<div class="quest-row-body">'+renderQuestCard(q, canEdit);
+    if(canEdit){
+      html += st === "activa"
+        ? '<button type="button" class="btn-solid-gold quest-done-btn" data-action="quest-complete" data-id="'+q.id+'">✓ Marcar como completada</button>'
+        : '<button type="button" class="btn-compact quest-done-btn" data-action="quest-reopen" data-id="'+q.id+'">↺ Reabrir</button>';
+    }
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+
+function renderQuestList(quests, canEdit){
+  var v = questView();
+  var needle = questNorm((state.questSearch || "").trim());
+  var list = quests.filter(function(q){
+    if(questStatusOf(q) !== v.st) return false;
+    if(v.tp === "principal" || v.tp === "secundaria"){ if(questTypeOf(q) !== v.tp) return false; }
+    if(v.tp === "casa" && q.house !== true) return false;
+    return questMatchesSearch(q, needle);
+  });
+  if(!list.length){
+    return '<div class="quest-empty-cat">'+(needle ? 'Ninguna misión coincide con la búsqueda.' : 'No hay misiones en esta vista.')+'</div>';
+  }
+  if(v.st === "completada"){
+    list.sort(function(a, b){ return (b.completedAt || 0) - (a.completedAt || 0); });
+  } else {
+    list.sort(function(a, b){ return (questTypeOf(a) === "principal" ? 0 : 1) - (questTypeOf(b) === "principal" ? 0 : 1); });
+  }
+  var html = "";
+  var group = v.tp === "all" && v.st !== "completada" && list.length > 4;
+  var lastType = null;
+  list.forEach(function(q){
+    if(group && questTypeOf(q) !== lastType){
+      lastType = questTypeOf(q);
+      var n = list.filter(function(x){ return questTypeOf(x) === lastType; }).length;
+      html += '<div class="quest-section-header '+lastType+'"><span>'+(lastType === "principal" ? '⭐ Principales' : '◈ Secundarias')+' · '+n+'</span></div>';
+    }
+    html += renderQuestRow(q, canEdit);
+  });
+  return html;
+}
+
+function renderQuestBrowser(quests, canEdit){
+  var v = questView();
+  var cnt = { activa: 0, completada: 0, fallida: 0 };
+  quests.forEach(function(q){ cnt[questStatusOf(q)]++; });
+  var typeBtn = function(id, label){
+    return '<button type="button" class="quest-filter-btn'+(v.tp===id?' active':'')+'" data-action="filter-quest-type" data-filter="'+id+'">'+label+'</button>';
+  };
+  var html = '<div class="quest-filters">'+
+    '<div class="k-seg">'+
+      '<button type="button" class="k-seg-btn'+(v.st==="activa"?' active':'')+'" data-action="filter-quest-status" data-filter="activa">En curso ('+cnt.activa+')</button>'+
+      '<button type="button" class="k-seg-btn'+(v.st==="completada"?' active':'')+'" data-action="filter-quest-status" data-filter="completada">Completadas ('+cnt.completada+')</button>'+
+      (cnt.fallida || v.st === "fallida" ? '<button type="button" class="k-seg-btn'+(v.st==="fallida"?' active':'')+'" data-action="filter-quest-status" data-filter="fallida">Fallidas ('+cnt.fallida+')</button>' : '')+
+    '</div>'+
+    '<div class="quest-type-chips">'+
+      typeBtn("all", "Todas")+typeBtn("principal", "⭐ Principal")+typeBtn("secundaria", "◈ Secundaria")+typeBtn("casa", "🏠 Casa")+
+    '</div>'+
+    '<div class="quest-search-wrap">'+
+      '<input type="text" class="quest-search-input k-input" id="questSearchInput" value="'+esc(state.questSearch || "")+'" placeholder="🔍 Buscar misión" autocomplete="off">'+
+      '<button type="button" class="quest-search-clear" data-action="clear-quest-search" title="Borrar búsqueda"'+((state.questSearch || "") ? '' : ' hidden')+'>✕</button>'+
+    '</div>'+
+  '</div>';
+  if(!quests.length){
+    return html + '<div class="quest-empty-box">'+
+      '<div style="font-size:1.8rem;margin-bottom:6px;">🧭</div>'+
+      '<div style="font-family:var(--font-display);font-size:1rem;color:var(--gold-light);">Sin misiones registradas</div>'+
+      '<p style="font-size:0.82rem;color:var(--ink-faint);margin:4px 0 0;">El Máster aún no ha asignado objetivos de campaña a los aventureros.</p>'+
+    '</div>';
+  }
+  return html + '<div id="questListBox">'+renderQuestList(quests, canEdit)+'</div>';
 }

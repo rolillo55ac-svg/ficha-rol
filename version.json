@@ -1,6 +1,6 @@
 {
-  "version": "1.4.74.0",
-  "build": "2026.10.17.6",
+  "version": "1.4.75.0",
+  "build": "2026.10.17.7",
   "updatedAt": "2026-10-17T16:00:00Z",
-  "changelog": "El menú de Añadir estancia de La Casa vuelve a verse como el resto de ventanas (con su fondo, título, botón de cerrar y tarjetas grandes para el dedo), y las estancias tienen nombres sencillos: Salón, Cocina, Dormitorio, Biblioteca..."
+  "changelog": "Misiones rediseñadas: cada misión es una fila plegada que se abre al tocarla, hay filtros En curso / Completadas / Fallidas y por tipo, un buscador, y el máster puede marcar una misión como completada (o reabrirla)."
 }

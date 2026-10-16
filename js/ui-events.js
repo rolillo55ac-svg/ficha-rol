@@ -63,6 +63,14 @@ function setBind(target, path, rawValue, inputType){
 }
 
 function handleChange(e){
+  if(e.target && e.target.id === "questSearchInput"){
+    state.questSearch = e.target.value;
+    var qBox = document.getElementById("questListBox");
+    if(qBox) qBox.innerHTML = renderQuestList(state.quests || [], isGM() || !currentUser);
+    var qClr = document.querySelector(".quest-search-clear");
+    if(qClr) qClr.hidden = !state.questSearch;
+    return;
+  }
   if(e.target && e.target.id === "alchemySearchInput"){
     alchemySearch = e.target.value;
     renderTab();
@@ -3009,7 +3017,40 @@ function handleClick(e){
   if(action==="filter-quest-type"){
     var filterVal = btn.getAttribute("data-filter") || "all";
     state.questTypeFilter = filterVal;
+    saveQuestView();
     renderTab();
+    return;
+  }
+  if(action==="filter-quest-status"){
+    state.questStatusFilter = btn.getAttribute("data-filter") || "activa";
+    state.questOpenId = null;
+    saveQuestView();
+    renderTab();
+    return;
+  }
+  if(action==="toggle-quest-open"){
+    var qidOpen = btn.getAttribute("data-id");
+    state.questOpenId = state.questOpenId === qidOpen ? null : qidOpen;
+    renderTab();
+    return;
+  }
+  if(action==="clear-quest-search"){
+    state.questSearch = "";
+    renderTab();
+    return;
+  }
+  if(action==="quest-complete" || action==="quest-reopen"){
+    if(!isGM() && currentUser) return;
+    var qObjDone = (state.quests||[]).find(function(q){ return q.id === btn.getAttribute("data-id"); });
+    if(qObjDone){
+      var toDone = action==="quest-complete";
+      setQuestStatus(qObjDone, toDone ? "completada" : "activa");
+      state.questOpenId = null;
+      saveState(true);
+      pushSharedData({ quests: state.quests });
+      renderTab();
+      showToast(toDone ? "Misión completada" : "Misión reabierta", "info");
+    }
     return;
   }
   if(action==="submit-new-quest"){
@@ -3084,7 +3125,7 @@ function handleClick(e){
     var newStatus = btn.value;
     var qObjStatus = (state.quests||[]).find(function(q){ return q.id === qidStatus; });
     if(qObjStatus){
-      qObjStatus.status = newStatus;
+      setQuestStatus(qObjStatus, newStatus);
       saveState(true);
       pushSharedData({ quests: state.quests });
       renderTab();
