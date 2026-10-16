@@ -1149,11 +1149,27 @@ function handleClick(e){
     }
     return;
   }
+  if(action==="toggle-spell-edit"){
+    var tsId = btn.getAttribute("data-id");
+    state._spellEdit = state._spellEdit || {};
+    state._spellEdit[tsId] = !state._spellEdit[tsId];
+    renderTab();
+    return;
+  }
+  if(action==="toggle-spell-open"){
+    var soId = btn.getAttribute("data-id");
+    state._spellOpen = state._spellOpen || {};
+    state._spellOpen[soId] = !state._spellOpen[soId];
+    renderTab();
+    return;
+  }
   if(action==="add-spell"){
     if(!c || !canEditChar(c)) return;
     if(!c.spells) c.spells = [];
     var newSp = {id:uid(), name:"", coste:1, rango:"Melé", statAttr:"", statMod:"", efecto:"", active:false};
     c.spells.push(newSp);
+    state._spellEdit = state._spellEdit || {};
+    state._spellEdit[newSp.id] = true;
     c._lastLocalEdit = Date.now();
     markCharDirty(c.id, { spells: c.spells });
     saveState(false);
