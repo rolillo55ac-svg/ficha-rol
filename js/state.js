@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.85.0";
-var APP_BUILD = "2026.10.17.17";
+var APP_VERSION = "1.4.86.0";
+var APP_BUILD = "2026.10.17.18";
 
 var state = null;
 var supabaseClient = null;

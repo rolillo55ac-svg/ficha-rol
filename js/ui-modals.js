@@ -1397,42 +1397,19 @@ var currentFeedbackTab = "new"; // "new" | "my_tickets"
 var adminFeedbackFilter = "all"; // "all" | "pending" | "in_progress" | "resolved"
 var lastGeneratedReport = null;
 
-function getMasterDiscordWebhook(){
-  try {
-    return localStorage.getItem("krysalis_discord_webhook") || DEFAULT_DISCORD_WEBHOOK || "";
-  } catch(e){
-    return DEFAULT_DISCORD_WEBHOOK || "";
-  }
-}
-
-// Avisos a Discord: primero por la función discord-notify (el webhook es secreto del servidor).
-// Si la función aún no está desplegada (404 o sin conexión), se usa el webhook de siempre.
+// Avisos a Discord: solo por la función discord-notify (el webhook es secreto del servidor).
 async function postDiscord(payload){
-  if(typeof supabaseClient !== "undefined" && supabaseClient && currentUser && supabaseClient.functions){
-    try{
-      var fr = await supabaseClient.functions.invoke("discord-notify", { body: { payload: payload } });
-      if(!fr.error) return { success: true };
-      var st = fr.error.context && fr.error.context.status;
-      if(st && st !== 404) return { success: false, error: fr.error.message };
-    }catch(e){}
+  if(typeof supabaseClient === "undefined" || !supabaseClient || !currentUser || !supabaseClient.functions){
+    return { success: false, reason: "sin_sesion" };
   }
-  var webhookUrl = getMasterDiscordWebhook();
-  if(!webhookUrl) return { success: false, reason: "no_webhook" };
-  var res = await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-  if(res.ok || res.status === 204) return { success: true };
-  var errText = await res.text();
-  console.warn("Error en Discord Webhook:", res.status, errText);
-  return { success: false, error: errText };
-}
-
-function setMasterDiscordWebhook(url){
-  try {
-    localStorage.setItem("krysalis_discord_webhook", (url || "").trim());
-  } catch(e){}
+  try{
+    var fr = await supabaseClient.functions.invoke("discord-notify", { body: { payload: payload } });
+    if(!fr.error) return { success: true };
+    console.warn("Error en discord-notify:", fr.error.message);
+    return { success: false, error: fr.error.message };
+  }catch(e){
+    return { success: false, error: String(e) };
+  }
 }
 
 function generateTicketCode(){
@@ -2637,15 +2614,6 @@ function feedbackModalClick(e){
     return;
   }
 
-  if(action === "save-discord-webhook"){
-    var urlInput = document.getElementById("inputDiscordWebhook");
-    var urlVal = urlInput ? urlInput.value.trim() : "";
-    setMasterDiscordWebhook(urlVal);
-    showToast(urlVal ? "Webhook de Discord guardado con éxito 🎮" : "Webhook borrado.", "success");
-    openFeedbackAdminModal();
-    return;
-  }
-
   if(action === "test-discord-ping"){
     var c = (typeof activeChar === "function") ? activeChar() : null;
     var testReport = buildFeedbackDiagnostic(
@@ -2656,17 +2624,11 @@ function feedbackModalClick(e){
     );
     testReport.aiTriage = generateAiTriageAnalysis(testReport);
 
-    var webhook = getMasterDiscordWebhook();
-    if(!webhook){
-      showToast("Pega primero la URL de tu Webhook de Discord arriba.", "warning");
-      return;
-    }
-
     sendDiscordWebhookReport(testReport).then(function(res){
       if(res.success){
         showToast("¡Mensaje de prueba enviado a tu Discord! 🎮", "success");
       } else {
-        showToast("Error al enviar a Discord. Comprueba la URL.", "error");
+        showToast("Error al enviar a Discord.", "error");
       }
     });
     return;
@@ -2680,7 +2642,7 @@ function feedbackModalClick(e){
         if(res.success){
           showToast("Enviado a Discord 🎮", "success");
         } else {
-          showToast("Comprueba el Webhook de Discord arriba.", "warning");
+          showToast("No se pudo enviar a Discord.", "warning");
         }
       });
     }
