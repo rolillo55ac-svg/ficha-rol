@@ -113,12 +113,12 @@ function openCharModal(){
   var chars = getUserCharacters();
   var html = '<h2>Selección de Personaje<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   chars.forEach(function(c){
-    var cTheme = c.theme || "default";
+    var cTheme = esc(c.theme || "default");
     var swatches = THEME_LIST.map(function(t){
       var isAct = cTheme === t.id;
       return '<button type="button" class="swatch swatch-'+t.id+(isAct?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" title="Color '+t.label+'" aria-label="Color '+t.label+'"></button>';
     }).join('');
-    var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
+    var crestStyle = safeUrl(c.portrait) ? ' style="background-image:url(\''+esc(safeUrl(c.portrait))+'\')"' : '';
     var isNPC = !!c.isNPC;
     var canDelete = isGM() || (!currentUser && !c.isNPC);
 

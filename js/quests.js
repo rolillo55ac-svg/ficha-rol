@@ -89,10 +89,10 @@ function renderQuestCard(q, canEdit){
       cardMarkers.map(function(m){
         var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(m.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
         var icon = m.icon || tDef.icon || "📍";
-        var pinColor = m.color || tDef.color || "#2A9D8F";
-        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + m.x + '%;top:' + m.y + '%;" data-action="edit-quest-card-pin" data-quest-id="' + q.id + '" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
+        var pinColor = safeColor(m.color || tDef.color, "#2A9D8F");
+        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + num(m.x) + '%;top:' + num(m.y) + '%;" data-action="edit-quest-card-pin" data-quest-id="' + q.id + '" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
           '<div class="pin-balloon" style="background-color:' + pinColor + ';box-shadow:0 0 10px ' + pinColor + '88;">' +
-            '<div class="pin-icon">' + icon + '</div>' +
+            '<div class="pin-icon">' + esc(icon) + '</div>' +
           '</div>' +
           '<div class="pin-tag">' + esc(m.name) + '</div>' +
         '</div>';
@@ -287,17 +287,17 @@ function tplMision(c, s){
     }
 
     html += '<div class="map-viewer quest-map-viewer" data-action="quest-map-click">'+
-      '<img src="'+qMap.image+'" alt="Mapa de Misión">'+
+      '<img src="'+esc(safeUrl(qMap.image))+'" alt="Mapa de Misión">'+
       qMarkers.map(function(m){
         var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(m.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
         var icon = m.icon || tDef.icon || "📍";
-        var pinColor = m.color || tDef.color || "#2A9D8F";
+        var pinColor = safeColor(m.color || tDef.color, "#2A9D8F");
         var isHidden = qmFilter.hideAll || (qmFilter.hiddenTypes && qmFilter.hiddenTypes[tDef.id]);
         if(isHidden) return '';
 
-        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + m.x + '%;top:' + m.y + '%;" data-action="edit-quest-map-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
+        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + num(m.x) + '%;top:' + num(m.y) + '%;" data-action="edit-quest-map-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
           '<div class="pin-balloon" style="background-color:' + pinColor + ';box-shadow:0 0 10px ' + pinColor + '88;">' +
-            '<div class="pin-icon">' + icon + '</div>' +
+            '<div class="pin-icon">' + esc(icon) + '</div>' +
           '</div>' +
           '<div class="pin-tag">' + esc(m.name) + '</div>' +
         '</div>';
@@ -387,7 +387,7 @@ function tplMision(c, s){
           '<p style="font-size:0.82rem;color:var(--ink-dim);line-height:1.4;margin:2px 0;">'+esc(cl.text||"")+'</p>'
         );
       if(cl.image){
-        html += '<img src="'+cl.image+'" alt="Pista" class="clue-img">';
+        html += '<img src="'+esc(safeUrl(cl.image))+'" alt="Pista" class="clue-img">';
       }
       if(canEdit){
         html += '<div style="display:flex;gap:4px;margin-top:4px;">'+
