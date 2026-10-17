@@ -75,7 +75,7 @@ var STONE_QUALITIES = [
 ];
 
 function uid(){ return "id" + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
-function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function num(v,d){ var n=parseFloat(v); return isNaN(n)?(d||0):n; }
 function rollDie(sides){ return Math.floor(Math.random()*sides)+1; }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }

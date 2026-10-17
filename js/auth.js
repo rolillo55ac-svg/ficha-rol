@@ -167,10 +167,6 @@ async function supabaseLogin(em, pw){
     showToast("¡Sesión iniciada!", "success");
   }
 }
-async function supabaseSignup(em, pw){
-  var res = await supabaseClient.auth.signUp({email:em, password:pw});
-  if(res.error) showToast(res.error.message, "error"); else showToast("Registro completado. Ya puedes entrar.", "success");
-}
 async function supabaseLogout(){
   try {
     await supabaseClient.auth.signOut();
@@ -183,12 +179,12 @@ async function supabaseLogout(){
 
 // Pantalla de entrada (sin sesión no se ve nada más)
 function handleLoginGateSubmit(e){
-  var signup = e.type === "click" && e.target.closest && e.target.closest("[data-gate=signup]");
-  if(e.type === "click" && !signup) return;
+  // Sin registro público: las cuentas las crea el admin
+  if(e.type === "click") return;
   e.preventDefault();
   var em = (document.getElementById("gateEmail").value || "").trim();
   var pw = document.getElementById("gatePass").value || "";
   if(!em || !pw){ showToast("Escribe tu email y tu contraseña", "warning"); return; }
   if(!supabaseClient){ showToast("Sin conexión: no se puede entrar ahora", "error"); return; }
-  if(signup) supabaseSignup(em, pw); else supabaseLogin(em, pw);
+  supabaseLogin(em, pw);
 }

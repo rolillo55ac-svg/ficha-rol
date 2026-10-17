@@ -3,6 +3,9 @@
 
 <head>
   <meta charset="UTF-8">
+  <!-- CSP: los hash son de los scripts en línea de esta página y de los on...= de las plantillas
+       (si se cambia alguno, hay que recalcular su hash). frame-ancestors no vale en meta. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-hashes' 'sha256-tM8YTAF6q0k7cBjVuuxqU1+GL/MHTFobRfMjybOJtDE=' 'sha256-Hxr0Q5d1yMEomG3o4uVFSONAxSEdop7TFJ4+oE3DLTo=' 'sha256-zGQ44WckpYNCEJPh38CveaMvxKRTxZwdoyT8danTF0s=' 'sha256-TYnVTLdByTyiDEn/7O+n8TAIBB/HvHGWM7cfGTPwEXE=' 'sha256-sJRMUNd+3XOprEG3vvYdpG67vX2aw4OlziZs6wgqDGw=' 'sha256-CHeyxkbcsDKUzxZy31PlMBX/9yJzqTulsO86EmrxnGw=' 'sha256-gGKroLKMyHaxGMKrMEbZOFRvsPYWqyULcxlgN5Zxo9E='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; font-src 'self' data:; connect-src 'self' https://nwjbdevshaucnjrwebtb.supabase.co wss://nwjbdevshaucnjrwebtb.supabase.co https://teyxwlezzpongijlslty.supabase.co wss://teyxwlezzpongijlslty.supabase.co https://discord.com https://cdn.jsdelivr.net; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -55,7 +58,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Rol Krysalis">
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="style.css?v=1.4.79.0">
   <link rel="stylesheet" href="house.css?v=1.4.79.0">
 </head>
@@ -196,7 +199,7 @@
       <label class="login-gate-label" for="gatePass">Contraseña</label>
       <input class="login-gate-input" type="password" id="gatePass" autocomplete="current-password" placeholder="••••••••">
       <button class="login-gate-enter" type="submit">Entrar</button>
-      <button class="login-gate-signup" type="button" data-gate="signup">Crear cuenta</button>
+      <div class="login-gate-sub">¿Sin cuenta? Pídesela al admin de la partida</div>
     </div>
   </form>
 
@@ -397,7 +400,7 @@
   <script src="js/konva.min.js?v=1.4.79.0"></script>
   <script>
     if (typeof Konva === 'undefined') {
-      document.write('<script src="https://cdn.jsdelivr.net/npm/konva@9.3.18/konva.min.js"><\/script>');
+      document.write('<script src="https://cdn.jsdelivr.net/npm/konva@9.3.18/konva.min.js" integrity="sha384-pLDLwB6I/avlqqp/+FH6ZSWvjrTMwFEPpaCQ/9lZc6oh0sb0Q+CXTj8hZcmX5pPc" crossorigin="anonymous"><\/script>');
     }
   </script>
   <script src="js/house-art.js?v=1.4.79.0"></script>
