@@ -5,6 +5,7 @@ var state = null;
 var supabaseClient = null;
 var currentUser = null;
 var currentRole = 'player';
+var currentIsAdmin = false;
 var isRemoteSyncing = false;
 var realtimeChannel = null;
 

@@ -214,7 +214,7 @@ function settingsScreenTitle(screen){
 
 function openDataModal(screen){
   screen = (typeof screen === "string") ? screen : "main";
-  if((screen === "cloud" || screen === "broadcast") && !isGM()) screen = "main";
+  if((screen === "cloud" || screen === "broadcast") && !isAdmin()) screen = "main";
   if(screen === "donate" && !DONATE_PAYPAL_ME) screen = "main";
   settingsScreen = screen;
   var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.7");
@@ -229,7 +229,7 @@ function openDataModal(screen){
     html += '<div class="settings-profile">'+
       '<div class="settings-avatar">'+esc((email || "?").charAt(0).toUpperCase())+'</div>'+
       '<div class="settings-profile-info"><div class="settings-profile-mail">'+esc(email || "Sin sesión")+'</div>'+
-      '<span class="settings-chip'+(gm ? ' gm' : '')+'">'+(gm ? 'Máster' : 'Jugador')+'</span></div>'+
+      '<span class="settings-chip'+(gm ? ' gm' : '')+'">'+(isAdmin() ? 'Admin' : (gm ? 'Máster' : 'Jugador'))+'</span></div>'+
     '</div>';
     if(PARTIDAS.length > 1){
       html += '<div class="settings-list">'+
@@ -269,8 +269,9 @@ function openDataModal(screen){
       settingsRow("settings-go", "backup", "📥", "Copia de seguridad", "Descargar mis datos")+
       settingsRow("settings-go", "help", "📬", "Ayuda y sugerencias", "")+
     '</div>';
-    if(gm){
-      html += '<div class="settings-group-title">Máster</div><div class="settings-list">'+
+    // Mantenimiento y seguridad: solo el admin (el máster lleva la partida, no la base)
+    if(isAdmin()){
+      html += '<div class="settings-group-title">Admin</div><div class="settings-list">'+
         settingsRow("settings-go", "cloud", "☁️", "Copia en la nube", settingsLastBackupText())+
         settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
       '</div>';

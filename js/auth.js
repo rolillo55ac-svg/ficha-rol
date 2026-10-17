@@ -31,13 +31,22 @@ function isGM(){
   if(!currentUser) return true;
   // Con sesión: solo vale el rol leído de profiles para ESTE usuario al iniciar sesión
   if(currentRoleUserId !== currentUser.id) return false;
+  if(currentIsAdmin) return true;
   var r = (currentRole || '').toLowerCase();
   return r === 'gm' || r === 'master';
+}
+
+// Admin: lo de máster y además cuentas, accesos y copias (la base lo comprueba con es_admin())
+function isAdmin(){
+  if(!currentUser) return false;
+  if(currentRoleUserId !== currentUser.id) return false;
+  return currentIsAdmin === true;
 }
 
 // Borra cualquier rol o pertenencia heredada de otra sesión (state se guarda entero en localStorage)
 function resetSessionRole(){
   currentRole = 'player';
+  currentIsAdmin = false;
   currentRoleUserId = null;
   if(state){
     delete state.campaignRole;
@@ -110,9 +119,11 @@ async function fetchUserProfile(){
     if(currentRoleUserId !== userId) resetSessionRole();
 
     // El rol solo se lee de profiles (lo cambia el máster en Supabase; los jugadores no pueden escribirlo)
-    var res = await supabaseClient.from('profiles').select('role').eq('id', userId).maybeSingle();
+    // '*' y no 'role, is_admin': en una base sin la 037 la columna is_admin aún no existe
+    var res = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
     if(!currentUser || currentUser.id !== userId) return;
     currentRole = (res.data && res.data.role) ? res.data.role : 'player';
+    currentIsAdmin = !!(res.data && res.data.is_admin === true);
     currentRoleUserId = userId;
 
     pullAllFromSupabase();
