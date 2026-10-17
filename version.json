@@ -1,6 +1,6 @@
 {
-  "version": "1.4.85.0",
-  "build": "2026.10.17.17",
-  "updatedAt": "2026-10-17T18:00:00Z",
-  "changelog": "Ajustes: el admin ve una tarjeta de consumo de Supabase con enlace al panel de uso. Sin cambios para jugadores."
+  "version": "1.4.86.0",
+  "build": "2026.10.17.18",
+  "updatedAt": "2026-10-17T20:30:00Z",
+  "changelog": "Los avisos a Discord (reportes y respuestas) salen solo desde el servidor; la web ya no lleva la dirección del webhook. Sin cambios para jugadores."
 }
