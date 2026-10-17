@@ -1,6 +1,6 @@
 {
-  "version": "1.4.80.0",
-  "build": "2026.10.17.12",
-  "updatedAt": "2026-10-17T23:00:00Z",
-  "changelog": "Seguridad: rol admin separado del máster, ya no se pueden crear cuentas desde la web, sin sesión no se ve nada, textos con código se muestran como texto y protección extra del navegador."
+  "version": "1.4.81.0",
+  "build": "2026.10.17.13",
+  "updatedAt": "2026-10-17T23:30:00Z",
+  "changelog": "Cuentas: se entra con nombre de usuario (o con el correo de siempre), cada uno puede cambiar su contraseña en Ajustes y el admin tiene un panel de Jugadores para crear cuentas, cambiar contraseñas y roles."
 }
