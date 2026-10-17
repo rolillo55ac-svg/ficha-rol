@@ -2772,6 +2772,12 @@ function handleClick(e){
     }});
     return;
   }
+  if(action==="toggle-weapon-edit"){
+    var weId = btn.getAttribute("data-id");
+    weaponEditIds[weId] = !weaponEditIds[weId];
+    renderTab();
+    return;
+  }
   if(action==="toggle-lore-edit"){
     var leId = btn.getAttribute("data-id");
     state._loreEdit = state._loreEdit || {};

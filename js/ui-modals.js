@@ -343,6 +343,17 @@ function openDataModal(screen){
         '</div>'+
         '<div class="storage-card-note" id="cloudDetailText">Imágenes de personajes, mapas, misiones y pistas</div>'+
       '</div>'+
+      '<div class="storage-card cloud">'+
+        '<div class="storage-card-head">'+
+          '<div class="storage-card-name"><span class="storage-card-icon">🗄️</span> Base de datos</div>'+
+          '<span class="storage-pill optimal" id="dbPill">Consultando...</span>'+
+        '</div>'+
+        '<div class="storage-bar-track"><div class="storage-bar-fill cloud" id="dbBarFill" style="width:0%;"></div></div>'+
+        '<div class="storage-card-stats">'+
+          '<span class="storage-stat-used" id="dbUsedText"><b>Calculando...</b> de 500 MB</span>'+
+        '</div>'+
+        '<div class="storage-card-note" id="dbDetailText">Fichas, historia, galería, registro de entradas…</div>'+
+      '</div>'+
     '</div>';
   }
 
@@ -512,6 +523,36 @@ async function updateStorageStatsUI(showToastFeedback){
           cloudDetail.textContent = "Sin acceso a Supabase Storage (" + cloud.error + ")";
         } else {
           cloudDetail.textContent = "Bucket de imágenes disponible (0 subidas aún)";
+        }
+      }
+    }
+
+    // 3. Base de datos (lo mide el servidor; el navegador no puede)
+    var dbPill = document.getElementById("dbPill");
+    if(dbPill){
+      var dbUsed = document.getElementById("dbUsedText");
+      var dbBar = document.getElementById("dbBarFill");
+      var dbDetail = document.getElementById("dbDetailText");
+      var dbRes = (typeof supabaseClient !== "undefined" && supabaseClient) ? await supabaseClient.rpc("espacio_base") : { error: "Sin conexión" };
+      if(dbRes.error || !dbRes.data){
+        var dbRaw = String((dbRes.error && dbRes.error.message) || dbRes.error || "");
+        dbPill.textContent = "—";
+        if(dbUsed) dbUsed.innerHTML = "No se puede medir desde aquí";
+        if(dbDetail) dbDetail.textContent = /espacio_base|Could not find/i.test(dbRaw) ? "Falta pegar la migración 046 en esta partida" : "Sin acceso a la base de datos";
+      } else {
+        var dbMax = 500 * 1024 * 1024;
+        var dbBytes = Number(dbRes.data.db_bytes) || 0;
+        var dbPct = Math.min(100, Math.round(dbBytes / dbMax * 1000) / 10);
+        var dbCls = dbPct > 90 ? "critical" : (dbPct > 70 ? "warning" : "optimal");
+        dbPill.className = "storage-pill " + dbCls;
+        dbPill.textContent = dbPct + "%";
+        if(dbBar){ dbBar.className = "storage-bar-fill cloud " + dbCls; dbBar.style.width = Math.max(2, dbPct) + "%"; }
+        if(dbUsed) dbUsed.innerHTML = "<b>" + formatBytes(dbBytes) + "</b> ocupados de 500 MB";
+        if(dbDetail){
+          var partes = [];
+          if(dbRes.data.gallery != null) partes.push(dbRes.data.gallery + " fotos en la galería");
+          if(dbRes.data.access_log != null) partes.push(dbRes.data.access_log + " registros de entradas");
+          dbDetail.textContent = partes.length ? partes.join(" · ") : "Fichas, historia, galería, registro de entradas…";
         }
       }
     }

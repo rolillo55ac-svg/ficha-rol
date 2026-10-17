@@ -208,6 +208,8 @@ async function cuentaAccion(action, btn){
   if(action === "cuenta-mi-password"){ cambiarMiPassword(btn); return; }
   if(action === "cuenta-crear"){ crearCuenta(btn); return; }
   if(action === "cuenta-copiar-datos"){ copiarTexto(btn.getAttribute("data-txt") || ""); return; }
+  if(action === "cuenta-actividad-prueba"){ actividadVerPrueba = !!btn.checked; pintarActividad(); return; }
+  if(action === "cuenta-actividad-borrar"){ borrarActividad(parseInt(btn.getAttribute("data-dias"), 10) || 0); return; }
   if(action === "cuenta-actividad-dias"){ actividadDias = parseInt(btn.getAttribute("data-dias"), 10) || 7; openDataModal("actividad"); return; }
   var forId = btn.getAttribute("data-for");
   var inp = forId ? document.getElementById(forId) : null;
@@ -440,7 +442,6 @@ function pintarActividad(){
     }
   }
 
-  var html = "";
   var ahora = Date.now();
   var dHoy = new Date();
   dHoy.setHours(0, 0, 0, 0);
@@ -448,28 +449,6 @@ function pintarActividad(){
   var t7 = ahora - (7 * 24 * 3600 * 1000);
   var corte = actividadDias === 1 ? tHoy : ahora - actividadDias * 24 * 3600 * 1000;
   function enRango(iso){ return new Date(iso).getTime() >= corte; }
-
-  // Intentos fallidos (login_fail)
-  var fails = actividadFilas.filter(function(r){ return r.evento === "login_fail" && enRango(r.at); });
-  if(fails.length > 0){
-    var failLineas = fails.slice(0, 30).map(function(f){
-      return '<div class="settings-note">' +
-        '<span class="settings-chip cuenta-chip-off">Fallo</span> ' +
-        esc(f.usuario || "") + " · " +
-        esc(cuentaFecha(f.at)) +
-        (f.user_agent ? " · " + esc(f.user_agent) : "") +
-        (!f.user_id ? " · usuario que no existe" : "") +
-        '</div>';
-    }).join("");
-
-    html += '<div class="settings-panel cuenta-card">' +
-      '<div class="cuenta-head">' +
-        '<span class="cuenta-nombre">Intentos fallidos</span>' +
-        '<span class="settings-chip cuenta-chip-off">' + fails.length + '</span>' +
-      '</div>' +
-      failLineas +
-    '</div>';
-  }
 
   // Por jugador: agrupar por user_id (ignorar filas sin user_id)
   var jugadoresMap = {};
@@ -556,6 +535,7 @@ function pintarActividad(){
         aprox: aprox,
         sinFin: sinFin,
         enCurso: enCurso,
+        ultimaAccion: (sf.sesion && uaPorSesion[sf.sesion]) || sf.ultima_accion || null,
         userAgent: uaDisp
       });
     }
@@ -587,54 +567,166 @@ function pintarActividad(){
     var durHoyTxt = msHoy > 0 ? ((aproxHoy ? "≈ " : "") + actFormatoTotal(msHoy)) : "0 min";
     var dur7Txt = ms7 > 0 ? ((aprox7 ? "≈ " : "") + actFormatoTotal(ms7)) : "0 min";
 
-    var cardHtml = '<div class="settings-panel cuenta-card">' +
-      '<div class="cuenta-head">' +
-        '<span class="cuenta-nombre">' + esc(nombreDeCuenta(jg.nombre || jg.usuario)) + '</span>' +
-      '</div>' +
-      '<div class="settings-note">' +
-        'Última conexión: ' + esc(cuentaFecha(jg.ultConexion)) +
-        ' · Hoy: ' + esc(durHoyTxt) +
-        ' · 7 días: ' + esc(dur7Txt) +
-      '</div>';
-
-    var sesMax = sesiones.filter(function(x){ return enRango(x.inicio); }).slice(0, 20);
-    for(var sm = 0; sm < sesMax.length; sm++){
-      var sItem = sesMax[sm];
-      var fIni = cuentaFecha(sItem.inicio);
-      var uaTxt = sItem.userAgent ? " · " + esc(sItem.userAgent) : "";
-
-      if(sItem.finDate){
-        var hFin = sItem.finDate.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-        var dur = actFormatoDuracion(sItem.finDate.getTime() - sItem.inicioDate.getTime());
-        cardHtml += '<div class="settings-note">' +
-          esc(fIni) + " → " + (sItem.aprox ? "≈ " : "") + esc(hFin) + " · " + (sItem.aprox ? "≈ " : "") + esc(dur) + uaTxt +
-          '</div>';
-      } else {
-        var est = sItem.enCurso ? "en curso" : "sin fin";
-        cardHtml += '<div class="settings-note">' +
-          esc(fIni) + " → " + est + uaTxt +
-          '</div>';
-      }
-    }
-
-    for(var ef = 0; ef < jg.filas.length; ef++){
-      var evFila = jg.filas[ef];
-      var evNom = NOMBRES_EVENTOS[evFila.evento];
-      if(evNom && enRango(evFila.at)){
-        cardHtml += '<div class="settings-note">' +
-          esc(cuentaFecha(evFila.at)) + " · " + esc(evNom) +
-          '</div>';
-      }
-    }
-
-    cardHtml += '</div>';
-    html += cardHtml;
+    jg.sesiones = sesiones;
+    jg.durHoyTxt = durHoyTxt;
+    jg.dur7Txt = dur7Txt;
+    jg.conectado = sesiones.some(function(x){
+      if(!x.enCurso) return false;
+      var ua = x.ultimaAccion ? new Date(x.ultimaAccion).getTime() : 0;
+      return ahora - x.inicioDate.getTime() < ACT_CONECTADO_MS || (ua && ahora - ua < ACT_CONECTADO_MS);
+    });
+    jg.eventos = jg.filas.filter(function(x){ return NOMBRES_EVENTOS[x.evento] && enRango(x.at); });
   }
 
-  if(!html){
-    box.innerHTML = '<div class="settings-note">Sin actividad en estos días.</div>';
+  var fails = actividadFilas.filter(function(r){ return r.evento === "login_fail" && enRango(r.at); });
+  if(!actividadVerPrueba){
+    jugadores = jugadores.filter(function(x){ return !actEsPrueba(x.usuario, x.nombre); });
+    fails = fails.filter(function(f){ return !actEsPrueba(f.usuario, ""); });
+  }
+
+  var html = actividadControlesHtml();
+
+  // Ahora y hoy: una fila por persona, plegada; al tocarla salen sus sesiones
+  if(jugadores.length){
+    html += '<div class="settings-panel cuenta-card act-card"><div class="settings-panel-title">Ahora y hoy</div>' +
+      jugadores.map(function(jg){
+        var ses = jg.sesiones.filter(function(x){ return enRango(x.inicio); }).slice(0, 20);
+        var lineas = ses.map(function(x){
+          var disp = actTipoDispositivo(x.userAgent);
+          var fin = x.finDate ? ((x.aprox ? "≈ " : "") + actHora(x.finDate) + " · " + (x.aprox ? "≈ " : "") + actFormatoDuracion(x.finDate.getTime() - x.inicioDate.getTime())) :
+            (x.enCurso ? "sigue dentro" : "sin fin");
+          return '<div class="act-ses">' + esc(cuentaFecha(x.inicio)) + ' → ' + esc(fin) + (disp ? ' · ' + esc(disp) : '') + '</div>';
+        }).join("") + jg.eventos.map(function(ev){
+          return '<div class="act-ses">' + esc(cuentaFecha(ev.at)) + ' · ' + esc(NOMBRES_EVENTOS[ev.evento]) + '</div>';
+        }).join("");
+        var quien = actNombrePersonaje(jg), usu = actCorto(jg.usuario || jg.nombre);
+        return '<details class="act-persona">' +
+          '<summary class="act-fila">' +
+            '<span class="act-punto' + (jg.conectado ? ' is-on' : '') + '" aria-label="' + (jg.conectado ? 'Conectado ahora' : 'Desconectado') + '"></span>' +
+            '<span class="act-quien"><span class="act-nombre">' + esc(quien) + '</span>' +
+              (usu !== quien ? '<span class="act-usuario">' + esc(usu) + '</span>' : '') + '</span>' +
+            '<span class="act-cuando"><span>' + esc(jg.conectado ? "ahora" : actHace(jg.ultConexion)) + '</span>' +
+              '<span class="act-usuario">hoy ' + esc(jg.durHoyTxt) + '</span></span>' +
+          '</summary>' +
+          '<div class="act-detalle">' + (lineas || '<div class="act-ses">Sin sesiones en estos días.</div>') +
+            '<div class="act-ses">7 días: ' + esc(jg.dur7Txt) + '</div></div>' +
+        '</details>';
+      }).join("") +
+    '</div>';
+
+    // Últimas entradas, como noticias
+    var entradas = [];
+    jugadores.forEach(function(jg){
+      jg.sesiones.forEach(function(x){ if(enRango(x.inicio)) entradas.push({ jg: jg, s: x }); });
+    });
+    entradas.sort(function(a, b){ return b.s.inicioDate.getTime() - a.s.inicioDate.getTime(); });
+    if(entradas.length){
+      html += '<div class="settings-panel cuenta-card act-card"><div class="settings-panel-title">Últimas entradas</div>' +
+        entradas.slice(0, 15).map(function(e){
+          var x = e.s;
+          var cuanto = x.finDate ? ("estuvo " + (x.aprox ? "≈ " : "") + actFormatoDuracion(x.finDate.getTime() - x.inicioDate.getTime())) :
+            (x.enCurso ? "sigue dentro" : "no avisó al salir");
+          return '<div class="act-noticia"><b>' + esc(actNombrePersonaje(e.jg)) + '</b> entró ' + esc(actCuandoEntro(x.inicioDate)) + ' · ' + esc(cuanto) + '</div>';
+        }).join("") +
+      '</div>';
+    }
+  }
+
+  // Intentos fallidos, solo si hay
+  if(fails.length > 0){
+    html += '<div class="settings-panel cuenta-card act-card">' +
+      '<div class="cuenta-head"><span class="cuenta-nombre">Intentos fallidos</span>' +
+        '<span class="settings-chip cuenta-chip-off">' + fails.length + '</span></div>' +
+      fails.slice(0, 30).map(function(f){
+        return '<div class="act-noticia"><b>' + esc(actCorto(f.usuario) || "?") + '</b> · ' + esc(cuentaFecha(f.at)) +
+          (f.user_agent ? ' · ' + esc(actTipoDispositivo(f.user_agent)) : '') +
+          (!f.user_id ? ' · usuario que no existe' : '') + '</div>';
+      }).join("") +
+    '</div>';
+  }
+
+  if(!jugadores.length && !fails.length){
+    html += '<div class="settings-note">Sin actividad en estos días.</div>';
+  }
+
+  html += actividadBorrarHtml();
+  box.innerHTML = html;
+}
+
+var ACT_CONECTADO_MS = 30 * 60 * 1000;
+var actividadVerPrueba = false;
+
+function actEsPrueba(usuario, nombre){
+  return /^prueba-/i.test(String(usuario || "")) || /^prueba-/i.test(String(nombre || ""));
+}
+
+// Nombre del personaje de esa cuenta (si tiene); si no, el usuario
+function actNombrePersonaje(jg){
+  var fichas = (state.characters || []).filter(function(c){ return c && c.owner_id === jg.userId && !c.isNPC; });
+  if(fichas.length) return fichas.map(function(c){ return c.name || "Sin nombre"; }).join(", ");
+  return actCorto(jg.nombre || jg.usuario) || "Sin nombre";
+}
+
+// Usuario corto: nunca el correo entero
+function actCorto(x){
+  return String(nombreDeCuenta(x || "")).split("@")[0];
+}
+
+function actHora(d){
+  return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+}
+
+function actHace(iso){
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return "";
+  var m = Math.floor((Date.now() - d.getTime()) / 60000);
+  if(m < 1) return "hace un momento";
+  if(m < 60) return "hace " + m + " min";
+  var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  if(d.getTime() >= hoy.getTime()) return "a las " + actHora(d);
+  return cuentaFecha(iso);
+}
+
+function actCuandoEntro(d){
+  var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  if(d.getTime() >= hoy.getTime()) return "a las " + actHora(d);
+  return "el " + d.toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + " a las " + actHora(d);
+}
+
+function actTipoDispositivo(ua){
+  ua = String(ua || "");
+  if(!ua) return "";
+  if(/iPhone|iPad|Android/i.test(ua)) return "📱 móvil";
+  if(/Windows|Mac|Linux/i.test(ua)) return "💻 PC";
+  return ua;
+}
+
+function actividadControlesHtml(){
+  return '<label class="act-prueba"><input type="checkbox" data-action="cuenta-actividad-prueba"' + (actividadVerPrueba ? ' checked' : '') + '> Mostrar cuentas de prueba</label>';
+}
+
+function actividadBorrarHtml(){
+  if(!isAdmin()) return '';
+  return '<div class="settings-panel cuenta-card act-card"><div class="settings-panel-title">Borrar registros</div>' +
+    '<div class="settings-note">Solo borra este registro de entradas. No toca nada del juego.</div>' +
+    '<div class="cuenta-acciones">' +
+      '<button type="button" class="btn-compact cuenta-btn" data-action="cuenta-actividad-borrar" data-dias="7">Más antiguos de 7 días</button>' +
+      '<button type="button" class="btn-compact cuenta-btn" data-action="cuenta-actividad-borrar" data-dias="30">Más antiguos de 30 días</button>' +
+      '<button type="button" class="btn-compact cuenta-btn cuenta-btn-peligro" data-action="cuenta-actividad-borrar" data-dias="0">Todos</button>' +
+    '</div></div>';
+}
+
+async function borrarActividad(dias){
+  if(!isAdmin()) return;
+  var que = dias > 0 ? "los registros de más de " + dias + " días" : "todos los registros de entradas";
+  var ok = await confirmarQuitar(que, "Solo el registro de accesos de esta partida; no toca fichas ni nada del juego. No se puede deshacer.");
+  if(!ok) return;
+  var res = await supabaseClient.rpc("admin_borrar_actividad", { p_dias: dias });
+  if(res.error){
+    var raw = String((res.error && res.error.message) || res.error || "");
+    showToast(/admin_borrar_actividad|Could not find/i.test(raw) ? "Falta pegar la migración 046 en esta partida" : ("No se pudo borrar: " + raw), "error");
     return;
   }
-
-  box.innerHTML = html;
+  showToast((res.data || 0) + " registros borrados", "success");
+  cargarActividad();
 }

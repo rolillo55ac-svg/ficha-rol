@@ -560,7 +560,6 @@ async function getSupabaseStorageUsage(){
   var totalBytes = 0;
   var fileCount = 0;
   var maxBytes = 1024 * 1024 * 1024; // 1.00 GB Límite Free Tier de Supabase
-  var knownFolders = ['personajes', 'mapas', 'misiones', 'bestiario', 'pistas'];
 
   if(typeof supabaseClient === "undefined" || !supabaseClient || !supabaseClient.storage){
     return {
@@ -578,30 +577,24 @@ async function getSupabaseStorageUsage(){
   }
 
   try {
-    var foldersToScan = new Set(knownFolders);
-    var rootRes = await supabaseClient.storage.from('images').list('', { limit: 100 });
-    if(rootRes && rootRes.data){
-      rootRes.data.forEach(function(item){
-        if(item.id && item.metadata && item.metadata.size){
-          totalBytes += item.metadata.size;
-          fileCount++;
-        } else if(item.name && !item.id){
-          foldersToScan.add(item.name);
-        }
-      });
-    }
-
-    for(var folder of foldersToScan){
-      var res = await supabaseClient.storage.from('images').list(folder, { limit: 100 });
-      if(res && res.data){
-        res.data.forEach(function(item){
+    // Recorre carpetas y subcarpetas (la galería va en galeria/<partida>/), de 100 en 100
+    async function scan(prefix, depth){
+      for(var off = 0; off < 5000; off += 100){
+        var res = await supabaseClient.storage.from('images').list(prefix, { limit: 100, offset: off });
+        if(!res || !res.data || !res.data.length) return;
+        for(var k = 0; k < res.data.length; k++){
+          var item = res.data[k];
           if(item.id && item.metadata && item.metadata.size){
             totalBytes += item.metadata.size;
             fileCount++;
+          } else if(item.name && !item.id && depth < 3){
+            await scan(prefix ? prefix + '/' + item.name : item.name, depth + 1);
           }
-        });
+        }
+        if(res.data.length < 100) return;
       }
     }
+    await scan('', 0);
 
     var freeBytes = Math.max(0, maxBytes - totalBytes);
     var rawPct = (totalBytes / maxBytes) * 100;
