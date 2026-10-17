@@ -10090,6 +10090,24 @@ html,body{overscroll-behavior-y:contain;}
 .settings-confirm.hidden{display:none;}
 .settings-confirm-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .settings-storage-actions{display:flex;flex-direction:column;gap:6px;}
+/* Cuentas: Mi contraseña y Admin › Jugadores */
+#dataModal .cuenta-field input, #dataModal .cuenta-field select{min-height:44px;}
+.cuenta-pass-row{display:flex;gap:6px;align-items:center;}
+.cuenta-pass-row input{flex:1;min-width:0;}
+#dataModal .cuenta-pass-btn{min-height:44px;min-width:44px;flex:none;}
+#dataModal .cuenta-nueva-btn{margin-bottom:16px;}
+.cuenta-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.cuenta-head .settings-chip{margin-top:0;}
+.cuenta-nombre{font:600 1.05rem var(--font-display);color:var(--gold-light);word-break:break-all;}
+.cuenta-chip-off{border-color:var(--danger);color:var(--danger);}
+.cuenta-off{opacity:.75;}
+.cuenta-acciones{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+#dataModal .cuenta-btn{min-height:44px;width:100%;}
+#dataModal .cuenta-btn-peligro{color:var(--danger);}
+.cuenta-pass-box{display:flex;flex-direction:column;gap:10px;}
+.cuenta-pass-box.hidden{display:none;}
+.cuenta-aviso{color:var(--warning);}
+.cuenta-resumen{font-family:var(--font-mono);font-size:.95rem;line-height:1.7;color:var(--ink);word-break:break-all;}
 
 /* Pantalla y agradecimiento de donaciones */
 .donate-panel {
