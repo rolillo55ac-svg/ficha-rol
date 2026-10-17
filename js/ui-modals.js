@@ -2968,3 +2968,65 @@ function renderAlchemyCatalogModalList(c){
 window.openAlchemyCatalogModal = openAlchemyCatalogModal;
 window.renderAlchemyCatalogModalList = renderAlchemyCatalogModalList;
 
+
+
+// Selector de lista larga con hoja inferior (sustituye al desplegable nativo). El <select> sigue debajo, oculto.
+function kPickerBtnHtml(placeholder, selectedText, disabled){
+  return '<button type="button" class="kpick-btn'+(selectedText?'':' is-empty')+'" data-kpick="1"'+(disabled?' disabled':'')+'><span class="kpick-btn-txt">'+esc(selectedText||placeholder)+'</span><span class="kpick-btn-arrow" aria-hidden="true">▾</span></button>';
+}
+
+function kPickerClose(){
+  var bg = document.getElementById("kpickBg");
+  if(bg) bg.remove();
+}
+
+function kPickerOpen(sel, title){
+  if(!sel || sel.disabled) return;
+  kPickerClose();
+  var opts = Array.prototype.slice.call(sel.options);
+  var cur = sel.value;
+  var html = '<div class="kpick-bg" id="kpickBg"><div class="kpick" role="dialog" aria-modal="true" aria-label="'+esc(title)+'">'+
+    '<div class="kpick-grab"></div>'+
+    '<div class="kpick-head"><h2>'+esc(title)+'</h2><button type="button" class="kpick-x" data-kp-close="1" aria-label="Cerrar">✕</button></div>'+
+    '<div class="kpick-search"><input type="search" class="k-input" id="kpickSearch" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"></div>'+
+    '<div class="kpick-list" id="kpickList">'+
+    opts.map(function(o, i){
+      var sub = o.getAttribute("data-sub");
+      var isEmpty = o.value === "";
+      return '<button type="button" class="kpick-row'+(o.value===cur?' is-on':'')+(isEmpty?' is-none':'')+'" data-kp-i="'+i+'" data-kp-name="'+esc((o.textContent||"").toLowerCase())+'"><span class="kpick-row-name">'+esc(isEmpty?"Ninguna":o.textContent)+'</span>'+(sub?'<span class="pill-formula kpick-pill">'+esc(sub)+'</span>':'')+'</button>';
+    }).join('')+
+    '</div></div></div>';
+  document.body.insertAdjacentHTML("beforeend", html);
+  var bg = document.getElementById("kpickBg");
+  var list = document.getElementById("kpickList");
+  var input = document.getElementById("kpickSearch");
+  input.addEventListener("input", function(){
+    var q = input.value.trim().toLowerCase();
+    Array.prototype.forEach.call(list.children, function(r){
+      r.style.display = (!q || r.getAttribute("data-kp-name").indexOf(q) >= 0) ? "" : "none";
+    });
+  });
+  bg.addEventListener("click", function(ev){
+    if(ev.target === bg || ev.target.closest("[data-kp-close]")){ kPickerClose(); return; }
+    var row = ev.target.closest("[data-kp-i]");
+    if(!row) return;
+    var idx = parseInt(row.getAttribute("data-kp-i"), 10);
+    kPickerClose();
+    if(sel.options[idx] && sel.selectedIndex !== idx){
+      sel.selectedIndex = idx;
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  var on = list.querySelector(".is-on");
+  if(on && on.scrollIntoView) on.scrollIntoView({ block: "center" });
+}
+
+document.addEventListener("click", function(ev){
+  var b = ev.target.closest && ev.target.closest("[data-kpick]");
+  if(!b) return;
+  var sel = b.parentNode.querySelector("select.kpick-native");
+  if(sel) kPickerOpen(sel, b.getAttribute("data-kp-title") || "Elegir");
+});
+document.addEventListener("keydown", function(ev){
+  if(ev.key === "Escape" && document.getElementById("kpickBg")) kPickerClose();
+});

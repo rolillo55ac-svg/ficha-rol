@@ -77,7 +77,7 @@ function tplMundoBuffs(s){
       '<div class="creature-card-header">'+
         (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="buffCatalog.'+b.id+'.name" value="'+esc(b.name)+'" placeholder="Nombre del buffo">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.name)+'</div>')+
         (canEdit ? '<div style="display:flex;gap:4px;align-items:center;">'+
-          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);border-radius:5px;color:var(--ink);" data-scope="global" data-bind="buffCatalog.'+b.id+'.type">'+
+          '<select class="creature-select" data-scope="global" data-bind="buffCatalog.'+b.id+'.type">'+
             '<option value="buff" '+((b.type||'buff')==='buff'?'selected':'')+'>Buff</option>'+
             '<option value="debuff" '+((b.type||'buff')==='debuff'?'selected':'')+'>Debuff</option>'+
           '</select>'+
@@ -87,12 +87,12 @@ function tplMundoBuffs(s){
       '</div>'+
       '<div class="creature-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">'+
         (canEdit ? '<div class="creature-field"><label>Atributo/Afecta</label>'+
-          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);border-radius:5px;color:var(--ink);" data-scope="global" data-bind="buffCatalog.'+b.id+'.attr">'+
+          '<select class="creature-select" data-scope="global" data-bind="buffCatalog.'+b.id+'.attr">'+
             attrOptions+
           '</select></div>' : '<div class="creature-field"><label>Afecta</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.attr||"-")+'</span></div>')+
         (canEdit ? '<div class="creature-field"><label>Bonus</label><input type="text" data-scope="global" data-bind="buffCatalog.'+b.id+'.bonus" value="'+esc(b.bonus)+'" placeholder="+1, -2, 1d6..."></div>' : '<div class="creature-field"><label>Bonus</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.bonus||"-")+'</span></div>')+
         (canEdit ? '<div class="creature-field"><label>Duración</label>'+
-          '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);border-radius:5px;color:var(--ink);" data-scope="global" data-bind="buffCatalog.'+b.id+'.duration">'+
+          '<select class="creature-select" data-scope="global" data-bind="buffCatalog.'+b.id+'.duration">'+
             '<option value="permanent" '+((b.duration||'permanent')==='permanent'?'selected':'')+'>Permanente</option>'+
             '<option value="turns" '+((b.duration||'permanent')==='turns'?'selected':'')+'>Por turnos</option>'+
           '</select></div>' : '<div class="creature-field"><label>Duración</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.duration==='turns'?(b.durationTurns||0)+' turnos':'Permanente')+'</span></div>')+

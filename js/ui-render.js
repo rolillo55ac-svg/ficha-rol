@@ -489,7 +489,6 @@ function tplHabilidades(c){
   }
 
   html += '</div>';
-  html += rollLogHtml();
   return html;
 }
 
@@ -961,13 +960,14 @@ function tplCombate(c){
 
     var gridCols = canEdit ? '1fr 36px 36px' : '1fr 36px';
     html += '<div class="list-row weapons-row'+(isBlocked?' weapon-row-blocked':'')+'" style="grid-template-columns:'+gridCols+';">'+
-      '<select data-action="select-weapon-catalog" data-id="'+w.id+'" aria-label="Seleccionar arma" '+(canEdit?'':'disabled')+'>'+
+      '<div class="kpick-wrap">'+kPickerBtnHtml('Seleccionar arma del compendio', selectedCatItem ? (selectedCatItem.visible===false?'🔒 ':'')+selectedCatItem.name+' ('+selectedCatItem.dano+')' : '', !canEdit).replace('data-kpick="1"','data-kpick="1" data-kp-title="Elegir arma"')+
+      '<select class="kpick-native" data-action="select-weapon-catalog" data-id="'+w.id+'" aria-label="Seleccionar arma" '+(canEdit?'':'disabled')+'>'+
         '<option value="">-- Seleccionar Arma del Compendio --</option>'+
         catalog.map(function(catItem){
           var isLockedOpt = catItem.visible === false;
-          return '<option value="'+catItem.id+'" '+(selectedCatItem && selectedCatItem.id===catItem.id?'selected':'')+'>'+(isLockedOpt ? '🔒 ' : '')+esc(catItem.name)+' ('+esc(catItem.dano)+')'+(isLockedOpt ? ' [Bloqueada]' : '')+'</option>';
+          return '<option value="'+catItem.id+'" data-sub="'+esc(catItem.dano)+'" '+(selectedCatItem && selectedCatItem.id===catItem.id?'selected':'')+'>'+(isLockedOpt ? '🔒 ' : '')+esc(catItem.name)+(isLockedOpt ? ' [Bloqueada]' : '')+'</option>';
         }).join('')+
-      '</select>'+
+      '</select></div>'+
       (isBlocked && !isGM()
         ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
         : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño ('+esc(selectedCatItem ? selectedCatItem.dano : "1d6")+')" aria-label="Tirar daño">&#127922;</button>'
@@ -997,7 +997,6 @@ function tplCombate(c){
   }
   html += '</div>';
 
-  html += rollLogHtml();
   return html;
 }
 
@@ -1073,12 +1072,13 @@ function tplEstados(c){
   if(canEdit){
     html += '<div class="catalog-assign-row" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px;">'+
       '<label style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;font-weight:700;">+ Asignar Estado desde el Catálogo Global:</label>'+
-      '<select data-action="assign-buff-from-catalog" class="buff-quick-assign-select" style="font-size:.82rem;padding:7px 10px;background:var(--bg-card);border:1px solid var(--line);border-radius:6px;color:var(--ink);width:100%;">'+
+      '<div class="kpick-wrap">'+kPickerBtnHtml('Seleccionar buff o debuff para asignar', '', false).replace('data-kpick="1"','data-kpick="1" data-kp-title="Asignar estado"')+
+      '<select data-action="assign-buff-from-catalog" class="kpick-native buff-quick-assign-select">'+
         '<option value="">-- Seleccionar buff o debuff para asignar --</option>'+
         unassignedBuffs.map(function(ub){
           return '<option value="'+ub.id+'">'+(ub.type==='debuff'?'⚠️ [Debuff] ':'✨ [Buff] ')+esc(ub.name)+(ub.bonus?' ('+esc(ub.bonus)+')':'')+'</option>';
         }).join('')+
-      '</select>'+
+      '</select></div>'+
     '</div>';
   }
 
@@ -1160,7 +1160,6 @@ function tplEstados(c){
   }
   html += '</div>';
 
-  html += rollLogHtml();
   return html;
 }
 
@@ -2842,12 +2841,12 @@ function tplMundoLore(s){
   var terrPills = TERRENOS.map(function(tr){return '<button class="f-pill '+(loreTerrainFilter===tr?'active':'')+'" data-action="set-lore-terrain" data-val="'+tr+'">'+tr+'</button>';}).join('');
 
   var canEdit = isGM();
-  var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title"><span>'+(canEdit?'Compendio de Lore, Fauna y Flora (GM)':'Compendio de Lore, Fauna y Flora')+'</span></div>'+
-    '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills">'+contPills+'</div></div>'+
+  var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title lore-title-bar"><span>'+(canEdit?'Compendio de Lore, Fauna y Flora (GM)':'Compendio de Lore, Fauna y Flora')+'</span></div>'+
+    '<div class="filter-section"><div class="filter-label">Continente</div><div class="filter-pills lore-pills">'+contPills+'</div></div>'+
     (currentLoreSubtab==="objetos"?
-      '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills">'+typePills+'</div></div>'+
-      '<div class="filter-section"><div class="filter-label">Terreno</div><div class="filter-pills">'+terrPills+'</div></div>':'')+
-    '<div class="filter-pills" style="margin:10px 0;border-bottom:1px solid var(--line);padding-bottom:6px;">'+
+      '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills lore-pills">'+typePills+'</div></div>'+
+      '<div class="filter-section"><div class="filter-label">Terreno</div><div class="filter-pills lore-pills">'+terrPills+'</div></div>':'')+
+    '<div class="filter-pills lore-pills" style="margin:10px 0;border-bottom:1px solid var(--line);padding-bottom:6px;">'+
       '<button class="f-pill '+(currentLoreSubtab==='objetos'?'active':'')+'" data-action="set-lore-subtab" data-val="objetos">🌿 Recursos / Objetos</button>'+
       '<button class="f-pill '+(currentLoreSubtab==='pistas'?'active':'')+'" data-action="set-lore-subtab" data-val="pistas">📜 Pistas</button>'+
       '<button class="f-pill '+(currentLoreSubtab==='npcs'?'active':'')+'" data-action="set-lore-subtab" data-val="npcs">👤 NPCs</button>'+
@@ -2866,6 +2865,7 @@ function tplMundoLore(s){
     var rName = it.rarity || "Común";
     var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
     var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
+    var editing = canEdit && !!(state._loreEdit && state._loreEdit[it.id]);
 
     html += '<div class="item-card '+rClass+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'+
@@ -2875,12 +2875,13 @@ function tplMundoLore(s){
           (it.terrain ? '<span style="font-size:.62rem;color:var(--ink-faint);">📍 '+esc(it.terrain)+'</span>' : '')+
         '</div>'+
         '<div style="display:flex;gap:4px;">'+
-          (canEdit ? '<button class="btn-compact" data-action="toggle-lore-visibility" data-cat="' + cat + '" data-id="' + it.id + '" title="Mostrar/Ocultar para jugadores">'+(it.visible!==false?'👁️':'🙈')+'</button>' : '')+
-          (canEdit ? '<button class="row-del" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">✕</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-visibility" data-cat="' + cat + '" data-id="' + it.id + '" title="Mostrar/Ocultar para jugadores">'+(it.visible!==false?'👁️':'🙈')+'</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-edit" data-id="' + it.id + '" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing?'✔️':'✏️')+'</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">✕</button>' : '')+
         '</div>'+
       '</div>'+
-      (canEdit ? '<input type="text" style="width:100%;font-family:var(--font-display);color:var(--gold-light);font-size:.95rem;margin-bottom:4px;" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Nombre">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:.95rem;margin-bottom:4px;">'+esc(it.title)+'</div>')+
-      (canEdit ? '<textarea style="width:100%;font-size:.82rem;min-height:45px;" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción...">'+esc(it.text)+'</textarea>' : '<p style="font-size:.82rem;color:var(--ink-dim);">'+esc(it.text)+'</p>')+
+      (canEdit && editing ? '<div class="creature-field lore-field"><label>Nombre</label><input type="text" class="k-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Nombre"></div>' : '<div class="lore-title">'+esc(it.title)+'</div>')+
+      (canEdit && editing ? '<div class="creature-field lore-field"><label>Descripción</label><textarea class="k-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.text" placeholder="Descripción...">'+esc(it.text)+'</textarea></div>' : '<p class="lore-text">'+esc(it.text)+'</p>')+
     '</div>';
   });
 

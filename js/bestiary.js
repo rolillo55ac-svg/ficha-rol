@@ -51,10 +51,10 @@ function tplBestiario(s){
           '<span class="mount-pill '+(b.montable?'is-mount':'no-mount')+'">'+(b.montable?'🐎 Montura':'🚶 No montable')+'</span>'+
         '</div>'+
         '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'+
-          (canEdit ? '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);" data-scope="global" data-bind="bestiary.'+b.id+'.rarity" title="Rareza">'+
+          (canEdit ? '<select class="creature-select" data-scope="global" data-bind="bestiary.'+b.id+'.rarity" title="Rareza">'+
             RAREZAS_LIST.map(function(r){return '<option value="'+r+'" '+((b.rarity||"Común")===r?'selected':'')+'>'+r+'</option>';}).join('')+
           '</select>' : '')+
-          (canEdit ? '<select style="font-size:.72rem;background:var(--bg-card);padding:2px 4px;border:1px solid var(--line);" data-scope="global" data-bind="bestiary.'+b.id+'.continente" title="Continente">'+
+          (canEdit ? '<select class="creature-select" data-scope="global" data-bind="bestiary.'+b.id+'.continente" title="Continente">'+
             CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
           '</select>' : '<span style="font-size:.7rem;color:var(--ink-dim);">'+esc(b.continente||"Todos")+'</span>')+
           (canEdit ? '<button class="btn-compact '+(b.montable?'btn-solid-gold':'')+'" data-action="toggle-bestiary-mountable" data-id="'+b.id+'" title="Alternar si es montura">'+(b.montable?'🐎 Montable':'🚶 No montable')+'</button>' : '')+
