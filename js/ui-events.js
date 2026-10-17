@@ -1041,9 +1041,13 @@ function handleClick(e){
   }
   if(action==="del-global-weapon"){
     if(!isGM()) return;
-    state.weaponsCatalog = (state.weaponsCatalog||[]).filter(function(w){ return w.id !== btn.getAttribute("data-id"); });
-    saveState(true); pushSharedData({ weaponsCatalog: state.weaponsCatalog }); renderTab();
-    showToast("Arma eliminada del catálogo", "info");
+    var dwId = btn.getAttribute("data-id");
+    var dwIt = (state.weaponsCatalog||[]).find(function(w){ return w.id === dwId; });
+    confirmarQuitar(dwIt ? dwIt.name : "esta arma", "Si algún personaje la lleva equipada, la conserva con su nombre.").then(function(ok){ if(ok){
+      state.weaponsCatalog = (state.weaponsCatalog||[]).filter(function(w){ return w.id !== dwId; });
+      saveState(true); pushSharedData({ weaponsCatalog: state.weaponsCatalog }); renderTab();
+      showToast("Arma eliminada del catálogo", "info");
+    }});
     return;
   }
   if(action==="toggle-buff-visibility"){
@@ -1062,9 +1066,13 @@ function handleClick(e){
   }
   if(action==="del-global-buff"){
     if(!isGM()) return;
-    state.buffCatalog = (state.buffCatalog||[]).filter(function(b){ return b.id !== btn.getAttribute("data-id"); });
-    saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab();
-    showToast("Buff eliminado", "info");
+    var dbId = btn.getAttribute("data-id");
+    var dbIt = (state.buffCatalog||[]).find(function(b){ return b.id === dbId; });
+    confirmarQuitar(dbIt ? dbIt.name : "este buffo", "").then(function(ok){ if(ok){
+      state.buffCatalog = (state.buffCatalog||[]).filter(function(b){ return b.id !== dbId; });
+      saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab();
+      showToast("Buff eliminado", "info");
+    }});
     return;
   }
   if(action==="set-buff-tab"){
@@ -2725,15 +2733,18 @@ function handleClick(e){
   if(action==="del-bestiary"){
     if(!isGM()) return;
     var bId = btn.getAttribute("data-id");
+    var bIt = (state.bestiary||[]).find(function(b){ return b.id === bId; });
+    confirmarQuitar(bIt ? bIt.name : "esta criatura", "").then(function(ok){ if(!ok) return;
     state.bestiary = (state.bestiary||[]).filter(function(b){ return b.id !== bId; });
-    saveState(true);
-    pushSharedData();
-    if(supabaseClient){
-      supabaseClient.from('bestiary').delete().eq('id', bId).then(function(res){
-        if(res.error) console.warn("Supabase bestiary delete:", res.error);
-      }).catch(function(){});
-    }
+      saveState(true);
+      pushSharedData();
+      if(supabaseClient){
+        supabaseClient.from('bestiary').delete().eq('id', bId).then(function(res){
+          if(res.error) console.warn("Supabase bestiary delete:", res.error);
+        }).catch(function(){});
+      }
     renderTab();
+    });
     return;
   }
   if(action==="toggle-lore-visibility"){
@@ -2752,9 +2763,20 @@ function handleClick(e){
   if(action==="del-lore"){
     if(!isGM()) return;
     var cat2 = btn.getAttribute("data-cat");
-    state.lore[cat2] = state.lore[cat2].filter(function(x){return x.id!==btn.getAttribute("data-id");});
-    saveState(true); pushSharedData(); renderTab();
-    showToast("Entrada eliminada", "info");
+    var loreId = btn.getAttribute("data-id");
+    var loreIt = (state.lore[cat2] || []).find(function(x){return x.id===loreId;});
+    confirmarQuitar(loreIt ? loreIt.title : "esta entrada", "").then(function(ok){ if(ok){
+      state.lore[cat2] = state.lore[cat2].filter(function(x){return x.id!==loreId;});
+      saveState(true); pushSharedData(); renderTab();
+      showToast("Entrada eliminada", "info");
+    }});
+    return;
+  }
+  if(action==="toggle-lore-edit"){
+    var leId = btn.getAttribute("data-id");
+    state._loreEdit = state._loreEdit || {};
+    state._loreEdit[leId] = !state._loreEdit[leId];
+    renderTab();
     return;
   }
 
