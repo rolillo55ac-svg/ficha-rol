@@ -1,6 +1,6 @@
 {
-  "version": "1.4.83.0",
-  "build": "2026.10.17.15",
-  "updatedAt": "2026-10-18T02:00:00Z",
-  "changelog": "Nuevo: Galería de fotos en Mundo (todos ven y suben; ampliar y pasar deslizando) e Historia del personaje al final de la Ficha, privada salvo que su dueño la comparta."
+  "version": "1.4.84.0",
+  "build": "2026.10.17.16",
+  "updatedAt": "2026-10-17T16:30:00Z",
+  "changelog": "Repaso: el admin ve ADMIN arriba; Catálogo de Armas en modo lectura (✏️ para editar) sin nombres cortados; ventanas que abren y cierran más rápido; Actividad más clara y con botón para borrar registros; Almacenamiento cuenta también la base de datos y la galería."
 }
