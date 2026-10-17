@@ -5,7 +5,8 @@
 --   * access_alertas: avisos para Discord (5 fallos seguidos con un usuario en 10 min, o usuario que no
 --     existe). Los manda la función discord-notify (service_role) y los marca como enviados.
 --   * registrar_acceso(usuario, ok, dispositivo): login bueno o malo. Se puede llamar sin sesión SOLO para
---     esto: textos cortos, como mucho 10 por usuario y minuto, solo inserta. "ok" solo vale con sesión.
+--     apuntar fallos: textos cortos, como mucho 10 por usuario y minuto, solo inserta. "ok" solo vale con
+--     sesión y se apunta a nombre de quien llama. Devuelve si hay avisos pendientes (de cualquiera).
 --   * registrar_sesion(evento, sesion, dispositivo): inicio y fin de sesión, logout y contraseña cambiada
 --     (con sesión; el usuario sale de la sesión, no del navegador).
 --   * admin_actividad(dias): lectura para el panel Ajustes › Admin › Actividad (solo es_admin()).
@@ -80,46 +81,47 @@ DECLARE
   ultimo_ok timestamptz;
   fallos integer;
 BEGIN
-  IF u = '' THEN RETURN false; END IF;
-  -- Límites: 10 por usuario y minuto, 120 fallos por minuto en total
-  IF (SELECT count(*) FROM public.access_log WHERE usuario = u AND at > now() - interval '1 minute') >= 10 THEN
-    RETURN false;
-  END IF;
   IF p_ok THEN
-    -- Un "entró bien" solo lo puede apuntar quien de verdad tiene sesión, y a su nombre
+    -- Un "entró bien" solo lo apunta quien de verdad tiene sesión, y siempre a su propio nombre
     IF auth.uid() IS NULL THEN RETURN false; END IF;
+    IF (SELECT count(*) FROM public.access_log WHERE user_id = auth.uid() AND at > now() - interval '1 minute') >= 30 THEN
+      RETURN false;
+    END IF;
+    SELECT left(lower(coalesce(nullif(display_name, ''), email, '')), 80) INTO u FROM public.profiles WHERE id = auth.uid();
     INSERT INTO public.access_log (user_id, usuario, evento, user_agent, ip)
-      VALUES (auth.uid(), u, 'login_ok', ua, public.access_ip());
+      VALUES (auth.uid(), coalesce(u, ''), 'login_ok', ua, public.access_ip());
     RETURN false;
   END IF;
-  IF (SELECT count(*) FROM public.access_log WHERE evento = 'login_fail' AND at > now() - interval '1 minute') >= 120 THEN
-    RETURN false;
+  IF u = '' THEN RETURN false; END IF;
+  -- Límites: 10 fallos por usuario y minuto, 120 por minuto en total
+  IF (SELECT count(*) FROM public.access_log WHERE usuario = u AND evento = 'login_fail' AND at > now() - interval '1 minute') >= 10
+     OR (SELECT count(*) FROM public.access_log WHERE evento = 'login_fail' AND at > now() - interval '1 minute') >= 120 THEN
+    RETURN EXISTS (SELECT 1 FROM public.access_alertas WHERE enviado_at IS NULL);
   END IF;
   SELECT id INTO uid FROM public.profiles
     WHERE lower(email) = u OR lower(email) = u || '@jugadores.krysalis.invalid' LIMIT 1;
   INSERT INTO public.access_log (user_id, usuario, evento, user_agent, ip)
     VALUES (uid, u, 'login_fail', ua, public.access_ip());
 
-  -- Avisos: uno por usuario cada 10 minutos y como mucho 10 por hora en total
-  IF EXISTS (SELECT 1 FROM public.access_alertas WHERE usuario = u AND at > now() - interval '10 minutes') THEN
-    RETURN false;
+  -- Avisos: uno por usuario cada 10 minutos; como mucho 5 por hora de usuarios que no existen y 10 de
+  -- fallos seguidos (por separado: llenar uno no tapa el otro)
+  IF NOT EXISTS (SELECT 1 FROM public.access_alertas WHERE usuario = u AND at > now() - interval '10 minutes') THEN
+    IF uid IS NULL THEN
+      IF (SELECT count(*) FROM public.access_alertas WHERE tipo = 'usuario_inexistente' AND at > now() - interval '1 hour') < 5 THEN
+        INSERT INTO public.access_alertas (tipo, usuario) VALUES ('usuario_inexistente', u);
+      END IF;
+    ELSE
+      SELECT max(at) INTO ultimo_ok FROM public.access_log
+        WHERE user_id = uid AND evento = 'login_ok' AND at > now() - interval '10 minutes';
+      SELECT count(*) INTO fallos FROM public.access_log
+        WHERE user_id = uid AND evento = 'login_fail' AND at > coalesce(ultimo_ok, now() - interval '10 minutes');
+      IF fallos >= 5 AND (SELECT count(*) FROM public.access_alertas WHERE tipo = 'fallos_seguidos' AND at > now() - interval '1 hour') < 10 THEN
+        INSERT INTO public.access_alertas (tipo, usuario, veces) VALUES ('fallos_seguidos', u, fallos);
+      END IF;
+    END IF;
   END IF;
-  IF (SELECT count(*) FROM public.access_alertas WHERE at > now() - interval '1 hour') >= 10 THEN
-    RETURN false;
-  END IF;
-  IF uid IS NULL THEN
-    INSERT INTO public.access_alertas (tipo, usuario) VALUES ('usuario_inexistente', u);
-    RETURN true;
-  END IF;
-  SELECT max(at) INTO ultimo_ok FROM public.access_log
-    WHERE usuario = u AND evento = 'login_ok' AND at > now() - interval '10 minutes';
-  SELECT count(*) INTO fallos FROM public.access_log
-    WHERE usuario = u AND evento = 'login_fail' AND at > coalesce(ultimo_ok, now() - interval '10 minutes');
-  IF fallos >= 5 THEN
-    INSERT INTO public.access_alertas (tipo, usuario, veces) VALUES ('fallos_seguidos', u, fallos);
-    RETURN true;
-  END IF;
-  RETURN false;
+  -- Solo dice si hay avisos pendientes de cualquiera (no revela si este usuario existe)
+  RETURN EXISTS (SELECT 1 FROM public.access_alertas WHERE enviado_at IS NULL);
 END;
 $$;
 

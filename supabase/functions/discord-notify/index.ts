@@ -41,7 +41,8 @@ Deno.serve(async (req) => {
       .in("id", pend.map((a) => a.id)).is("enviado_at", null).select("id, tipo, usuario, veces");
     if (!mios || !mios.length) return json(200, { ok: true, enviados: 0 });
     const lineas = mios.map((a) => {
-      const u = String(a.usuario).replace(/[`*_~|>@#\[\]()]/g, "").slice(0, 80);
+      // Solo letras, números y . _ + - (sin saltos de línea, enlaces ni formato)
+      const u = String(a.usuario).replace(/@/g, "(at)").replace(/[^a-z0-9()._+-]/gi, "").slice(0, 80);
       return a.tipo === "fallos_seguidos"
         ? "• **" + u + "**: " + a.veces + " contraseñas mal seguidas en 10 minutos"
         : "• Alguien intentó entrar con un usuario que no existe: **" + u + "**";
@@ -49,7 +50,11 @@ Deno.serve(async (req) => {
     const r = await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: "🔐 **Intentos de entrada raros**\n" + lineas.join("\n") +
         "\nMíralo en Ajustes › Admin › Actividad.", allowed_mentions: { parse: [] } }) });
-    if (!r.ok) return json(502, { error: "Discord respondió " + r.status });
+    if (!r.ok) {
+      // Si Discord falla, se quedan pendientes para la próxima vez
+      await admin.from("access_alertas").update({ enviado_at: null }).in("id", mios.map((a) => a.id));
+      return json(502, { error: "Discord respondió " + r.status });
+    }
     return json(200, { ok: true, enviados: mios.length });
   }
 
