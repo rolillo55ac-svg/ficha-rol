@@ -276,6 +276,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   padding:2px 6px;border-radius:20px;border:1px solid var(--line);color:var(--ink-faint);background:var(--bg-card);white-space:nowrap;
 }
 .role-badge.gm{border-color:var(--gm-light);color:var(--gm-light);background:linear-gradient(135deg, rgba(139,69,19,0.35), rgba(210,105,30,0.15));box-shadow:0 0 10px -2px rgba(210,105,30,0.6);}
+.role-badge.admin{border-color:var(--gold-light);color:var(--gold-light);background:linear-gradient(135deg, rgba(176,141,87,0.30), rgba(176,141,87,0.10));box-shadow:0 0 10px -2px rgba(176,141,87,0.6);}
 .role-badge.player{border-color:var(--teal);color:var(--teal-light);}
 .role-badge.spectator{border-color:rgba(176,141,87,0.3);color:var(--ink-dim);background:rgba(0,0,0,0.35);}
 .char-owner-topbar-tag{
@@ -2348,9 +2349,14 @@ main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow
   align-items: center;
   gap: 5px;
   overflow-x: auto;
-  padding: 2px 0 4px;
-  scrollbar-width: thin;
+  padding: 2px 18px 4px 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
 }
+.map-filter-shelf::-webkit-scrollbar { display: none; }
+.map-filter-shelf .map-filter-pill { flex: none; min-height: 36px; }
 .map-filter-pill {
   display: inline-flex;
   align-items: center;
@@ -10104,6 +10110,24 @@ html,body{overscroll-behavior-y:contain;}
 .cuenta-acciones{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 #dataModal .cuenta-btn{min-height:44px;width:100%;}
 #dataModal .cuenta-btn-peligro{color:var(--danger);}
+/* Admin › Actividad: personas plegables, últimas entradas y borrar */
+.act-card{display:flex;flex-direction:column;gap:6px;}
+.act-prueba{display:flex;align-items:center;gap:8px;min-height:44px;font-size:.85rem;color:var(--ink-dim);}
+.act-persona{border-top:1px solid var(--line);}
+.act-persona:first-of-type{border-top:none;}
+.act-fila{display:flex;align-items:center;gap:10px;min-height:48px;padding:4px 0;cursor:pointer;list-style:none;touch-action:manipulation;}
+.act-fila::-webkit-details-marker{display:none;}
+.act-punto{flex:none;width:10px;height:10px;border-radius:50%;background:var(--ink-faint);opacity:.5;}
+.act-punto.is-on{background:var(--success);opacity:1;}
+.act-quien,.act-cuando{display:flex;flex-direction:column;min-width:0;}
+.act-quien{flex:1;}
+.act-cuando{flex:none;align-items:flex-end;font-size:.82rem;color:var(--ink-dim);text-align:right;}
+.act-nombre{font:600 .98rem var(--font-display);color:var(--gold-light);overflow-wrap:anywhere;}
+.act-usuario{font-size:.72rem;color:var(--ink-faint);overflow-wrap:anywhere;}
+.act-detalle{padding:0 0 8px 20px;display:flex;flex-direction:column;gap:4px;}
+.act-ses{font-size:.78rem;color:var(--ink-dim);overflow-wrap:anywhere;}
+.act-noticia{font-size:.85rem;color:var(--ink-dim);overflow-wrap:anywhere;line-height:1.35;}
+.act-noticia b{color:var(--ink);}
 .cuenta-pass-box{display:flex;flex-direction:column;gap:10px;}
 .cuenta-pass-box.hidden{display:none;}
 .cuenta-aviso{color:var(--warning);}
@@ -10746,6 +10770,19 @@ textarea.k-input.k-input {
 [class*="joystick"] .fab-dice:focus-visible,
 [class*="joystick"] [data-action]:focus-visible {
   outline: none;
+}
+
+/* Ventanas que crecen desde su botón: mientras se animan, sin desenfoque ni sombra */
+.modal-overlay.juice-anim,
+.house-modal-overlay.juice-anim {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.modal-overlay.juice-anim > :first-child,
+.house-modal-overlay.juice-anim > :first-child {
+  will-change: transform, opacity;
+  box-shadow: none;
+  filter: none;
 }
 
 /* 2. Host y Ripple */
@@ -11602,3 +11639,17 @@ html.juice-off .kpick{animation:none;}
   padding-left: calc(22px + var(--spacing-sm));
 }
 
+/* Catálogo de Armas de Mundo: lectura y edición */
+.weapon-title{font-size:1.02rem;margin-bottom:6px;}
+.weapon-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px;}
+.weapon-pills{display:flex;flex-wrap:wrap;gap:6px;}
+.weapon-pills .spell-pill{white-space:normal;overflow-wrap:anywhere;}
+.weapon-crit{margin-bottom:4px;}
+.weapon-crit b{color:#FDE047;}
+.weapon-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.weapon-edit-grid > *{min-width:0;}
+/* Buffos de Mundo: que nada se corte a 360 px */
+.buff-card .creature-card-header{flex-wrap:wrap;gap:6px;}
+.buff-card .creature-card-header > div:first-child{overflow-wrap:anywhere;min-width:0;}
+.buff-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+@media (max-width:480px){ .buff-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }

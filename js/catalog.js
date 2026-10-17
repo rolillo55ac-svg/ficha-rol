@@ -1,30 +1,42 @@
+var weaponEditIds = {};
+
 function tplMundoArmas(s){
   var catalog = s.weaponsCatalog || [];
   var canEdit = isGM();
   var html = '<div class="section'+(canEdit?' gm-section':'')+'"><div class="section-title"><span>'+(canEdit?'Catálogo de Armas (GM)':'Catálogo de Armas')+'</span></div>';
-  
+
   catalog.forEach(function(w){
     var isLocked = (w.visible === false);
+    var editing = canEdit && !!weaponEditIds[w.id];
+    var bind = 'data-scope="global" data-bind="weaponsCatalog.'+w.id+'.';
     html += '<div class="creature-card weapon-card'+(isLocked?' is-locked':'')+'">'+
-      '<div class="creature-card-header">'+
-        '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;flex-wrap:wrap;">'+
-          (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.name" value="'+esc(w.name)+'" placeholder="Nombre del arma">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;font-weight:700;">'+esc(w.name)+'</div>')+
-          (isLocked ? '<span class="weapon-status-badge locked" title="Arma bloqueada por el Máster">🔒 Bloqueada</span>' : '<span class="weapon-status-badge visible" title="Arma visible y usable para todos">👁️ Visible</span>')+
+      (editing ? '<div class="creature-field lore-field"><label>Nombre</label><input type="text" class="k-input" '+bind+'name" value="'+esc(w.name)+'" placeholder="Nombre del arma"></div>'
+               : '<div class="lore-title weapon-title">'+esc(w.name)+'</div>')+
+      '<div class="weapon-actions">'+
+        (isLocked ? '<span class="weapon-status-badge locked" title="Arma bloqueada por el Máster">🔒 Bloqueada</span>' : '<span class="weapon-status-badge visible" title="Arma visible y usable para todos">👁️ Visible</span>')+
+        (canEdit ?
+          '<button class="btn-compact lore-btn" data-action="toggle-weapon-edit" data-id="'+w.id+'" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing?'✔️':'✏️')+'</button>'+
+          '<button class="btn-compact lore-btn btn-lock-weapon '+(isLocked?'locked':'')+'" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="'+(isLocked?'Desbloquear arma para jugadores':'Bloquear arma para jugadores')+'">'+(isLocked?'🔓 Desbloquear':'🔒 Bloquear')+'</button>'+
+          '<button class="btn-compact lore-btn" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'
+        : '')+
+      '</div>';
+    if(editing){
+      html += '<div class="weapon-edit-grid">'+
+          '<div class="creature-field lore-field"><label>Daño base</label><input type="text" class="k-input" '+bind+'dano" value="'+esc(w.dano)+'" placeholder="1d6"></div>'+
+          '<div class="creature-field lore-field"><label>Alcance</label><input type="text" class="k-input" '+bind+'alcance" value="'+esc(w.alcance)+'" placeholder="Cuerpo a cuerpo"></div>'+
         '</div>'+
-        (canEdit ? '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
-          '<button class="btn-compact btn-lock-weapon '+(isLocked?'locked':'')+'" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="'+(isLocked?'Desbloquear arma para jugadores':'Bloquear arma para jugadores')+'">'+(isLocked?'🔓 Desbloquear':'🔒 Bloquear')+'</button>'+
-          '<button class="row-del" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'+
-        '</div>' : '')+
-      '</div>'+
-      '<div class="creature-grid" style="grid-template-columns:1fr 1fr;">'+
-        (canEdit ? '<div class="creature-field"><label>Daño Base</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.dano" value="'+esc(w.dano)+'"></div>' : '<div class="creature-field"><label>Daño</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(w.dano||"-")+'</span></div>')+
-        (canEdit ? '<div class="creature-field"><label>Alcance</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.alcance" value="'+esc(w.alcance)+'"></div>' : '<div class="creature-field"><label>Alcance</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(w.alcance||"-")+'</span></div>')+
-      '</div>'+
-      (canEdit ? '<div class="creature-field" style="margin-bottom:6px;"><label style="color:#FDE047;">Efecto en Crítico</label><input type="text" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.critico" value="'+esc(w.critico)+'" placeholder="Ej: Doble daño / Sangrado"></div>' : (w.critico?'<p style="font-size:.75rem;color:#FDE047;margin-bottom:6px;"><b>Crítico:</b> '+esc(w.critico)+'</p>':''))+
-      (canEdit ? '<div class="creature-field"><label>Descripción / Lore</label><textarea class="creature-notes" data-scope="global" data-bind="weaponsCatalog.'+w.id+'.desc">'+esc(w.desc)+'</textarea></div>' : (w.desc?'<p style="font-size:.78rem;color:var(--ink-dim);">'+esc(w.desc)+'</p>':''))+
-    '</div>';
+        '<div class="creature-field lore-field"><label>Efecto en crítico</label><input type="text" class="k-input" '+bind+'critico" value="'+esc(w.critico)+'" placeholder="Ej: Doble daño / Sangrado"></div>'+
+        '<div class="creature-field lore-field"><label>Descripción / Lore</label><textarea class="k-input" '+bind+'desc" placeholder="Descripción...">'+esc(w.desc)+'</textarea></div>';
+    } else {
+      var pills = (w.dano ? '<span class="spell-pill">⚔️ '+esc(w.dano)+'</span>' : '')+
+        (w.alcance ? '<span class="spell-pill">🎯 '+esc(w.alcance)+'</span>' : '');
+      if(pills) html += '<div class="spell-pills-read weapon-pills">'+pills+'</div>';
+      if(w.critico) html += '<p class="lore-text weapon-crit"><b>💥 Crítico:</b> '+esc(w.critico)+'</p>';
+      if(w.desc) html += '<p class="lore-text">'+esc(w.desc)+'</p>';
+    }
+    html += '</div>';
   });
-  
+
   if(canEdit){
     html += '<button class="btn-compact" style="width:100%;margin-top:8px;" data-action="add-global-weapon">+ Añadir nueva arma al compendio global</button>';
   }
@@ -73,7 +85,7 @@ function tplMundoBuffs(s){
         '<option value="defensaMagica" '+((b.attr||'')==='defensaMagica'?'selected':'')+'>Defensa Mágica</option>'+
       '</optgroup>';
 
-    html += '<div class="creature-card">'+
+    html += '<div class="creature-card buff-card">'+
       '<div class="creature-card-header">'+
         (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" data-bind="buffCatalog.'+b.id+'.name" value="'+esc(b.name)+'" placeholder="Nombre del buffo">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.02rem;">'+esc(b.name)+'</div>')+
         (canEdit ? '<div style="display:flex;gap:4px;align-items:center;">'+
@@ -85,7 +97,7 @@ function tplMundoBuffs(s){
           '<button class="row-del" data-action="del-global-buff" data-id="'+b.id+'" aria-label="Eliminar">✕</button>'+
         '</div>' : '<span style="font-size:.7rem;color:'+(b.type==='debuff'?'var(--danger)':'var(--teal-light)')+';">'+(b.type==='debuff'?'Debuff':'Buff')+'</span>')+
       '</div>'+
-      '<div class="creature-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">'+
+      '<div class="creature-grid buff-grid">'+
         (canEdit ? '<div class="creature-field"><label>Atributo/Afecta</label>'+
           '<select class="creature-select" data-scope="global" data-bind="buffCatalog.'+b.id+'.attr">'+
             attrOptions+

@@ -24,7 +24,7 @@ function renderTopbar(){
   var canEdit = canEditChar(c);
   var roleBadgeHtml = '';
   if(isGM()){
-    roleBadgeHtml = '<span class="role-badge gm">★ GM</span>';
+    roleBadgeHtml = (typeof isAdmin === 'function' && isAdmin()) ? '<span class="role-badge admin">🛡️ ADMIN</span>' : '<span class="role-badge gm">★ GM</span>';
     if(!isNPC){
       if(c.ownerEmail){
         roleBadgeHtml += '<span class="char-owner-topbar-tag" title="Asignado a ' + esc(c.ownerEmail) + '">👤 ' + esc(c.ownerEmail) + '</span>';

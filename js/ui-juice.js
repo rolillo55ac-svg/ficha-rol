@@ -534,6 +534,7 @@
     function limpiar(overlay) {
       try { overlay.getAnimations({ subtree: true }).forEach(function (x) { x.cancel(); }); } catch (_) {}
       overlay._juiceCerrando = false;
+      overlay.classList.remove('juice-anim');
     }
 
     function abrirDesde(overlay, boton) {
@@ -542,10 +543,12 @@
       limpiar(overlay);
       overlay._juiceBoton = boton || null;
       var ini = desdeBoton(panel, boton);
-      panel.animate([{ transform: ini, opacity: 0, borderRadius: boton ? '50%' : '14px' },
-                     { transform: 'none', opacity: 1, borderRadius: '14px' }],
-                    { duration: 320, easing: EASE_IN, fill: 'backwards' });
-      overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-out' });
+      // solo transform y opacity; sin desenfoque ni sombra mientras dura (en Android va a tirones)
+      overlay.classList.add('juice-anim');
+      var a = panel.animate([{ transform: ini, opacity: 0 }, { transform: 'none', opacity: 1 }],
+                            { duration: 200, easing: EASE_IN, fill: 'backwards' });
+      overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+      a.onfinish = function () { if (!overlay._juiceCerrando) overlay.classList.remove('juice-anim'); };
     }
 
     function cerrarHacia(overlay, despues) {
@@ -555,10 +558,10 @@
       var boton = overlay._juiceBoton;
       if (!boton || !document.body.contains(boton)) boton = null;
       var fin = desdeBoton(panel, boton);
-      overlay.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in', fill: 'forwards' });
-      var a = panel.animate([{ transform: 'none', opacity: 1, borderRadius: '14px' },
-                             { transform: fin, opacity: 0, borderRadius: boton ? '50%' : '14px' }],
-                            { duration: 240, easing: EASE_OUT, fill: 'forwards' });
+      overlay.classList.add('juice-anim');
+      overlay.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease-in', fill: 'forwards' });
+      var a = panel.animate([{ transform: 'none', opacity: 1 }, { transform: fin, opacity: 0 }],
+                            { duration: 150, easing: EASE_OUT, fill: 'forwards' });
       a.onfinish = function () {
         if (!overlay._juiceCerrando) return;
         limpiar(overlay);
