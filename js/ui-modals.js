@@ -1342,6 +1342,30 @@ function getMasterDiscordWebhook(){
   }
 }
 
+// Avisos a Discord: primero por la función discord-notify (el webhook es secreto del servidor).
+// Si la función aún no está desplegada (404 o sin conexión), se usa el webhook de siempre.
+async function postDiscord(payload){
+  if(typeof supabaseClient !== "undefined" && supabaseClient && currentUser && supabaseClient.functions){
+    try{
+      var fr = await supabaseClient.functions.invoke("discord-notify", { body: { payload: payload } });
+      if(!fr.error) return { success: true };
+      var st = fr.error.context && fr.error.context.status;
+      if(st && st !== 404) return { success: false, error: fr.error.message };
+    }catch(e){}
+  }
+  var webhookUrl = getMasterDiscordWebhook();
+  if(!webhookUrl) return { success: false, reason: "no_webhook" };
+  var res = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if(res.ok || res.status === 204) return { success: true };
+  var errText = await res.text();
+  console.warn("Error en Discord Webhook:", res.status, errText);
+  return { success: false, error: errText };
+}
+
 function setMasterDiscordWebhook(url){
   try {
     localStorage.setItem("krysalis_discord_webhook", (url || "").trim());
@@ -1922,11 +1946,6 @@ function generateAiTriageAnalysis(report){
 }
 
 async function sendDiscordWebhookReport(report){
-  var webhookUrl = getMasterDiscordWebhook();
-  if(!webhookUrl){
-    console.log("Discord Webhook no configurado.");
-    return { success: false, reason: "no_webhook" };
-  }
 
   var triage = report.aiTriage || {};
   var c = report.character;
@@ -2007,19 +2026,7 @@ async function sendDiscordWebhookReport(report){
   };
 
   try {
-    var res = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if(res.ok || res.status === 204){
-      return { success: true };
-    } else {
-      var errText = await res.text();
-      console.warn("Error en Discord Webhook:", res.status, errText);
-      return { success: false, error: errText };
-    }
+    return await postDiscord(payload);
   } catch(err){
     console.error("Fallo al conectar con Discord Webhook:", err);
     return { success: false, error: err.message };
@@ -2027,8 +2034,6 @@ async function sendDiscordWebhookReport(report){
 }
 
 async function sendDiscordWebhookReply(ticket, replyText){
-  var webhookUrl = getMasterDiscordWebhook();
-  if(!webhookUrl) return;
   var ticketTag = ticket.ticketCode ? ("#" + ticket.ticketCode) : ("#" + (ticket.id ? ticket.id.slice(-4).toUpperCase() : "TK"));
   var payload = {
     username: "Krysalis • Panel de Administración",
@@ -2045,11 +2050,7 @@ async function sendDiscordWebhookReply(ticket, replyText){
     }]
   };
   try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    await postDiscord(payload);
   } catch(e){}
 }
 
