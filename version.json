@@ -1,6 +1,6 @@
 {
-  "version": "1.4.82.0",
-  "build": "2026.10.17.14",
-  "updatedAt": "2026-10-18T01:00:00Z",
-  "changelog": "Seguridad: se apuntan las entradas (buenas y malas) y el tiempo de uso, y el admin tiene en Ajustes › Admin › Actividad las conexiones de cada jugador y los intentos fallidos."
+  "version": "1.4.83.0",
+  "build": "2026.10.17.15",
+  "updatedAt": "2026-10-18T02:00:00Z",
+  "changelog": "Nuevo: Galería de fotos en Mundo (todos ven y suben; ampliar y pasar deslizando) e Historia del personaje al final de la Ficha, privada salvo que su dueño la comparta."
 }

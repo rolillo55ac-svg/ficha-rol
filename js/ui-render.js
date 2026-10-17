@@ -304,7 +304,8 @@ function tplFicha(c){
   '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
     '<div class="section-title"><span>Atributos'+(c.isNPC?' (Editables)':'')+'</span></div>'+
     '<div class="attr-grid">'+attrCards+'</div>'+
-  '</div>';
+  '</div>'+
+  (typeof tplHistoria === "function" ? tplHistoria(c) : '');
 }
 
 
@@ -2819,6 +2820,7 @@ function tplMundo(s){
       '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">⚔️ Catálogo de Armas</button>'+
       '<button class="f-pill '+(subtab==='buffs'?'active':'')+'" data-action="set-world-subtab" data-val="buffs">✨ Buffos</button>'+
       '<button class="f-pill '+(subtab==='lore'?'active':'')+'" data-action="set-world-subtab" data-val="lore">📜 Lore y Flora</button>'+
+      '<button class="f-pill '+(subtab==='galeria'?'active':'')+'" data-action="set-world-subtab" data-val="galeria">🖼️ Galería</button>'+
     '</div>'+
   '</div>';
 
@@ -2828,6 +2830,8 @@ function tplMundo(s){
     html += tplMundoArmas(s);
   } else if(subtab === "buffs"){
     html += tplMundoBuffs(s);
+  } else if(subtab === "galeria" && typeof tplMundoGaleria === "function"){
+    html += tplMundoGaleria(s);
   } else {
     html += tplMundoLore(s);
   }
