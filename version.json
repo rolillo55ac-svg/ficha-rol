@@ -1,6 +1,6 @@
 {
-  "version": "1.4.76.0",
-  "build": "2026.10.17.8",
+  "version": "1.4.77.0",
+  "build": "2026.10.17.9",
   "updatedAt": "2026-10-17T18:00:00Z",
-  "changelog": "Las ventanas de Ajustes, buzón y demás crecen desde el botón que las abre y se encogen hacia él al cerrarse."
+  "changelog": "Al quitar una magia, arma, objeto, misión, pista, entrenamiento, mueble o estancia, la web pide confirmación y deja deshacer unos segundos."
 }

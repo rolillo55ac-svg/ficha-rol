@@ -963,17 +963,31 @@ function modalClick(e){
   if(action==="del-inventory-modal"){
     var c = activeChar();
     if(!c || !canEditChar(c)) return;
-    if(!confirm("¿Eliminar este objeto del inventario?")) return;
     var iid = btn.getAttribute("data-id");
-    c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;});
-    c._lastLocalEdit = Date.now();
-    markCharDirty(c.id, { inventory: c.inventory });
-    saveState(false);
-    closeModals();
-    renderTab();
-    if(typeof pushCharacterPatch === 'function'){
-      pushCharacterPatch(c.id, { inventory: c.inventory });
-    }
+    var itObj = (c.inventory || []).filter(function(i){return i.id===iid;})[0];
+    confirmarQuitar(itObj && itObj.name ? itObj.name : "este objeto").then(function(ok){
+      if(!ok) return;
+      var idx0 = (c.inventory || []).indexOf(itObj);
+      c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;});
+      c._lastLocalEdit = Date.now();
+      markCharDirty(c.id, { inventory: c.inventory });
+      saveState(false);
+      closeModals();
+      renderTab();
+      if(typeof pushCharacterPatch === 'function'){
+        pushCharacterPatch(c.id, { inventory: c.inventory });
+      }
+      if(itObj) avisoDeshacer("Quitado «" + (itObj.name || "objeto") + "»", function(){
+        if(c.inventory.some(function(i){return i.id===iid;})) return;
+        c.inventory = c.inventory.slice();
+        c.inventory.splice(Math.min(idx0, c.inventory.length), 0, itObj);
+        c._lastLocalEdit = Date.now();
+        markCharDirty(c.id, { inventory: c.inventory });
+        saveState(false);
+        renderTab();
+        if(typeof pushCharacterPatch === 'function') pushCharacterPatch(c.id, { inventory: c.inventory });
+      });
+    });
     return;
   }
 }

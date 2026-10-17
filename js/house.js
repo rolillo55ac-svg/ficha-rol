@@ -1676,13 +1676,12 @@ function quickAddRoomPreset(preset){
   if(typeof showToast === "function") showToast("Estancia '" + newRoom.name + "' creada.", "success");
 }
 
-function quickDeleteSelectedRoom(){
+async function quickDeleteSelectedRoom(){
   if(!houseState.selectedRoomId) return;
   var r = (houseState.rooms || []).find(function(x){ return x.id === houseState.selectedRoomId; });
   if(!r) return;
-  if(!confirm("¿Eliminar estancia '" + r.name + "' del plano?")) return;
 
-  deleteHouseRoomAction(r.id);
+  if(!(await deleteHouseRoomAction(r.id))) return;
   deselectKonvaRoom();
   renderKonvaRooms();
 }
@@ -5965,11 +5964,12 @@ async function confirmAddFurnitureItemAction(){
   if(typeof showToast === "function") showToast("Objeto guardado en " + fur.name + ".", "success");
 }
 
-function deleteFurnitureAction(roomId, furnitureId){
+async function deleteFurnitureAction(roomId, furnitureId){
   var r = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
   if(!r || !Array.isArray(r.furniture)) return;
 
-  if(!confirm("¿Quitar este mueble y su contenido de la habitación?")) return;
+  var fObj = r.furniture.find(function(f){ return f.id === furnitureId; });
+  if(!(await confirmarQuitar(fObj && fObj.name ? fObj.name : "este mueble", "Se quita también su contenido."))) return;
 
   r.furniture = r.furniture.filter(function(f){ return f.id !== furnitureId; });
   saveRoomChangesToRemoteAndBroadcast(r, "furniture");
@@ -6488,8 +6488,9 @@ async function confirmCreateUpgradeAction(){
 }
 
 async function deleteHouseRoomAction(roomId){
-  if(!roomId) return;
-  if(!confirm("¿Seguro que deseas eliminar esta habitación del plano de la casa?")) return;
+  if(!roomId) return false;
+  var rObj = (houseState.rooms || []).find(function(x){ return x.id === roomId; });
+  if(!(await confirmarQuitar(rObj && rObj.name ? rObj.name : "esta estancia", "Se quita del plano de la casa."))) return false;
 
   houseState.rooms = houseState.rooms.filter(function(x){ return x.id !== roomId; });
   if(houseState.selectedRoomId === roomId){
@@ -6504,6 +6505,7 @@ async function deleteHouseRoomAction(roomId){
       if(typeof showToast === "function") showToast("Habitación eliminada.", "info");
     } catch(e){}
   }
+  return true;
 }
 
 // ============================================================================
