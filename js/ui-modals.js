@@ -354,6 +354,12 @@ function openDataModal(screen){
         '</div>'+
         '<div class="storage-card-note" id="dbDetailText">Fichas, historia, galería, registro de entradas…</div>'+
       '</div>'+
+      (isAdmin() ?
+        '<div class="storage-card cloud">'+
+          '<div class="storage-card-head"><div class="storage-card-name"><span class="storage-card-icon">📊</span> Consumo de Supabase</div></div>'+
+          '<div class="storage-card-note">El tamaño de la base y las fotos se miden arriba. Los registros (logs), las descargas y las llamadas no se pueden medir desde la web: mira el panel de Supabase (Organización › Usage).</div>'+
+          '<a class="summon-roll-pill" href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener">Abrir el panel de Supabase</a>'+
+        '</div>' : '')+
     '</div>';
   }
 
