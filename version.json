@@ -1,6 +1,6 @@
 {
-  "version": "1.4.84.0",
-  "build": "2026.10.17.16",
-  "updatedAt": "2026-10-17T16:30:00Z",
-  "changelog": "Repaso: el admin ve ADMIN arriba; Catálogo de Armas en modo lectura (✏️ para editar) sin nombres cortados; ventanas que abren y cierran más rápido; Actividad más clara y con botón para borrar registros; Almacenamiento cuenta también la base de datos y la galería."
+  "version": "1.4.85.0",
+  "build": "2026.10.17.17",
+  "updatedAt": "2026-10-17T18:00:00Z",
+  "changelog": "Ajustes: el admin ve una tarjeta de consumo de Supabase con enlace al panel de uso. Sin cambios para jugadores."
 }
