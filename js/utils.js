@@ -91,6 +91,44 @@ function showToast(message, type){
   setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3300);
 }
 
+function confirmarQuitar(nombre, detalle){
+  return new Promise(function(resolve){
+    var ov = document.createElement("div");
+    ov.className = "modal-overlay";
+    ov.style.zIndex = "10002";
+    ov.innerHTML = '<div class="modal confirm-quitar" role="alertdialog" aria-modal="true">'+
+      '<h2><span>¿Quitar «'+esc(nombre || "esto")+'»?</span></h2>'+
+      (detalle ? '<p class="confirm-quitar-txt">'+esc(detalle)+'</p>' : '')+
+      '<div class="confirm-quitar-btns">'+
+        '<button type="button" class="btn-solid-gold confirm-quitar-btn" data-r="0">Cancelar</button>'+
+        '<button type="button" class="btn-compact confirm-quitar-btn confirm-quitar-del" data-r="1">Quitar</button>'+
+      '</div></div>';
+    function fin(v){ if(ov.parentNode) ov.parentNode.removeChild(ov); resolve(v); }
+    ov.addEventListener("click", function(e){
+      if(e.target === ov){ fin(false); return; }
+      var b = e.target.closest ? e.target.closest("[data-r]") : null;
+      if(b) fin(b.getAttribute("data-r") === "1");
+    });
+    document.body.appendChild(ov);
+    var def = ov.querySelector('[data-r="0"]');
+    if(def) def.focus();
+  });
+}
+
+function avisoDeshacer(texto, onUndo){
+  var old = document.getElementById("undoBar");
+  if(old && old.parentNode) old.parentNode.removeChild(old);
+  var bar = document.createElement("div");
+  bar.id = "undoBar";
+  bar.className = "undo-bar";
+  bar.setAttribute("role", "status");
+  bar.innerHTML = '<span class="undo-bar-txt">'+esc(texto)+'</span>'+
+    '<button type="button" class="btn-compact undo-bar-btn">Deshacer</button>';
+  function quitar(){ clearTimeout(t); if(bar.parentNode) bar.parentNode.removeChild(bar); }
+  var t = setTimeout(quitar, 6000);
+  bar.querySelector("button").addEventListener("click", function(){ quitar(); onUndo(); });
+  document.body.appendChild(bar);
+}
 
 function resizeImageFile(file, maxDim, quality, callback){
   var reader = new FileReader();

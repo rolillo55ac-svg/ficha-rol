@@ -1089,14 +1089,7 @@ function handleClick(e){
   if(action==="del-weapon"){
     if(!c || !canEditChar(c)) return;
     var wid = btn.getAttribute("data-id");
-    c.weapons = (c.weapons || []).filter(function(w){return w.id!==wid;});
-    c._lastLocalEdit = Date.now();
-    markCharDirty(c.id, { weapons: c.weapons });
-    saveState(false);
-    renderTab();
-    if(typeof pushCharacterPatch === 'function'){
-      pushCharacterPatch(c.id, { weapons: c.weapons });
-    }
+    quitarDeLista(c, "weapons", wid, "esta arma");
     return;
   }
   if(action==="add-armor"){
@@ -1116,14 +1109,7 @@ function handleClick(e){
   if(action==="del-armor"){
     if(!c || !canEditChar(c)) return;
     var aid = btn.getAttribute("data-id");
-    c.armors = (c.armors || []).filter(function(a){return a.id!==aid;});
-    c._lastLocalEdit = Date.now();
-    markCharDirty(c.id, { armors: c.armors });
-    saveState(false);
-    renderTab();
-    if(typeof pushCharacterPatch === 'function'){
-      pushCharacterPatch(c.id, { armors: c.armors });
-    }
+    quitarDeLista(c, "armors", aid, "esta armadura");
     return;
   }
   if(action==="filter-inventory-category"){
@@ -1164,14 +1150,7 @@ function handleClick(e){
   if(action==="del-inventory"){
     if(!c || !canEditChar(c)) return;
     var iid = btn.getAttribute("data-id");
-    c.inventory = (c.inventory || []).filter(function(i){return i.id!==iid;});
-    c._lastLocalEdit = Date.now();
-    markCharDirty(c.id, { inventory: c.inventory });
-    saveState(false);
-    renderTab();
-    if(typeof pushCharacterPatch === 'function'){
-      pushCharacterPatch(c.id, { inventory: c.inventory });
-    }
+    quitarDeLista(c, "inventory", iid, "este objeto");
     return;
   }
   if(action==="toggle-spell-edit"){
@@ -1207,14 +1186,7 @@ function handleClick(e){
   if(action==="del-spell"){
     if(!c || !canEditChar(c)) return;
     var spId = btn.getAttribute("data-id");
-    c.spells = (c.spells||[]).filter(function(s){return s.id!==spId;});
-    c._lastLocalEdit = Date.now();
-    markCharDirty(c.id, { spells: c.spells });
-    saveState(false);
-    renderTab();
-    if(typeof pushCharacterPatch === 'function'){
-      pushCharacterPatch(c.id, { spells: c.spells });
-    }
+    quitarDeLista(c, "spells", spId, "esta magia");
     return;
   }
   if(action==="cast-spell"){
@@ -2258,13 +2230,13 @@ function handleClick(e){
     var trId = btn.getAttribute("data-id");
     var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
     var name = tr ? tr.name : "este entrenamiento";
-    if(confirm("¿Eliminar \"" + name + "\"? Se perderá su historial de tiradas y progreso acumulado.")){
+    confirmarQuitar(name, "Se perderá su historial de tiradas y progreso acumulado.").then(function(ok){ if(ok){
       c.trainings = (c.trainings || []).filter(function(x){ return x.id !== trId; });
       c._lastLocalEdit = Date.now();
       markCharDirty(c.id);
       saveState(false);
       renderTab();
-    }
+    }});
     return;
   }
   if(action==="set-training-category"){
@@ -3144,7 +3116,8 @@ function handleClick(e){
   if(action==="del-quest"){
     if(!isGM() && currentUser) return;
     var qid = btn.getAttribute("data-id");
-    if(confirm("¿Eliminar esta misión y todas sus tareas asociadas?")){
+    var qObjD = (state.quests||[]).filter(function(q){ return q.id === qid; })[0];
+    confirmarQuitar(qObjD && qObjD.title ? qObjD.title : "esta misión", "Se quitan también todas sus tareas.").then(function(ok){ if(ok){
       state.quests = (state.quests||[]).filter(function(q){ return q.id !== qid; });
       state._deletedSeedQuests = state._deletedSeedQuests || [];
       if(qid && state._deletedSeedQuests.indexOf(qid) === -1){
@@ -3159,7 +3132,7 @@ function handleClick(e){
       pushSharedData({ quests: state.quests, _deletedSeedQuests: state._deletedSeedQuests });
       renderTab();
       showToast("Misión eliminada", "info");
-    }
+    }});
     return;
   }
   if(action==="add-quest-task"){
@@ -3448,7 +3421,8 @@ function handleClick(e){
   if(action==="del-clue"){
     if(!isGM() && currentUser) return;
     var clId = btn.getAttribute("data-id");
-    if(confirm("¿Eliminar esta pista?")){
+    var clObjD = (state.questClues||[]).filter(function(q){ return q.id === clId; })[0];
+    confirmarQuitar(clObjD && (clObjD.title || clObjD.name) ? (clObjD.title || clObjD.name) : "esta pista").then(function(ok){ if(ok){
       state.questClues = (state.questClues||[]).filter(function(c){ return c.id !== clId; });
       state._deletedSeedClues = state._deletedSeedClues || [];
       if(clId && state._deletedSeedClues.indexOf(clId) === -1){
@@ -3463,7 +3437,7 @@ function handleClick(e){
       pushSharedData({ questClues: state.questClues, _deletedSeedClues: state._deletedSeedClues });
       renderTab();
       showToast("Pista eliminada", "info");
-    }
+    }});
     return;
   }
   if(action==="upload-clue-img"){
@@ -3721,3 +3695,38 @@ var pendingNewMapName = null;
 var pendingQuestCardId = null;
 var pendingClueId = null;
 var pendingSummonId = null;
+
+function quitarDeLista(c, key, id, etiqueta){
+  var lista = c[key] || [];
+  var idx = -1;
+  for(var i = 0; i < lista.length; i++){ if(lista[i].id === id){ idx = i; break; } }
+  if(idx < 0) return;
+  var item = lista[idx];
+  var nombre = item.name || etiqueta;
+  confirmarQuitar(nombre).then(function(ok){
+    if(!ok) return;
+    var ahora = c[key] || [];
+    c[key] = ahora.filter(function(x){ return x.id !== id; });
+    guardarListaPersonaje(c, key);
+    avisoDeshacer("Quitada «" + nombre + "»", function(){
+      var cur = c[key] || [];
+      if(cur.some(function(x){ return x.id === id; })) return;
+      var copia = cur.slice();
+      copia.splice(Math.min(idx, copia.length), 0, item);
+      c[key] = copia;
+      guardarListaPersonaje(c, key);
+    });
+  });
+}
+
+function guardarListaPersonaje(c, key){
+  var patch = {};
+  patch[key] = c[key];
+  c._lastLocalEdit = Date.now();
+  markCharDirty(c.id, patch);
+  saveState(false);
+  renderTab();
+  if(typeof pushCharacterPatch === 'function'){
+    pushCharacterPatch(c.id, patch);
+  }
+}

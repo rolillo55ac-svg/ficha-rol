@@ -11214,3 +11214,13 @@ html.juice-off .modal-overlay.juice-menu-out > .modal{animation:none;}
   .modal-overlay.juice-menu-out,
   .modal-overlay.juice-menu-out > .modal{animation:none;}
 }
+
+/* Confirmar antes de quitar + aviso de deshacer */
+.confirm-quitar{max-width:340px;}
+.confirm-quitar-txt{font-size:.88rem;color:var(--ink-dim);line-height:1.5;margin:0 0 14px;}
+.confirm-quitar-btns{display:flex;gap:10px;}
+.confirm-quitar-btn{flex:1;min-height:48px;font-size:.9rem;}
+.confirm-quitar-del{border-color:rgba(239,68,68,0.5);color:#F87171;}
+.undo-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:10003;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 24px);padding:8px 8px 8px 14px;background:linear-gradient(165deg, var(--bg-elev), var(--bg-card));border:1.5px solid var(--line-strong);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.7);color:var(--ink);font-size:.88rem;}
+.undo-bar-txt{min-width:0;overflow-wrap:anywhere;}
+.undo-bar-btn{min-height:44px;min-width:44px;flex:none;}
