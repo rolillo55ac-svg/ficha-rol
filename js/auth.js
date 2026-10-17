@@ -23,6 +23,21 @@ function clearAuthAttempts(){
 }
 
 
+// Cuentas por nombre de usuario: "martu" entra por dentro como martu@jugadores.krysalis.invalid (dominio que
+// no puede existir). Con @ es un correo de siempre. Igual que USUARIO_DOMINIO en la función admin-usuarios.
+var USUARIO_DOMINIO = "jugadores.krysalis.invalid";
+function usuarioAEmail(txt){
+  txt = (txt || "").trim();
+  if(!txt || txt.indexOf("@") !== -1) return txt;
+  return txt.toLowerCase() + "@" + USUARIO_DOMINIO;
+}
+// Lo que se enseña de una cuenta: el usuario si es de las nuevas, el correo si no
+function nombreDeCuenta(email){
+  email = email || "";
+  var suf = "@" + USUARIO_DOMINIO;
+  return email.slice(-suf.length).toLowerCase() === suf ? email.slice(0, -suf.length) : email;
+}
+
 // Usuario cuyo rol se leyó de profiles (evita usar el rol de otra cuenta que entró antes en este navegador)
 var currentRoleUserId = null;
 
@@ -158,7 +173,7 @@ async function supabaseLogin(em, pw){
     if(remainingAttempts <= 0){
       showToast("Has fallado 5 veces seguidas. Espera 15 minutos para volver a probar.", "error");
     } else {
-      var msg = res.error.message.includes("Invalid login") ? "Contraseña o email incorrectos" : res.error.message;
+      var msg = res.error.message.includes("Invalid login") ? "Usuario o contraseña incorrectos" : res.error.message;
       showToast(msg + " (te quedan " + remainingAttempts + " intentos)", "error");
     }
   } else {
@@ -182,9 +197,9 @@ function handleLoginGateSubmit(e){
   // Sin registro público: las cuentas las crea el admin
   if(e.type === "click") return;
   e.preventDefault();
-  var em = (document.getElementById("gateEmail").value || "").trim();
+  var em = usuarioAEmail(document.getElementById("gateEmail").value);
   var pw = document.getElementById("gatePass").value || "";
-  if(!em || !pw){ showToast("Escribe tu email y tu contraseña", "warning"); return; }
+  if(!em || !pw){ showToast("Escribe tu usuario y tu contraseña", "warning"); return; }
   if(!supabaseClient){ showToast("Sin conexión: no se puede entrar ahora", "error"); return; }
   supabaseLogin(em, pw);
 }

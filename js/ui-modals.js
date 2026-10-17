@@ -208,13 +208,15 @@ function settingsScreenTitle(screen){
   return {
     version: "Versión", storage: "Almacenamiento", backup: "Copia de seguridad", help: "Ayuda y sugerencias",
     cloud: "Copia en la nube", broadcast: "Avisar para que actualicen",
-    donate: "Apoya el proyecto", partida: "Partida"
+    donate: "Apoya el proyecto", partida: "Partida",
+    password: "Mi contraseña", jugadores: "Jugadores", "cuenta-nueva": "Nueva cuenta"
   }[screen] || "Ajustes";
 }
 
 function openDataModal(screen){
   screen = (typeof screen === "string") ? screen : "main";
-  if((screen === "cloud" || screen === "broadcast") && !isAdmin()) screen = "main";
+  if((screen === "cloud" || screen === "broadcast" || screen === "jugadores" || screen === "cuenta-nueva") && !isAdmin()) screen = "main";
+  if(screen === "password" && !currentUser) screen = "main";
   if(screen === "donate" && !DONATE_PAYPAL_ME) screen = "main";
   settingsScreen = screen;
   var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.7");
@@ -228,7 +230,7 @@ function openDataModal(screen){
     var gm = isGM();
     html += '<div class="settings-profile">'+
       '<div class="settings-avatar">'+esc((email || "?").charAt(0).toUpperCase())+'</div>'+
-      '<div class="settings-profile-info"><div class="settings-profile-mail">'+esc(email || "Sin sesión")+'</div>'+
+      '<div class="settings-profile-info"><div class="settings-profile-mail">'+esc(nombreDeCuenta(email) || "Sin sesión")+'</div>'+
       '<span class="settings-chip'+(gm ? ' gm' : '')+'">'+(isAdmin() ? 'Admin' : (gm ? 'Máster' : 'Jugador'))+'</span></div>'+
     '</div>';
     if(PARTIDAS.length > 1){
@@ -274,9 +276,11 @@ function openDataModal(screen){
       html += '<div class="settings-group-title">Admin</div><div class="settings-list">'+
         settingsRow("settings-go", "cloud", "☁️", "Copia en la nube", settingsLastBackupText())+
         settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
+        settingsRow("settings-go", "jugadores", "👥", "Jugadores", "Crear cuentas, contraseñas y roles")+
       '</div>';
     }
     html += '<div class="settings-list settings-logout">'+
+      (currentUser ? settingsRow("settings-go", "password", "🔑", "Mi contraseña", "Cambiarla") : '')+
       settingsRow("auth-logout", "", "🚪", "Cerrar sesión", "", "", "settings-row-danger")+
     '</div>';
     html += '<div class="settings-foot">Rol Krysalis · v'+esc(curVerStr)+'</div>';
@@ -404,6 +408,10 @@ function openDataModal(screen){
     '</div>';
   }
 
+  else if(screen === "password" || screen === "jugadores" || screen === "cuenta-nueva"){
+    html += cuentasScreenHtml(screen);
+  }
+
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 
@@ -411,6 +419,7 @@ function openDataModal(screen){
     if(settingsScreen === "storage") updateStorageStatsUI(false);
     if(settingsScreen === "version" && typeof checkForAppUpdates === "function") checkForAppUpdates(false);
     if(settingsScreen === "main") settingsCheckVersionLabel();
+    if(settingsScreen === "jugadores") cargarCuentas();
   }, 50);
 }
 
@@ -633,6 +642,7 @@ function modalClick(e){
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
   if(action==="settings-go"){ openDataModal(btn.getAttribute("data-screen")); return; }
+  if(action.indexOf("cuenta-") === 0){ cuentaAccion(action, btn); return; }
   if(action==="partida-pick"){ cambiarPartida(btn.getAttribute("data-partida")); return; }
   if(action==="toggle-sound"){
     setSoundEnabled(!soundEnabled());
