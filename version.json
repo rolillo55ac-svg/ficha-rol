@@ -1,6 +1,6 @@
 {
-  "version": "1.4.79.0",
-  "build": "2026.10.17.11",
-  "updatedAt": "2026-10-17T22:00:00Z",
-  "changelog": "Las listas largas (armas, estados) se eligen en una hoja con buscador; el Compendio se lee y se edita con el lápiz; se quitan los historiales sueltos de Habilidades y Combate."
+  "version": "1.4.80.0",
+  "build": "2026.10.17.12",
+  "updatedAt": "2026-10-17T23:00:00Z",
+  "changelog": "Seguridad: rol admin separado del máster, ya no se pueden crear cuentas desde la web, sin sesión no se ve nada, textos con código se muestran como texto y protección extra del navegador."
 }
