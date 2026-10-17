@@ -31,13 +31,22 @@ function isGM(){
   if(!currentUser) return true;
   // Con sesión: solo vale el rol leído de profiles para ESTE usuario al iniciar sesión
   if(currentRoleUserId !== currentUser.id) return false;
+  if(currentIsAdmin) return true;
   var r = (currentRole || '').toLowerCase();
   return r === 'gm' || r === 'master';
+}
+
+// Admin: lo de máster y además cuentas, accesos y copias (la base lo comprueba con es_admin())
+function isAdmin(){
+  if(!currentUser) return false;
+  if(currentRoleUserId !== currentUser.id) return false;
+  return currentIsAdmin === true;
 }
 
 // Borra cualquier rol o pertenencia heredada de otra sesión (state se guarda entero en localStorage)
 function resetSessionRole(){
   currentRole = 'player';
+  currentIsAdmin = false;
   currentRoleUserId = null;
   if(state){
     delete state.campaignRole;
@@ -110,9 +119,11 @@ async function fetchUserProfile(){
     if(currentRoleUserId !== userId) resetSessionRole();
 
     // El rol solo se lee de profiles (lo cambia el máster en Supabase; los jugadores no pueden escribirlo)
-    var res = await supabaseClient.from('profiles').select('role').eq('id', userId).maybeSingle();
+    // '*' y no 'role, is_admin': en una base sin la 037 la columna is_admin aún no existe
+    var res = await supabaseClient.from('profiles').select('*').eq('id', userId).maybeSingle();
     if(!currentUser || currentUser.id !== userId) return;
     currentRole = (res.data && res.data.role) ? res.data.role : 'player';
+    currentIsAdmin = !!(res.data && res.data.is_admin === true);
     currentRoleUserId = userId;
 
     pullAllFromSupabase();
@@ -156,10 +167,6 @@ async function supabaseLogin(em, pw){
     showToast("¡Sesión iniciada!", "success");
   }
 }
-async function supabaseSignup(em, pw){
-  var res = await supabaseClient.auth.signUp({email:em, password:pw});
-  if(res.error) showToast(res.error.message, "error"); else showToast("Registro completado. Ya puedes entrar.", "success");
-}
 async function supabaseLogout(){
   try {
     await supabaseClient.auth.signOut();
@@ -172,12 +179,12 @@ async function supabaseLogout(){
 
 // Pantalla de entrada (sin sesión no se ve nada más)
 function handleLoginGateSubmit(e){
-  var signup = e.type === "click" && e.target.closest && e.target.closest("[data-gate=signup]");
-  if(e.type === "click" && !signup) return;
+  // Sin registro público: las cuentas las crea el admin
+  if(e.type === "click") return;
   e.preventDefault();
   var em = (document.getElementById("gateEmail").value || "").trim();
   var pw = document.getElementById("gatePass").value || "";
   if(!em || !pw){ showToast("Escribe tu email y tu contraseña", "warning"); return; }
   if(!supabaseClient){ showToast("Sin conexión: no se puede entrar ahora", "error"); return; }
-  if(signup) supabaseSignup(em, pw); else supabaseLogin(em, pw);
+  supabaseLogin(em, pw);
 }

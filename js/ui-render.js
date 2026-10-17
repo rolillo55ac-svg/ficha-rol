@@ -8,7 +8,7 @@ function renderTopbar(){
   var isHpDebuffed = maxHp < rawMaxHp;
   var hpPct = curPv <= 0 ? 0 : clamp(Math.round((curPv/maxHp)*100), 0, 100);
   var manaPct = clamp(Math.round((num(c.combat.manaActual,0)/maxMana)*100), 0, 100);
-  var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
+  var crestStyle = safeUrl(c.portrait) ? ' style="background-image:url(\''+esc(safeUrl(c.portrait))+'\')"' : '';
   var isNPC = !!c.isNPC;
   var crestClass = isNPC ? 'char-crest npc' : 'char-crest';
   var nameClass = isNPC ? 'char-name npc-name' : 'char-name';
@@ -204,7 +204,7 @@ function tplLapidario(c){
 }
 
 function tplFicha(c){
-  var pStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
+  var pStyle = safeUrl(c.portrait) ? ' style="background-image:url(\''+esc(safeUrl(c.portrait))+'\')"' : '';
   var attrCards = ATTRS.map(function(a){
     if(c.isNPC){
       return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label>'+
@@ -241,7 +241,7 @@ function tplFicha(c){
   var soundHtml = '';
 
   if(hasSound){
-    var sIcon = sound.icon || "🦇";
+    var sIcon = esc(sound.icon || "🦇");
     var sName = sound.name || "Sonido";
     soundHtml = '<div class="char-sound-widget" title="Efecto de sonido característico">'+
       '<button class="char-sound-play-btn" data-action="play-char-sound" data-id="' + esc(c.id) + '" aria-label="Reproducir ' + esc(sName) + '" title="Reproducir: ' + esc(sName) + '">'+
@@ -953,7 +953,7 @@ function tplCombate(c){
   (c.weapons||[]).forEach(function(w){
     var selectedCatItem = catalog.find(function(catItem){ return catItem.name === w.name || catItem.id === w.catalogId; });
     var isBlocked = selectedCatItem ? (selectedCatItem.visible === false) : false;
-    var infoText = selectedCatItem ? ('Daño: ' + selectedCatItem.dano + ' | Alcance: ' + selectedCatItem.alcance) : 'Selecciona un arma del compendio';
+    var infoText = selectedCatItem ? ('Daño: ' + esc(selectedCatItem.dano) + ' | Alcance: ' + esc(selectedCatItem.alcance)) : 'Selecciona un arma del compendio';
     if(isBlocked){
       infoText += ' | <span style="color:#F87171;font-weight:700;">[🔒 Bloqueada por el Máster - No usable]</span>';
     }
@@ -1385,7 +1385,7 @@ function renderLapidaryWorkshop(c, canEdit){
   } else {
     polishedStones.forEach(function(st){
       var fam = (typeof getStoneFamily === "function") ? getStoneFamily(st.color) : { name: st.color, icon: "💎", hex: "#DEC392", gema: "Piedra Mágica Pulida" };
-      var qId = (st.calidad || "buena").toLowerCase();
+      var qId = String(st.calidad || "buena").toLowerCase().replace(/[^a-z0-9áéíóúüñ_-]/g, "");
       var qInfo = (typeof getStoneQuality === "function") ? getStoneQuality(qId) : { label: qId.toUpperCase(), color: "#60A5FA" };
 
       // Progresión de descubrimiento (1: sin_descubrir, 2: teorizado, 3: confirmado)
@@ -1806,7 +1806,7 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
   var cat = findAlchemyCatalogItem(p);
   var typeIcon = p.type === 'Poción' ? '✨' : (p.type === 'Ungüento' ? '🌿' : '🧪');
   var rarity = p.rarity || (cat ? cat.rarity : 'Común');
-  var rClass = 'alq-r-' + rarity.toLowerCase().replace(/\s+/g, '');
+  var rClass = 'alq-r-' + String(rarity).toLowerCase().replace(/[^a-z0-9áéíóúüñ_-]/g, '');
   var terrain = (cat ? cat.terrain : (p.terrain || 'Bosque'));
   var rawMat = (cat ? cat.rawMaterial : (p.rawMaterial || ''));
   var loreTitle = cat ? cat.loreRefTitle : null;
@@ -2023,7 +2023,7 @@ function tplAlquimiaTaller(c, canEdit){
 
 function getItemIcon(it){
   if(!it) return "📦";
-  if(it.icon) return it.icon;
+  if(it.icon) return esc(it.icon);
   var name = (it.name || "").toLowerCase().trim();
   var cat = (it.category || "").toLowerCase().trim();
 
@@ -2402,7 +2402,7 @@ function tplInvocaciones(c){
   html += '<div class="summon-tabs" role="tablist">';
   c.summons.forEach(function(s){
     var isAct = active && (s.id === active.id);
-    var miniStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
+    var miniStyle = s.image ? (' style="background-image:url(\'' + esc(safeUrl(s.image)) + '\');"') : '';
     html += '<button type="button" class="summon-tab" role="tab" aria-selected="' + (isAct ? 'true' : 'false') + '" data-action="select-summon" data-id="' + s.id + '">';
     html += '<span class="summon-tab-mini"' + miniStyle + '>' + (s.image ? '' : '🐾') + '</span>';
     html += '<span class="summon-tab-name">' + esc(s.name || 'Sin nombre') + '</span>';
@@ -2419,7 +2419,7 @@ function tplInvocaciones(c){
   }
 
   var s = active;
-  var imgStyle = s.image ? (' style="background-image:url(\'' + esc(s.image) + '\');"') : '';
+  var imgStyle = s.image ? (' style="background-image:url(\'' + esc(safeUrl(s.image)) + '\');"') : '';
 
   html += '<div class="creature-card summon-card" data-juice-card="s' + s.id + '">';
 
@@ -2862,9 +2862,9 @@ function tplMundoLore(s){
   });
 
   items.forEach(function(it){
-    var rName = it.rarity || "Común";
-    var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
-    var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
+    var rName = esc(it.rarity || "Común");
+    var rClass = "rarity-" + String(it.rarity || "Común").toLowerCase().replace(/[^a-z0-9áéíóúüñ_-]/g,"");
+    var bClass = "badge-" + String(it.rarity || "Común").toLowerCase().replace(/[^a-z0-9áéíóúüñ_-]/g,"");
     var editing = canEdit && !!(state._loreEdit && state._loreEdit[it.id]);
 
     html += '<div class="item-card '+rClass+'">'+

@@ -138,7 +138,7 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
   var curKind = parsed.kind || pin.kind || "Punto de Interés";
   var curTypeDef = getMarkerTypeDef(curKind);
   var curIcon = parsed.icon || pin.icon || curTypeDef.icon || "📍";
-  var curColor = parsed.color || pin.color || curTypeDef.color || "#2A9D8F";
+  var curColor = safeColor(parsed.color || pin.color || curTypeDef.color, "#2A9D8F");
   var cleanNotes = parsed.notes;
 
   var typeButtonsHtml = MAP_MARKER_TYPES.map(function(t){
@@ -178,7 +178,7 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
       '<div class="pin-preview-stage">' +
         '<div class="map-pin pin-type-' + curTypeDef.id + ' is-preview">' +
           '<div class="pin-balloon" id="pinPreviewBalloon" style="background-color:' + curColor + ';box-shadow:0 0 14px ' + curColor + '88;">' +
-            '<div class="pin-icon" id="pinPreviewIcon">' + curIcon + '</div>' +
+            '<div class="pin-icon" id="pinPreviewIcon">' + esc(curIcon) + '</div>' +
           '</div>' +
           '<div class="pin-tag" id="pinPreviewTag">' + esc(pin.name || 'Nuevo Punto') + '</div>' +
         '</div>' +

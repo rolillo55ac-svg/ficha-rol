@@ -113,12 +113,12 @@ function openCharModal(){
   var chars = getUserCharacters();
   var html = '<h2>Selección de Personaje<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   chars.forEach(function(c){
-    var cTheme = c.theme || "default";
+    var cTheme = esc(c.theme || "default");
     var swatches = THEME_LIST.map(function(t){
       var isAct = cTheme === t.id;
       return '<button type="button" class="swatch swatch-'+t.id+(isAct?' active':'')+'" data-action="set-theme" data-id="'+c.id+'" data-theme="'+t.id+'" title="Color '+t.label+'" aria-label="Color '+t.label+'"></button>';
     }).join('');
-    var crestStyle = c.portrait ? ' style="background-image:url(\''+c.portrait+'\')"' : '';
+    var crestStyle = safeUrl(c.portrait) ? ' style="background-image:url(\''+esc(safeUrl(c.portrait))+'\')"' : '';
     var isNPC = !!c.isNPC;
     var canDelete = isGM() || (!currentUser && !c.isNPC);
 
@@ -214,7 +214,7 @@ function settingsScreenTitle(screen){
 
 function openDataModal(screen){
   screen = (typeof screen === "string") ? screen : "main";
-  if((screen === "cloud" || screen === "broadcast") && !isGM()) screen = "main";
+  if((screen === "cloud" || screen === "broadcast") && !isAdmin()) screen = "main";
   if(screen === "donate" && !DONATE_PAYPAL_ME) screen = "main";
   settingsScreen = screen;
   var curVerStr = (typeof APP_VERSION !== "undefined" ? APP_VERSION : "1.2.7");
@@ -229,7 +229,7 @@ function openDataModal(screen){
     html += '<div class="settings-profile">'+
       '<div class="settings-avatar">'+esc((email || "?").charAt(0).toUpperCase())+'</div>'+
       '<div class="settings-profile-info"><div class="settings-profile-mail">'+esc(email || "Sin sesión")+'</div>'+
-      '<span class="settings-chip'+(gm ? ' gm' : '')+'">'+(gm ? 'Máster' : 'Jugador')+'</span></div>'+
+      '<span class="settings-chip'+(gm ? ' gm' : '')+'">'+(isAdmin() ? 'Admin' : (gm ? 'Máster' : 'Jugador'))+'</span></div>'+
     '</div>';
     if(PARTIDAS.length > 1){
       html += '<div class="settings-list">'+
@@ -269,8 +269,9 @@ function openDataModal(screen){
       settingsRow("settings-go", "backup", "📥", "Copia de seguridad", "Descargar mis datos")+
       settingsRow("settings-go", "help", "📬", "Ayuda y sugerencias", "")+
     '</div>';
-    if(gm){
-      html += '<div class="settings-group-title">Máster</div><div class="settings-list">'+
+    // Mantenimiento y seguridad: solo el admin (el máster lleva la partida, no la base)
+    if(isAdmin()){
+      html += '<div class="settings-group-title">Admin</div><div class="settings-list">'+
         settingsRow("settings-go", "cloud", "☁️", "Copia en la nube", settingsLastBackupText())+
         settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
       '</div>';
@@ -1341,6 +1342,30 @@ function getMasterDiscordWebhook(){
   }
 }
 
+// Avisos a Discord: primero por la función discord-notify (el webhook es secreto del servidor).
+// Si la función aún no está desplegada (404 o sin conexión), se usa el webhook de siempre.
+async function postDiscord(payload){
+  if(typeof supabaseClient !== "undefined" && supabaseClient && currentUser && supabaseClient.functions){
+    try{
+      var fr = await supabaseClient.functions.invoke("discord-notify", { body: { payload: payload } });
+      if(!fr.error) return { success: true };
+      var st = fr.error.context && fr.error.context.status;
+      if(st && st !== 404) return { success: false, error: fr.error.message };
+    }catch(e){}
+  }
+  var webhookUrl = getMasterDiscordWebhook();
+  if(!webhookUrl) return { success: false, reason: "no_webhook" };
+  var res = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if(res.ok || res.status === 204) return { success: true };
+  var errText = await res.text();
+  console.warn("Error en Discord Webhook:", res.status, errText);
+  return { success: false, error: errText };
+}
+
 function setMasterDiscordWebhook(url){
   try {
     localStorage.setItem("krysalis_discord_webhook", (url || "").trim());
@@ -1921,11 +1946,6 @@ function generateAiTriageAnalysis(report){
 }
 
 async function sendDiscordWebhookReport(report){
-  var webhookUrl = getMasterDiscordWebhook();
-  if(!webhookUrl){
-    console.log("Discord Webhook no configurado.");
-    return { success: false, reason: "no_webhook" };
-  }
 
   var triage = report.aiTriage || {};
   var c = report.character;
@@ -2006,19 +2026,7 @@ async function sendDiscordWebhookReport(report){
   };
 
   try {
-    var res = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if(res.ok || res.status === 204){
-      return { success: true };
-    } else {
-      var errText = await res.text();
-      console.warn("Error en Discord Webhook:", res.status, errText);
-      return { success: false, error: errText };
-    }
+    return await postDiscord(payload);
   } catch(err){
     console.error("Fallo al conectar con Discord Webhook:", err);
     return { success: false, error: err.message };
@@ -2026,8 +2034,6 @@ async function sendDiscordWebhookReport(report){
 }
 
 async function sendDiscordWebhookReply(ticket, replyText){
-  var webhookUrl = getMasterDiscordWebhook();
-  if(!webhookUrl) return;
   var ticketTag = ticket.ticketCode ? ("#" + ticket.ticketCode) : ("#" + (ticket.id ? ticket.id.slice(-4).toUpperCase() : "TK"));
   var payload = {
     username: "Krysalis • Panel de Administración",
@@ -2044,11 +2050,7 @@ async function sendDiscordWebhookReply(ticket, replyText){
     }]
   };
   try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    await postDiscord(payload);
   } catch(e){}
 }
 

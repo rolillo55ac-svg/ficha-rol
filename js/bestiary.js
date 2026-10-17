@@ -38,10 +38,10 @@ function tplBestiario(s){
     '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills">'+mountPills+'</div></div>';
 
   visibleBestiary.forEach(function(b){
-    var imgStyle = b.image ? ' style="background-image:url(\''+b.image+'\')"' : '';
-    var rName = b.rarity || "Común";
-    var rClass = "rarity-" + rName.toLowerCase().replace(/\s+/g,"");
-    var bClass = "badge-" + rName.toLowerCase().replace(/\s+/g,"");
+    var imgStyle = safeUrl(b.image) ? ' style="background-image:url(\''+esc(safeUrl(b.image))+'\')"' : '';
+    var rName = esc(b.rarity || "Común");
+    var rClass = "rarity-" + String(b.rarity || "Común").toLowerCase().replace(/[^a-z0-9áéíóúüñ]/g,"");
+    var bClass = "badge-" + String(b.rarity || "Común").toLowerCase().replace(/[^a-z0-9áéíóúüñ]/g,"");
 
     html += '<div class="creature-card '+rClass+'">'+
       '<div class="creature-card-header">'+
@@ -85,10 +85,10 @@ function tplBestiario(s){
                 '<span class="beast-mov-chevron">▾</span>'+
               '</button>'+
             '</div>'+
-            (canEdit ? creatureFieldGlobal("Doma (Dif.)","bestiary."+b.id+".doma",b.doma||"3") : '<div class="creature-field"><label>Doma (Dif.)</label><span style="font-size:.8rem;color:var(--gold-light);font-weight:700;">🎯 Dif. '+(b.doma||"-")+'</span></div>')+
+            (canEdit ? creatureFieldGlobal("Doma (Dif.)","bestiary."+b.id+".doma",b.doma||"3") : '<div class="creature-field"><label>Doma (Dif.)</label><span style="font-size:.8rem;color:var(--gold-light);font-weight:700;">🎯 Dif. '+esc(b.doma||"-")+'</span></div>')+
           '</div>'+
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px;flex-wrap:wrap;">'+
-            '<button class="tame-btn" data-action="roll-tame" data-name="'+esc(b.nombre)+'" data-diff="'+(b.doma||"3")+'" title="Realizar tirada de doma con d10">🎲 Tirada de Doma (Dif. '+(b.doma||"3")+')</button>'+
+            '<button class="tame-btn" data-action="roll-tame" data-name="'+esc(b.nombre)+'" data-diff="'+esc(b.doma||"3")+'" title="Realizar tirada de doma con d10">🎲 Tirada de Doma (Dif. '+esc(b.doma||"3")+')</button>'+
           '</div>'+
           '<div class="creature-field" style="margin-top:6px;"><label>Habilidades y Rasgos</label>'+
             (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.habilidades">'+esc(b.habilidades||b.notas||"")+'</textarea>' : (b.habilidades||b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.habilidades||b.notas)+'</p>':''))+

@@ -514,6 +514,7 @@ var HOUSE_COLOR_PALETTES = [
 ];
 
 function getRoomCustomBackground(hex){
+  hex = safeColor(hex);
   if(!hex) return "";
   return "linear-gradient(135deg, " + hex + "FA, " + hex + "D8)";
 }
@@ -1835,7 +1836,7 @@ function toggleFloorPopover(btn){
         b.className = "house-tool-btn";
         b.style.width = "100%";
         b.style.justifyContent = "flex-start";
-        b.innerHTML = "🏢 <b>" + fl.name + "</b> (" + (fl.sub || "") + ")";
+        b.innerHTML = "🏢 <b>" + esc(fl.name) + "</b> (" + esc(fl.sub || "") + ")";
         b.addEventListener("click", function(){
           selR.floor = fl.id;
           saveRoomChangesToRemoteAndBroadcast(selR, "floor");
@@ -5382,7 +5383,7 @@ function renderHouseGridRooms(floorNumber){
       : '';
 
     var wallClasses = getRoomWallClasses(r, rooms);
-    var textureClass = "tex-" + (r.room_type || "salon");
+    var textureClass = "tex-" + esc(r.room_type || "salon");
     var customBgStyle = r.color ? ('background: ' + getRoomCustomBackground(r.color) + ' !important;') : '';
 
     var resizeHandleHtml = '';
@@ -5532,7 +5533,7 @@ function renderRoomPanel(roomId){
   var html = '<div class="house-room-sheet" id="houseRoomInspector">';
   html += '  <div class="house-sheet-handle"></div>';
   html += '  <div class="house-sheet-head">';
-  html += '    <span class="house-sheet-icon">' + (r.icon || getRoomTypeIcon(r.room_type) || '') + '</span>';
+  html += '    <span class="house-sheet-icon">' + esc(r.icon || getRoomTypeIcon(r.room_type) || '') + '</span>';
   html += '    <h3 class="house-sheet-title">' + esc(r.name || "Estancia") + '</h3>';
   html += '    <button class="house-sheet-close" data-action="close-room-inspector" title="Cerrar" aria-label="Cerrar">&times;</button>';
   html += '  </div>';
@@ -5779,7 +5780,7 @@ function renderHouseEventsSection(){
   } else {
     html += '  <div class="house-events-list">';
     events.slice(0, 15).forEach(function(ev){
-      var evClass = ev.event_type || "default";
+      var evClass = esc(ev.event_type || "default");
       var msg = (ev.payload && ev.payload.message) ? ev.payload.message : "Evento registrado";
       var timeStr = "";
       try {
@@ -6113,7 +6114,7 @@ function openEditRoomModal(roomId){
     var isSel = (r.color === p.hex || (!r.color && !p.hex));
     html += '<button type="button" class="house-color-chip' + (isSel ? ' is-active' : '') + '" style="background:' + (p.hex || '#1a1816') + ';" data-action="modal-select-color" data-color="' + p.hex + '" title="' + p.name + ' - ' + p.desc + '"></button>';
   });
-  html += '      <input type="color" id="editRoomCustomColor" value="' + (r.color || '#2a1e16') + '" data-action="modal-custom-color" title="Color personalizado">';
+  html += '      <input type="color" id="editRoomCustomColor" value="' + esc(safeColor(r.color, '#2a1e16')) + '" data-action="modal-custom-color" title="Color personalizado">';
   html += '    </div>' +
     '    <input type="hidden" id="editRoomColorValue" value="' + esc(r.color || '') + '">' +
     '  </div>';

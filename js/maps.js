@@ -58,17 +58,17 @@ function tplMundoMapas(s){
 
   if(curMap.image){
     html += '<div class="map-viewer" data-action="map-click">'+
-      '<img src="'+curMap.image+'" alt="Mapa">'+
+      '<img src="'+esc(safeUrl(curMap.image))+'" alt="Mapa">'+
       (curMap.markers||[]).map(function(m){
         var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(m.kind) : { id: "poi", name: "Punto de Interés", icon: "📍", color: "#2A9D8F" };
         var icon = m.icon || tDef.icon || "📍";
-        var pinColor = m.color || tDef.color || "#2A9D8F";
+        var pinColor = safeColor(m.color || tDef.color, "#2A9D8F");
         var isHidden = filterState.hideAll || (filterState.hiddenTypes && filterState.hiddenTypes[tDef.id]);
         if(isHidden) return '';
 
-        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + m.x + '%;top:' + m.y + '%;" data-action="edit-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
+        return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + num(m.x) + '%;top:' + num(m.y) + '%;" data-action="edit-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
           '<div class="pin-balloon" style="background-color:' + pinColor + ';box-shadow:0 0 10px ' + pinColor + '88;">' +
-            '<div class="pin-icon">' + icon + '</div>' +
+            '<div class="pin-icon">' + esc(icon) + '</div>' +
           '</div>' +
           '<div class="pin-tag">' + esc(m.name) + '</div>' +
         '</div>';

@@ -75,7 +75,21 @@ var STONE_QUALITIES = [
 ];
 
 function uid(){ return "id" + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4); }
-function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function esc(s){ return s===undefined||s===null?"":String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+// Enlaces de imagen o sonido escritos por usuarios: solo https/http, data:image, blob: o rutas de la web.
+// Comillas, paréntesis y espacios se codifican para que tampoco rompan un url('...') de CSS.
+function safeUrl(u){
+  if(u===undefined||u===null) return "";
+  u = String(u).trim();
+  if(!u) return "";
+  if(!/^(https?:\/\/|data:image\/|blob:)/i.test(u) && (/^[a-z][a-z0-9+.\-]*:/i.test(u) || /^\/\//.test(u))) return "";
+  return u.replace(/[\s"'()<>\\]/g, function(c){ return "%" + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"); });
+}
+// Colores guardados: solo #rgb/#rrggbb(aa) o rgb()/rgba() con números
+function safeColor(c, def){
+  c = String(c===undefined||c===null ? "" : c).trim();
+  return (/^#[0-9a-f]{3,8}$/i.test(c) || /^rgba?\([\d\s.,%]+\)$/i.test(c)) ? c : (def || "");
+}
 function num(v,d){ var n=parseFloat(v); return isNaN(n)?(d||0):n; }
 function rollDie(sides){ return Math.floor(Math.random()*sides)+1; }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }

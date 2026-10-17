@@ -1,10 +1,11 @@
-var APP_VERSION = "1.4.79.0";
-var APP_BUILD = "2026.10.17.11";
+var APP_VERSION = "1.4.80.0";
+var APP_BUILD = "2026.10.17.12";
 
 var state = null;
 var supabaseClient = null;
 var currentUser = null;
 var currentRole = 'player';
+var currentIsAdmin = false;
 var isRemoteSyncing = false;
 var realtimeChannel = null;
 

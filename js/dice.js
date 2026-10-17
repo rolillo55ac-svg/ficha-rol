@@ -2703,7 +2703,7 @@ function rollLogHtml(){
   if(!logs.length){ html += '<div class="roll-empty">Sin tiradas recientes.</div>'; }
   else {
     html += '<div class="roll-log">'+logs.map(function(r){
-      return '<div class="roll-log-item"><div class="rl-info"><span class="rl-char">'+esc(r.charName)+'</span> — <span class="rl-label">'+esc(r.label)+'</span><div class="rl-formula">'+esc(r.formulaText)+'</div></div><div class="rl-result-badge" title="Resultado">'+r.total+'</div></div>';
+      return '<div class="roll-log-item"><div class="rl-info"><span class="rl-char">'+esc(r.charName)+'</span> — <span class="rl-label">'+esc(r.label)+'</span><div class="rl-formula">'+esc(r.formulaText)+'</div></div><div class="rl-result-badge" title="Resultado">'+esc(r.total)+'</div></div>';
     }).join('')+'</div>';
   }
   html += '</div>';

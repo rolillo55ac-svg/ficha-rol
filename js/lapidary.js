@@ -2958,11 +2958,11 @@ function renderLapidaryVerdictPanel(){
   pending.forEach(function(it){
     var st = it.stone, fam = getStoneFamily(st.color), q = getStoneQuality(st.calidadTirada || st.calidad);
     var d = lapidaryVerdictD100[st.id];
-    var dTxt = d ? 'd100: <b>' + d + '</b> contra riesgo ' + st.riesgoRotura + ' → sugiere que <b class="' + (d <= st.riesgoRotura ? "bad" : "ok") + '">' + (d <= st.riesgoRotura ? "se rompe" : "aguanta") + '</b>. Tú decides.' : "Decide tú, o tira un d100 de ayuda.";
+    var dTxt = d ? 'd100: <b>' + d + '</b> contra riesgo ' + esc(st.riesgoRotura) + ' → sugiere que <b class="' + (d <= st.riesgoRotura ? "bad" : "ok") + '">' + (d <= st.riesgoRotura ? "se rompe" : "aguanta") + '</b>. Tú decides.' : "Decide tú, o tira un d100 de ayuda.";
     html += '<div class="lapidary-verdict-gmcard">' +
       '<span class="lapidary-verdict-gmtag">Aviso para el máster</span>' +
       '<h4>' + esc(it.c.name) + ' ha tallado una ' + esc(fam.gema) + '</h4>' +
-      '<div class="lapidary-verdict-gminfo">Calidad <b style="color:' + q.color + '">' + esc(q.label) + '</b> (' + (st.totalTirada != null ? st.totalTirada : "?") + ') · Maestría ' + (st.maestria != null ? st.maestria : "?") + ' · <b>Riesgo ' + (st.riesgoRotura != null ? st.riesgoRotura : "?") + '%</b></div>' +
+      '<div class="lapidary-verdict-gminfo">Calidad <b style="color:' + q.color + '">' + esc(q.label) + '</b> (' + (st.totalTirada != null ? esc(st.totalTirada) : "?") + ') · Maestría ' + (st.maestria != null ? esc(st.maestria) : "?") + ' · <b>Riesgo ' + (st.riesgoRotura != null ? esc(st.riesgoRotura) : "?") + '%</b></div>' +
       '<div class="lapidary-verdict-d100">' + dTxt + '</div>' +
       '<div class="lapidary-verdict-gmgrid">' +
         '<button type="button" class="lapidary-ghost-btn full" data-action="lapidary-verdict-d100" data-stone-id="' + st.id + '">Tirar d100 de ayuda</button>' +
