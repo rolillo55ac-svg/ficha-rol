@@ -1,5 +1,7 @@
 // discord-notify: manda a Discord los avisos de la web (reportes y respuestas) sin que el webhook esté en el
 // navegador ni en el repositorio. Solo usuarios con sesión; como mucho 5 avisos por minuto por usuario.
+// Además, {"alertas_acceso": true} (sin sesión: se llama tras un login fallido) manda los avisos pendientes
+// de access_alertas. El texto lo escribe la función, no el navegador, y cada aviso se manda una sola vez.
 // Secretos de la función: DISCORD_WEBHOOK_URL (lo pone Chemo). SUPABASE_URL, SUPABASE_ANON_KEY y
 // SUPABASE_SERVICE_ROLE_KEY ya los da Supabase.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -23,17 +25,45 @@ Deno.serve(async (req) => {
   const webhook = Deno.env.get("DISCORD_WEBHOOK_URL");
   if (!webhook) return json(503, { error: "Falta el secreto DISCORD_WEBHOOK_URL" });
 
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const raw = await req.text();
+  if (raw.length > MAX_BYTES) return json(413, { error: "Aviso demasiado largo" });
+  let body: { payload?: Record<string, unknown>; alertas_acceso?: boolean };
+  try { body = JSON.parse(raw); } catch { return json(400, { error: "JSON no válido" }); }
+
+  if (body && body.alertas_acceso === true) {
+    const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: pend } = await admin.from("access_alertas").select("id, tipo, usuario, veces")
+      .is("enviado_at", null).order("at").limit(10);
+    if (!pend || !pend.length) return json(200, { ok: true, enviados: 0 });
+    // Se marcan antes de mandar: si dos llamadas llegan a la vez, solo una se queda cada aviso
+    const { data: mios } = await admin.from("access_alertas").update({ enviado_at: new Date().toISOString() })
+      .in("id", pend.map((a) => a.id)).is("enviado_at", null).select("id, tipo, usuario, veces");
+    if (!mios || !mios.length) return json(200, { ok: true, enviados: 0 });
+    const lineas = mios.map((a) => {
+      // Solo letras, números y . _ + - (sin saltos de línea, enlaces ni formato)
+      const u = String(a.usuario).replace(/@/g, "(at)").replace(/[^a-z0-9()._+-]/gi, "").slice(0, 80);
+      return a.tipo === "fallos_seguidos"
+        ? "• **" + u + "**: " + a.veces + " contraseñas mal seguidas en 10 minutos"
+        : "• Alguien intentó entrar con un usuario que no existe: **" + u + "**";
+    });
+    const r = await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "🔐 **Intentos de entrada raros**\n" + lineas.join("\n") +
+        "\nMíralo en Ajustes › Admin › Actividad.", allowed_mentions: { parse: [] } }) });
+    if (!r.ok) {
+      // Si Discord falla, se quedan pendientes para la próxima vez
+      await admin.from("access_alertas").update({ enviado_at: null }).in("id", mios.map((a) => a.id));
+      return json(502, { error: "Discord respondió " + r.status });
+    }
+    return json(200, { ok: true, enviados: mios.length });
+  }
+
   // Quién llama: se comprueba la sesión en el servidor
   const auth = req.headers.get("Authorization") || "";
-  const url = Deno.env.get("SUPABASE_URL")!;
   const usuario = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
   const { data: u } = await usuario.auth.getUser();
   if (!u || !u.user) return json(401, { error: "Sin sesión" });
 
-  const raw = await req.text();
-  if (raw.length > MAX_BYTES) return json(413, { error: "Aviso demasiado largo" });
-  let body: { payload?: Record<string, unknown> };
-  try { body = JSON.parse(raw); } catch { return json(400, { error: "JSON no válido" }); }
   const p = body && body.payload;
   if (!p || typeof p !== "object" || (!p.content && !Array.isArray(p.embeds))) return json(400, { error: "Aviso vacío" });
 

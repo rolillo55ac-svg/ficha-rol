@@ -140,6 +140,7 @@ async function fetchUserProfile(){
     currentRole = (res.data && res.data.role) ? res.data.role : 'player';
     currentIsAdmin = !!(res.data && res.data.is_admin === true);
     currentRoleUserId = userId;
+    if(typeof actInicio === "function") actInicio();
 
     pullAllFromSupabase();
     pullMapFromSupabase();
@@ -167,6 +168,7 @@ async function supabaseLogin(em, pw){
     return;
   }
   var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
+  if(typeof registrarLogin === "function") registrarLogin(nombreDeCuenta(em), !res.error);
   if(res.error){
     var updated = recordFailedLoginAttempt();
     var remainingAttempts = MAX_LOGIN_ATTEMPTS - (updated.count || 0);
@@ -184,6 +186,7 @@ async function supabaseLogin(em, pw){
 }
 async function supabaseLogout(){
   try {
+    if(typeof actLogout === "function") await actLogout();
     await supabaseClient.auth.signOut();
   } catch(e) {
     console.error('Supabase error:', e);

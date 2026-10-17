@@ -1,6 +1,6 @@
 {
-  "version": "1.4.81.0",
-  "build": "2026.10.17.13",
-  "updatedAt": "2026-10-17T23:30:00Z",
-  "changelog": "Cuentas: se entra con nombre de usuario (o con el correo de siempre), cada uno puede cambiar su contraseña en Ajustes y el admin tiene un panel de Jugadores para crear cuentas, cambiar contraseñas y roles."
+  "version": "1.4.82.0",
+  "build": "2026.10.17.14",
+  "updatedAt": "2026-10-18T01:00:00Z",
+  "changelog": "Seguridad: se apuntan las entradas (buenas y malas) y el tiempo de uso, y el admin tiene en Ajustes › Admin › Actividad las conexiones de cada jugador y los intentos fallidos."
 }

@@ -180,6 +180,7 @@ async function cambiarMiPassword(btn){
     if(r.error){ showToast("No se pudo cambiar: "+r.error.message, "error"); return; }
     // Fuera de los demás dispositivos, por si alguien más la sabía
     try { await supabaseClient.auth.signOut({ scope: "others" }); } catch(e){}
+    actRpc("password_cambiada");
     showToast("Contraseña cambiada", "success");
     openDataModal("main");
   } finally { btn.disabled = false; }
@@ -207,6 +208,7 @@ async function cuentaAccion(action, btn){
   if(action === "cuenta-mi-password"){ cambiarMiPassword(btn); return; }
   if(action === "cuenta-crear"){ crearCuenta(btn); return; }
   if(action === "cuenta-copiar-datos"){ copiarTexto(btn.getAttribute("data-txt") || ""); return; }
+  if(action === "cuenta-actividad-dias"){ actividadDias = parseInt(btn.getAttribute("data-dias"), 10) || 7; openDataModal("actividad"); return; }
   var forId = btn.getAttribute("data-for");
   var inp = forId ? document.getElementById(forId) : null;
   if(action === "cuenta-pass-otra" && inp){ inp.value = proponerPassword(); return; }
@@ -265,4 +267,374 @@ async function cuentaAccion(action, btn){
     showToast("Hecho", "success");
     cargarCuentas();
   }
+}
+
+// Registro de accesos (044), sin latidos: se apunta al entrar (bien o mal), al abrir la web con sesión,
+// al volver tras más de 30 min escondida y al esconderla o cerrarla. Si falla, la web sigue igual.
+var ACT_PAUSA_MS = 30 * 60 * 1000;
+var actSesion = null;
+var actOcultaDesde = 0;
+var actUltimoFin = 0;
+
+// Dispositivo en corto: "Android · Chrome", "iPhone · Safari · app"
+function actDispositivo(){
+  var ua = navigator.userAgent || "";
+  var so = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" :
+    /Windows/.test(ua) ? "Windows" : /Mac OS/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "Otro";
+  var nav = /Edg\//.test(ua) ? "Edge" : /SamsungBrowser/.test(ua) ? "Samsung" : /Firefox|FxiOS/.test(ua) ? "Firefox" :
+    /OPR\//.test(ua) ? "Opera" : /Chrome|CriOS/.test(ua) ? "Chrome" : /Safari/.test(ua) ? "Safari" : "";
+  var app = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+  return [so, nav, app ? "app" : ""].filter(Boolean).join(" · ");
+}
+
+function actUuid(){
+  if(crypto.randomUUID) return crypto.randomUUID();
+  var b = new Uint8Array(16); crypto.getRandomValues(b);
+  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  var h = Array.prototype.map.call(b, function(x){ return (x + 256).toString(16).slice(1); }).join("");
+  return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+h.slice(16,20)+"-"+h.slice(20);
+}
+
+// Login bueno o malo. Si la base dice que hay algo raro (muchos fallos o usuario inexistente), se pide
+// a la función de Discord que mande los avisos pendientes (el texto lo pone el servidor).
+async function registrarLogin(usuario, ok){
+  if(!supabaseClient || !usuario) return;
+  try {
+    var r = await supabaseClient.rpc("registrar_acceso", { p_usuario: usuario, p_ok: ok, p_ua: actDispositivo() });
+    if(!ok && r && r.data === true) supabaseClient.functions.invoke("discord-notify", { body: { alertas_acceso: true } }).then(null, function(){});
+  } catch(e){}
+}
+
+function actRpc(evento){
+  if(!supabaseClient || !currentUser) return Promise.resolve();
+  return Promise.resolve(supabaseClient.rpc("registrar_sesion", { p_evento: evento, p_sesion: actSesion ? actSesion.id : null, p_ua: actDispositivo() }))
+    .then(null, function(){});
+}
+
+function actInicio(){
+  if(!currentUser) return;
+  if(actSesion && actSesion.userId === currentUser.id) return;
+  actSesion = { id: actUuid(), userId: currentUser.id };
+  actRpc("sesion_inicio");
+}
+
+// Token guardado de la partida actual: al cerrar la web no da tiempo a pedirlo con await
+function actToken(){
+  try {
+    var ref = SUPABASE_URL.replace(/^https?:\/\//, '').split('.')[0];
+    var v = JSON.parse(localStorage.getItem('sb-' + ref + '-auth-token') || 'null');
+    return (v && (v.access_token || (v.currentSession && v.currentSession.access_token))) || "";
+  } catch(e){ return ""; }
+}
+
+// Fin de sesión al esconder o cerrar la web; keepalive para que llegue aunque se cierre la pestaña
+function actFin(){
+  if(!actSesion || !currentUser) return;
+  var now = Date.now();
+  if(now - actUltimoFin < 3000) return;
+  actUltimoFin = now;
+  var tok = actToken();
+  if(!tok) return;
+  try {
+    fetch(SUPABASE_URL + "/rest/v1/rpc/registrar_sesion", {
+      method: "POST", keepalive: true,
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON, Authorization: "Bearer " + tok },
+      body: JSON.stringify({ p_evento: "sesion_fin", p_sesion: actSesion.id, p_ua: actDispositivo() })
+    }).then(null, function(){});
+  } catch(e){}
+}
+
+async function actLogout(){
+  if(!actSesion) return;
+  await actRpc("logout");
+  actSesion = null;
+}
+
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState === "hidden"){ actOcultaDesde = Date.now(); actFin(); return; }
+  if(actOcultaDesde && Date.now() - actOcultaDesde > ACT_PAUSA_MS){ actSesion = null; actInicio(); }
+  actOcultaDesde = 0;
+});
+window.addEventListener("pagehide", actFin);
+
+// Pantalla Actividad (Ajustes › Admin › Actividad)
+var actividadDias = 7;
+var actividadFilas = [];
+
+function actividadScreenHtml(){
+  var dias = [
+    { n: 1, label: "Hoy" },
+    { n: 7, label: "7 días" },
+    { n: 30, label: "30 días" },
+    { n: 90, label: "90 días" }
+  ];
+  var btns = dias.map(function(d){
+    var act = d.n === actividadDias;
+    return '<button type="button" class="' + (act ? 'btn-solid-gold' : 'btn-compact') + ' cuenta-btn" data-action="cuenta-actividad-dias" data-dias="' + d.n + '"' + (act ? ' aria-pressed="true"' : '') + '>' + esc(d.label) + '</button>';
+  }).join("");
+
+  return '<div class="cuenta-acciones">' + btns + '</div>' +
+    '<div class="settings-note">Datos de esta partida. Para ver la otra, cambia de partida en Ajustes › Partida. «≈» = el móvil no avisó al salir: se calcula con su última tirada o guardado.</div>' +
+    '<div id="actividadLista"><div class="settings-note">Cargando actividad…</div></div>';
+}
+
+async function cargarActividad(){
+  var box = document.getElementById("actividadLista");
+  if(!box) return;
+  // Siempre al menos 7 días, para el total de "7 días"; las listas se cortan luego a los días elegidos
+  var res = await supabaseClient.rpc("admin_actividad", { p_dias: Math.max(actividadDias, 7) });
+  if(res.error){
+    var raw = String((res.error && res.error.message) || res.error || "");
+    var msg = (/admin_actividad|Could not find/i.test(raw)) ?
+      "Falta pegar la migración 044 en esta partida" : (raw || "Error");
+    box.innerHTML = '<div class="settings-note">No se pudo leer la actividad: ' + esc(msg) + '</div>';
+    return;
+  }
+  actividadFilas = res.data || [];
+  pintarActividad();
+}
+
+function actFormatoDuracion(ms){
+  if(!ms || ms < 60000) return "<1 min";
+  var m = Math.floor(ms / 60000);
+  if(m < 60) return m + " min";
+  var h = Math.floor(m / 60);
+  var rem = m % 60;
+  return h + " h " + (rem < 10 ? "0" : "") + rem + " min";
+}
+
+function actFormatoTotal(ms){
+  if(!ms || ms <= 0) return "0 min";
+  return actFormatoDuracion(ms);
+}
+
+function pintarActividad(){
+  var box = document.getElementById("actividadLista");
+  if(!box) return;
+
+  if(!actividadFilas || actividadFilas.length === 0){
+    box.innerHTML = '<div class="settings-note">Sin actividad en estos días.</div>';
+    return;
+  }
+
+  // Fin más tardío y última acción por sesión
+  var finPorSesion = {};
+  var uaPorSesion = {};
+  var dispPorSesion = {};
+  for(var i = 0; i < actividadFilas.length; i++){
+    var fila = actividadFilas[i];
+    if(fila.sesion){
+      if(fila.evento === "sesion_fin" || fila.evento === "logout"){
+        if(!finPorSesion[fila.sesion] || new Date(fila.at).getTime() > new Date(finPorSesion[fila.sesion]).getTime()){
+          finPorSesion[fila.sesion] = fila.at;
+        }
+      }
+      if(fila.ultima_accion){
+        if(!uaPorSesion[fila.sesion] || new Date(fila.ultima_accion).getTime() > new Date(uaPorSesion[fila.sesion]).getTime()){
+          uaPorSesion[fila.sesion] = fila.ultima_accion;
+        }
+      }
+      if(fila.user_agent && !dispPorSesion[fila.sesion]){
+        dispPorSesion[fila.sesion] = fila.user_agent;
+      }
+    }
+  }
+
+  var html = "";
+  var ahora = Date.now();
+  var dHoy = new Date();
+  dHoy.setHours(0, 0, 0, 0);
+  var tHoy = dHoy.getTime();
+  var t7 = ahora - (7 * 24 * 3600 * 1000);
+  var corte = actividadDias === 1 ? tHoy : ahora - actividadDias * 24 * 3600 * 1000;
+  function enRango(iso){ return new Date(iso).getTime() >= corte; }
+
+  // Intentos fallidos (login_fail)
+  var fails = actividadFilas.filter(function(r){ return r.evento === "login_fail" && enRango(r.at); });
+  if(fails.length > 0){
+    var failLineas = fails.slice(0, 30).map(function(f){
+      return '<div class="settings-note">' +
+        '<span class="settings-chip cuenta-chip-off">Fallo</span> ' +
+        esc(f.usuario || "") + " · " +
+        esc(cuentaFecha(f.at)) +
+        (f.user_agent ? " · " + esc(f.user_agent) : "") +
+        (!f.user_id ? " · usuario que no existe" : "") +
+        '</div>';
+    }).join("");
+
+    html += '<div class="settings-panel cuenta-card">' +
+      '<div class="cuenta-head">' +
+        '<span class="cuenta-nombre">Intentos fallidos</span>' +
+        '<span class="settings-chip cuenta-chip-off">' + fails.length + '</span>' +
+      '</div>' +
+      failLineas +
+    '</div>';
+  }
+
+  // Por jugador: agrupar por user_id (ignorar filas sin user_id)
+  var jugadoresMap = {};
+  var jugadores = [];
+
+  for(var j = 0; j < actividadFilas.length; j++){
+    var r = actividadFilas[j];
+    if(!r.user_id) continue;
+    var uid = r.user_id;
+    if(!jugadoresMap[uid]){
+      var jug = {
+        userId: uid,
+        nombre: r.nombre || "",
+        usuario: r.usuario || "",
+        ultConexion: r.at,
+        filas: []
+      };
+      jugadoresMap[uid] = jug;
+      jugadores.push(jug);
+    }
+    if(!jugadoresMap[uid].nombre && r.nombre) jugadoresMap[uid].nombre = r.nombre;
+    if(!jugadoresMap[uid].usuario && r.usuario) jugadoresMap[uid].usuario = r.usuario;
+    jugadoresMap[uid].filas.push(r);
+  }
+
+  jugadores.sort(function(a, b){
+    return new Date(b.ultConexion).getTime() - new Date(a.ultConexion).getTime();
+  });
+
+  jugadores = jugadores.filter(function(x){ return enRango(x.ultConexion); });
+
+  var NOMBRES_EVENTOS = {
+    cuenta_creada: "Cuenta creada",
+    cuenta_desactivada: "Cuenta desactivada",
+    cuenta_reactivada: "Cuenta reactivada",
+    password_cambiada: "Contraseña cambiada",
+    login_fail: "Contraseña mal"
+  };
+
+  for(var k = 0; k < jugadores.length; k++){
+    var jg = jugadores[k];
+    var sesFilas = jg.filas.filter(function(x){ return x.evento === "sesion_inicio"; });
+
+    var sesiones = [];
+    var sesVistas = {};
+    for(var sIdx = 0; sIdx < sesFilas.length; sIdx++){
+      var sf = sesFilas[sIdx];
+      if(sf.sesion && sesVistas[sf.sesion]) continue;
+      if(sf.sesion) sesVistas[sf.sesion] = true;
+
+      var iniD = new Date(sf.at);
+      var iniMs = iniD.getTime();
+      if(isNaN(iniMs)) continue;
+
+      var finIso = sf.sesion ? finPorSesion[sf.sesion] : null;
+      var finD = (finIso && !isNaN(new Date(finIso).getTime())) ? new Date(finIso) : null;
+      var aprox = false;
+      var sinFin = false;
+      var enCurso = false;
+
+      if(finD && finD.getTime() >= iniMs){
+        // Fin conocido
+      } else {
+        var ua = (sf.sesion && uaPorSesion[sf.sesion]) || sf.ultima_accion || null;
+        var uaD = (ua && !isNaN(new Date(ua).getTime())) ? new Date(ua) : null;
+        if(uaD && uaD.getTime() > iniMs){
+          finD = uaD;
+          aprox = true;
+        } else {
+          finD = null;
+          sinFin = true;
+          if(sesiones.length === 0 && (ahora - iniMs) < (12 * 3600 * 1000) && (ahora - iniMs) >= 0){
+            enCurso = true;
+          }
+        }
+      }
+
+      var uaDisp = sf.user_agent || (sf.sesion && dispPorSesion[sf.sesion]) || "";
+
+      sesiones.push({
+        inicio: sf.at,
+        inicioDate: iniD,
+        finDate: finD,
+        aprox: aprox,
+        sinFin: sinFin,
+        enCurso: enCurso,
+        userAgent: uaDisp
+      });
+    }
+
+    // Totales Hoy y 7 días
+    var msHoy = 0;
+    var ms7 = 0;
+    var aproxHoy = false;
+    var aprox7 = false;
+
+    for(var sI = 0; sI < sesiones.length; sI++){
+      var ses = sesiones[sI];
+      if(ses.sinFin || !ses.finDate) continue;
+      var fMs = ses.finDate.getTime();
+
+      var segIniHoy = Math.max(ses.inicioDate.getTime(), tHoy);
+      if(fMs > segIniHoy){
+        msHoy += (fMs - segIniHoy);
+        if(ses.aprox) aproxHoy = true;
+      }
+
+      var segIni7 = Math.max(ses.inicioDate.getTime(), t7);
+      if(fMs > segIni7){
+        ms7 += (fMs - segIni7);
+        if(ses.aprox) aprox7 = true;
+      }
+    }
+
+    var durHoyTxt = msHoy > 0 ? ((aproxHoy ? "≈ " : "") + actFormatoTotal(msHoy)) : "0 min";
+    var dur7Txt = ms7 > 0 ? ((aprox7 ? "≈ " : "") + actFormatoTotal(ms7)) : "0 min";
+
+    var cardHtml = '<div class="settings-panel cuenta-card">' +
+      '<div class="cuenta-head">' +
+        '<span class="cuenta-nombre">' + esc(nombreDeCuenta(jg.nombre || jg.usuario)) + '</span>' +
+      '</div>' +
+      '<div class="settings-note">' +
+        'Última conexión: ' + esc(cuentaFecha(jg.ultConexion)) +
+        ' · Hoy: ' + esc(durHoyTxt) +
+        ' · 7 días: ' + esc(dur7Txt) +
+      '</div>';
+
+    var sesMax = sesiones.filter(function(x){ return enRango(x.inicio); }).slice(0, 20);
+    for(var sm = 0; sm < sesMax.length; sm++){
+      var sItem = sesMax[sm];
+      var fIni = cuentaFecha(sItem.inicio);
+      var uaTxt = sItem.userAgent ? " · " + esc(sItem.userAgent) : "";
+
+      if(sItem.finDate){
+        var hFin = sItem.finDate.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+        var dur = actFormatoDuracion(sItem.finDate.getTime() - sItem.inicioDate.getTime());
+        cardHtml += '<div class="settings-note">' +
+          esc(fIni) + " → " + (sItem.aprox ? "≈ " : "") + esc(hFin) + " · " + (sItem.aprox ? "≈ " : "") + esc(dur) + uaTxt +
+          '</div>';
+      } else {
+        var est = sItem.enCurso ? "en curso" : "sin fin";
+        cardHtml += '<div class="settings-note">' +
+          esc(fIni) + " → " + est + uaTxt +
+          '</div>';
+      }
+    }
+
+    for(var ef = 0; ef < jg.filas.length; ef++){
+      var evFila = jg.filas[ef];
+      var evNom = NOMBRES_EVENTOS[evFila.evento];
+      if(evNom && enRango(evFila.at)){
+        cardHtml += '<div class="settings-note">' +
+          esc(cuentaFecha(evFila.at)) + " · " + esc(evNom) +
+          '</div>';
+      }
+    }
+
+    cardHtml += '</div>';
+    html += cardHtml;
+  }
+
+  if(!html){
+    box.innerHTML = '<div class="settings-note">Sin actividad en estos días.</div>';
+    return;
+  }
+
+  box.innerHTML = html;
 }
