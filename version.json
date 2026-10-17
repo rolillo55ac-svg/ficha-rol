@@ -1,6 +1,6 @@
 {
-  "version": "1.4.75.0",
-  "build": "2026.10.17.7",
-  "updatedAt": "2026-10-17T16:00:00Z",
-  "changelog": "Misiones rediseñadas: cada misión es una fila plegada que se abre al tocarla, hay filtros En curso / Completadas / Fallidas y por tipo, un buscador, y el máster puede marcar una misión como completada (o reabrirla)."
+  "version": "1.4.76.0",
+  "build": "2026.10.17.8",
+  "updatedAt": "2026-10-17T18:00:00Z",
+  "changelog": "Las ventanas de Ajustes, buzón y demás crecen desde el botón que las abre y se encogen hacia él al cerrarse."
 }

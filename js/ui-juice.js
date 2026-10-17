@@ -498,6 +498,99 @@
     }
 
     // ----------------------------------------------------
+    // 8b. Ventanas que crecen desde su botón y se encogen hacia él
+    // ----------------------------------------------------
+    var ORIGEN = { x: 0, y: 0, t: 0, ok: false };
+    var cerrando = [];
+    var OVERLAYS = ['charModalOverlay', 'charSoundModalOverlay', 'diceModalOverlay', 'dataModalOverlay', 'pinModalOverlay', 'loreModalOverlay', 'conflictModalOverlay', 'feedbackModalOverlay', 'lapidaryModalOverlay', 'addStoneModalOverlay'];
+
+    function sinMovimiento() {
+      try {
+        return !animOn() || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      } catch (_) {
+        return !animOn();
+      }
+    }
+
+    function fijarOrigen(overlay) {
+      var box = overlay.firstElementChild;
+      if (!box) return;
+      var r = box.getBoundingClientRect();
+      var ox = r.width / 2, oy = r.height / 2;
+      if (ORIGEN.ok && Date.now() - ORIGEN.t < 2500 && r.width > 0) {
+        ox = Math.max(0, Math.min(r.width, ORIGEN.x - r.left));
+        oy = Math.max(0, Math.min(r.height, ORIGEN.y - r.top));
+      }
+      box.style.transformOrigin = ox + 'px ' + oy + 'px';
+    }
+
+    function terminarCierre(item) {
+      var i = cerrando.indexOf(item);
+      if (i < 0) return;
+      cerrando.splice(i, 1);
+      clearTimeout(item.timer);
+      item.overlay.classList.remove('juice-menu-out');
+      item.overlay.classList.add('hidden');
+      item.overlay._juiceOculto = true;
+    }
+
+    function onOverlayClass(overlay, oculto) {
+      if (sinMovimiento()) return;
+      if (!oculto) {
+        // se acaba de abrir
+        for (var k = cerrando.length - 1; k >= 0; k--) if (cerrando[k].overlay === overlay) terminarCierre(cerrando[k]);
+        overlay.classList.remove('juice-menu-out');
+        fijarOrigen(overlay);
+        overlay.classList.add('juice-menu-in');
+        setTimeout(function () { overlay.classList.remove('juice-menu-in'); }, 320);
+      } else {
+        // se acaba de ocultar: se devuelve a la vista el tiempo de la animación de cierre
+        overlay.classList.remove('hidden');
+        overlay._juiceOculto = false;
+        overlay.classList.remove('juice-menu-in');
+        fijarOrigen(overlay);
+        overlay.classList.add('juice-menu-out');
+        var item = { overlay: overlay, timer: 0 };
+        cerrando.push(item);
+        var fin = function () { terminarCierre(item); };
+        var box = overlay.firstElementChild;
+        if (box) box.addEventListener('animationend', function f(e) { if (e.target !== box) return; box.removeEventListener('animationend', f); fin(); });
+        item.timer = setTimeout(fin, 300);
+      }
+    }
+
+    function initMenus() {
+      try {
+        document.addEventListener('pointerdown', function (e) {
+          // un toque nuevo termina al instante cualquier cierre a medias, para que no se coma el siguiente abrir
+          cerrando.slice().forEach(terminarCierre);
+          var t = e.target && e.target.closest ? e.target.closest('button, [data-action]') : null;
+          if (t) {
+            var r = t.getBoundingClientRect();
+            ORIGEN = { x: r.left + r.width / 2, y: r.top + r.height / 2, t: Date.now(), ok: true };
+          }
+        }, true);
+        OVERLAYS.forEach(function (id) {
+          var ov = document.getElementById(id);
+          if (!ov) return;
+          ov._juiceOculto = ov.classList.contains('hidden');
+          new MutationObserver(function () {
+            var ahora = ov.classList.contains('hidden');
+            if (ahora === ov._juiceOculto) return;
+            ov._juiceOculto = ahora;
+            onOverlayClass(ov, ahora);
+          }).observe(ov, { attributes: true, attributeFilter: ['class'] });
+        });
+      } catch (_) {}
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initMenus);
+    } else {
+      initMenus();
+    }
+
+    // ----------------------------------------------------
     // 9. Exportación pública en window.UIJuice
     // ----------------------------------------------------
     window.UIJuice = {
