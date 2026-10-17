@@ -209,13 +209,13 @@ function settingsScreenTitle(screen){
     version: "Versión", storage: "Almacenamiento", backup: "Copia de seguridad", help: "Ayuda y sugerencias",
     cloud: "Copia en la nube", broadcast: "Avisar para que actualicen",
     donate: "Apoya el proyecto", partida: "Partida",
-    password: "Mi contraseña", jugadores: "Jugadores", "cuenta-nueva": "Nueva cuenta"
+    password: "Mi contraseña", jugadores: "Jugadores", "cuenta-nueva": "Nueva cuenta", actividad: "Actividad"
   }[screen] || "Ajustes";
 }
 
 function openDataModal(screen){
   screen = (typeof screen === "string") ? screen : "main";
-  if((screen === "cloud" || screen === "broadcast" || screen === "jugadores" || screen === "cuenta-nueva") && !isAdmin()) screen = "main";
+  if((screen === "cloud" || screen === "broadcast" || screen === "jugadores" || screen === "cuenta-nueva" || screen === "actividad") && !isAdmin()) screen = "main";
   if(screen === "password" && !currentUser) screen = "main";
   if(screen === "donate" && !DONATE_PAYPAL_ME) screen = "main";
   settingsScreen = screen;
@@ -277,6 +277,7 @@ function openDataModal(screen){
         settingsRow("settings-go", "cloud", "☁️", "Copia en la nube", settingsLastBackupText())+
         settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
         settingsRow("settings-go", "jugadores", "👥", "Jugadores", "Crear cuentas, contraseñas y roles")+
+        settingsRow("settings-go", "actividad", "🕒", "Actividad", "Entradas, intentos fallidos y tiempo de uso")+
       '</div>';
     }
     html += '<div class="settings-list settings-logout">'+
@@ -412,6 +413,10 @@ function openDataModal(screen){
     html += cuentasScreenHtml(screen);
   }
 
+  else if(screen === "actividad"){
+    html += actividadScreenHtml();
+  }
+
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 
@@ -420,6 +425,7 @@ function openDataModal(screen){
     if(settingsScreen === "version" && typeof checkForAppUpdates === "function") checkForAppUpdates(false);
     if(settingsScreen === "main") settingsCheckVersionLabel();
     if(settingsScreen === "jugadores") cargarCuentas();
+    if(settingsScreen === "actividad") cargarActividad();
   }, 50);
 }
 

@@ -54,6 +54,19 @@ Deno.serve(async (req) => {
     return e4 ? e4.message : "";
   }
 
+  // Registro de accesos (044): lo que hace el admin con las cuentas. Si la tabla aún no existe, no pasa nada.
+  const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim().slice(0, 45) || null;
+  const ua = (req.headers.get("user-agent") || "").slice(0, 120) || null;
+  async function apuntar(evento: string, id: string, usuario: string) {
+    try {
+      await admin.from("access_log").insert({ user_id: id, usuario: usuario.slice(0, 80), evento, user_agent: ua, ip });
+    } catch { /* sin registro */ }
+  }
+  async function usuarioDe(id: string) {
+    const { data } = await admin.from("profiles").select("display_name, email").eq("id", id).maybeSingle();
+    return data ? String(data.display_name || data.email || "") : "";
+  }
+
   function passValida(p: string) {
     return p.length >= PASS_MIN && p.length <= PASS_MAX;
   }
@@ -96,6 +109,7 @@ Deno.serve(async (req) => {
         await admin.from("characters").update({ owner_id: id, data: datos }).eq("id", fichaId);
       }
     }
+    await apuntar("cuenta_creada", id, usuario);
     return json(200, { ok: true, user_id: id });
   }
 
@@ -113,6 +127,7 @@ Deno.serve(async (req) => {
     if (error) return json(400, { error: error.message });
     // Con contraseña nueva, fuera de los demás dispositivos (salvo que sea la propia del admin)
     if (userId !== u.user.id) await cerrarSesiones(userId);
+    await apuntar("password_cambiada", userId, await usuarioDe(userId));
     return json(200, { ok: true });
   }
 
@@ -121,12 +136,14 @@ Deno.serve(async (req) => {
     await cerrarSesiones(userId);
     const { error } = await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
     if (error) return json(400, { error: error.message });
+    await apuntar("cuenta_desactivada", userId, await usuarioDe(userId));
     return json(200, { ok: true });
   }
 
   if (accion === "reactivar") {
     const { error } = await admin.auth.admin.updateUserById(userId, { ban_duration: "none" });
     if (error) return json(400, { error: error.message });
+    await apuntar("cuenta_reactivada", userId, await usuarioDe(userId));
     return json(200, { ok: true });
   }
 
