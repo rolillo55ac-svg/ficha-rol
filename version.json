@@ -1,6 +1,6 @@
 {
-  "version": "1.4.77.0",
-  "build": "2026.10.17.9",
-  "updatedAt": "2026-10-17T18:00:00Z",
-  "changelog": "Al quitar una magia, arma, objeto, misión, pista, entrenamiento, mueble o estancia, la web pide confirmación y deja deshacer unos segundos."
+  "version": "1.4.78.0",
+  "build": "2026.10.17.10",
+  "updatedAt": "2026-10-17T20:00:00Z",
+  "changelog": "Las ventanas (Ajustes, buzón, dados, La Casa...) salen creciendo desde su botón y se encogen hacia él al cerrarse, sin parpadeo."
 }

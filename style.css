@@ -11195,26 +11195,6 @@ html.juice-off .juice-spark {
 @keyframes questRowOpen{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
 html.juice-off .quest-row-body{animation:none;}
 
-/* Ventanas que crecen desde su botón y se encogen hacia él (tarea 51) */
-@keyframes juiceMenuIn{0%{opacity:0;transform:scale(.6);}100%{opacity:1;transform:scale(1);}}
-@keyframes juiceMenuOut{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(.6);}}
-@keyframes juiceVeilIn{0%{background-color:rgba(8,5,4,0);}100%{background-color:rgba(8,5,4,0.82);}}
-@keyframes juiceVeilOut{0%{background-color:rgba(8,5,4,0.82);}100%{background-color:rgba(8,5,4,0);}}
-.modal-overlay.juice-menu-in{animation:juiceVeilIn .22s ease both;}
-.modal-overlay.juice-menu-in > .modal{animation:juiceMenuIn .22s cubic-bezier(0.22,1,0.36,1) both;}
-.modal-overlay.juice-menu-out{animation:juiceVeilOut .18s ease both;pointer-events:none;}
-.modal-overlay.juice-menu-out > .modal{animation:juiceMenuOut .18s ease both;}
-html.juice-off .modal-overlay.juice-menu-in,
-html.juice-off .modal-overlay.juice-menu-in > .modal,
-html.juice-off .modal-overlay.juice-menu-out,
-html.juice-off .modal-overlay.juice-menu-out > .modal{animation:none;}
-@media (prefers-reduced-motion: reduce){
-  .modal-overlay.juice-menu-in,
-  .modal-overlay.juice-menu-in > .modal,
-  .modal-overlay.juice-menu-out,
-  .modal-overlay.juice-menu-out > .modal{animation:none;}
-}
-
 /* Confirmar antes de quitar + aviso de deshacer */
 .confirm-quitar{max-width:340px;}
 .confirm-quitar-txt{font-size:.88rem;color:var(--ink-dim);line-height:1.5;margin:0 0 14px;}

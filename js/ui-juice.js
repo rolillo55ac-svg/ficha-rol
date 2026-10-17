@@ -500,87 +500,129 @@
     // ----------------------------------------------------
     // 8b. Ventanas que crecen desde su botón y se encogen hacia él
     // ----------------------------------------------------
-    var ORIGEN = { x: 0, y: 0, t: 0, ok: false };
-    var cerrando = [];
-    var OVERLAYS = ['charModalOverlay', 'charSoundModalOverlay', 'diceModalOverlay', 'dataModalOverlay', 'pinModalOverlay', 'loreModalOverlay', 'conflictModalOverlay', 'feedbackModalOverlay', 'lapidaryModalOverlay', 'addStoneModalOverlay'];
+    var ORIGEN = { el: null, t: 0 };
+    var EASE_IN = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    var EASE_OUT = 'cubic-bezier(0.4, 0, 1, 1)';
 
     function sinMovimiento() {
       try {
-        return !animOn() || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        return !animOn() || !Element.prototype.animate || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
       } catch (_) {
-        return !animOn();
+        return true;
       }
     }
 
-    function fijarOrigen(overlay) {
-      var box = overlay.firstElementChild;
-      if (!box) return;
-      var r = box.getBoundingClientRect();
-      var ox = r.width / 2, oy = r.height / 2;
-      if (ORIGEN.ok && Date.now() - ORIGEN.t < 2500 && r.width > 0) {
-        ox = Math.max(0, Math.min(r.width, ORIGEN.x - r.left));
-        oy = Math.max(0, Math.min(r.height, ORIGEN.y - r.top));
+    function botonOrigen() {
+      var b = ORIGEN.el;
+      if (b && document.body.contains(b) && Date.now() - ORIGEN.t < 2500) {
+        var r = b.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) return b;
       }
-      box.style.transformOrigin = ox + 'px ' + oy + 'px';
+      return null;
     }
 
-    function terminarCierre(item) {
-      var i = cerrando.indexOf(item);
-      if (i < 0) return;
-      cerrando.splice(i, 1);
-      clearTimeout(item.timer);
-      item.overlay.classList.remove('juice-menu-out');
-      item.overlay.classList.add('hidden');
-      item.overlay._juiceOculto = true;
+    function desdeBoton(panel, boton) {
+      var p = panel.getBoundingClientRect();
+      if (!boton) return 'scale(0.9)';
+      var b = boton.getBoundingClientRect();
+      var dx = (b.left + b.width / 2) - (p.left + p.width / 2);
+      var dy = (b.top + b.height / 2) - (p.top + p.height / 2);
+      var s = Math.max(b.width / Math.max(p.width, 1), 0.08);
+      return 'translate(' + dx + 'px, ' + dy + 'px) scale(' + s + ')';
     }
 
-    function onOverlayClass(overlay, oculto) {
-      if (sinMovimiento()) return;
-      if (!oculto) {
-        // se acaba de abrir
-        for (var k = cerrando.length - 1; k >= 0; k--) if (cerrando[k].overlay === overlay) terminarCierre(cerrando[k]);
-        overlay.classList.remove('juice-menu-out');
-        fijarOrigen(overlay);
-        overlay.classList.add('juice-menu-in');
-        setTimeout(function () { overlay.classList.remove('juice-menu-in'); }, 320);
-      } else {
-        // se acaba de ocultar: se devuelve a la vista el tiempo de la animación de cierre
-        overlay.classList.remove('hidden');
-        overlay._juiceOculto = false;
-        overlay.classList.remove('juice-menu-in');
-        fijarOrigen(overlay);
-        overlay.classList.add('juice-menu-out');
-        var item = { overlay: overlay, timer: 0 };
-        cerrando.push(item);
-        var fin = function () { terminarCierre(item); };
-        var box = overlay.firstElementChild;
-        if (box) box.addEventListener('animationend', function f(e) { if (e.target !== box) return; box.removeEventListener('animationend', f); fin(); });
-        item.timer = setTimeout(fin, 300);
-      }
+    function limpiar(overlay) {
+      try { overlay.getAnimations({ subtree: true }).forEach(function (x) { x.cancel(); }); } catch (_) {}
+      overlay._juiceCerrando = false;
+    }
+
+    function abrirDesde(overlay, boton) {
+      var panel = overlay.firstElementChild;
+      if (!panel) return;
+      limpiar(overlay);
+      overlay._juiceBoton = boton || null;
+      var ini = desdeBoton(panel, boton);
+      panel.animate([{ transform: ini, opacity: 0, borderRadius: boton ? '50%' : '14px' },
+                     { transform: 'none', opacity: 1, borderRadius: '14px' }],
+                    { duration: 320, easing: EASE_IN, fill: 'backwards' });
+      overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'ease-out' });
+    }
+
+    function cerrarHacia(overlay, despues) {
+      var panel = overlay.firstElementChild;
+      if (!panel) { despues(); return; }
+      overlay._juiceCerrando = true;
+      var boton = overlay._juiceBoton;
+      if (!boton || !document.body.contains(boton)) boton = null;
+      var fin = desdeBoton(panel, boton);
+      overlay.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in', fill: 'forwards' });
+      var a = panel.animate([{ transform: 'none', opacity: 1, borderRadius: '14px' },
+                             { transform: fin, opacity: 0, borderRadius: boton ? '50%' : '14px' }],
+                            { duration: 240, easing: EASE_OUT, fill: 'forwards' });
+      a.onfinish = function () {
+        if (!overlay._juiceCerrando) return;
+        limpiar(overlay);
+        despues();
+      };
+    }
+
+    // Se engancha a classList.add/remove('hidden') de una ventana: al ocultarla espera a que termine la animación
+    function enganchar(overlay) {
+      if (overlay._juiceEnganchado) return;
+      overlay._juiceEnganchado = true;
+      var cl = overlay.classList;
+      var add = cl.add.bind(cl), remove = cl.remove.bind(cl);
+      cl.add = function () {
+        var args = Array.prototype.slice.call(arguments);
+        if (args.indexOf('hidden') < 0 || cl.contains('hidden') || overlay._juiceCerrando || sinMovimiento()) {
+          return add.apply(null, args);
+        }
+        var resto = args.filter(function (c) { return c !== 'hidden'; });
+        if (resto.length) add.apply(null, resto);
+        cerrarHacia(overlay, function () { add('hidden'); });
+      };
+      cl.remove = function () {
+        var args = Array.prototype.slice.call(arguments);
+        if (args.indexOf('hidden') < 0) return remove.apply(null, args);
+        var estabaOculta = cl.contains('hidden');
+        if (overlay._juiceCerrando) { limpiar(overlay); }
+        remove.apply(null, args);
+        if (estabaOculta && !sinMovimiento()) abrirDesde(overlay, botonOrigen());
+      };
     }
 
     function initMenus() {
       try {
         document.addEventListener('pointerdown', function (e) {
-          // un toque nuevo termina al instante cualquier cierre a medias, para que no se coma el siguiente abrir
-          cerrando.slice().forEach(terminarCierre);
-          var t = e.target && e.target.closest ? e.target.closest('button, [data-action]') : null;
-          if (t) {
-            var r = t.getBoundingClientRect();
-            ORIGEN = { x: r.left + r.width / 2, y: r.top + r.height / 2, t: Date.now(), ok: true };
-          }
+          var t = e.target && e.target.closest ? e.target.closest('button, [data-action], [role="button"]') : null;
+          if (t) ORIGEN = { el: t, t: Date.now() };
         }, true);
-        OVERLAYS.forEach(function (id) {
-          var ov = document.getElementById(id);
-          if (!ov) return;
-          ov._juiceOculto = ov.classList.contains('hidden');
-          new MutationObserver(function () {
-            var ahora = ov.classList.contains('hidden');
-            if (ahora === ov._juiceOculto) return;
-            ov._juiceOculto = ahora;
-            onOverlayClass(ov, ahora);
-          }).observe(ov, { attributes: true, attributeFilter: ['class'] });
-        });
+        document.querySelectorAll('.modal-overlay').forEach(enganchar);
+        // ventanas creadas por código (reloj, La Casa): se enganchan o se animan al aparecer
+        new MutationObserver(function (muts) {
+          muts.forEach(function (m) {
+            m.addedNodes.forEach(function (n) {
+              if (!n.classList) return;
+              if (n.classList.contains('modal-overlay')) enganchar(n);
+              else if (n.classList.contains('house-modal-overlay') && !sinMovimiento()) abrirDesde(n, botonOrigen());
+            });
+          });
+        }).observe(document.body, { childList: true });
+        // La Casa quita sus ventanas del documento: se encogen antes de quitarlas
+        if (typeof window.closeHouseModal === 'function' && !window.closeHouseModal._juice) {
+          var orig = window.closeHouseModal;
+          window.closeHouseModal = function () {
+            var viejos = Array.prototype.slice.call(document.querySelectorAll('.house-modal-overlay')).filter(function (o) { return !o._juiceCerrando; });
+            if (!viejos.length || sinMovimiento()) return orig();
+            viejos.forEach(function (ov) {
+              ov.removeAttribute('id');
+              ov.querySelectorAll('[id]').forEach(function (x) { x.removeAttribute('id'); });
+              ov.style.pointerEvents = 'none';
+              cerrarHacia(ov, function () { ov.remove(); });
+            });
+          };
+          window.closeHouseModal._juice = true;
+        }
       } catch (_) {}
     }
 
