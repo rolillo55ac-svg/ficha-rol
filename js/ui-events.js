@@ -875,12 +875,17 @@ function handleClick(e){
   if(action==="remove-active-buff"){
     if(!c || !canEditChar(c)) return;
     var buffId = btn.getAttribute("data-id");
-    if(c.activeBuffs){
-      var remBuff2 = c.activeBuffs.find(function(ab){ return ab.id === buffId; });
-      var remKind = (remBuff2 && remBuff2.type === "debuff") ? "Debuff" : "Buff";
-      if(remBuff2 && remBuff2.shieldGranted){
-        c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - remBuff2.shieldGranted);
-        changeShieldRPC(c, -remBuff2.shieldGranted);
+    var remBuff2 = (c.activeBuffs || []).find(function(ab){ return ab.id === buffId; });
+    if(!remBuff2) return;
+    var remNombre = remBuff2.name || "este estado";
+    confirmarQuitar(remNombre, "Se quita de tu ficha. Sigue en el catálogo de Buffos.").then(function(ok){
+      if(!ok) return;
+      var remIdx = (c.activeBuffs || []).findIndex(function(ab){ return ab.id === buffId; });
+      if(remIdx < 0) return;
+      var quitado = c.activeBuffs[remIdx];
+      if(quitado.shieldGranted){
+        c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual, 0) - quitado.shieldGranted);
+        changeShieldRPC(c, -quitado.shieldGranted);
       }
       c.activeBuffs = c.activeBuffs.filter(function(ab){ return ab.id !== buffId; });
       manageListItemRPC(c, 'activeBuffs', 'remove', null, buffId);
@@ -888,8 +893,24 @@ function handleClick(e){
       renderTopbar();
       renderTab();
       broadcastCharStatUpdate(c.id, c.combat);
-      showToast(remKind + " desanclado del personaje (catálogo intacto)", "info");
-    }
+      avisoDeshacer("Quitado «" + remNombre + "» de la ficha", function(){
+        var cur = c.activeBuffs || [];
+        if(cur.some(function(ab){ return ab.id === buffId; })) return;
+        var vuelta = Object.assign({}, quitado);
+        if(vuelta.shieldGranted){
+          c.combat.escudoActual = num(c.combat.escudoActual, 0) + vuelta.shieldGranted;
+          changeShieldRPC(c, vuelta.shieldGranted);
+        }
+        var copia = cur.slice();
+        copia.splice(Math.min(remIdx, copia.length), 0, vuelta);
+        c.activeBuffs = copia;
+        manageListItemRPC(c, 'activeBuffs', 'add', vuelta);
+        clampCurrentVitalsToEffectiveMax(c);
+        renderTopbar();
+        renderTab();
+        broadcastCharStatUpdate(c.id, c.combat);
+      });
+    });
     return;
   }
   if(action==="npc-attr-mod"){
@@ -1068,7 +1089,12 @@ function handleClick(e){
     if(!isGM()) return;
     var dbId = btn.getAttribute("data-id");
     var dbIt = (state.buffCatalog||[]).find(function(b){ return b.id === dbId; });
-    confirmarQuitar(dbIt ? dbIt.name : "este buffo", "").then(function(ok){ if(ok){
+    var dbNombre = dbIt ? dbIt.name : "este buffo";
+    var dbFichas = (state.characters || []).filter(function(ch){
+      return (ch.activeBuffs || []).some(function(ab){ return ab.id === dbId && ab.active !== false; });
+    }).length;
+    var dbDetalle = "No se puede deshacer." + (dbFichas ? " Está activo en " + dbFichas + (dbFichas === 1 ? " ficha." : " fichas.") : "");
+    confirmarCuenta("¿Eliminar definitivamente «" + dbNombre + "»?", dbDetalle, "Eliminar definitivamente").then(function(ok){ if(ok){
       state.buffCatalog = (state.buffCatalog||[]).filter(function(b){ return b.id !== dbId; });
       saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab();
       showToast("Buff eliminado", "info");
