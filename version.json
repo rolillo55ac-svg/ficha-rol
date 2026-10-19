@@ -1,6 +1,6 @@
 {
-  "version": "1.4.86.0",
-  "build": "2026.10.17.18",
-  "updatedAt": "2026-10-17T20:30:00Z",
-  "changelog": "Los avisos a Discord (reportes y respuestas) salen solo desde el servidor; la web ya no lleva la dirección del webhook. Sin cambios para jugadores."
+  "version": "1.4.87.0",
+  "build": "2026.10.19.20",
+  "updatedAt": "2026-10-19T20:00:00Z",
+  "changelog": "Estados: quitar un buffo o debuff de tu ficha pide confirmación y se puede deshacer. El máster ve un aviso fuerte antes de eliminar un buffo del catálogo."
 }
