@@ -775,7 +775,7 @@ function saveHouseFloors(floors){
       realtimeChannel.send({
         type: "broadcast",
         event: "house_settings_update",
-        payload: { players_can_edit: !!houseState.house.players_can_edit, floors: floors }
+        payload: { room_editors: houseRoomEditors(), floors: floors }
       }).catch(function(){});
     } catch(e){}
   }
@@ -2222,7 +2222,7 @@ function initHouseRealtimeSync(){
         houseState._settingsListener = true;
         realtimeChannel.on("broadcast", { event: "house_settings_update" }, function(msg){
           if(!msg || !msg.payload || !houseState.house) return;
-          houseState.house.players_can_edit = !!msg.payload.players_can_edit;
+          if(Array.isArray(msg.payload.room_editors)) houseState.house.room_editors = msg.payload.room_editors;
           if(Array.isArray(msg.payload.floors)){
             houseState.floors = null;
             houseState.house.floors = msg.payload.floors;
@@ -2324,25 +2324,32 @@ function canUserEditRoom(room){
   return false;
 }
 
-// Permisos del plano: el máster siempre puede editar; los jugadores solo si el máster lo activa
-// (house.players_can_edit) y únicamente su propia habitación. Es control de interfaz: la protección real va en RLS.
-function housePlayersCanEdit(){
-  return !!(houseState.house && houseState.house.players_can_edit);
+// Permisos del plano: el máster siempre puede editar; un jugador solo mueve y cambia el tamaño de SU
+// habitación, y solo si el máster le ha dado permiso (house.room_editors, ids de ficha). Nombre, muebles,
+// color y decoración solo el máster. Es control de interfaz: la protección real va en RLS y el trigger de la 047.
+function houseRoomEditors(){
+  return (houseState.house && Array.isArray(houseState.house.room_editors)) ? houseState.house.room_editors : [];
 }
 
 function canUserEditPlan(){
   if(typeof isGM === "function" && isGM()) return true;
-  return housePlayersCanEdit();
+  return (houseState.rooms || []).some(function(r){ return canUserEditRoomGeometry(r); });
 }
 
 function canUserEditRoomGeometry(room){
   if(typeof isGM === "function" && isGM()) return true;
-  return housePlayersCanEdit() && canUserEditRoom(room);
+  return !!room && !!room.owner_character_id && houseRoomEditors().indexOf(room.owner_character_id) !== -1 && canUserUseChest(room);
 }
 
-function setHousePlayersCanEdit(val){
-  if(!houseState.house) return;
-  houseState.house.players_can_edit = !!val;
+function canUserDecorateRoom(room){
+  return !!room && (typeof isGM === "function" && isGM());
+}
+
+function setHouseRoomEditor(charId, val){
+  if(!houseState.house || !charId) return;
+  var list = houseRoomEditors().filter(function(id){ return id !== charId; });
+  if(val) list.push(charId);
+  houseState.house.room_editors = list;
   saveHouseLocalData();
 
   if(typeof realtimeChannel !== "undefined" && realtimeChannel && typeof realtimeChannel.send === "function"){
@@ -2350,24 +2357,22 @@ function setHousePlayersCanEdit(val){
       realtimeChannel.send({
         type: "broadcast",
         event: "house_settings_update",
-        payload: { players_can_edit: !!val }
+        payload: { room_editors: list }
       }).catch(function(){});
     } catch(e){}
   }
 
   if(typeof supabaseClient !== "undefined" && supabaseClient && houseState.house.id && navigator.onLine){
     supabaseClient.from("house")
-      .update({ players_can_edit: !!val })
+      .update({ room_editors: list })
       .eq("id", houseState.house.id)
       .then(function(res){
         if(res && res.error){
           console.warn("Aviso guardando permiso de edición de La Casa:", res.error.message || res.error);
-          if(typeof showToast === "function") showToast("Permiso aplicado en directo, pero no se ha guardado (falta la migración 018).", "warning");
+          if(typeof showToast === "function") showToast("Permiso aplicado en directo, pero no se ha guardado (falta la migración 047).", "warning");
         }
       });
   }
-
-  if(typeof showToast === "function") showToast(val ? "Los jugadores ya pueden editar su habitación." : "Los jugadores ya no pueden editar.", "info");
   renderHouseView();
 }
 
@@ -3559,7 +3564,7 @@ function canvaItemIsStorage(found){
 }
 
 function canvaIsEditing(room){
-  return !!room && canUserEditRoomGeometry(room) && houseState.studioMode !== "view";
+  return !!room && canUserDecorateRoom(room) && houseState.studioMode !== "view";
 }
 
 // Vista girada: se gira sola si así las casillas salen más grandes (móvil en vertical con estancia ancha)
@@ -3995,7 +4000,7 @@ function canvaAfterRender(){
 }
 
 function renderCanvaStudioInner(r){
-  var canEdit = canUserEditRoomGeometry(r);
+  var canEdit = canUserDecorateRoom(r);
   var editing = canvaIsEditing(r);
   if(!editing) houseState.studioCatalogOpen = false;
 
@@ -4800,7 +4805,7 @@ function renderHouseView(){
       html += '  <div class="house-quick-tools' + selBarVis + '" id="roomQuickBar">';
       html += '    <div class="house-quick-tools-title">🎯 <b id="rqRoomName">' + esc(selIconName) + '</b></div>';
       html += '    <div class="house-quick-tools-group">';
-      html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">✏️ Renombrar</button>';
+      if(gmMode) html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">✏️ Renombrar</button>';
       html += '      <div class="house-tool-stepper" title="Ancho de la habitación">';
       html += '        <span>↔️</span>';
       html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="-40" title="Reducir ancho">➖</button>';
@@ -4813,11 +4818,11 @@ function renderHouseView(){
       html += '        <span id="rqHeightLabel">' + (selRoom ? Math.max(1, selRoom.height || Math.round((selRoom.h || 120)/40)) : 3) + '</span>';
       html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="40" title="Aumentar alto">➕</button>';
       html += '      </div>';
-      html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
-      html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
-      html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
-      html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">Editar muebles</button>';
       if(gmMode){
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
+        html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">Editar muebles</button>';
         html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
         html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
         html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">🗑️</button>';
@@ -5186,8 +5191,31 @@ function openHouseSecretsPanel(){
     html += '  <textarea class="house-perk-in-desc house-secret-perk-notes" rows="2" placeholder="Notas secretas" aria-label="Notas secretas">' + esc(ps.notes || "") + '</textarea>';
     html += '</div>';
   });
+  html += renderHouseRoomEditorsList();
   html += '<button class="house-perk-gm-btn gold" data-action="house-secrets-save">Guardar panel secreto</button>';
   openHouseGmModal("🔒 Panel secreto", html);
+}
+
+// Interruptor por jugador: puede mover y cambiar el tamaño de su habitación (se guarda al tocarlo)
+function renderHouseRoomEditorsList(){
+  var editors = houseRoomEditors();
+  var seen = {};
+  var html = '<div class="house-secret-perk" id="houseRoomEditorsList">';
+  html += '  <div class="house-perk-name">🛏️ Puede editar su habitación</div>';
+  html += '  <div class="house-secret-note">Mover y cambiar el tamaño, solo de su habitación. Los demás solo usan el baúl.</div>';
+  (houseState.rooms || []).forEach(function(r){
+    var cid = r.owner_character_id;
+    if(!cid || seen[cid]) return;
+    seen[cid] = true;
+    var on = editors.indexOf(cid) !== -1;
+    var ch = ((typeof state !== "undefined" && state.characters) || []).find(function(c){ return c.id === cid || c.db_id === cid; });
+    var name = (ch && ch.name) || getRoomOwnerInfo(cid).name;
+    html += '  <div class="house-secret-hp-row"><span class="house-secret-hp-label">' + esc(name) + '</span>';
+    html += '<button class="house-perk-mini" data-action="toggle-house-room-editor" data-char-id="' + esc(cid) + '" aria-pressed="' + on + '">' + (on ? '✅ Sí' : '🚫 No') + '</button></div>';
+  });
+  if(!Object.keys(seen).length) html += '  <div class="house-secret-note">Ninguna habitación tiene dueño todavía.</div>';
+  html += '</div>';
+  return html;
 }
 
 var HOUSE_PERK_ACTIONS = ["open-house-perks-editor", "house-perk-save", "house-perk-move", "house-perk-archive", "house-perk-restore", "house-perk-add",
@@ -5500,7 +5528,7 @@ function renderRoomSubgrid(r, canEdit, isGm, isEditMode){
   var html = '<div class="house-room-subgrid-wrap cs-readonly">';
   html += '  <div class="cs-readonly-head">';
   html += '    <span>' + all.length + (all.length === 1 ? ' elemento' : ' elementos') + ' en ' + esc(r.name) + '</span>';
-  html += '    <button type="button" class="cs-open-btn" data-action="open-canva-studio" data-room-id="' + esc(r.id) + '">' + (canUserEditRoomGeometry(r) ? 'Editar muebles' : 'Ver muebles') + '</button>';
+  html += '    <button type="button" class="cs-open-btn" data-action="open-canva-studio" data-room-id="' + esc(r.id) + '">' + (canUserDecorateRoom(r) ? 'Editar muebles' : 'Ver muebles') + '</button>';
   html += '  </div>';
   html += '  <div class="cs-mini tex-' + esc(r.room_type || 'salon') + '" style="aspect-ratio:' + grid.cols + ' / ' + grid.rows + ';' + (r.color ? 'background:' + getRoomCustomBackground(r.color) + ';' : '') + '">' + renderRoomMiniLayout(r) + '</div>';
   if(all.length){
@@ -5563,7 +5591,7 @@ function renderRoomInspector(roomId){
   var owner = getRoomOwnerInfo(r.owner_character_id);
   var canEdit = canUserEditRoom(r);
   var canChest = canUserUseChest(r);
-  var canDecor = canUserEditRoomGeometry(r);
+  var canDecor = canUserDecorateRoom(r);
   var isGm = (typeof isGM === "function" && isGM());
   var isEditMode = (isGm && houseState.editMode);
   var roomUpgrades = (houseState.upgrades || []).filter(function(u){ return u.room_id === r.id; });
@@ -6544,7 +6572,9 @@ function backFromHouseView(){
 }
 
 var HOUSE_GM_ONLY_ACTIONS = ["open-house-perks-editor", "house-perk-save", "house-perk-move", "house-perk-archive", "house-perk-restore", "house-perk-add",
-  "open-house-secrets", "house-secret-hp", "house-secret-stat-add", "house-secret-stat-remove", "house-secrets-save", "quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-players-edit", "expand-house-floor"];
+  "open-house-secrets", "house-secret-hp", "house-secret-stat-add", "house-secret-stat-remove", "house-secrets-save", "quick-delete-selected-room", "quick-duplicate-selected-room", "quick-toggle-floor-menu", "open-preset-room-modal", "open-add-floor-modal", "toggle-house-room-editor", "expand-house-floor"];
+// Lo único que puede hacer un jugador con permiso en su habitación: moverla y cambiarle el tamaño
+var HOUSE_ROOM_GEOM_ACTIONS = ["quick-step-room-size", "nudge-room", "resize-room"];
 var HOUSE_ROOM_EDIT_ACTIONS = ["quick-rename-selected-room", "quick-step-room-size", "quick-toggle-texture-menu", "quick-toggle-color-menu", "quick-toggle-icon-menu", "nudge-room", "resize-room", "set-room-color", "open-edit-room-modal",
   "canva-insert-asset", "canva-rotate-item", "canva-duplicate-item", "canva-delete-item", "canva-change-w", "canva-change-h", "canva-nudge-item",
   "canva-size-view", "canva-nudge-view", "canva-relocate-item", "canva-undo", "canva-redo", "canva-open-catalog", "canva-rename-start", "canva-rename-save"];
@@ -6565,6 +6595,7 @@ document.addEventListener("click", function(e){
     var guardRoomId = btn.getAttribute("data-room-id") || houseState.selectedRoomId;
     var guardRoom = (houseState.rooms || []).find(function(x){ return x.id === guardRoomId; });
     if(!guardRoom || !canUserEditRoomGeometry(guardRoom)) return;
+    if(!houseIsGm && HOUSE_ROOM_GEOM_ACTIONS.indexOf(act) === -1) return;
   }
 
   if(act === "set-house-tab"){
@@ -6582,8 +6613,11 @@ document.addEventListener("click", function(e){
     houseState.selectedRoomId = null;
     renderHouseView();
     return;
-  } else if(act === "toggle-house-players-edit"){
-    setHousePlayersCanEdit(!housePlayersCanEdit());
+  } else if(act === "toggle-house-room-editor"){
+    var reId = btn.getAttribute("data-char-id");
+    setHouseRoomEditor(reId, houseRoomEditors().indexOf(reId) === -1);
+    var reList = document.getElementById("houseRoomEditorsList");
+    if(reList) reList.outerHTML = renderHouseRoomEditorsList();
     return;
   } else if(act === "open-room-detail"){
     houseState.inspectorTab = btn.getAttribute("data-tab") || "muebles";
@@ -6981,7 +7015,7 @@ document.addEventListener("input", function(e){
   if(e.target && e.target.getAttribute("data-action") === "canva-custom-color-input"){
     var cciRId = e.target.getAttribute("data-room-id");
     var cciRoom = (houseState.rooms || []).find(function(x){ return x.id === cciRId; });
-    if(cciRoom && canUserEditRoomGeometry(cciRoom)) setRoomColor(cciRId, e.target.value);
+    if(cciRoom && canUserDecorateRoom(cciRoom)) setRoomColor(cciRId, e.target.value);
   } else if(e.target && e.target.getAttribute("data-action") === "modal-custom-color"){
     var hiddenInp2 = document.getElementById("editRoomColorValue");
     if(hiddenInp2) hiddenInp2.value = e.target.value;

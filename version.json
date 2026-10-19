@@ -1,6 +1,6 @@
 {
-  "version": "1.4.87.0",
-  "build": "2026.10.19.20",
-  "updatedAt": "2026-10-19T20:00:00Z",
-  "changelog": "Estados: quitar un buffo o debuff de tu ficha pide confirmación y se puede deshacer. El máster ve un aviso fuerte antes de eliminar un buffo del catálogo."
+  "version": "1.4.88.0",
+  "build": "2026.10.19.22",
+  "updatedAt": "2026-10-19T22:00:00Z",
+  "changelog": "La Casa: los jugadores solo usan el baúl. El máster, en el Panel secreto, decide jugador por jugador quién puede mover y cambiar el tamaño de su habitación."
 }
