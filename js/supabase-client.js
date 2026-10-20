@@ -231,6 +231,9 @@ function startRealtime(){
         .on('broadcast', { event: 'app_version_update' }, function(payload){
           if(payload && payload.payload && typeof handleRemoteVersionUpdate === 'function') handleRemoteVersionUpdate(payload.payload);
         })
+        .on('broadcast', { event: 'level_up' }, function(payload){
+          if(payload && payload.payload && typeof handleRemoteLevelUp === 'function') handleRemoteLevelUp(payload.payload);
+        })
         .on('broadcast', { event: 'char_sound' }, function(payload){
           if(payload && payload.payload && typeof handleRemoteCharSound === 'function') handleRemoteCharSound(payload.payload);
         })

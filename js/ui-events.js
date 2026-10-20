@@ -318,6 +318,16 @@ function handleClick(e){
     return;
   }
 
+  if(action==="toggle-vista-jugador"){
+    if(typeof esAdminReal !== "function" || !esAdminReal()) return;
+    flushPendingSync();
+    var vistaOn = !vistaComoJugador();
+    setVistaComoJugador(vistaOn);
+    renderTopbar(); renderTabbar(); renderTab();
+    showToast(vistaOn ? "👤 Vista de jugador: ves la web como un jugador. Toca la etiqueta para volver." : "🛡️ Vuelves a la vista de admin", "info");
+    return;
+  }
+
   if(action==="switch-tab"){
     if(document.activeElement && document.activeElement.matches("input, textarea, select")){
       try { document.activeElement.blur(); } catch(e){}
@@ -509,6 +519,12 @@ function handleClick(e){
       pushCharacterPatch(c.id, lvlPatch);
     }
     showToast("¡Nivel " + nextNv + " alcanzado! +" + ptsToAdd + " puntos de habilidad", "success");
+    if(!c.isNPC && typeof broadcastLevelUp === 'function'){
+      var lvlInfo = { charId: c.id, charDbId: c.db_id || null, charName: c.name, titulo: c.titulo || "", nivel: nextNv, puntos: ptsToAdd, puntosTotal: c.skillPoints, vida: hpGain, vidaMax: c.combat.pvMax, mana: (nextNv % 4 === 0) ? 5 : 0, manaMax: c.combat.manaMax };
+      broadcastLevelUp(lvlInfo);
+      // El admin que sube a su propio personaje también ve el momento
+      if(levelUpIsMine(c)){ levelUpMarkSeen(c, nextNv); levelUpShow(lvlInfo); }
+    }
     return;
   }
 

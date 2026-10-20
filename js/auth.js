@@ -46,6 +46,7 @@ function isGM(){
   if(!currentUser) return true;
   // Con sesión: solo vale el rol leído de profiles para ESTE usuario al iniciar sesión
   if(currentRoleUserId !== currentUser.id) return false;
+  if(vistaComoJugador()) return false;
   if(currentIsAdmin) return true;
   var r = (currentRole || '').toLowerCase();
   return r === 'gm' || r === 'master';
@@ -53,9 +54,28 @@ function isGM(){
 
 // Admin: lo de máster y además cuentas, accesos y copias (la base lo comprueba con es_admin())
 function isAdmin(){
+  if(!esAdminReal()) return false;
+  return !vistaComoJugador();
+}
+
+// Admin de verdad, aunque tenga puesta la vista de jugador
+function esAdminReal(){
   if(!currentUser) return false;
   if(currentRoleUserId !== currentUser.id) return false;
   return currentIsAdmin === true;
+}
+
+// "Ver como jugador": solo de pantalla para el admin; no cambia su rol ni sus permisos en la base
+function vistaComoJugador(){
+  if(!esAdminReal()) return false;
+  try { return localStorage.getItem("krysalis_vista_jugador") === "1"; } catch(e){ return false; }
+}
+
+function setVistaComoJugador(on){
+  try {
+    if(on) localStorage.setItem("krysalis_vista_jugador", "1");
+    else localStorage.removeItem("krysalis_vista_jugador");
+  } catch(e){}
 }
 
 // Borra cualquier rol o pertenencia heredada de otra sesión (state se guarda entero en localStorage)
@@ -191,7 +211,7 @@ async function supabaseLogout(){
   } catch(e) {
     console.error('Supabase error:', e);
   }
-  currentUser=null; resetSessionRole();
+  currentUser=null; resetSessionRole(); setVistaComoJugador(false);
   if(typeof lockApp === "function" && appLocked === false) lockApp();
 }
 

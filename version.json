@@ -1,6 +1,6 @@
 {
-  "version": "1.4.89.0",
-  "build": "2026.10.20.23",
-  "updatedAt": "2026-10-20T23:00:00Z",
-  "changelog": "Combate: la Defensa se calcula sola (Esquivar base + 5, sin buffos) para todos. Los jugadores ven sus valores de combate en modo lectura; el máster los sigue editando."
+  "version": "1.4.90.0",
+  "build": "2026.10.21.00",
+  "updatedAt": "2026-10-20T22:20:00Z",
+  "changelog": "Subir de nivel ahora es un momento épico (destello, número que cae, lo ganado y botón Repartir puntos) y los demás ven un aviso. La Ficha muestra siempre los puntos por repartir. El admin puede ver la web como un jugador tocando su etiqueta ADMIN."
 }
