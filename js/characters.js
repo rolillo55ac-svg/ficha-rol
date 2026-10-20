@@ -722,17 +722,6 @@ async function pullAllFromSupabase(){
         if(cName === "cherk" || cName.includes("cherk") || c.id === "char_cherk" || c.db_id === "a8039428-8ee7-4e31-baba-c6a1d8b6d8f3"){
           var needsPatch = false;
           var patch = {};
-          if(num(c.nivel, 1) > 1 && !c._leveledByGM){
-            c.nivel = "1";
-            patch.nivel = "1";
-            if(!c.combat) c.combat = {};
-            c.combat.pvMax = 20;
-            if(num(c.combat.pvActual, 20) > 20) c.combat.pvActual = 20;
-            c.combat.manaMax = 10;
-            if(num(c.combat.manaActual, 10) > 10) c.combat.manaActual = 10;
-            patch.combat = c.combat;
-            needsPatch = true;
-          }
           if(!c.skillBonus) c.skillBonus = {};
           if(num(c.skillBonus.piedras, 0) < 1){
             c.skillBonus.piedras = 1;

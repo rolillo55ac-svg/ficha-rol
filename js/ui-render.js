@@ -1166,12 +1166,17 @@ function tplEstados(c){
 
 function combatStat(label,bind,val,rollable){
   var c = activeChar();
-  var canEdit = canEditChar(c);
+  // Solo máster y admin escriben estos valores; la Defensa sale de Esquivar base + 5
+  var isDef = bind === "defensa";
+  var canEdit = canEditChar(c) && isGM() && !isDef;
+  if(isDef) val = defensaBase(c);
   var eff = getEffectiveCombatStat(bind, c);
   var diff = eff - num(val, 0);
   var diffBadge = diff !== 0 ? '<span class="stat-eff-tag '+(diff>0?'pos':'neg')+'" title="Valor efectivo">'+(diff>0?'+'+diff:diff)+' (Total: '+eff+')</span>' : '';
   return '<div class="combat-stat k-stat"><label class="k-stat-label">'+esc(label)+diffBadge+'</label>'+
-    '<input type="number" class="k-stat-value" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'" '+(canEdit?'':'readonly')+'>'+
+    (canEdit
+      ? '<input type="number" class="k-stat-value" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'">'
+      : '<span class="k-stat-value" data-stat="combat.'+bind+'" aria-label="'+esc(label)+'"'+(isDef?' title="Esquivar base + 5"':'')+'>'+num(val,0)+'</span>')+
     (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa" title="Tirar Iniciativa (1d10 + '+eff+')">&#127922;</button>':'')+
   '</div>';
 }
