@@ -27,7 +27,10 @@ function levelUpMarkSeen(c, nivel){
 function handleRemoteLevelUp(info){
   if(!info || !info.nivel) return;
   var c = levelUpFindChar(info);
-  if(levelUpIsMine(c) && !isGM()){
+  if(levelUpIsMine(c)){
+    var seen = null;
+    try { seen = localStorage.getItem(levelUpSeenKey(c)); } catch(e){}
+    if(seen !== null && num(seen, 0) >= num(info.nivel, 0)) return;
     levelUpMarkSeen(c, info.nivel);
     levelUpShow(info);
   } else {
@@ -37,7 +40,7 @@ function handleRemoteLevelUp(info){
 
 // Si el jugador no estaba conectado cuando subió, lo ve al entrar (sin el detalle de lo ganado)
 function levelUpCheckSeen(c){
-  if(!levelUpIsMine(c) || isGM()) return;
+  if(!levelUpIsMine(c)) return;
   var nv = num(c.nivel, 1);
   var seen = null;
   try { seen = localStorage.getItem(levelUpSeenKey(c)); } catch(e){ return; }

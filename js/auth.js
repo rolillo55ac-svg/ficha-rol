@@ -211,7 +211,7 @@ async function supabaseLogout(){
   } catch(e) {
     console.error('Supabase error:', e);
   }
-  currentUser=null; resetSessionRole();
+  currentUser=null; resetSessionRole(); setVistaComoJugador(false);
   if(typeof lockApp === "function" && appLocked === false) lockApp();
 }
 
