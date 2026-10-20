@@ -520,7 +520,7 @@ function handleClick(e){
     }
     showToast("¡Nivel " + nextNv + " alcanzado! +" + ptsToAdd + " puntos de habilidad", "success");
     if(!c.isNPC && typeof broadcastLevelUp === 'function'){
-      var lvlInfo = { charId: c.id, charDbId: c.db_id || null, charName: c.name, titulo: c.titulo || "", nivel: nextNv, puntos: ptsToAdd, vida: hpGain, vidaMax: c.combat.pvMax, mana: (nextNv % 4 === 0) ? 5 : 0, manaMax: c.combat.manaMax };
+      var lvlInfo = { charId: c.id, charDbId: c.db_id || null, charName: c.name, titulo: c.titulo || "", nivel: nextNv, puntos: ptsToAdd, puntosTotal: c.skillPoints, vida: hpGain, vidaMax: c.combat.pvMax, mana: (nextNv % 4 === 0) ? 5 : 0, manaMax: c.combat.manaMax };
       broadcastLevelUp(lvlInfo);
       // El admin que sube a su propio personaje también ve el momento
       if(levelUpIsMine(c)){ levelUpMarkSeen(c, nextNv); levelUpShow(lvlInfo); }

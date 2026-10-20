@@ -97,7 +97,8 @@ function levelUpShow(info){
   if(prev && prev.parentNode) prev.parentNode.removeChild(prev);
   var quieto = levelUpReducedMotion();
   var c = levelUpFindChar(info);
-  var puntos = c ? num(c.skillPoints, 0) : num(info.puntosTotal, 0);
+  // El aviso en directo puede llegar antes que los datos nuevos de la ficha
+  var puntos = Math.max(c ? num(c.skillPoints, 0) : 0, num(info.puntosTotal, 0));
   var titulo = info.titulo || (c && c.titulo) || "";
   var lines = levelUpGainLines(info);
 
