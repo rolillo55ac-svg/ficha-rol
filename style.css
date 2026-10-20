@@ -11653,3 +11653,400 @@ html.juice-off .kpick{animation:none;}
 .buff-card .creature-card-header > div:first-child{overflow-wrap:anywhere;min-width:0;}
 .buff-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
 @media (max-width:480px){ .buff-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+
+/* Tarea 62B: vista jugador, puntos por repartir y subida de nivel */
+
+/* 1. Etiqueta de vista en la cabecera */
+.role-badge-vista {
+  position: relative;
+  cursor: pointer;
+}
+
+.role-badge-vista::after {
+  content: "";
+  position: absolute;
+  inset: -14px -6px;
+}
+
+.role-badge.vista-jugador {
+  color: var(--teal-light);
+  border-color: var(--teal-light);
+  background: rgba(61,110,96,0.38);
+  box-shadow: 0 0 10px -2px rgba(118,172,157,0.65);
+}
+
+/* 2. Pastilla de puntos en la Ficha */
+.lvl-points-pill {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--spacing-xs);
+  padding: 6px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid var(--gold-light);
+  border-radius: 999px;
+  background: rgba(176,141,87,0.2);
+  color: var(--gold-light);
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  cursor: pointer;
+  animation: lvlupPillPulse 2.4s ease-in-out infinite;
+}
+
+.lvl-points-pill small {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 400;
+  font-family: var(--font-body);
+  color: var(--ink-dim);
+  line-height: 1.2;
+}
+
+@keyframes lvlupPillPulse {
+  0%, 100% {
+    box-shadow: 0 0 6px -1px rgba(222,195,146,0.25);
+  }
+  50% {
+    box-shadow: 0 0 16px 2px rgba(222,195,146,0.65);
+  }
+}
+
+/* 3. Momento de subida de nivel */
+.lvlup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--spacing-lg) + env(safe-area-inset-top, 0px)) calc(var(--spacing-md) + env(safe-area-inset-right, 0px)) calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px)) calc(var(--spacing-md) + env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+  overflow-y: auto;
+  animation: lvlupOverlayFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes lvlupOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lvlup-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--gold-light) 0%, rgba(176,141,87,0.55) 40%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: lvlupBurstGrow 1.2s ease-out forwards;
+}
+
+@keyframes lvlupBurstGrow {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+  }
+}
+
+.lvlup-card {
+  position: relative;
+  z-index: 1;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  background: rgba(26,18,13,0.88);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: var(--spacing-lg) var(--spacing-md);
+  box-sizing: border-box;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+}
+
+.lvlup-sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.lvlup-spark {
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 0 0 6px var(--gold-light);
+  opacity: 0;
+  pointer-events: none;
+  animation: lvlupSparkShoot 1.2s ease-out forwards;
+}
+
+@keyframes lvlupSparkShoot {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.lvlup-num {
+  font-family: var(--font-display);
+  font-size: 6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold-light);
+  text-shadow: 0 0 20px rgba(222,195,146,0.65), 0 0 40px rgba(176,141,87,0.45);
+  margin: 0 0 var(--spacing-xs);
+  animation: lvlupNumBounce 0.9s ease-out forwards;
+}
+
+@keyframes lvlupNumBounce {
+  0% {
+    transform: translateY(-120vh);
+    opacity: 0;
+  }
+  58% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  72% {
+    transform: translateY(-22px);
+  }
+  84% {
+    transform: translateY(0);
+  }
+  93% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.lvlup-title {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--gold-light);
+  margin: 0 0 var(--spacing-xs);
+  opacity: 0;
+  animation: lvlupTitleZoom 0.4s ease-out 0.8s both;
+}
+
+@keyframes lvlupTitleZoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.65);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.lvlup-name {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink-dim);
+  margin: 0 0 var(--spacing-md);
+  opacity: 0;
+  animation: lvlupFadeIn 0.4s ease-out 0.85s both;
+}
+
+@keyframes lvlupFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lvlup-gains {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-sm) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lvlup-gains > li {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.4;
+  opacity: 0;
+  animation: lvlupGainRise 0.4s ease-out both;
+}
+
+.lvlup-gains > li::before {
+  content: "✦ ";
+  color: var(--gold-light);
+  margin-right: 4px;
+}
+
+@keyframes lvlupGainRise {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lvlup-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  opacity: 0;
+  animation: lvlupBtnsRise 0.4s ease-out 1.6s both;
+}
+
+@keyframes lvlupBtnsRise {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lvlup-btn {
+  width: 100%;
+  min-height: 48px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 4. Modo sin movimiento (lvlup-quieto, juice-off y prefers-reduced-motion) */
+.lvlup-overlay.lvlup-quieto,
+.lvlup-overlay.lvlup-quieto .lvlup-burst,
+.lvlup-overlay.lvlup-quieto .lvlup-card,
+.lvlup-overlay.lvlup-quieto .lvlup-sparks,
+.lvlup-overlay.lvlup-quieto .lvlup-spark,
+.lvlup-overlay.lvlup-quieto .lvlup-num,
+.lvlup-overlay.lvlup-quieto .lvlup-title,
+.lvlup-overlay.lvlup-quieto .lvlup-name,
+.lvlup-overlay.lvlup-quieto .lvlup-gains,
+.lvlup-overlay.lvlup-quieto .lvlup-gains > li,
+.lvlup-overlay.lvlup-quieto .lvlup-btns,
+.lvlup-overlay.lvlup-quieto .lvlup-btn,
+html.juice-off .lvlup-overlay,
+html.juice-off .lvlup-burst,
+html.juice-off .lvlup-card,
+html.juice-off .lvlup-sparks,
+html.juice-off .lvlup-spark,
+html.juice-off .lvlup-num,
+html.juice-off .lvlup-title,
+html.juice-off .lvlup-name,
+html.juice-off .lvlup-gains,
+html.juice-off .lvlup-gains > li,
+html.juice-off .lvlup-btns,
+html.juice-off .lvlup-btn,
+html.juice-off .lvl-points-pill {
+  animation: none;
+}
+
+.lvlup-overlay.lvlup-quieto,
+html.juice-off .lvlup-overlay {
+  opacity: 1;
+}
+
+.lvlup-overlay.lvlup-quieto .lvlup-burst,
+.lvlup-overlay.lvlup-quieto .lvlup-sparks,
+.lvlup-overlay.lvlup-quieto .lvlup-spark,
+html.juice-off .lvlup-burst,
+html.juice-off .lvlup-sparks,
+html.juice-off .lvlup-spark {
+  display: none;
+}
+
+.lvlup-overlay.lvlup-quieto .lvlup-num,
+.lvlup-overlay.lvlup-quieto .lvlup-title,
+.lvlup-overlay.lvlup-quieto .lvlup-name,
+.lvlup-overlay.lvlup-quieto .lvlup-gains > li,
+.lvlup-overlay.lvlup-quieto .lvlup-btns,
+html.juice-off .lvlup-num,
+html.juice-off .lvlup-title,
+html.juice-off .lvlup-name,
+html.juice-off .lvlup-gains > li,
+html.juice-off .lvlup-btns {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lvl-points-pill,
+  .lvlup-overlay,
+  .lvlup-burst,
+  .lvlup-card,
+  .lvlup-sparks,
+  .lvlup-spark,
+  .lvlup-num,
+  .lvlup-title,
+  .lvlup-name,
+  .lvlup-gains,
+  .lvlup-gains > li,
+  .lvlup-btns,
+  .lvlup-btn {
+    animation: none;
+  }
+
+  .lvlup-overlay {
+    opacity: 1;
+  }
+
+  .lvlup-burst,
+  .lvlup-sparks,
+  .lvlup-spark {
+    display: none;
+  }
+
+  .lvlup-num,
+  .lvlup-title,
+  .lvlup-name,
+  .lvlup-gains > li,
+  .lvlup-btns {
+    opacity: 1;
+    transform: none;
+  }
+}
+

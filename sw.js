@@ -64,6 +64,7 @@ const PRECACHE_ASSETS = [
   './js/ui-modals.js',
   './js/ui-render.js',
   './js/ui-events.js',
+  './js/levelup.js',
   './js/app.js',
   './js/ui-juice.js'
 ];

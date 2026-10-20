@@ -24,7 +24,7 @@ function renderTopbar(){
   var canEdit = canEditChar(c);
   var roleBadgeHtml = '';
   if(isGM()){
-    roleBadgeHtml = (typeof isAdmin === 'function' && isAdmin()) ? '<span class="role-badge admin">🛡️ ADMIN</span>' : '<span class="role-badge gm">★ GM</span>';
+    roleBadgeHtml = (typeof isAdmin === 'function' && isAdmin()) ? '<span class="role-badge admin role-badge-vista" data-action="toggle-vista-jugador" role="button" tabindex="0" title="Tocar para ver la web como un jugador">🛡️ ADMIN</span>' : '<span class="role-badge gm">★ GM</span>';
     if(!isNPC){
       if(c.ownerEmail){
         roleBadgeHtml += '<span class="char-owner-topbar-tag" title="Asignado a ' + esc(c.ownerEmail) + '">👤 ' + esc(c.ownerEmail) + '</span>';
@@ -32,6 +32,8 @@ function renderTopbar(){
         roleBadgeHtml += '<span class="char-owner-topbar-tag unassigned" title="Personaje sin jugador asignado">○ Libre</span>';
       }
     }
+  } else if(typeof vistaComoJugador === 'function' && vistaComoJugador()){
+    roleBadgeHtml = '<span class="role-badge vista-jugador role-badge-vista" data-action="toggle-vista-jugador" role="button" tabindex="0" title="Estás viendo la web como un jugador. Toca para volver a admin">👤 VISTA JUGADOR</span>';
   } else if(currentUser){
     if(canEdit){
       roleBadgeHtml = '<span class="role-badge player" title="Tu personaje (Control total)">Jugador</span>';
@@ -81,6 +83,7 @@ function renderTopbar(){
       (canEdit ? gaugeTrayHtml(gaugeTrayOpen, gaugeTrayOpen==='hp' ? curPv+' / '+maxHp : (gaugeTrayOpen==='shield' ? num(c.combat.escudoActual,0) : num(c.combat.manaActual,0)+' / '+maxMana)) : '')+
     '</div>';
   if(!canEdit) gaugeTrayClose(false);
+  if(typeof levelUpCheckSeen === 'function') levelUpCheckSeen(c);
 }
 
 // Tira de botones que se despliega al tocar una barra (solo una abierta; se cierra sola a los 5 s)
@@ -228,6 +231,13 @@ function tplFicha(c){
   var canEdit = canEditChar(c);
   var ro = !canEdit;
 
+  // Puntos de habilidad sin gastar, siempre a la vista junto al nivel
+  var levelPointsPill = '';
+  var ptsLibres = num(c.skillPoints, 0);
+  if(!c.isNPC && ptsLibres > 0){
+    levelPointsPill = '<button type="button" class="lvl-points-pill" data-action="switch-tab" data-tab="habilidades" title="Ir a Habilidades">✨ '+ptsLibres+' '+(ptsLibres === 1 ? 'punto' : 'puntos')+' por repartir'+((c.skillPointsUnlocked || isGM()) ? '' : ' <small>(el máster abrirá el reparto)</small>')+'</button>';
+  }
+
   // Aviso de gemas talladas que esperan el veredicto del máster
   var pendingStones = (c.stones || []).filter(function(st){ return st.pendienteMaster; });
   var stoneNotice = pendingStones.length ? '<div class="lapidary-verdict-status wait" style="margin-bottom:12px;"><span class="ic">⏳</span><span><b>' + (pendingStones.length === 1 ? 'Una gema tallada espera' : pendingStones.length + ' gemas talladas esperan') + ' al máster</b>: decidirá si aguanta' + (pendingStones.length === 1 ? '' : 'n') + '. Lo verás en la pestaña Piedras.</span></div>' : '';
@@ -285,7 +295,7 @@ function tplFicha(c){
         '<div class="field-grid">'+
           field("Nombre", "name", c.name, "text", ro)+
           (isGM() && !c.isNPC ? '<div class="field"><label>👤 Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
-          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(isGM() ? '' : 'readonly')+'>'+levelControl+'</div></div>'+
+          '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(isGM() ? '' : 'readonly')+'>'+levelControl+'</div>'+levelPointsPill+'</div>'+
           '<div class="field"><label>Título</label><input type="text" data-bind="titulo" value="'+esc(c.titulo||"")+'" placeholder="ej: Vástago" '+(isGM() ? '' : 'readonly')+'></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text", ro)+
           field("Lugar Nacimiento","lugarNacimiento",c.lugarNacimiento,"text", ro)+
