@@ -1596,10 +1596,17 @@ function parseShieldBonus(modStr){
   return parseInt(clean, 10) || 0;
 }
 
+// Defensa = Esquivar base + 5, igual para todos: sin buffos de atributo (TK-T47Q)
+function defensaBase(c){
+  if(!c) return 5;
+  return num(c.attrs ? c.attrs.destreza : 0, 0) + num(c.skillBonus ? c.skillBonus.esquivar : 0, 0) + 5;
+}
+
 function getEffectiveCombatStat(statKey, c){
   var isShield = isShieldAttr(statKey);
-  var base = isShield ? num(c.combat ? c.combat.escudoActual : 0, 0) : num(c.combat ? c.combat[statKey] : 0, 0);
-  if(c.buffs && c.buffs.mono && !isShield){
+  var isDef = statKey === "defensa";
+  var base = isShield ? num(c.combat ? c.combat.escudoActual : 0, 0) : (isDef ? defensaBase(c) : num(c.combat ? c.combat[statKey] : 0, 0));
+  if(c.buffs && c.buffs.mono && !isShield && !isDef){
     base -= 1;
   }
   if(c.activeBuffs){
@@ -1609,7 +1616,7 @@ function getEffectiveCombatStat(statKey, c){
         var b = parseFloat(ab.bonus);
         if(!isNaN(b)) base += b;
       }
-      if(ab.attr === "todo" && ab.bonus){
+      if(ab.attr === "todo" && ab.bonus && !isDef){
         var bAll = parseFloat(ab.bonus);
         if(!isNaN(bAll)) base += bAll;
       }
@@ -1623,7 +1630,7 @@ function getEffectiveCombatStat(statKey, c){
           var spNum = parseFloat(sp.statMod);
           if(!isNaN(spNum)) base += spNum * stacks;
         }
-        if(sp.statAttr === "todo"){
+        if(sp.statAttr === "todo" && !isDef){
           var spAll = parseFloat(sp.statMod);
           if(!isNaN(spAll)) base += spAll * stacks;
         }
