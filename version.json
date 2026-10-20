@@ -1,6 +1,6 @@
 {
-  "version": "1.4.88.0",
-  "build": "2026.10.19.22",
-  "updatedAt": "2026-10-19T22:00:00Z",
-  "changelog": "La Casa: los jugadores solo usan el baúl. El máster, en el Panel secreto, decide jugador por jugador quién puede mover y cambiar el tamaño de su habitación."
+  "version": "1.4.89.0",
+  "build": "2026.10.20.23",
+  "updatedAt": "2026-10-20T23:00:00Z",
+  "changelog": "Combate: la Defensa se calcula sola (Esquivar base + 5, sin buffos) para todos. Los jugadores ven sus valores de combate en modo lectura; el máster los sigue editando."
 }
