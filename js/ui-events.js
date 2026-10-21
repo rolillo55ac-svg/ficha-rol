@@ -1203,6 +1203,11 @@ function handleClick(e){
     quitarDeLista(c, "inventory", iid, "este objeto");
     return;
   }
+  if(action==="toggle-stat-info"){
+    var siBox = btn.parentNode && btn.parentNode.querySelector(".stat-info-text");
+    if(siBox) siBox.hidden = !siBox.hidden;
+    return;
+  }
   if(action==="toggle-spell-edit"){
     var tsId = btn.getAttribute("data-id");
     state._spellEdit = state._spellEdit || {};

@@ -1176,17 +1176,24 @@ function tplEstados(c){
 
 function combatStat(label,bind,val,rollable){
   var c = activeChar();
-  // Solo máster y admin escriben estos valores; la Defensa sale de Esquivar base + 5
+  // Nadie escribe estos valores a mano: la Defensa sale de Destreza + Esquivar + 5 y el resto son valores de la ficha
   var isDef = bind === "defensa";
-  var canEdit = canEditChar(c) && isGM() && !isDef;
   if(isDef) val = defensaBase(c);
   var eff = getEffectiveCombatStat(bind, c);
   var diff = eff - num(val, 0);
   var diffBadge = diff !== 0 ? '<span class="stat-eff-tag '+(diff>0?'pos':'neg')+'" title="Valor efectivo">'+(diff>0?'+'+diff:diff)+' (Total: '+eff+')</span>' : '';
+  var info;
+  if(isDef){
+    info = 'Defensa '+num(val,0)+' = Destreza '+num(c.attrs ? c.attrs.destreza : 0, 0)+' + Esquivar '+num(c.skillBonus ? c.skillBonus.esquivar : 0, 0)+' + 5. Los estados no la cambian.';
+  } else if(bind === "escudoActual"){
+    info = 'Escudo actual: '+num(val,0)+'. Sube y baja con los botones de la barra de escudo y con los estados activos.';
+  } else {
+    info = label+' '+num(val,0)+': valor propio del personaje.'+(diff !== 0 ? ' Con estados y magias activos: '+eff+'.' : ' Cambia con estados y magias activos.');
+  }
   return '<div class="combat-stat k-stat"><label class="k-stat-label">'+esc(label)+diffBadge+'</label>'+
-    (canEdit
-      ? '<input type="number" class="k-stat-value" data-bind="combat.'+bind+'" value="'+num(val,0)+'" aria-label="'+esc(label)+'">'
-      : '<span class="k-stat-value" data-stat="combat.'+bind+'" aria-label="'+esc(label)+'"'+(isDef?' title="Esquivar base + 5"':'')+'>'+num(val,0)+'</span>')+
+    '<span class="k-stat-value" data-stat="combat.'+bind+'" aria-label="'+esc(label)+'">'+num(val,0)+'</span>'+
+    '<button type="button" class="stat-info-btn" data-action="toggle-stat-info" aria-label="De dónde sale '+esc(label)+'">&#9432;</button>'+
+    '<div class="stat-info-text" hidden>'+esc(info)+'</div>'+
     (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa" title="Tirar Iniciativa (1d10 + '+eff+')">&#127922;</button>':'')+
   '</div>';
 }

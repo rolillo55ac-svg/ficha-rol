@@ -11222,6 +11222,35 @@ html.juice-off .juice-spark {
   margin-left: 4px;
 }
 
+.combat-stat.k-stat .stat-info-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: .95rem;
+  cursor: pointer;
+}
+
+.combat-stat.k-stat .stat-info-text {
+  font-size: .7rem;
+  line-height: 1.35;
+  color: var(--ink-dim);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.combat-stat.k-stat .stat-info-text[hidden] {
+  display: none;
+}
+
 
 /* ===== Lista de misiones: filtros, buscador y filas plegables ===== */
 .quest-type-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:var(--spacing-sm);}
