@@ -1155,6 +1155,19 @@ main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow
 .money-field{flex:1;background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 11px;}
 .money-field label{display:block;font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;margin-bottom:3px;letter-spacing:.03em;}
 .money-field input{width:100%;background:none;border:none;font-family:var(--font-mono);font-size:1.15rem;color:var(--gold-light);min-height:36px;}
+.money-row.has-steps{flex-wrap:wrap;}
+.money-row.has-steps .money-field{min-width:240px;}
+.money-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;}
+.money-steps .money-step-btn{min-height:44px;padding:0 4px;font-family:var(--font-mono);font-weight:700;font-size:.85rem;}
+.money-steps .money-step-btn.minus{color:var(--ink-dim);}
+.money-steps .money-step-btn.plus{color:var(--gold-light);}
+.money-log{margin-top:8px;}
+.money-log:empty{display:none;}
+.money-log-title{font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px;}
+.money-log-row{display:flex;justify-content:space-between;gap:8px;font-size:.75rem;padding:3px 0;border-top:1px solid var(--line);}
+.money-log-delta{font-family:var(--font-mono);color:var(--teal-light);}
+.money-log-delta.neg{color:var(--ink-dim);}
+.money-log-meta{color:var(--ink-faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
 /* CRIATURAS Y ALQUIMIA */
 .creature-card{

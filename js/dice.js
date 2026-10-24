@@ -342,6 +342,25 @@ function playDiceAudio(type){
   else { playBg3DiceRoll(); setTimeout(playBg3DiceLand, 380); }
 }
 
+// Tintineo corto de monedas (botones de dinero)
+function playCoinSound(){
+  var ctx = getAudioCtx(); if(!ctx) return;
+  var now = ctx.currentTime;
+  [{ t: 0, f: 2350 }, { t: 0.07, f: 3150 }].forEach(function(n){
+    try {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(n.f, now + n.t);
+      gain.gain.setValueAtTime(0.0001, now + n.t);
+      gain.gain.linearRampToValueAtTime(0.12, now + n.t + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + 0.18);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now + n.t); osc.stop(now + n.t + 0.2);
+    } catch(e){}
+  });
+}
+
 /* --- SONIDOS DE PERSONAJE & EFECTO MURCIÉLAGO (TICKET #TK-CFJX) --- */
 
 var charAudioInstance = null;

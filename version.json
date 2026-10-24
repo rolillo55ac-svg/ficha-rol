@@ -1,6 +1,6 @@
 {
-  "version": "1.4.93.0",
-  "build": "2026.10.24.02",
-  "updatedAt": "2026-10-24T19:30:00Z",
-  "changelog": "Los reportes ya no se pueden borrar: atendido los guarda como atendidos. Discord recibe aviso al crear, responder y cambiar el estado de un reporte, también los largos. En Ajustes › Admin se ve el último aviso a Discord y se puede probar."
+  "version": "1.4.94.0",
+  "build": "2026.10.24.03",
+  "updatedAt": "2026-10-24T21:00:00Z",
+  "changelog": "Inventario: botones para sumar o quitar 1, 5, 10 y 25 de oro y de plata (nunca baja de 0), con la lista de últimos movimientos. Entrenamientos: los atributos ya no se entrenan; los antiguos se ven en gris y no cuentan."
 }

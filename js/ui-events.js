@@ -576,6 +576,7 @@ function handleClick(e){
     var trId = btn.getAttribute("data-id");
     var trObj = (c.trainings || []).find(function(t){ return t.id === trId; });
     if(!trObj){ showToast("Entrenamiento no encontrado.", "error"); return; }
+    if(typeof isLegacyAttrTraining === "function" && isLegacyAttrTraining(trObj)){ showToast("Los atributos no se entrenan: este entrenamiento es antiguo y no cuenta.", "warning"); return; }
     var targetSkillId = "";
     if(trObj.linkedId){
       targetSkillId = trObj.linkedId.startsWith("skill:") ? trObj.linkedId.replace("skill:", "") : trObj.linkedId;
@@ -2253,6 +2254,23 @@ function handleClick(e){
   if(action==="del-passivePos"){ if(!c || !canEditChar(c)) return; var ppId = btn.getAttribute("data-id"); c.passivesPos = (c.passivesPos || []).filter(function(p){return p.id!==ppId;}); renderTab(); manageListItemRPC(c, 'passivesPos', 'remove', null, ppId); return; }
   if(action==="add-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = c.goddessTable || []; var newGd = {id:uid(),nombre:"",gustos:"",disgustos:""}; c.goddessTable.push(newGd); renderTab(); manageListItemRPC(c, 'goddessTable', 'add', newGd); return; }
   if(action==="del-goddess"){ if(!c || !canEditChar(c)) return; var gdId = btn.getAttribute("data-id"); c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==gdId;}); renderTab(); manageListItemRPC(c, 'goddessTable', 'remove', null, gdId); return; }
+  if(action==="money-step"){
+    if(!c || !canEditChar(c)) return;
+    var mPart = btn.getAttribute("data-part") === "plata" ? "plata" : "oro";
+    var mDelta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
+    c.money = c.money || { oro: 0, plata: 0 };
+    var mOld = Math.max(0, num(c.money[mPart], 0));
+    var mNew = Math.max(0, mOld + mDelta);
+    if(mNew === mOld){ showToast("No puede bajar de 0.", "info"); return; }
+    c.money[mPart] = mNew;
+    var mInput = document.querySelector('input[data-bind="money.' + mPart + '"]');
+    if(mInput){ mInput.value = mNew; mInput.setAttribute("data-last-val", mNew); }
+    try { if(navigator.vibrate) navigator.vibrate(10); } catch(eVib){}
+    if(typeof playCoinSound === "function") playCoinSound();
+    if(mPart === "oro") changeMoneyRPC(c, mNew - mOld, 0);
+    else changeMoneyRPC(c, 0, mNew - mOld);
+    return;
+  }
   if(action==="add-training"){
     if(!c || !canEditChar(c)) return;
     c.trainings = c.trainings || [];
@@ -2458,6 +2476,7 @@ function handleClick(e){
     var trId = btn.getAttribute("data-id");
     var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
     if(!tr) return;
+    if(typeof isLegacyAttrTraining === "function" && isLegacyAttrTraining(tr)){ showToast("Los atributos no se entrenan: este entrenamiento es antiguo y no cuenta.", "warning"); return; }
 
     var sides = tr.sides || (tr.type === "new" ? 20 : 10);
     tr.sides = sides;
@@ -2491,6 +2510,7 @@ function handleClick(e){
     var trId = btn.getAttribute("data-id");
     var tr = (c.trainings || []).find(function(x){ return x.id === trId; });
     if(!tr) return;
+    if(typeof isLegacyAttrTraining === "function" && isLegacyAttrTraining(tr)){ showToast("Los atributos no se entrenan: este entrenamiento es antiguo y no cuenta.", "warning"); return; }
 
     var input = document.querySelector('input[data-manual-for="' + trId + '"]');
     if(!input) return;
