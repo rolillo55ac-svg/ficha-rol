@@ -234,6 +234,9 @@ function startRealtime(){
         .on('broadcast', { event: 'level_up' }, function(payload){
           if(payload && payload.payload && typeof handleRemoteLevelUp === 'function') handleRemoteLevelUp(payload.payload);
         })
+        .on('broadcast', { event: 'long_rest' }, function(payload){
+          if(payload && payload.payload && typeof handleRemoteLongRest === 'function') handleRemoteLongRest(payload.payload);
+        })
         .on('broadcast', { event: 'char_sound' }, function(payload){
           if(payload && payload.payload && typeof handleRemoteCharSound === 'function') handleRemoteCharSound(payload.payload);
         })

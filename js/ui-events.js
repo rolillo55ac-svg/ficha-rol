@@ -1094,6 +1094,13 @@ function handleClick(e){
     if(b){ b.visible = b.visible===false ? true : false; saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab(); }
     return;
   }
+  if(action==="toggle-buff-longrest"){
+    // Llega con el clic y con el cambio: solo cuenta el cambio
+    if(!isGM() || e.type !== "change") return;
+    var lrB = (state.buffCatalog||[]).find(function(x){return x.id===btn.getAttribute("data-id");});
+    if(lrB){ lrB.longRestReset = !!btn.checked; saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); }
+    return;
+  }
   if(action==="add-global-buff"){
     if(!isGM()) return;
     if(!state.buffCatalog) state.buffCatalog = [];
