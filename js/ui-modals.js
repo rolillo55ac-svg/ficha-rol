@@ -278,6 +278,7 @@ function openDataModal(screen){
         settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
         settingsRow("settings-go", "jugadores", "👥", "Jugadores", "Crear cuentas, contraseñas y roles")+
         settingsRow("settings-go", "actividad", "🕒", "Actividad", "Entradas, intentos fallidos y tiempo de uso")+
+        settingsRow("discord-probar", "", "🔔", "Avisos a Discord", '<span id="settingsDiscordState">' + discordUltimoAvisoText() + '</span>')+
       '</div>';
     }
     html += '<div class="settings-list settings-logout">'+
@@ -695,6 +696,15 @@ function modalClick(e){
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
   if(action==="settings-go"){ openDataModal(btn.getAttribute("data-screen")); return; }
+  if(action==="discord-probar"){
+    var dEl = document.getElementById("settingsDiscordState");
+    if(dEl) dEl.textContent = "Enviando aviso de prueba…";
+    postDiscord({ content: "🔔 Aviso de prueba desde Ajustes › Admin (" + PARTIDA_ACTUAL.nombre + ")." }).then(function(){
+      var d2 = document.getElementById("settingsDiscordState");
+      if(d2) d2.innerHTML = discordUltimoAvisoText();
+    });
+    return;
+  }
   if(action.indexOf("cuenta-") === 0){ cuentaAccion(action, btn); return; }
   if(action==="partida-pick"){ cambiarPartida(btn.getAttribute("data-partida")); return; }
   if(action==="toggle-sound"){
@@ -1402,14 +1412,57 @@ async function postDiscord(payload){
   if(typeof supabaseClient === "undefined" || !supabaseClient || !currentUser || !supabaseClient.functions){
     return { success: false, reason: "sin_sesion" };
   }
+  var res;
   try{
-    var fr = await supabaseClient.functions.invoke("discord-notify", { body: { payload: payload } });
-    if(!fr.error) return { success: true };
-    console.warn("Error en discord-notify:", fr.error.message);
-    return { success: false, error: fr.error.message };
+    var fr = await supabaseClient.functions.invoke("discord-notify", { body: { payload: discordRecortar(payload) } });
+    if(!fr.error) res = { success: true };
+    else {
+      console.warn("Error en discord-notify:", fr.error.message);
+      res = { success: false, error: fr.error.message };
+    }
   }catch(e){
-    return { success: false, error: String(e) };
+    res = { success: false, error: String(e) };
   }
+  try { localStorage.setItem(pkey("krysalis_ultimo_aviso_discord"), JSON.stringify({ at: new Date().toISOString(), ok: res.success, error: res.error || "" })); } catch(e){}
+  return res;
+}
+
+// Discord rechaza los avisos que pasan sus límites (título 256, texto 4096, cada campo 1024) y la
+// función los que pasan de 8000 bytes: se recortan aquí para que un reporte largo llegue igual.
+function discordRecortar(payload){
+  function corta(s, n){ s = String(s == null ? "" : s); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  var p = JSON.parse(JSON.stringify(payload || {}));
+  if(p.content) p.content = corta(p.content, 1900);
+  (p.embeds || []).forEach(function(em){
+    if(em.title) em.title = corta(em.title, 256);
+    if(em.description) em.description = corta(em.description, 3000);
+    (em.fields || []).forEach(function(f){ f.name = corta(f.name, 256) || "-"; f.value = corta(f.value, 1000) || "-"; });
+    if(em.footer && em.footer.text) em.footer.text = corta(em.footer.text, 300);
+  });
+  function letras(){
+    return (p.embeds || []).reduce(function(n, em){
+      return n + (em.title || "").length + (em.description || "").length + ((em.footer && em.footer.text) || "").length +
+        (em.fields || []).reduce(function(m, f){ return m + f.name.length + f.value.length; }, 0);
+    }, 0);
+  }
+  var lim = 2000;
+  while((JSON.stringify({ payload: p }).length > 7500 || letras() > 5800) && lim >= 50){
+    (p.embeds || []).forEach(function(em){
+      if(em.description) em.description = corta(em.description, lim);
+      (em.fields || []).forEach(function(f){ f.value = corta(f.value, Math.min(1000, lim)); });
+    });
+    lim = Math.floor(lim / 2);
+  }
+  return p;
+}
+
+function discordUltimoAvisoText(){
+  var u = null;
+  try { u = JSON.parse(localStorage.getItem(pkey("krysalis_ultimo_aviso_discord")) || "null"); } catch(e){}
+  if(!u || !u.at) return "Sin avisos desde este dispositivo · toca para probar";
+  var min = Math.max(0, Math.round((Date.now() - new Date(u.at).getTime()) / 60000));
+  var hace = min < 1 ? "ahora mismo" : min < 60 ? ("hace " + min + " min") : min < 1440 ? ("hace " + Math.round(min / 60) + " h") : ("hace " + Math.round(min / 1440) + " días");
+  return "Último aviso a Discord: " + hace + " · " + (u.ok ? "OK" : ("error: " + esc(String(u.error || "desconocido").slice(0, 80))));
 }
 
 function generateTicketCode(){
@@ -1754,12 +1807,12 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
 
       '<div class="field" style="margin-top:10px;">' +
         '<label for="fbTitle">Título o Asunto breve *</label>' +
-        '<input type="text" id="fbTitle" placeholder="Ej: No se aplica el crítico de mi espada, duda de sigilo..." value="' + (prefilledTitle ? esc(prefilledTitle) : "") + '" required>' +
+        '<input type="text" id="fbTitle" placeholder="Ej: No se aplica el crítico de mi espada, duda de sigilo..." value="' + (prefilledTitle ? esc(prefilledTitle) : "") + '" maxlength="200" required>' +
       '</div>' +
 
       '<div class="field" style="margin-top:10px;">' +
         '<label for="fbDesc">Descripción detallada *</label>' +
-        '<textarea id="fbDesc" rows="4" placeholder="Explica con detalle qué ocurrió o qué te gustaría mejorar..." required></textarea>' +
+        '<textarea id="fbDesc" rows="4" maxlength="5000" placeholder="Explica con detalle qué ocurrió o qué te gustaría mejorar..." required></textarea>' +
       '</div>' +
 
       '<div class="field" style="margin-top:10px;">' +
@@ -2229,7 +2282,7 @@ function openFeedbackAdminModal(filter){
     '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "all" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="all">Todos (' + allCount + ')</button>' +
     '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "pending" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="pending">🟡 Pendientes (' + pendingCount + ')</button>' +
     '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "in_progress" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="in_progress">🔵 En Proceso (' + inProgressCount + ')</button>' +
-    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "resolved" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="resolved">🟢 Resueltos (' + resolvedCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "resolved" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="resolved">🟢 Atendidos (' + resolvedCount + ')</button>' +
   '</div>';
 
   var reportsListHtml = '';
@@ -2257,7 +2310,7 @@ function openFeedbackAdminModal(filter){
           '<div class="status-segmented-control">' +
             '<button type="button" class="seg-btn ' + (st === 'pending' ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending" title="Marcar como Pendiente">🟡 Pendiente</button>' +
             '<button type="button" class="seg-btn ' + (st === 'in_progress' ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress" title="Marcar En Proceso">🔵 En Proceso</button>' +
-            '<button type="button" class="seg-btn ' + (st === 'resolved' ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved" title="Marcar como Resuelto">🟢 Resuelto</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'resolved' ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved" title="Marcar como Atendido">🟢 Atendido</button>' +
           '</div>' +
         '</div>' +
 
@@ -2307,13 +2360,6 @@ function openFeedbackAdminModal(filter){
               '🚀 Guardar y Enviar' +
             '</button>' +
           '</div>' +
-        '</div>' +
-
-        // Fila 6: Botón discreto de eliminar
-        '<div class="admin-ticket-footer">' +
-          '<button type="button" class="btn-delete-subtle" data-action="delete-admin-ticket" data-id="' + esc(r.id) + '">' +
-            '🗑️ Eliminar ticket' +
-          '</button>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -2437,6 +2483,14 @@ function feedbackModalClick(e){
           resolved_at: target.resolvedAt
         }).eq("id", id).then(function(){}).catch(function(){});
       }
+
+      var stLabel = { pending: "🟡 Pendiente", in_progress: "🔵 En proceso", resolved: "🟢 Atendido" }[newStatus] || newStatus;
+      var stTag = target.ticketCode ? ("#" + target.ticketCode) : "TICKET";
+      postDiscord({ embeds: [{
+        title: "[" + PARTIDA_ACTUAL.nombre + "] [" + stTag + "] Estado: " + stLabel,
+        description: "**Asunto:** " + (target.title || "Incidencia"),
+        color: newStatus === "resolved" ? 0x10B981 : newStatus === "in_progress" ? 0x3B82F6 : 0xFBBF24
+      }] });
 
       var playerTickets = getPlayerTickets();
       playerTickets.forEach(function(pt){
@@ -2595,22 +2649,6 @@ function feedbackModalClick(e){
       "CREATE POLICY \"Allow update app_feedback\" ON public.app_feedback FOR UPDATE USING (true);";
     fallbackCopyText(sqlMigrationText);
     showToast("¡SQL de migración copiado! Pégalo en el SQL Editor de Supabase 📋", "success");
-    return;
-  }
-
-  if(action === "delete-admin-ticket"){
-    var idDel = btn.getAttribute("data-id");
-    if(confirm("¿Seguro que deseas eliminar este ticket?")){
-      state.feedbackReports = (state.feedbackReports || []).filter(function(x){ return x.id !== idDel; });
-      saveState(false);
-
-      if(typeof supabaseClient !== "undefined" && supabaseClient && navigator.onLine){
-        supabaseClient.from("app_feedback").delete().eq("id", idDel).then(function(){}).catch(function(){});
-      }
-
-      openFeedbackAdminModal();
-      showToast("Ticket eliminado.", "info");
-    }
     return;
   }
 
