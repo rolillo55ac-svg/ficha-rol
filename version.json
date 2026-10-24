@@ -1,6 +1,6 @@
 {
-  "version": "1.4.91.0",
-  "build": "2026.10.21.01",
-  "updatedAt": "2026-10-21T23:00:00Z",
-  "changelog": "En Combate nadie escribe ya los valores a mano: se muestran calculados y un icono ⓘ explica de dónde sale cada uno."
+  "version": "1.4.92.0",
+  "build": "2026.10.24.01",
+  "updatedAt": "2026-10-24T12:00:00Z",
+  "changelog": "Las tiradas de entrenamiento salen una sola vez en el historial y cuentan el dado que se ve: crítico y pifia ya cuadran con el número. El historial dice el nombre de cada bonificador."
 }

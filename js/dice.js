@@ -1375,6 +1375,7 @@ var bg3RollState = {
   isFumble: false,
   isSuccess: false,
   onResolve: null,
+  onLanded: null,
   rerollFn: null
 };
 
@@ -1631,6 +1632,7 @@ function openBg3RollModal(cfg){
   bg3RollState.requestId = cfg.requestId || null;
   bg3RollState.requestDc = (typeof cfg.requestDc === "number") ? cfg.requestDc : null;
   bg3RollState.onResolve = cfg.onResolve || null;
+  bg3RollState.onLanded = cfg.onLanded || null;
   bg3RollState.rerollFn = cfg.rerollFn || null;
   bg3RollState.rolling = false;
   bg3RollState.resolved = false;
@@ -1887,6 +1889,15 @@ function triggerBg3Roll(launchIntensity){
       isCrit = (chosen === bg3RollState.sides);
       isFumble = (chosen === 1);
     }
+    // Quien abre la tirada puede decidir crítico/pifia y el texto con el dado natural (entrenamiento)
+    var landedInfo = null;
+    if(typeof bg3RollState.onLanded === "function"){
+      try { landedInfo = bg3RollState.onLanded({ natural: chosen, sides: bg3RollState.sides, total: grandTotal }) || null; } catch(e){ console.warn("onLanded:", e); }
+      if(landedInfo){
+        if(typeof landedInfo.isCrit === "boolean") isCrit = landedInfo.isCrit;
+        if(typeof landedInfo.isFumble === "boolean") isFumble = landedInfo.isFumble;
+      }
+    }
     bg3RollState.isCrit = isCrit;
     bg3RollState.isFumble = isFumble;
 
@@ -1946,10 +1957,18 @@ function triggerBg3Roll(launchIntensity){
           '<span class="v-chip v-chip-total" title="Total final"><span class="v-chip-label">★ Total</span> <b>' + grandTotal + '</b></span>' +
           '</div>';
 
+        if(landedInfo && landedInfo.formulaSuffix) breakdownHtml += '<div class="bg3-landed-note">' + esc(landedInfo.formulaSuffix) + '</div>';
         vMath.innerHTML = breakdownHtml;
       }
 
-      var formulaStr = (bg3RollState.isDamage ? "Daño: " : "") + (bg3RollState.qty && bg3RollState.qty > 1 ? bg3RollState.qty : "1") + "d" + bg3RollState.sides + " [" + r1 + (r2 !== null ? ", " + r2 : "") + (extraSum > 0 ? ", +" + extraSum : "") + "]" + (modSum !== 0 ? (modSum > 0 ? " +" + modSum : " " + modSum) : "") + " = " + grandTotal;
+      // Dado natural, cada modificador con su nombre y el total: "1d10 [7] + 3 (Pesca) + 1 (Drogado) = 11"
+      var modsStr = bg3RollState.modifiers.map(function(m){
+        var v = parseFloat(m.val) || 0;
+        if(!v) return "";
+        return (v > 0 ? " + " + v : " − " + Math.abs(v)) + (m.label ? " (" + m.label + ")" : "");
+      }).join("");
+      var formulaStr = (bg3RollState.isDamage ? "Daño: " : "") + (bg3RollState.qty && bg3RollState.qty > 1 ? bg3RollState.qty : "1") + "d" + bg3RollState.sides + " [" + r1 + (r2 !== null ? ", " + r2 : "") + (extraSum > 0 ? ", +" + extraSum : "") + "]" + modsStr + " = " + grandTotal;
+      if(landedInfo && landedInfo.formulaSuffix) formulaStr += " · " + landedInfo.formulaSuffix;
       var rollItem = {
         id: uid(),
         charName: bg3RollState.charName,
@@ -2415,6 +2434,25 @@ function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, ad
     modifiers: [],
     rerollFn: rerollFn
   });
+}
+
+// Puntos de una tirada de entrenamiento según el dado natural (1 = pifia, máximo = crítico)
+function trainingRollResult(tr, roll, sides){
+  var narrative = tr && tr.category === "narrative";
+  var delta = 0, isCrit = false, isFumble = false;
+  if(roll === 1){
+    delta = narrative ? 0 : -5;
+    isFumble = !narrative;
+  } else if(roll === sides){
+    delta = 5;
+    isCrit = true;
+  } else if(roll >= 11 && roll <= 19){
+    delta = 3;
+  } else if(narrative || (roll >= 2 && roll <= 10)){
+    delta = 1;
+  }
+  var ptsText = (delta >= 0 ? "+" + delta : delta) + " pto" + (Math.abs(delta) === 1 ? "" : "s");
+  return { delta: delta, isCrit: isCrit, isFumble: isFumble, ptsText: ptsText };
 }
 
 function performD10Roll(charName, label, mod){
