@@ -36,11 +36,12 @@ var moneyQueue = {};
 var moneyPending = {};
 var moneyLogCache = {};
 
-function changeMoneyRPC(char, deltaOro, deltaPlata){
+function changeMoneyRPC(char, deltaOro, deltaPlata, deltaGremio){
   if(!char) return Promise.resolve();
   deltaOro = parseInt(deltaOro, 10) || 0;
   deltaPlata = parseInt(deltaPlata, 10) || 0;
-  if(deltaOro === 0 && deltaPlata === 0) return Promise.resolve();
+  deltaGremio = parseInt(deltaGremio, 10) || 0;
+  if(deltaOro === 0 && deltaPlata === 0 && deltaGremio === 0) return Promise.resolve();
   // Lo que ya se ve en pantalla no debe salir otra vez en el guardado por diferencias
   if(!char._lastSyncedData) char._lastSyncedData = {};
   char._lastSyncedData.money = JSON.parse(JSON.stringify(char.money || { oro: 0, plata: 0 }));
@@ -48,16 +49,19 @@ function changeMoneyRPC(char, deltaOro, deltaPlata){
   var key = char.id;
   moneyPending[key] = (moneyPending[key] || 0) + 1;
   var prev = moneyQueue[key] || Promise.resolve();
-  var next = prev.then(function(){ return sendMoneyChange(char, deltaOro, deltaPlata); }).catch(function(){}).then(function(){ moneyPending[key] = Math.max(0, (moneyPending[key] || 1) - 1); });
+  var next = prev.then(function(){ return sendMoneyChange(char, deltaOro, deltaPlata, deltaGremio); }).catch(function(){}).then(function(){ moneyPending[key] = Math.max(0, (moneyPending[key] || 1) - 1); });
   moneyQueue[key] = next;
   return next;
 }
 
-async function sendMoneyChange(char, deltaOro, deltaPlata){
+async function sendMoneyChange(char, deltaOro, deltaPlata, deltaGremio){
   var cur = function(){ return (state.characters||[]).find(function(x){ return x.id === char.id; }) || char; };
   if(char.db_id && typeof supabaseClient !== 'undefined' && supabaseClient && currentUser){
     try {
-      var res = await supabaseClient.rpc('change_character_money', { p_char_id: char.db_id, p_delta_oro: deltaOro, p_delta_plata: deltaPlata });
+      // La moneda de gremio va por la versión de 4 parámetros (migración 055); oro y plata, por la de siempre
+      var args = { p_char_id: char.db_id, p_delta_oro: deltaOro, p_delta_plata: deltaPlata };
+      if(deltaGremio) args.p_delta_gremio = deltaGremio;
+      var res = await supabaseClient.rpc('change_character_money', args);
       if(!res.error && res.data){
         var c = cur();
         c.money = c.money || { oro: 0, plata: 0 };
@@ -65,8 +69,9 @@ async function sendMoneyChange(char, deltaOro, deltaPlata){
         if((moneyPending[char.id] || 0) <= 1){
           c.money.oro = num(res.data.oro, 0);
           c.money.plata = num(res.data.plata, 0);
+          if(res.data.gremio !== undefined) c.money.gremio = num(res.data.gremio, 0);
           if(!c._lastSyncedData) c._lastSyncedData = {};
-          c._lastSyncedData.money = { oro: c.money.oro, plata: c.money.plata };
+          c._lastSyncedData.money = JSON.parse(JSON.stringify(c.money));
           saveState(true);
           refreshMoneyView(c);
         }
@@ -90,7 +95,7 @@ async function sendMoneyChange(char, deltaOro, deltaPlata){
 
 function refreshMoneyView(c){
   if(state.activeTab !== 'inventario' || !c || (typeof activeChar === 'function' && activeChar() !== c)) return;
-  ['oro','plata'].forEach(function(part){
+  ['oro','plata','gremio'].forEach(function(part){
     var el = document.querySelector('input[data-bind="money.' + part + '"]');
     if(el && document.activeElement !== el){
       el.value = num(c.money[part], 0);
@@ -113,7 +118,7 @@ async function loadMoneyLog(c, force){
   if(!force && entry && Date.now() - entry.ts < 60000) return;
   moneyLogCache[c.db_id] = { rows: entry ? entry.rows : [], ts: Date.now(), loading: true };
   try {
-    var res = await supabaseClient.from('money_log').select('delta_oro,delta_plata,actor_name,created_at').eq('character_id', c.db_id).order('created_at', { ascending: false }).limit(5);
+    var res = await supabaseClient.from('money_log').select('*').eq('character_id', c.db_id).order('created_at', { ascending: false }).limit(5);
     var rows = (!res.error && Array.isArray(res.data)) ? res.data : (entry ? entry.rows : []);
     moneyLogCache[c.db_id] = { rows: rows, ts: Date.now() };
     var box = document.querySelector('[data-money-log="' + c.db_id + '"]');
