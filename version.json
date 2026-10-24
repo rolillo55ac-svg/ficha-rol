@@ -1,6 +1,6 @@
 {
-  "version": "1.4.92.0",
-  "build": "2026.10.24.01",
-  "updatedAt": "2026-10-24T12:00:00Z",
-  "changelog": "Las tiradas de entrenamiento salen una sola vez en el historial y cuentan el dado que se ve: crítico y pifia ya cuadran con el número. El historial dice el nombre de cada bonificador."
+  "version": "1.4.93.0",
+  "build": "2026.10.24.02",
+  "updatedAt": "2026-10-24T19:30:00Z",
+  "changelog": "Los reportes ya no se pueden borrar: atendido los guarda como atendidos. Discord recibe aviso al crear, responder y cambiar el estado de un reporte, también los largos. En Ajustes › Admin se ve el último aviso a Discord y se puede probar."
 }
