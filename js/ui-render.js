@@ -672,6 +672,15 @@ var TRAINING_CATS = [
   { id: "narrative", icon: "📜", label: "Lore", die: "d20", sides: 20, type: "new" }
 ];
 
+// Entrenamientos de atributos (Físico, Destreza...) de antes: ya no cuentan
+function isLegacyAttrTraining(t){
+  if(!t || (t.category || "skill") !== "combat") return false;
+  var keys = ["fisico","destreza","inteligencia","percepcion","carisma"];
+  var stats = ["+1 Físico","+1 Destreza","+1 Inteligencia","+1 Percepción","+1 Carisma"];
+  if(t.linkedId) return keys.indexOf(String(t.linkedId).replace("stat:", "")) !== -1;
+  return stats.indexOf(t.targetStat) !== -1;
+}
+
 function tplEntrenamiento(c){
   c.trainings = c.trainings || [];
   var canEdit = canEditChar(c);
@@ -707,7 +716,10 @@ function tplEntrenamiento(c){
       var sides = t.sides || (catId === "unlock" || catId === "narrative" ? 20 : 10);
       var points = num(t.points, 0);
       var rolls = t.rolls || [];
-      var isQuantifiable = (catId === "combat" || catId === "skill" || catId === "spell_summon");
+      // Los atributos no se entrenan: los antiguos se quedan visibles pero no suman
+      var isLegacyAttr = isLegacyAttrTraining(t);
+      var canRoll = canEdit && !isLegacyAttr;
+      var isQuantifiable = !isLegacyAttr && (catId === "combat" || catId === "skill" || catId === "spell_summon");
       var targetGoal = num(t.targetGoal, 100);
       var isCompleted = targetGoal > 0 && points >= targetGoal;
       var progressPct = targetGoal > 0 ? clamp(Math.round((Math.max(0, points) / targetGoal) * 100), 0, 100) : 0;
@@ -758,11 +770,11 @@ function tplEntrenamiento(c){
             '<option value="stat:mana" ' + (curTargetStat === "+5 Maná" || t.linkedId === "stat:mana" ? 'selected' : '') + '>🔷 Maná (+5 Maná)</option>' +
             '<option value="stat:defensa" ' + (curTargetStat === "+1 Defensa" || t.linkedId === "stat:defensa" ? 'selected' : '') + '>🛡️ Defensa (+1)</option>' +
             '<option value="stat:iniciativa" ' + (curTargetStat === "+1 Iniciativa" || t.linkedId === "stat:iniciativa" ? 'selected' : '') + '>⚡ Iniciativa (+1)</option>' +
-            '<option value="stat:fisico" ' + (curTargetStat === "+1 Físico" || t.linkedId === "stat:fisico" ? 'selected' : '') + '>💪 Físico (+1)</option>' +
-            '<option value="stat:destreza" ' + (curTargetStat === "+1 Destreza" || t.linkedId === "stat:destreza" ? 'selected' : '') + '>🏃 Destreza (+1)</option>' +
-            '<option value="stat:inteligencia" ' + (curTargetStat === "+1 Inteligencia" || t.linkedId === "stat:inteligencia" ? 'selected' : '') + '>🧠 Inteligencia (+1)</option>' +
-            '<option value="stat:percepcion" ' + (curTargetStat === "+1 Percepción" || t.linkedId === "stat:percepcion" ? 'selected' : '') + '>👁️ Percepción (+1)</option>' +
-            '<option value="stat:carisma" ' + (curTargetStat === "+1 Carisma" || t.linkedId === "stat:carisma" ? 'selected' : '') + '>🎭 Carisma (+1)</option>' +
+            (isLegacyAttr && (curTargetStat === "+1 Físico" || t.linkedId === "stat:fisico") ? '<option value="stat:fisico" selected>💪 Físico (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Destreza" || t.linkedId === "stat:destreza") ? '<option value="stat:destreza" selected>🏃 Destreza (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Inteligencia" || t.linkedId === "stat:inteligencia") ? '<option value="stat:inteligencia" selected>🧠 Inteligencia (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Percepción" || t.linkedId === "stat:percepcion") ? '<option value="stat:percepcion" selected>👁️ Percepción (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Carisma" || t.linkedId === "stat:carisma") ? '<option value="stat:carisma" selected>🎭 Carisma (+1) · antiguo</option>' : '') +
           '</select>' +
         '</div>';
       } else if(catId === "skill"){
@@ -836,7 +848,7 @@ function tplEntrenamiento(c){
       }
 
       // Tarjeta limpia estilo Invocaciones (.creature-card)
-      html += '<div class="creature-card training-card" data-id="' + t.id + '" data-juice-card="t' + t.id + '" style="background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-bottom:11px;box-shadow:0 4px 14px -6px rgba(0,0,0,0.7);">' +
+      html += '<div class="creature-card training-card' + (isLegacyAttr ? ' training-legacy' : '') + '" data-id="' + t.id + '" data-juice-card="t' + t.id + '" style="' + (isLegacyAttr ? 'opacity:.55;filter:grayscale(1);' : '') + 'background:linear-gradient(160deg, var(--bg-elev), var(--bg-card));border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-bottom:11px;box-shadow:0 4px 14px -6px rgba(0,0,0,0.7);">' +
         // Fila 1: Encabezado (Nombre + PTS Badge + Del)
         '<div class="creature-card-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
           '<input type="text" class="creature-name-input" data-bind="trainings.' + t.id + '.name" value="' + esc(t.name) + '" placeholder="Nombre del entrenamiento (ej: Veneno de Seta)..." ' + (canEdit ? '' : 'readonly') + ' style="font-family:var(--font-display);font-size:1.02rem;color:var(--gold-light);background:none;border:none;border-bottom:1px solid var(--line-strong);padding:2px 4px;flex:1;min-width:0;">' +
@@ -856,7 +868,7 @@ function tplEntrenamiento(c){
             '<select class="tr-cat-select k-input" data-action="set-training-category" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
               '<option value="skill" ' + (catId === 'skill' ? 'selected' : '') + '>🎯 Habilidad</option>' +
               '<option value="spell_summon" ' + (catId === 'spell_summon' ? 'selected' : '') + '>✨ Magia / Hechizo</option>' +
-              '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>⚔️ Atributo / Combate</option>' +
+              '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>⚔️ Combate</option>' +
               '<option value="narrative" ' + (catId === 'narrative' ? 'selected' : '') + '>📜 Lore / Narrativa</option>' +
             '</select>' +
           '</div>' +
@@ -883,7 +895,8 @@ function tplEntrenamiento(c){
 
         // Fila 5: Barra inferior compacta de tirada y chips
         '<div class="tr-controls-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;border-top:1px solid var(--line);flex-wrap:wrap;">' +
-          (canEdit ? (
+          (isLegacyAttr ? '<span class="tr-legacy-note" style="font-size:.75rem;color:var(--ink-faint);">Antiguo · no cuenta: los atributos solo suben con nivel, mejoras o piedras.</span>' : '') +
+          (canRoll ? (
             '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
               '<button type="button" class="btn-compact tr-roll-btn" data-action="roll-training" data-id="' + t.id + '" style="padding:5px 9px;font-size:.78rem;font-weight:700;">' +
                 '🎲 Tirar Automático (d' + sides + ')' +
@@ -2096,6 +2109,39 @@ function matchesInvGroup(it, group){
   return true;
 }
 
+// Botones de dinero: arriba se resta y abajo se suma la misma cantidad
+function tplMoneySteps(part){
+  var steps = [1, 5, 10, 25];
+  var name = part === "oro" ? "oro" : "plata";
+  return '<div class="money-steps" role="group" aria-label="Cambiar '+name+'">'+
+    steps.map(function(n){ return '<button type="button" class="btn-compact money-step-btn minus" data-action="money-step" data-part="'+part+'" data-delta="-'+n+'" aria-label="Quitar '+n+' de '+name+'">−'+n+'</button>'; }).join('')+
+    steps.map(function(n){ return '<button type="button" class="btn-compact money-step-btn plus" data-action="money-step" data-part="'+part+'" data-delta="'+n+'" aria-label="Añadir '+n+' de '+name+'">+'+n+'</button>'; }).join('')+
+  '</div>';
+}
+
+// Últimos movimientos de dinero (los lee el dueño de la ficha y el máster)
+function tplMoneyLog(c){
+  if(!c || !c.db_id || typeof getMoneyLog !== "function") return '';
+  var rows = getMoneyLog(c);
+  if(!rows || !rows.length) return '<div class="money-log" data-money-log="'+c.db_id+'"></div>';
+  return '<div class="money-log" data-money-log="'+c.db_id+'">'+tplMoneyLogRows(rows)+'</div>';
+}
+
+function tplMoneyLogRows(rows){
+  if(!rows || !rows.length) return '';
+  return '<div class="money-log-title">Últimos movimientos</div>'+
+    rows.slice(0, 5).map(function(r){
+      var parts = [];
+      if(r.delta_oro) parts.push((r.delta_oro > 0 ? '+' : '−') + Math.abs(r.delta_oro) + ' oro');
+      if(r.delta_plata) parts.push((r.delta_plata > 0 ? '+' : '−') + Math.abs(r.delta_plata) + ' plata');
+      var d = r.created_at ? new Date(r.created_at) : null;
+      var when = d ? d.toLocaleDateString("es-ES", { day:"2-digit", month:"2-digit" }) + ' ' + d.toLocaleTimeString("es-ES", { hour:"2-digit", minute:"2-digit" }) : '';
+      var who = String(r.actor_name || '').split('@')[0];
+      return '<div class="money-log-row"><span class="money-log-delta'+((r.delta_oro + r.delta_plata) < 0 ? ' neg' : '')+'">'+esc(parts.join(' · '))+'</span>'+
+        '<span class="money-log-meta">'+esc(who)+(who && when ? ' · ' : '')+esc(when)+'</span></div>';
+    }).join('');
+}
+
 function tplInventario(c){
   c.money = c.money || { oro: 0, plata: 0 };
   c.inventory = c.inventory || [];
@@ -2117,10 +2163,10 @@ function tplInventario(c){
 
   // Sección de Dinero
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
-    '<div class="money-row">'+
-      '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'" '+(canEdit?'':'readonly')+'></div>'+
-      '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'" '+(canEdit?'':'readonly')+'></div>'+
-    '</div></div>';
+    '<div class="money-row'+(canEdit?' has-steps':'')+'">'+
+      '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("oro"):'')+'</div>'+
+      '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("plata"):'')+'</div>'+
+    '</div>'+tplMoneyLog(c)+'</div>';
   html += tplPoisonLoadout(c, canEdit);
 
   var categories = typeof INVENTORY_CATEGORIES !== "undefined" ? INVENTORY_CATEGORIES : [
