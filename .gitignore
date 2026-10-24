@@ -1,3 +1,6 @@
 # Carpeta temporal para depositar imágenes antes de integrarlas
 imagenes para coger/
 scratch/
+
+# Webhook de Discord para el bucle nocturno (secreto, nunca al repo público)
+.claude/discord-webhook.local.txt

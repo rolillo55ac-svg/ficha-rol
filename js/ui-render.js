@@ -2109,10 +2109,15 @@ function matchesInvGroup(it, group){
   return true;
 }
 
+function tplCoinImg(part, cls){
+  var c = cls ? ' class="' + cls + '"' : '';
+  return '<picture><source srcset="images/monedas/moneda-' + part + '-96.webp" type="image/webp"><img src="images/monedas/moneda-' + part + '-96.png" alt=""' + c + ' loading="lazy" width="96" height="96"></picture>';
+}
+
 // Botones de dinero: arriba se resta y abajo se suma la misma cantidad
 function tplMoneySteps(part){
   var steps = [1, 5, 10, 25];
-  var name = part === "oro" ? "oro" : "plata";
+  var name = part === "oro" ? "oro" : (part === "gremio" ? "gremio" : "plata");
   return '<div class="money-steps" role="group" aria-label="Cambiar '+name+'">'+
     steps.map(function(n){ return '<button type="button" class="btn-compact money-step-btn minus" data-action="money-step" data-part="'+part+'" data-delta="-'+n+'" aria-label="Quitar '+n+' de '+name+'">−'+n+'</button>'; }).join('')+
     steps.map(function(n){ return '<button type="button" class="btn-compact money-step-btn plus" data-action="money-step" data-part="'+part+'" data-delta="'+n+'" aria-label="Añadir '+n+' de '+name+'">+'+n+'</button>'; }).join('')+
@@ -2132,18 +2137,20 @@ function tplMoneyLogRows(rows){
   return '<div class="money-log-title">Últimos movimientos</div>'+
     rows.slice(0, 5).map(function(r){
       var parts = [];
-      if(r.delta_oro) parts.push((r.delta_oro > 0 ? '+' : '−') + Math.abs(r.delta_oro) + ' oro');
-      if(r.delta_plata) parts.push((r.delta_plata > 0 ? '+' : '−') + Math.abs(r.delta_plata) + ' plata');
+      if(r.delta_oro) parts.push(tplCoinImg("oro", "money-log-coin") + ' ' + (r.delta_oro > 0 ? '+' : '−') + esc(Math.abs(r.delta_oro)));
+      if(r.delta_plata) parts.push(tplCoinImg("plata", "money-log-coin") + ' ' + (r.delta_plata > 0 ? '+' : '−') + esc(Math.abs(r.delta_plata)));
+      if(r.delta_gremio) parts.push(tplCoinImg("gremio", "money-log-coin") + ' ' + (r.delta_gremio > 0 ? '+' : '−') + esc(Math.abs(r.delta_gremio)));
       var d = r.created_at ? new Date(r.created_at) : null;
       var when = d ? d.toLocaleDateString("es-ES", { day:"2-digit", month:"2-digit" }) + ' ' + d.toLocaleTimeString("es-ES", { hour:"2-digit", minute:"2-digit" }) : '';
       var who = String(r.actor_name || '').split('@')[0];
-      return '<div class="money-log-row"><span class="money-log-delta'+((r.delta_oro + r.delta_plata) < 0 ? ' neg' : '')+'">'+esc(parts.join(' · '))+'</span>'+
+      var totalDelta = (r.delta_oro || 0) + (r.delta_plata || 0) + (r.delta_gremio || 0);
+      return '<div class="money-log-row"><span class="money-log-delta'+(totalDelta < 0 ? ' neg' : '')+'">'+parts.join(' · ')+'</span>'+
         '<span class="money-log-meta">'+esc(who)+(who && when ? ' · ' : '')+esc(when)+'</span></div>';
     }).join('');
 }
 
 function tplInventario(c){
-  c.money = c.money || { oro: 0, plata: 0 };
+  c.money = c.money || { oro: 0, plata: 0, gremio: 0 };
   c.inventory = c.inventory || [];
   c.inventory.forEach(function(it){
     if(!it.category) it.category = "Miscelánea";
@@ -2164,8 +2171,9 @@ function tplInventario(c){
   // Sección de Dinero
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
     '<div class="money-row'+(canEdit?' has-steps':'')+'">'+
-      '<div class="money-field"><label>Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("oro"):'')+'</div>'+
-      '<div class="money-field"><label>Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("plata"):'')+'</div>'+
+      '<div class="money-field"><label>'+tplCoinImg("oro", "money-coin")+'Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("oro"):'')+'</div>'+
+      '<div class="money-field"><label>'+tplCoinImg("plata", "money-coin")+'Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("plata"):'')+'</div>'+
+      '<div class="money-field"><label>'+tplCoinImg("gremio", "money-coin")+'Gremio</label><input type="number" data-bind="money.gremio" data-last-val="'+num(c.money.gremio,0)+'" value="'+num(c.money.gremio,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("gremio"):'')+'</div>'+
     '</div>'+tplMoneyLog(c)+'</div>';
   html += tplPoisonLoadout(c, canEdit);
 
