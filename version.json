@@ -1,6 +1,6 @@
 {
-  "version": "1.4.95.0",
-  "build": "2026.10.24.04",
-  "updatedAt": "2026-10-24T23:00:00Z",
-  "changelog": "Descanso largo: el máster tiene un botón en la ventana de personajes para que descansen los que elija (vida y maná al máximo, escudo a 0 y fuera los buffos marcados). En el catálogo de buffos, casilla \"Se resetea al descansar largo\"."
+  "version": "1.4.96.0",
+  "build": "2026.10.25.01",
+  "updatedAt": "2026-10-25T00:30:00Z",
+  "changelog": "Modo mantenimiento: el admin puede cerrar la web a todos mientras arregla algo. Los demás ven un aviso y no se guarda ningún cambio hasta que se vuelva a abrir."
 }

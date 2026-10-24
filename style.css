@@ -75,6 +75,18 @@ body.auth-locked #app{display:none;}
   background:transparent;color:var(--ink-dim);border:1px solid var(--line);
 }
 
+/* Modo mantenimiento: aviso a pantalla completa y franja del admin */
+body.mant-locked #app{display:none;}
+.mant-gate{z-index:9500;}
+.mant-gate-msg{white-space:pre-line;}
+.mant-franja{
+  position:fixed;top:0;left:0;right:0;z-index:9400;pointer-events:none;
+  padding:3px 10px;text-align:center;font-size:0.78rem;font-weight:700;
+  background:var(--bg-card);color:var(--gold-light);border-bottom:1px solid var(--line-strong);
+}
+.mant-franja[hidden]{display:none;}
+.mant-mensaje{width:100%;box-sizing:border-box;font-size:16px;}
+
 /* Pantalla de carga prémium Krysalis */
 .loading-screen{
   position:fixed;inset:0;z-index:99999;

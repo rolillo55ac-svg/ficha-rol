@@ -210,13 +210,14 @@ function settingsScreenTitle(screen){
     version: "Versión", storage: "Almacenamiento", backup: "Copia de seguridad", help: "Ayuda y sugerencias",
     cloud: "Copia en la nube", broadcast: "Avisar para que actualicen",
     donate: "Apoya el proyecto", partida: "Partida",
-    password: "Mi contraseña", jugadores: "Jugadores", "cuenta-nueva": "Nueva cuenta", actividad: "Actividad"
+    password: "Mi contraseña", jugadores: "Jugadores", "cuenta-nueva": "Nueva cuenta", actividad: "Actividad",
+    mantenimiento: "Mantenimiento"
   }[screen] || "Ajustes";
 }
 
 function openDataModal(screen){
   screen = (typeof screen === "string") ? screen : "main";
-  if((screen === "cloud" || screen === "broadcast" || screen === "jugadores" || screen === "cuenta-nueva" || screen === "actividad") && !isAdmin()) screen = "main";
+  if((screen === "cloud" || screen === "broadcast" || screen === "jugadores" || screen === "cuenta-nueva" || screen === "actividad" || screen === "mantenimiento") && !isAdmin()) screen = "main";
   if(screen === "password" && !currentUser) screen = "main";
   if(screen === "donate" && !DONATE_PAYPAL_ME) screen = "main";
   settingsScreen = screen;
@@ -279,6 +280,7 @@ function openDataModal(screen){
         settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
         settingsRow("settings-go", "jugadores", "👥", "Jugadores", "Crear cuentas, contraseñas y roles")+
         settingsRow("settings-go", "actividad", "🕒", "Actividad", "Entradas, intentos fallidos y tiempo de uso")+
+        settingsRow("settings-go", "mantenimiento", "🔧", "Mantenimiento", (typeof mantenimientoEstado !== "undefined" && mantenimientoEstado.activo) ? "Activo: solo tú puedes usar la web" : "Cerrar la web a todos menos a ti")+
         settingsRow("discord-probar", "", "🔔", "Avisos a Discord", '<span id="settingsDiscordState">' + discordUltimoAvisoText() + '</span>')+
       '</div>';
     }
@@ -434,6 +436,10 @@ function openDataModal(screen){
 
   else if(screen === "actividad"){
     html += actividadScreenHtml();
+  }
+
+  else if(screen === "mantenimiento"){
+    html += mantenimientoScreenHtml();
   }
 
   document.getElementById("dataModal").innerHTML = html;
@@ -699,6 +705,7 @@ function modalClick(e){
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
   if(action==="settings-go"){ openDataModal(btn.getAttribute("data-screen")); return; }
+  if(action==="mant-cambiar"){ cambiarMantenimiento(btn); return; }
   if(action==="discord-probar"){
     var dEl = document.getElementById("settingsDiscordState");
     if(dEl) dEl.textContent = "Enviando aviso de prueba…";
