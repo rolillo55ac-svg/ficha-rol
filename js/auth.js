@@ -161,6 +161,7 @@ async function fetchUserProfile(){
     currentIsAdmin = !!(res.data && res.data.is_admin === true);
     currentRoleUserId = userId;
     if(typeof actInicio === "function") actInicio();
+    if(typeof loadMantenimiento === "function") loadMantenimiento();
 
     pullAllFromSupabase();
     pullMapFromSupabase();
@@ -212,6 +213,7 @@ async function supabaseLogout(){
     console.error('Supabase error:', e);
   }
   currentUser=null; resetSessionRole(); setVistaComoJugador(false);
+  if(typeof pintarMantenimiento === "function") pintarMantenimiento();
   if(typeof lockApp === "function" && appLocked === false) lockApp();
 }
 
