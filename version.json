@@ -1,6 +1,6 @@
 {
-  "version": "1.4.96.0",
-  "build": "2026.10.25.01",
-  "updatedAt": "2026-10-25T00:30:00Z",
-  "changelog": "Modo mantenimiento: el admin puede cerrar la web a todos mientras arregla algo. Los demás ven un aviso y no se guarda ningún cambio hasta que se vuelva a abrir."
+  "version": "1.4.97.0",
+  "build": "2026.10.25.02",
+  "updatedAt": "2026-10-25T01:00:00Z",
+  "changelog": "Bajar de nivel a un personaje ahora pide confirmación, para que no pase por un toque sin querer. Cherk vuelve a nivel 2."
 }

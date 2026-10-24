@@ -245,6 +245,45 @@ document.addEventListener("click", function(e){
   if(gaugeTrayOpen && !(e.target.closest && e.target.closest(".gauges"))) gaugeTrayClose(true);
 }, true);
 
+// Baja un nivel (ya confirmado por el máster)
+function revokeLevelConfirmed(c){
+  var curNv = num(c.nivel, 1);
+  if(curNv <= 1) return;
+  var prevNv = curNv - 1;
+  c.nivel = String(prevNv);
+  c._leveledByGM = true;
+
+  var ptsToSub = 4;
+  if(curNv > 20) ptsToSub = 8;
+  else if(curNv > 10) ptsToSub = 6;
+  c.skillPoints = Math.max(0, num(c.skillPoints, 0) - ptsToSub);
+
+  var fisicoVal = num(c.attrs ? c.attrs.fisico : 0, 0);
+  var hpGain = Math.ceil(fisicoVal / 2);
+  if(hpGain < 1) hpGain = 1;
+  if(!c.combat) c.combat = {};
+  c.combat.pvMax = Math.max(1, num(c.combat.pvMax, 10) - hpGain);
+  if(num(c.combat.pvActual, 10) > c.combat.pvMax){
+    c.combat.pvActual = c.combat.pvMax;
+  }
+
+  if(curNv % 4 === 0){
+    c.combat.manaMax = Math.max(0, num(c.combat.manaMax, 10) - 5);
+    if(num(c.combat.manaActual, 10) > c.combat.manaMax){
+      c.combat.manaActual = c.combat.manaMax;
+    }
+  }
+
+  var revPatch = { nivel: c.nivel, skillPoints: c.skillPoints, combat: c.combat };
+  c._lastLocalEdit = Date.now();
+  markCharDirty(c.id, revPatch);
+  saveState(); renderTopbar(); renderTab();
+  if(typeof pushCharacterPatch === 'function'){
+    pushCharacterPatch(c.id, revPatch);
+  }
+  showToast("Nivel reducido a " + prevNv + " (-" + ptsToSub + " pts habilidad)", "info");
+}
+
 function handleClick(e){
   getAudioCtx();
   var btn = e.target.closest("[data-action]"); if(!btn) return;
@@ -535,39 +574,11 @@ function handleClick(e){
       showToast("El personaje ya está en nivel 1 (mínimo).", "warning");
       return;
     }
-    var prevNv = curNv - 1;
-    c.nivel = String(prevNv);
-    c._leveledByGM = true;
-
-    var ptsToSub = 4;
-    if(curNv > 20) ptsToSub = 8;
-    else if(curNv > 10) ptsToSub = 6;
-    c.skillPoints = Math.max(0, num(c.skillPoints, 0) - ptsToSub);
-
-    var fisicoVal = num(c.attrs ? c.attrs.fisico : 0, 0);
-    var hpGain = Math.ceil(fisicoVal / 2);
-    if(hpGain < 1) hpGain = 1;
-    if(!c.combat) c.combat = {};
-    c.combat.pvMax = Math.max(1, num(c.combat.pvMax, 10) - hpGain);
-    if(num(c.combat.pvActual, 10) > c.combat.pvMax){
-      c.combat.pvActual = c.combat.pvMax;
-    }
-
-    if(curNv % 4 === 0){
-      c.combat.manaMax = Math.max(0, num(c.combat.manaMax, 10) - 5);
-      if(num(c.combat.manaActual, 10) > c.combat.manaMax){
-        c.combat.manaActual = c.combat.manaMax;
-      }
-    }
-
-    var revPatch = { nivel: c.nivel, skillPoints: c.skillPoints, combat: c.combat };
-    c._lastLocalEdit = Date.now();
-    markCharDirty(c.id, revPatch);
-    saveState(); renderTopbar(); renderTab();
-    if(typeof pushCharacterPatch === 'function'){
-      pushCharacterPatch(c.id, revPatch);
-    }
-    showToast("Nivel reducido a " + prevNv + " (-" + ptsToSub + " pts habilidad)", "info");
+    // Bajar nivel quita vida máxima y puntos: siempre con confirmación
+    var revChar = c;
+    confirmarCuenta("¿Bajar a " + (c.name || "este personaje") + " a nivel " + (curNv - 1) + "?", "Perderá vida máxima y puntos de habilidad. Solo para corregir un error.", "Bajar nivel").then(function(ok){
+      if(ok) revokeLevelConfirmed(revChar);
+    });
     return;
   }
 
