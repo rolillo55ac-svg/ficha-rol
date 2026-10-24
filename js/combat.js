@@ -146,3 +146,100 @@ function calculateTotalArmor(char){
   });
   return { totalAbsorcion: totAbs, totalEstorbo: totEst };
 }
+
+// Descanso largo (migración 054): el máster elige quién descansa; vida y maná al máximo, escudo a 0
+// y fuera los buffos del catálogo marcados "Se resetea al descansar largo"
+function longRestBuffIds(){
+  return (state.buffCatalog || []).filter(function(b){ return b && b.longRestReset === true; }).map(function(b){ return b.id; });
+}
+
+function openLongRestModal(){
+  if(!isGM()) return;
+  var chars = (state.characters || []).filter(function(c){ return !c.isNPC && c.db_id; });
+  var html = '<h2>🌙 Descanso largo<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
+  html += '<p style="font-size:.82rem;color:var(--ink-dim);margin:0 0 10px;">Vida y maná al máximo, escudo a 0 y se quitan los buffos marcados "Se resetea al descansar largo". Desmarca a quien no descansa.</p>';
+  if(!chars.length){
+    html += '<p style="font-size:.85rem;color:var(--ink-dim);">No hay personajes guardados en la nube.</p>';
+  }
+  chars.forEach(function(c){
+    html += '<label class="char-list-item" style="display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer;">'+
+      '<input type="checkbox" class="long-rest-check" value="'+esc(c.id)+'" checked style="width:22px;height:22px;flex:none;">'+
+      '<span class="cli-info"><span class="cli-name">'+esc(c.name)+'</span>'+
+      '<span class="cli-sub">Nv. '+esc(c.nivel||"1")+' · ❤️ '+num(c.combat && c.combat.pvActual,0)+'/'+getEffectiveMaxHp(c)+' · 💧 '+num(c.combat && c.combat.manaActual,0)+'/'+getEffectiveMaxMana(c)+'</span></span>'+
+    '</label>';
+  });
+  if(chars.length){
+    html += '<button type="button" class="btn-compact btn-solid-gold" style="width:100%;min-height:44px;margin-top:10px;" data-action="do-long-rest">🌙 Descansar</button>';
+  }
+  document.getElementById("charModal").innerHTML = html;
+  document.getElementById("charModalOverlay").classList.remove("hidden");
+}
+
+async function doLongRest(btn){
+  if(!isGM()) return;
+  if(!supabaseClient || !currentUser){ showToast("Hay que iniciar sesión para el descanso largo.", "warning"); return; }
+  var ids = Array.prototype.map.call(document.querySelectorAll("#charModal .long-rest-check:checked"), function(el){ return el.value; });
+  if(!ids.length){ showToast("No hay nadie marcado para descansar.", "warning"); return; }
+  var resetIds = longRestBuffIds();
+  var items = [];
+  ids.forEach(function(id){
+    var c = (state.characters || []).find(function(x){ return x.id === id; });
+    if(!c || !c.db_id) return;
+    // Los máximos se calculan sin los buffos que se van a quitar
+    var copia = Object.assign({}, c, { activeBuffs: (c.activeBuffs || []).filter(function(ab){ return resetIds.indexOf(ab.id) === -1; }) });
+    items.push({ id: c.db_id, pv: getEffectiveMaxHp(copia), mana: getEffectiveMaxMana(copia), remove: resetIds });
+  });
+  if(!items.length) return;
+  if(btn) btn.disabled = true;
+  var res;
+  try {
+    res = await supabaseClient.rpc('long_rest', { p_items: items });
+  } catch(e){ res = { error: e }; }
+  if(res.error || !res.data){
+    if(btn) btn.disabled = false;
+    console.warn("Descanso largo:", res.error);
+    showToast("No se ha podido hacer el descanso largo" + (res.error && res.error.message ? ": " + res.error.message : "."), "error");
+    return;
+  }
+  var done = applyLongRestItems(res.data.items || []);
+  try {
+    if(realtimeChannel) realtimeChannel.send({ type: 'broadcast', event: 'long_rest', payload: { items: res.data.items || [], ts: Date.now() } });
+  } catch(e){}
+  if(typeof loadRollHistory === "function") loadRollHistory();
+  closeModals();
+  renderTopbar();
+  renderTab();
+  showToast("🌙 Descanso largo: " + done + (done === 1 ? " personaje descansado" : " personajes descansados"), "success");
+}
+
+// Pone en la copia local lo que devolvió la base y lo marca como ya guardado
+function applyLongRestItems(items){
+  var n = 0;
+  (items || []).forEach(function(it){
+    var c = (state.characters || []).find(function(x){ return x.db_id === it.id || x.id === it.id; });
+    if(!c) return;
+    c.combat = Object.assign(c.combat || {}, it.combat || {});
+    if(Array.isArray(it.activeBuffs)) c.activeBuffs = it.activeBuffs;
+    if(!c._lastSyncedData) c._lastSyncedData = {};
+    try {
+      c._lastSyncedData.combat = JSON.parse(JSON.stringify(c.combat));
+      c._lastSyncedData.activeBuffs = JSON.parse(JSON.stringify(c.activeBuffs || []));
+    } catch(e){}
+    n++;
+  });
+  saveState(true);
+  return n;
+}
+
+function handleRemoteLongRest(data){
+  if(!data || !Array.isArray(data.items)) return;
+  applyLongRestItems(data.items);
+  var mine = data.items.some(function(it){
+    var c = (state.characters || []).find(function(x){ return x.db_id === it.id || x.id === it.id; });
+    return c && !c.isNPC && currentUser && isCharOwner(c, currentUser);
+  });
+  if(typeof loadRollHistory === "function") loadRollHistory();
+  renderTopbar();
+  if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
+  if(mine) showToast("🌙 Has descansado: vida y maná al máximo", "success");
+}

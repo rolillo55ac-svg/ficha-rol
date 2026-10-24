@@ -110,6 +110,7 @@ function tplMundoBuffs(s){
           '</select></div>' : '<div class="creature-field"><label>Duración</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.duration==='turns'?(b.durationTurns||0)+' turnos':'Permanente')+'</span></div>')+
         (canEdit && b.duration==='turns' ? '<div class="creature-field"><label>Nº Turnos</label><input type="number" min="1" data-scope="global" data-bind="buffCatalog.'+b.id+'.durationTurns" value="'+num(b.durationTurns,1)+'"></div>' : '')+
       '</div>'+
+      (canEdit ? '<label class="creature-field" style="flex-direction:row;align-items:center;gap:8px;min-height:44px;cursor:pointer;"><input type="checkbox" data-action="toggle-buff-longrest" data-id="'+b.id+'"'+(b.longRestReset===true?' checked':'')+' style="width:22px;height:22px;flex:none;"> 🌙 Se resetea al descansar largo</label>' : (b.longRestReset===true ? '<div class="creature-field"><span style="font-size:.8rem;color:var(--ink-dim);">🌙 Se resetea al descansar largo</span></div>' : ''))+
       (canEdit ? '<div class="creature-field"><label>Descripción</label><textarea class="creature-notes" data-scope="global" data-bind="buffCatalog.'+b.id+'.desc">'+esc(b.desc)+'</textarea></div>' : (b.desc?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.desc)+'</p>':''))+
     '</div>';
   });
