@@ -1,6 +1,6 @@
 {
-  "version": "1.4.110.0",
-  "build": "2026.10.25.15",
-  "updatedAt": "2026-10-25T21:00:00Z",
-  "changelog": "Alquimia más ordenada: cada sustancia se abre de una en una y tiene tres pestañas (Usar, Proceso y Ajustes). Gastar una dosis se puede deshacer. Letra más grande en las etiquetas."
+  "version": "1.4.111.0",
+  "build": "2026.10.25.16",
+  "updatedAt": "2026-10-25T22:00:00Z",
+  "changelog": "Inventario más cómodo: filtros por categoría con el número de objetos en una fila deslizable, y un buscador por nombre."
 }
