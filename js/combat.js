@@ -225,7 +225,7 @@ function openLongRestModal(){
         '<span class="lr-off">No descansa</span>'+
         (quita.length ? '<span class="lr-quita">Se quita: '+esc(quita.join(", "))+'</span>' : '')+
       '</span>'+
-      '<span class="lr-stats">'+lrStat("❤️", pv, maxPv, "")+lrStat("💧", mp, maxMp, " mana")+'</span>'+
+      '<span class="lr-stats">'+lrStat(icono("vida", {tam:"s"}), pv, maxPv, "")+lrStat(icono("mana", {tam:"s"}), mp, maxMp, " mana")+'</span>'+
     '</label>';
   });
   html += '</div>';

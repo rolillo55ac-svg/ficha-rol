@@ -75,7 +75,7 @@ function renderTopbar(){
         '<div class="gauge-label"><span>Vida '+hpStatusBadge+hpDebuffBadge+'</span><span class="'+hpNumsClass+'">'+curPv+' / '+maxHp+'</span></div>'+
         '<div class="gauge"><div class="gauge-fill hp" style="width:'+hpPct+'%;'+(curPv<=0?'background:#8C252F;':'')+'"></div></div>')+
       gaugeWrapHtml(canEdit, 'shield', 'Escudo',
-        '<div class="gauge-label"><span style="color:var(--shield-light);" title="El Escudo y la Vida Falsa son equivalentes">🛡️ Escudo</span><span class="gauge-nums">'+num(c.combat.escudoActual,0)+'</span></div>'+
+        '<div class="gauge-label"><span style="color:var(--shield-light);" title="El Escudo y la Vida Falsa son equivalentes">' + icono("escudo", {tam:"s"}) + ' Escudo</span><span class="gauge-nums">'+num(c.combat.escudoActual,0)+'</span></div>'+
         '<div class="gauge"><div class="gauge-fill shield" style="width:'+clamp(num(c.combat.escudoActual,0)*10,0,100)+'%;"></div></div>')+
       gaugeWrapHtml(canEdit, 'mana', 'Maná',
         '<div class="gauge-label"><span>Maná</span><span class="gauge-nums">'+num(c.combat.manaActual,0)+' / '+maxMana+'</span></div>'+
@@ -932,7 +932,7 @@ function tplCombate(c){
   // 1. Subnavegación rápida entre Combate y Estados
   html += '<div class="combat-subnav-pills k-seg">'+
     '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
-    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="estados">💫 Estados y Buffs ('+assignedBuffs.length+')</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="estados">' + icono("aturdido", {tam:"s"}) + ' Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
@@ -1036,7 +1036,7 @@ function tplEstados(c){
   // 1. Subnavegación rápida entre Combate y Estados
   html += '<div class="combat-subnav-pills k-seg">'+
     '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
-    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="estados">💫 Estados y Buffs ('+assignedBuffs.length+')</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="estados">' + icono("aturdido", {tam:"s"}) + ' Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
@@ -1295,7 +1295,7 @@ function renderSpellsGrimoire(c, canEdit){
         html += '<div class="spell-card' + (isActive ? ' active-spell' : '') + '">' +
           '<div class="spell-name-read">' + (esc(s.name) || 'Hechizo sin nombre') + '</div>' +
           '<div class="summon-pills-wrap spell-pills-read">' + activeBadge +
-            '<span class="spell-pill">💧 ' + num(s.coste, 1) + ' maná</span>' +
+            '<span class="spell-pill">' + icono("mana", {tam:"s"}) + ' ' + num(s.coste, 1) + ' maná</span>' +
             (s.rango ? '<span class="spell-pill">🎯 ' + esc(s.rango) + '</span>' : '') +
             statBadge +
           '</div>' +
