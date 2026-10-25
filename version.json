@@ -1,6 +1,6 @@
 {
-  "version": "1.4.112.0",
-  "build": "2026.10.25.17",
-  "updatedAt": "2026-10-25T23:00:00Z",
-  "changelog": "El botón de tirada libre muestra ahora un d10 dibujado que brilla al pulsarlo. Preparado el cambio de los emojis por iconos propios."
+  "version": "1.4.113.0",
+  "build": "2026.10.25.18",
+  "updatedAt": "2026-10-25T23:59:00Z",
+  "changelog": "La cabecera (buzón, ajustes, reloj, insignias de admin, máster y jugador) y las filas de Ajustes usan ahora iconos dibujados en lugar de emojis."
 }

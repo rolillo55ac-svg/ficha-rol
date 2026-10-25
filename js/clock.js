@@ -52,7 +52,7 @@ async function saveDistillHours(obj){
 
 function gameClockPillHtml(){
   if(gameClockTotal === null || !currentUser) return "";
-  return '<button type="button" class="game-clock-pill" id="gameClockPill" data-action="open-game-clock" title="Reloj de la partida" aria-label="Reloj de la partida: ' + formatGameClock(gameClockTotal) + '">🕰️ <span>' + formatGameClock(gameClockTotal) + '</span></button>';
+  return '<button type="button" class="game-clock-pill" id="gameClockPill" data-action="open-game-clock" title="Reloj de la partida" aria-label="Reloj de la partida: ' + formatGameClock(gameClockTotal) + '">' + icono("reloj", {tam:"s"}) + ' <span>' + formatGameClock(gameClockTotal) + '</span></button>';
 }
 
 function setGameClockTotal(total){
@@ -120,7 +120,7 @@ function renderGameClockModal(){
   var modal = document.getElementById("clockModal");
   if(!modal) return;
   var p = gameClockParts(gameClockTotal || 0);
-  var html = '<h2>🕰️ Reloj de la partida<button type="button" data-action="close-game-clock" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>' + icono("reloj", {tam:"m"}) + ' Reloj de la partida<button type="button" data-action="close-game-clock" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="game-clock-now" id="gameClockNow">' + (gameClockTotal === null ? "Sin hora" : formatGameClock(gameClockTotal)) + '</div>';
   if(isGM()){
     var hourOpts = "";
