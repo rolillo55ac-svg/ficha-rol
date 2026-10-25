@@ -2168,13 +2168,14 @@ function tplInventario(c){
     '</div>';
   }
 
-  // Sección de Dinero
+  // Sección de Dinero (si la partida aún no tiene la función del dinero, solo se mira)
+  var mEdit = canEdit && !moneyRpcMissing;
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
-    '<div class="money-row'+(canEdit?' has-steps':'')+'">'+
-      '<div class="money-field"><label>'+tplCoinImg("oro", "money-coin")+'Oro</label><input type="number" data-bind="money.oro" data-last-val="'+num(c.money.oro,0)+'" value="'+num(c.money.oro,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("oro"):'')+'</div>'+
-      '<div class="money-field"><label>'+tplCoinImg("plata", "money-coin")+'Plata</label><input type="number" data-bind="money.plata" data-last-val="'+num(c.money.plata,0)+'" value="'+num(c.money.plata,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("plata"):'')+'</div>'+
-      '<div class="money-field"><label>'+tplCoinImg("gremio", "money-coin")+'Gremio</label><input type="number" data-bind="money.gremio" data-last-val="'+num(c.money.gremio,0)+'" value="'+num(c.money.gremio,0)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?tplMoneySteps("gremio"):'')+'</div>'+
-    '</div>'+tplMoneyLog(c)+'</div>';
+    '<div class="money-row'+(mEdit?' has-steps':'')+'">'+
+      '<div class="money-field"><label>'+tplCoinImg("oro", "money-coin")+'Oro</label><input type="number" data-bind="money.oro" data-last-val="'+moneyInt(c.money.oro)+'" value="'+moneyInt(c.money.oro)+'" '+(mEdit?'':'readonly')+'>'+(mEdit?tplMoneySteps("oro"):'')+'</div>'+
+      '<div class="money-field"><label>'+tplCoinImg("plata", "money-coin")+'Plata</label><input type="number" data-bind="money.plata" data-last-val="'+moneyInt(c.money.plata)+'" value="'+moneyInt(c.money.plata)+'" '+(mEdit?'':'readonly')+'>'+(mEdit?tplMoneySteps("plata"):'')+'</div>'+
+      '<div class="money-field"><label>'+tplCoinImg("gremio", "money-coin")+'Gremio</label><input type="number" data-bind="money.gremio" data-last-val="'+moneyInt(c.money.gremio)+'" value="'+moneyInt(c.money.gremio)+'" '+(mEdit?'':'readonly')+'>'+(mEdit?tplMoneySteps("gremio"):'')+'</div>'+
+    '</div>'+(canEdit && moneyRpcMissing ? '<p class="settings-note">El dinero no se puede cambiar hasta que se actualice la partida.</p>' : '')+tplMoneyLog(c)+'</div>';
   html += tplPoisonLoadout(c, canEdit);
 
   var categories = typeof INVENTORY_CATEGORIES !== "undefined" ? INVENTORY_CATEGORIES : [
