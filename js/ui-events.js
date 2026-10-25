@@ -248,6 +248,71 @@ document.addEventListener("click", function(e){
   if(gaugeTrayOpen && !(e.target.closest && e.target.closest(".gauges"))) gaugeTrayClose(true);
 }, true);
 
+var MEDIDORES = {
+  hp: { campo: "pvActual", nombre: "vida" },
+  shield: { campo: "escudoActual", nombre: "escudo" },
+  mana: { campo: "manaActual", nombre: "maná" }
+};
+
+// Vida, escudo y maná: bajar más de 5 de golpe o llegar a 0 pide confirmar; lo bajado se puede deshacer unos segundos
+function pasoMedidor(c, tipo, delta, sinPreguntar){
+  var md = MEDIDORES[tipo];
+  if(!c || !md || !delta) return;
+  var antes = num(c.combat[md.campo], 0);
+  var despues;
+  if(tipo === "hp") despues = clamp(antes + delta, -999, (typeof getEffectiveMaxHp === 'function' ? getEffectiveMaxHp(c) : (num(c.combat.pvMax,0) || 999)));
+  else if(tipo === "mana") despues = clamp(antes + delta, 0, (typeof getEffectiveMaxMana === 'function' ? getEffectiveMaxMana(c) : (num(c.combat.manaMax,0) || 999)));
+  else despues = Math.max(0, antes + delta);
+  if(!sinPreguntar && bajadaPideConfirmar(antes, despues)){
+    confirmarAccion({ titulo: "¿Bajar " + md.nombre + " de " + antes + " a " + despues + "?", texto: despues <= 0 ? (c.name || "El personaje") + " se queda a " + despues + "." : "", boton: "Bajar", peligro: true }).then(function(ok){
+      if(ok) pasoMedidor(c, tipo, delta, true);
+    });
+    return;
+  }
+  // Actualización visual optimista sin marcar dirty ni forzar guardado completo
+  c.combat[md.campo] = despues;
+  renderTopbar();
+  broadcastCharStatUpdate(c.id, c.combat);
+  if(tipo === "hp"){
+    if(delta < 0) applyDamageRPC(c, delta);
+    else applyHealRPC(c, delta);
+  } else if(tipo === "mana") changeManaRPC(c, delta);
+  else changeShieldRPC(c, delta);
+  avisoDeshacerSuma("med:" + c.id + ":" + tipo, despues - antes, function(t){ return md.nombre.charAt(0).toUpperCase() + md.nombre.slice(1) + " " + t; }, function(t){
+    var cur = (state.characters || []).find(function(x){ return x.id === c.id; }) || c;
+    pasoMedidor(cur, tipo, -t, true);
+  });
+}
+
+// Dinero: igual que los medidores, y todo pasa por mover_dinero
+function pasoDinero(c, mPart, mDelta, sinPreguntar){
+  c.money = c.money || { oro: 0, plata: 0 };
+  if(moneyRpcMissing){ showToast("El dinero no se puede cambiar hasta que se actualice la partida", "error"); return; }
+  var mOld = moneyInt(c.money[mPart]);
+  var mNew = Math.max(0, mOld + mDelta);
+  if(mNew === mOld){ showToast("No puede bajar de 0.", "info"); return; }
+  var mNombre = mPart === "gremio" ? "moneda de gremio" : mPart;
+  if(!sinPreguntar && bajadaPideConfirmar(mOld, mNew)){
+    confirmarAccion({ titulo: "¿Quitar " + (mOld - mNew) + " de " + mNombre + "?", texto: "Pasa de " + mOld + " a " + mNew + ".", boton: "Quitar", peligro: true }).then(function(ok){
+      if(ok) pasoDinero(c, mPart, mDelta, true);
+    });
+    return;
+  }
+  c.money[mPart] = mNew;
+  var mInput = document.querySelector('input[data-bind="money.' + mPart + '"]');
+  if(mInput){ mInput.value = mNew; mInput.setAttribute("data-last-val", mNew); }
+  try { if(navigator.vibrate) navigator.vibrate(10); } catch(eVib){}
+  if(typeof playCoinSound === "function") playCoinSound();
+  var mot = sinPreguntar === "deshacer" ? "deshacer" : undefined;
+  if(mPart === "oro") changeMoneyRPC(c, mNew - mOld, 0, 0, mot);
+  else if(mPart === "gremio") changeMoneyRPC(c, 0, 0, mNew - mOld, mot);
+  else changeMoneyRPC(c, 0, mNew - mOld, 0, mot);
+  avisoDeshacerSuma("din:" + c.id + ":" + mPart, mNew - mOld, function(t){ return (t > 0 ? "+" : "−") + Math.abs(t) + " de " + mNombre; }, function(t){
+    var cur = (state.characters || []).find(function(x){ return x.id === c.id; }) || c;
+    pasoDinero(cur, mPart, -t, "deshacer");
+  });
+}
+
 // Baja un nivel (ya confirmado por el máster)
 function revokeLevelConfirmed(c){
   var curNv = num(c.nivel, 1);
@@ -398,43 +463,10 @@ function handleClick(e){
     renderTopbar();
     return;
   }
-  if(action==="hp-mod"){
+  if(action==="hp-mod" || action==="shield-mod" || action==="mana-mod"){
     if(!canEditChar(c)) return;
     if(gaugeTrayOpen) gaugeTrayArm();
-    var d1 = parseInt(btn.getAttribute("data-delta"),10);
-    var maxHp = (typeof getEffectiveMaxHp === 'function' ? getEffectiveMaxHp(c) : (num(c.combat.pvMax,0) || 999));
-    // Actualización visual optimista sin marcar dirty ni forzar guardado completo
-    c.combat.pvActual = clamp(num(c.combat.pvActual,0)+d1, -999, maxHp);
-    renderTopbar();
-    broadcastCharStatUpdate(c.id, c.combat);
-
-    if(d1 < 0) applyDamageRPC(c, d1);
-    else if(d1 > 0) applyHealRPC(c, d1);
-    return;
-  }
-  if(action==="shield-mod"){
-    if(!canEditChar(c)) return;
-    if(gaugeTrayOpen) gaugeTrayArm();
-    var ds = parseInt(btn.getAttribute("data-delta"),10);
-    // Actualización visual optimista sin marcar dirty ni forzar guardado completo
-    c.combat.escudoActual = Math.max(0, num(c.combat.escudoActual,0)+ds);
-    renderTopbar();
-    broadcastCharStatUpdate(c.id, c.combat);
-
-    changeShieldRPC(c, ds);
-    return;
-  }
-  if(action==="mana-mod"){
-    if(!canEditChar(c)) return;
-    if(gaugeTrayOpen) gaugeTrayArm();
-    var d2 = parseInt(btn.getAttribute("data-delta"),10);
-    var maxMana = (typeof getEffectiveMaxMana === 'function' ? getEffectiveMaxMana(c) : (num(c.combat.manaMax,0) || 999));
-    // Actualización visual optimista sin marcar dirty ni forzar guardado completo
-    c.combat.manaActual = clamp(num(c.combat.manaActual,0)+d2, 0, maxMana);
-    renderTopbar();
-    broadcastCharStatUpdate(c.id, c.combat);
-
-    changeManaRPC(c, d2);
+    pasoMedidor(c, action.split("-")[0], parseInt(btn.getAttribute("data-delta"),10) || 0);
     return;
   }
 
@@ -2279,20 +2311,7 @@ function handleClick(e){
     if(!c || !canEditChar(c)) return;
     var mPart = btn.getAttribute("data-part");
     if(mPart !== "plata" && mPart !== "gremio") mPart = "oro";
-    var mDelta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
-    c.money = c.money || { oro: 0, plata: 0 };
-    if(moneyRpcMissing){ showToast("El dinero no se puede cambiar hasta que se actualice la partida", "error"); return; }
-    var mOld = moneyInt(c.money[mPart]);
-    var mNew = Math.max(0, mOld + mDelta);
-    if(mNew === mOld){ showToast("No puede bajar de 0.", "info"); return; }
-    c.money[mPart] = mNew;
-    var mInput = document.querySelector('input[data-bind="money.' + mPart + '"]');
-    if(mInput){ mInput.value = mNew; mInput.setAttribute("data-last-val", mNew); }
-    try { if(navigator.vibrate) navigator.vibrate(10); } catch(eVib){}
-    if(typeof playCoinSound === "function") playCoinSound();
-    if(mPart === "oro") changeMoneyRPC(c, mNew - mOld, 0);
-    else if(mPart === "gremio") changeMoneyRPC(c, 0, 0, mNew - mOld);
-    else changeMoneyRPC(c, 0, mNew - mOld);
+    pasoDinero(c, mPart, parseInt(btn.getAttribute("data-delta"), 10) || 0);
     return;
   }
   if(action==="add-training"){
@@ -2854,7 +2873,7 @@ function handleClick(e){
     var mName = targetMap.name || "este mapa";
     var mCount = (targetMap.markers||[]).length;
     var confirmMsg = "¿Eliminar definitivamente el mapa \"" + mName + "\"" + (mCount > 0 ? " con sus " + mCount + " marcador(es)?" : "?");
-    if(confirm(confirmMsg)){
+    if(btn._confirmado || confirm(confirmMsg)){
       state.maps = (state.maps||[]).filter(function(m){return m.id!==targetMap.id;});
       if(!state.maps.length){
         var defaultM = { id:"world_main", name:"Mapa de Campaña", image:null, markers:[] };
