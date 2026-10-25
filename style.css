@@ -2692,6 +2692,19 @@ html.juice-off .tab-ico-img,html.juice-off .tab-ico-focus{transition:none;}
 .fab-dice::before{content:'';position:absolute;inset:3px;border-radius:50%;border:1px dashed rgba(176,141,87,0.45);pointer-events:none;}
 .fab-dice:hover{border-color:var(--gold-light);transform:scale(1.08) rotate(4deg);box-shadow:0 12px 30px rgba(0,0,0,0.85), inset 0 0 16px rgba(222,195,146,0.5), 0 0 0 4px rgba(176,141,87,0.3);}
 .fab-dice:active{transform:scale(.94) rotate(-10deg);}
+.fab-dice-ico{position:relative;width:40px;height:40px;display:block;pointer-events:none;}
+.fab-dice-ico img{position:absolute;inset:0;width:40px;height:40px;display:block;transition:opacity .14s ease;}
+.fab-dice-ico .fab-dice-focus{opacity:0;}
+.fab-dice:active .fab-dice-focus,body:has(#diceModalOverlay:not(.hidden)) .fab-dice-focus{opacity:1;}
+.fab-dice:active .fab-dice-normal,body:has(#diceModalOverlay:not(.hidden)) .fab-dice-normal{opacity:0;}
+html.juice-off .fab-dice-ico img{transition:none;}
+
+/* Iconos propios (js/iconos.js): tamaño según el sitio, alineados con el texto */
+.ico{display:inline-block;vertical-align:-0.2em;object-fit:contain;flex:none;}
+.ico.ico-s{width:16px;height:16px;}
+.ico.ico-m{width:24px;height:24px;}
+.ico.ico-l{width:40px;height:40px;}
+.ico-emoji{display:inline-block;line-height:1;}
 
 /* Animaciones de tirada */
 @keyframes bg3ChamberEnter {
