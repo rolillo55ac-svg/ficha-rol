@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.97.0";
-var APP_BUILD = "2026.10.25.02";
+var APP_VERSION = "1.4.98.0";
+var APP_BUILD = "2026.10.25.03";
 
 var state = null;
 var supabaseClient = null;
@@ -77,7 +77,7 @@ function blankCharacter(name, isNPC){
     skillBonus:{}, skillProgress:{}, skillPointsUnlocked:false,
     skillHybrid:{}, customSkills:[],
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
-    weapons:[], armors:[], inventory:[], money:{oro:0,plata:0},
+    weapons:[], armors:[], inventory:[], money:{oro:0,plata:0,gremio:0},
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
     summons:[], buffs:{}, customBuffs:[], poisons:[], skillPoints:0,
     activeBuffs: [],

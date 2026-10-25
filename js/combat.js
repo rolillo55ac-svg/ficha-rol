@@ -30,71 +30,113 @@ async function changeShieldRPC(char, amount){
   }
 }
 
-// El dinero se cambia con la función change_character_money: suma o resta en la nube
-// (sin pisar otros cambios) y deja apuntado quién lo hizo. Los envíos de una ficha van en fila.
+// El dinero solo lo cambia la función mover_dinero de la nube: suma o resta sin pisar otros cambios,
+// deja apuntado quién lo hizo y no repite un envío con la misma clave. El guardado de la ficha nunca lo lleva.
+// Los envíos de una ficha van en fila; si uno falla, se deshace en pantalla y se avisa.
 var moneyQueue = {};
 var moneyPending = {};
 var moneyLogCache = {};
+var moneyRpcMissing = false;
 
-function changeMoneyRPC(char, deltaOro, deltaPlata){
+// Oro, plata y gremio son enteros: "1.567" escrito con punto de miles es 1567
+function moneyInt(v){
+  var n = Number(v);
+  if(!isFinite(n) || n <= 0) return 0;
+  if(Math.floor(n) === n) return n;
+  if(/^\d{1,3}\.\d{3}$/.test(String(v))) return Math.round(n * 1000);
+  return Math.floor(n);
+}
+
+function newMoneyKey(){
+  try { if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch(e){}
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+function changeMoneyRPC(char, deltaOro, deltaPlata, deltaGremio, motivo){
   if(!char) return Promise.resolve();
   deltaOro = parseInt(deltaOro, 10) || 0;
   deltaPlata = parseInt(deltaPlata, 10) || 0;
-  if(deltaOro === 0 && deltaPlata === 0) return Promise.resolve();
+  deltaGremio = parseInt(deltaGremio, 10) || 0;
+  if(deltaOro === 0 && deltaPlata === 0 && deltaGremio === 0) return Promise.resolve();
   // Lo que ya se ve en pantalla no debe salir otra vez en el guardado por diferencias
   if(!char._lastSyncedData) char._lastSyncedData = {};
   char._lastSyncedData.money = JSON.parse(JSON.stringify(char.money || { oro: 0, plata: 0 }));
   saveState(true);
   var key = char.id;
+  var clave = newMoneyKey();
   moneyPending[key] = (moneyPending[key] || 0) + 1;
   var prev = moneyQueue[key] || Promise.resolve();
-  var next = prev.then(function(){ return sendMoneyChange(char, deltaOro, deltaPlata); }).catch(function(){}).then(function(){ moneyPending[key] = Math.max(0, (moneyPending[key] || 1) - 1); });
+  var next = prev.then(function(){ return sendMoneyChange(char, deltaOro, deltaPlata, deltaGremio, clave, motivo); }).catch(function(){}).then(function(){ moneyPending[key] = Math.max(0, (moneyPending[key] || 1) - 1); });
   moneyQueue[key] = next;
   return next;
 }
 
-async function sendMoneyChange(char, deltaOro, deltaPlata){
+function isMoneyNetError(err){
+  if(!err) return false;
+  if(typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+  return !err.code && /fetch|network|load failed|timeout/i.test(err.message || String(err));
+}
+
+async function sendMoneyChange(char, deltaOro, deltaPlata, deltaGremio, clave, motivo){
   var cur = function(){ return (state.characters||[]).find(function(x){ return x.id === char.id; }) || char; };
-  if(char.db_id && typeof supabaseClient !== 'undefined' && supabaseClient && currentUser){
-    try {
-      var res = await supabaseClient.rpc('change_character_money', { p_char_id: char.db_id, p_delta_oro: deltaOro, p_delta_plata: deltaPlata });
-      if(!res.error && res.data){
+  var errMsg = 'No se pudo guardar el dinero, inténtalo otra vez';
+  if(char.db_id && typeof supabaseClient !== 'undefined' && supabaseClient && currentUser && !moneyRpcMissing){
+    var args = { p_char_id: char.db_id, p_oro: deltaOro, p_plata: deltaPlata, p_gremio: deltaGremio, p_motivo: motivo || 'botones', p_clave: clave };
+    // Con mala conexión se reintenta con la misma clave: la nube no lo suma dos veces
+    for(var intento = 0; intento < 3; intento++){
+      var res = null, err = null;
+      try { res = await supabaseClient.rpc('mover_dinero', args); err = res.error; }
+      catch(e){ err = e; }
+      if(!err && res && res.data){
         var c = cur();
         c.money = c.money || { oro: 0, plata: 0 };
         // Solo el último envío de la fila pone el valor de la nube (los anteriores ya están sumados en pantalla)
         if((moneyPending[char.id] || 0) <= 1){
           c.money.oro = num(res.data.oro, 0);
           c.money.plata = num(res.data.plata, 0);
+          if(res.data.gremio !== undefined) c.money.gremio = num(res.data.gremio, 0);
           if(!c._lastSyncedData) c._lastSyncedData = {};
-          c._lastSyncedData.money = { oro: c.money.oro, plata: c.money.plata };
+          c._lastSyncedData.money = JSON.parse(JSON.stringify(c.money));
           saveState(true);
           refreshMoneyView(c);
         }
         loadMoneyLog(c, true);
         return;
       }
-      console.warn('change_character_money:', (res && res.error && (res.error.message || res.error)) || 'sin datos');
-      if(res && res.error && /permiso|sesión/i.test(res.error.message || '')){
-        if(typeof showToast === 'function') showToast('No se pudo cambiar el dinero: ' + res.error.message, 'error');
-        return;
+      console.warn('mover_dinero:', (err && (err.message || err)) || 'sin datos');
+      if(err && (err.code === 'PGRST202' || err.code === '42883')){
+        moneyRpcMissing = true;
+        errMsg = 'El dinero no se puede cambiar hasta que se actualice la partida';
+        break;
       }
-    } catch(e){
-      console.warn('change_character_money:', e);
+      if(err && err.message && !isMoneyNetError(err)){
+        errMsg = /MANTENIMIENTO/.test(err.message) ? 'La web está en mantenimiento: no se guardan cambios' : ('No se pudo cambiar el dinero: ' + err.message);
+        break;
+      }
+      await new Promise(function(r){ setTimeout(r, 800 * (intento + 1)); });
     }
   }
-  // Sin la función en la nube (o sin conexión): se guarda como antes
-  if(typeof pushCharacterPatch === 'function'){
-    await pushCharacterPatch(char.id, { money: cur().money });
-  }
+  // No se guardó: se deshace lo que se había sumado en pantalla
+  var cc = cur();
+  cc.money = cc.money || { oro: 0, plata: 0 };
+  cc.money.oro = Math.max(0, moneyInt(cc.money.oro) - deltaOro);
+  cc.money.plata = Math.max(0, moneyInt(cc.money.plata) - deltaPlata);
+  if(deltaGremio || cc.money.gremio !== undefined) cc.money.gremio = Math.max(0, moneyInt(cc.money.gremio) - deltaGremio);
+  if(!cc._lastSyncedData) cc._lastSyncedData = {};
+  cc._lastSyncedData.money = JSON.parse(JSON.stringify(cc.money));
+  saveState(true);
+  if(moneyRpcMissing && state.activeTab === 'inventario' && typeof renderTab === 'function') renderTab();
+  else refreshMoneyView(cc);
+  if(typeof showToast === 'function') showToast(errMsg, 'error');
 }
 
 function refreshMoneyView(c){
   if(state.activeTab !== 'inventario' || !c || (typeof activeChar === 'function' && activeChar() !== c)) return;
-  ['oro','plata'].forEach(function(part){
+  ['oro','plata','gremio'].forEach(function(part){
     var el = document.querySelector('input[data-bind="money.' + part + '"]');
     if(el && document.activeElement !== el){
-      el.value = num(c.money[part], 0);
-      el.setAttribute('data-last-val', num(c.money[part], 0));
+      el.value = moneyInt(c.money[part]);
+      el.setAttribute('data-last-val', moneyInt(c.money[part]));
     }
   });
 }
@@ -113,7 +155,7 @@ async function loadMoneyLog(c, force){
   if(!force && entry && Date.now() - entry.ts < 60000) return;
   moneyLogCache[c.db_id] = { rows: entry ? entry.rows : [], ts: Date.now(), loading: true };
   try {
-    var res = await supabaseClient.from('money_log').select('delta_oro,delta_plata,actor_name,created_at').eq('character_id', c.db_id).order('created_at', { ascending: false }).limit(5);
+    var res = await supabaseClient.from('money_log').select('*').eq('character_id', c.db_id).order('created_at', { ascending: false }).limit(5);
     var rows = (!res.error && Array.isArray(res.data)) ? res.data : (entry ? entry.rows : []);
     moneyLogCache[c.db_id] = { rows: rows, ts: Date.now() };
     var box = document.querySelector('[data-money-log="' + c.db_id + '"]');

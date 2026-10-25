@@ -1,6 +1,6 @@
 {
-  "version": "1.4.97.0",
-  "build": "2026.10.25.02",
-  "updatedAt": "2026-10-25T01:00:00Z",
-  "changelog": "Bajar de nivel a un personaje ahora pide confirmación, para que no pase por un toque sin querer. Cherk vuelve a nivel 2."
+  "version": "1.4.98.0",
+  "build": "2026.10.25.03",
+  "updatedAt": "2026-10-25T02:30:00Z",
+  "changelog": "El dinero ya se guarda siempre: solo lo cambian los botones y la casilla, y nada más lo pisa. Si no se puede guardar, vuelve al valor de antes y avisa. Nueva moneda de gremio con iconos de monedas."
 }

@@ -458,6 +458,9 @@ function handleRemoteCharacterChange(payload){
     if(row && row.data){
       var rowTs = row.updated_at ? new Date(row.updated_at).getTime() : 0;
       if(rowTs && lastRemoteCharTs[row.id] && rowTs < lastRemoteCharTs[row.id]) return;
+      // Aviso que llega tarde y es más viejo que nuestro último guardado: traería datos de antes y los pisaría
+      var ownSaved = (state.characters||[]).find(function(x){ return x.db_id === row.id; });
+      if(rowTs && ownSaved && ownSaved._serverUpdatedAt && rowTs < ownSaved._serverUpdatedAt) return;
       if(rowTs) lastRemoteCharTs[row.id] = rowTs;
       var c = row.data;
       c.db_id = row.id;

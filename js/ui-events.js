@@ -115,8 +115,8 @@ function handleChange(e){
     pushCharacterById(target.id);
     return;
   }
-  if(!isGlobal && target && (bind === "money.oro" || bind === "money.plata")){
-    var curVal = Math.max(0, num(el.value, 0));
+  if(!isGlobal && target && (bind === "money.oro" || bind === "money.plata" || bind === "money.gremio")){
+    var curVal = moneyInt(el.value);
     var part = bind.split(".")[1];
     target.money = target.money || { oro: 0, plata: 0 };
     if(e.type === "input"){
@@ -125,12 +125,15 @@ function handleChange(e){
     }
     if(e.type === "change"){
       var lastVal = el.getAttribute("data-last-val");
-      var oldVal = (lastVal !== null && lastVal !== undefined) ? num(lastVal, 0) : num(target.money[part], 0);
+      var oldVal = (lastVal !== null && lastVal !== undefined) ? moneyInt(lastVal) : moneyInt(target.money[part]);
       var delta = curVal - oldVal;
+      if(moneyRpcMissing){ el.value = oldVal; target.money[part] = oldVal; showToast("El dinero no se puede cambiar hasta que se actualice la partida", "error"); return; }
+      el.value = curVal;
       el.setAttribute("data-last-val", curVal);
       target.money[part] = curVal;
       if(delta !== 0){
         if(part === "oro") changeMoneyRPC(target, delta, 0);
+        else if(part === "gremio") changeMoneyRPC(target, 0, 0, delta);
         else changeMoneyRPC(target, 0, delta);
       }
       return;
@@ -2274,10 +2277,12 @@ function handleClick(e){
   if(action==="del-goddess"){ if(!c || !canEditChar(c)) return; var gdId = btn.getAttribute("data-id"); c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==gdId;}); renderTab(); manageListItemRPC(c, 'goddessTable', 'remove', null, gdId); return; }
   if(action==="money-step"){
     if(!c || !canEditChar(c)) return;
-    var mPart = btn.getAttribute("data-part") === "plata" ? "plata" : "oro";
+    var mPart = btn.getAttribute("data-part");
+    if(mPart !== "plata" && mPart !== "gremio") mPart = "oro";
     var mDelta = parseInt(btn.getAttribute("data-delta"), 10) || 0;
     c.money = c.money || { oro: 0, plata: 0 };
-    var mOld = Math.max(0, num(c.money[mPart], 0));
+    if(moneyRpcMissing){ showToast("El dinero no se puede cambiar hasta que se actualice la partida", "error"); return; }
+    var mOld = moneyInt(c.money[mPart]);
     var mNew = Math.max(0, mOld + mDelta);
     if(mNew === mOld){ showToast("No puede bajar de 0.", "info"); return; }
     c.money[mPart] = mNew;
@@ -2286,6 +2291,7 @@ function handleClick(e){
     try { if(navigator.vibrate) navigator.vibrate(10); } catch(eVib){}
     if(typeof playCoinSound === "function") playCoinSound();
     if(mPart === "oro") changeMoneyRPC(c, mNew - mOld, 0);
+    else if(mPart === "gremio") changeMoneyRPC(c, 0, 0, mNew - mOld);
     else changeMoneyRPC(c, 0, mNew - mOld);
     return;
   }

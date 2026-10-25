@@ -750,6 +750,11 @@ async function pullAllFromSupabase(){
           return remoteC;
         }
 
+        // La lectura empezó antes de nuestro último guardado: la copia local ya es la de la nube más nueva
+        if(localC && localC.db_id && localC._serverUpdatedAt && remoteC._serverUpdatedAt && localC._serverUpdatedAt > remoteC._serverUpdatedAt){
+          return localC;
+        }
+
         // Si tenemos cambios locales más recientes o no sincronizados y tenemos permiso para editar, PRESERVAR LOS CAMBIOS LOCALES
         if(localC && canEditChar(localC) && (hasDirty || localIsNewer)){
           localC._isDirty = true;
@@ -914,6 +919,12 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
   // Un envío por ficha a la vez: si no, varios toques rápidos pueden llegar desordenados a la nube.
   // Lo cambiado mientras tanto ya está en dirtyCharPatches y sale en el siguiente envío.
   if(charPushInFlight[c.id]){
+    // Un parche explícito no se pierde: se suma a lo pendiente y sale en el siguiente envío
+    if(explicitPatch && typeof dirtyCharPatches !== 'undefined'){
+      var accQ = dirtyCharPatches.get(c.id) || {};
+      try { Object.assign(accQ, JSON.parse(JSON.stringify(explicitPatch))); } catch(eQ){}
+      dirtyCharPatches.set(c.id, accQ);
+    }
     charPushQueued[c.id] = true;
     return;
   }
@@ -951,6 +962,8 @@ async function pushExistingCharacter(c, explicitPatch){
   delete patchToPush._pendingKeys;
   delete patchToPush._saveRetries;
   delete patchToPush.db_id;
+  // El dinero solo cambia por mover_dinero; la nube lo ignora igualmente en el guardado de la ficha
+  delete patchToPush.money;
 
   if(!patchToPush || Object.keys(patchToPush).length === 0){
     c._isDirty = false;
