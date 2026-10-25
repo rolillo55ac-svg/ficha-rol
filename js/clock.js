@@ -137,7 +137,8 @@ function renderGameClockModal(){
         '<label for="gameClockHour">Hora</label>' +
         '<select id="gameClockHour" class="game-clock-input">' + hourOpts + '</select>' +
         '<button type="button" class="game-clock-btn primary" data-action="clock-set"' + (gameClockBusy ? " disabled" : "") + '>Poner</button>' +
-      '</div>';
+      '</div>' +
+      '<button type="button" class="game-clock-btn game-clock-rest" data-action="clock-long-rest">🌙 Descanso largo…</button>';
   } else {
     html += '<p class="game-clock-note">Solo el máster puede cambiar la hora.</p>';
   }
@@ -179,6 +180,7 @@ document.addEventListener("click", function(e){
   var action = btn.getAttribute("data-action");
   if(action === "open-game-clock"){ openGameClockModal(); return; }
   if(action === "close-game-clock"){ closeGameClockModal(); return; }
+  if(action === "clock-long-rest"){ closeGameClockModal(); openLongRestModal(); return; }
   if(action === "clock-add"){
     changeGameClock("game_clock_add", { p_hours: parseInt(btn.getAttribute("data-hours"), 10) || 0 });
     return;
