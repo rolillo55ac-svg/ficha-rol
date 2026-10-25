@@ -2678,9 +2678,15 @@ main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow
 .tab-btn[data-tab="extra"]::before{content:'🔮';}
 .tab-btn[data-tab="mundo"]::before{content:'🗺️';}
 .tab-btn[data-tab="lapidario"]::before{content:'💎';}
-.tab-btn[data-tab="casa"]::before,.tab-btn[data-tab="tiradas"]::before{content:none;}
-.tab-ico-img{width:30px;height:30px;display:block;margin:0 auto;filter:saturate(.55) brightness(.8);pointer-events:none;transition:transform var(--transition-fast);}
-.tab-btn.active .tab-ico-img{filter:none;transform:scale(1.08);}
+.tab-btn[data-tab="ficha"]::before,.tab-btn[data-tab="tiradas"]::before,.tab-btn[data-tab="inventario"]::before,.tab-btn[data-tab="comercio"]::before,.tab-btn[data-tab="casa"]::before{content:none;}
+.tab-btn .tab-ico-wrap{position:relative;display:block;width:28px;height:28px;margin:0 auto;pointer-events:none;}
+.tab-ico-img,.tab-ico-focus{position:absolute;top:0;left:0;width:28px;height:28px;display:block;pointer-events:none;transition:opacity .14s ease, transform .14s ease;}
+.tab-ico-img{opacity:.7;filter:saturate(.6);}
+.tab-ico-focus{opacity:0;}
+.tab-btn.active .tab-ico-img{opacity:0;}
+.tab-btn.active .tab-ico-focus{opacity:1;transform:scale(1.1);}
+html.juice-off .tab-ico-img,html.juice-off .tab-ico-focus{transition:none;}
+@media (prefers-reduced-motion: reduce){.tab-ico-img,.tab-ico-focus{transition:none;}.tab-btn.active .tab-ico-focus{transform:none;}}
 .tab-btn:hover{color:var(--ink-dim);background:rgba(176,141,87,0.05);}
 .tab-btn:hover::before{filter:grayscale(.2) opacity(.9);}
 .tab-btn.active{color:var(--gold-light);font-weight:700;background:rgba(176,141,87,0.08);}
