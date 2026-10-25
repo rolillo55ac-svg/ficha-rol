@@ -9940,7 +9940,8 @@ textarea,
 .alq-filter-btn.on { border-color: var(--gold); color: var(--gold-light); }
 .alq-btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
 .alq-top-actions { margin-bottom: 12px; }
-.alq-top-actions .alq-btn { min-height: 44px; }
+.alq-top-actions + .alq-top-actions { margin-top: -4px; }
+.alq-top-actions .alq-btn { min-height: 44px; flex: 1 1 0; min-width: 0; }
 .alq-list { display: flex; flex-direction: column; gap: 10px; }
 .alq-empty { text-align: center; padding: 26px 10px; color: var(--ink-faint); background: rgba(0,0,0,.25); border-radius: 12px; border: 1px dashed var(--line); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .alq-empty .alq-btn { flex: none; }
@@ -9953,24 +9954,26 @@ textarea,
 .alq-ico { width: 40px; height: 40px; flex: none; border-radius: 10px; display: grid; place-items: center; font-size: 1.3rem; background: var(--bg-card); }
 .alq-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .alq-nm { font-family: var(--font-display); font-weight: 700; font-size: 1.08rem; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
+.alq-sub { display: block; font-size: .8rem; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .alq-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.alq-tag { font-size: .74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); white-space: nowrap; }
+.alq-tag { font-size: .75rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); white-space: nowrap; }
 .alq-tag.e { border-color: rgba(200,75,87,.5); color: var(--blood-light); }
 .alq-tag.s { border-color: rgba(118,172,157,.5); color: var(--teal-light); }
-.alq-note-sum { display: block; font-size: .74rem; color: var(--ink-faint); margin-top: 3px; overflow-wrap: anywhere; }
+.alq-note-sum { display: block; font-size: .75rem; color: var(--ink-faint); margin-top: 3px; overflow-wrap: anywhere; }
 .alq-tag.wait { border-color: rgba(224,144,74,.5); color: var(--warning); }
 .alq-tag.ready { border-color: var(--gold); color: var(--gold-light); }
 .alq-dose { flex: none; min-width: 44px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--gold-light); }
-.alq-dose small { display: block; font-family: var(--font-body); font-weight: 400; font-size: .66rem; color: var(--ink-faint); }
+.alq-dose small { display: block; font-family: var(--font-body); font-weight: 400; font-size: .75rem; color: var(--ink-faint); }
 .alq-chev { flex: none; color: var(--ink-faint); transition: transform .2s; }
 .alq-card.open .alq-chev { transform: rotate(90deg); }
 .alq-body { padding: 0 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+.alq-card-tabs { margin-bottom: 10px; }
 .alq-meta { font-size: .84rem; color: var(--ink-dim); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .alq-link { background: none; border: 0; padding: 0 4px; min-height: 44px; color: var(--gold-light); text-decoration: underline; font-size: .84rem; cursor: pointer; }
 .alq-note { font-size: .82rem; color: var(--ink-faint); line-height: 1.4; }
 
 .alq-next { border-radius: 12px; padding: 12px; background: rgba(176,141,87,.1); border: 1px solid var(--line-strong); display: flex; flex-direction: column; gap: 8px; }
-.alq-k { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--gold); }
+.alq-k { font-size: .75rem; letter-spacing: .09em; text-transform: uppercase; color: var(--gold); }
 .alq-next p { margin: 0; line-height: 1.4; color: var(--ink); }
 .alq-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,.35); overflow: hidden; }
 .alq-bar div { height: 100%; background: var(--gold); }
@@ -9998,7 +10001,7 @@ button.alq-step { cursor: pointer; }
 .alq-branch.s h4 { color: var(--teal-light); }
 .alq-minis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .alq-mini { min-height: 48px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.2); color: var(--ink-dim); font-size: .88rem; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; cursor: pointer; }
-.alq-mini small { font-size: .68rem; color: var(--ink-faint); }
+.alq-mini small { font-size: .75rem; color: var(--ink-faint); }
 .alq-mini[aria-pressed="true"] { color: var(--ink); background: rgba(255,255,255,.06); }
 .alq-branch.e .alq-mini[aria-pressed="true"] { border-color: var(--blood-light); }
 .alq-branch.s .alq-mini[aria-pressed="true"] { border-color: var(--teal-light); }
@@ -10023,7 +10026,7 @@ button.alq-step { cursor: pointer; }
 .alq-sheet-head { display: flex; align-items: center; justify-content: space-between; }
 .alq-sheet-head h3 { margin: 0; font-family: var(--font-display); color: var(--gold-light); font-size: 1.15rem; }
 .alq-sheet-x { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--bg-card); color: var(--ink); cursor: pointer; }
-.alq-sheet-lbl { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-top: 4px; }
+.alq-sheet-lbl { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-top: 4px; }
 .alq-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .alq-pill { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg-card); color: var(--ink-dim); font-size: .88rem; cursor: pointer; }
 .alq-pill.active { border-color: var(--gold); color: var(--gold-light); background: rgba(176,141,87,.12); }
@@ -10581,7 +10584,7 @@ html,body{overscroll-behavior-y:contain;}
 .roll-history-check input{accent-color:var(--gold);}
 .spell-notes{resize:none;}
 .skill-bonus-ctrl button:disabled,.skills-orig-data .skill-bonus-ctrl button:disabled{opacity:0.45;}
-.alq-top-actions .alq-btn.gold{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1 1 100%;white-space:nowrap;}
+.alq-top-actions .alq-btn.gold{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1 1 0;white-space:nowrap;}
 .btn-add-training{display:block;width:100%;min-height:44px;margin-top:8px;}
 
 /* Pestañas internas unificadas (.k-seg): mismo aspecto que las de Tiradas */

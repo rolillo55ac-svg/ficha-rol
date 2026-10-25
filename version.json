@@ -1,6 +1,6 @@
 {
-  "version": "1.4.109.0",
-  "build": "2026.10.25.14",
-  "updatedAt": "2026-10-25T19:00:00Z",
-  "changelog": "Al crear algo (entrenamiento, misión, magia, arma, pista…) la pantalla te lleva a lo nuevo y lo marca con un brillo dorado. Nuevo icono para Piedras."
+  "version": "1.4.110.0",
+  "build": "2026.10.25.15",
+  "updatedAt": "2026-10-25T21:00:00Z",
+  "changelog": "Alquimia más ordenada: cada sustancia se abre de una en una y tiene tres pestañas (Usar, Proceso y Ajustes). Gastar una dosis se puede deshacer. Letra más grande en las etiquetas."
 }

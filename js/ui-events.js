@@ -227,6 +227,20 @@ function clampCurrentVitalsToEffectiveMax(c){
 }
 
 // Destilado terminado: +1 dosis y la sustancia queda Extraída
+// Gastar dosis no pide confirmar, pero se puede deshacer (los −1 seguidos se suman en uno)
+function alchemyUndoDose(c, pItem, n, prog){
+  avisoDeshacerSuma("alq:" + c.id + ":" + pItem.id, -n, function(t){ return Math.abs(t) + " dosis" + " menos de «" + pItem.name + "»"; }, function(t){
+    pItem.dosis = num(pItem.dosis, 0) - t;
+    if(prog) pItem[prog.axis] = prog.val;
+    markCharDirty(c.id, "poisons");
+    saveState(false);
+    var cambios = { dosis: pItem.dosis };
+    if(prog) cambios[prog.axis] = prog.val;
+    manageListItemRPC(c, 'poisons', 'update_item', cambios, pItem.id);
+    renderTab();
+  });
+}
+
 function alchemyCollectDistill(c, pItem){
   var dState = alchemyDistillState(pItem);
   if(!dState || !dState.ready) return;
@@ -1815,9 +1829,18 @@ function handleClick(e){
     var psId = btn.getAttribute("data-id");
     if(psId){
       if(typeof window.alchemyExpandedCards === "undefined") window.alchemyExpandedCards = {};
-      window.alchemyExpandedCards[psId] = !window.alchemyExpandedCards[psId];
+      // Solo una tarjeta abierta a la vez; al abrir otra se empieza en Usar
+      var abrirPs = !window.alchemyExpandedCards[psId];
+      window.alchemyExpandedCards = {};
+      if(abrirPs){ window.alchemyExpandedCards[psId] = true; alchemyCardTab = "usar"; }
       renderTab();
+      if(abrirPs){ var psCard = document.getElementById("alchemy-card-" + psId); if(psCard && psCard.scrollIntoView) psCard.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
     }
+    return;
+  }
+  if(action==="set-alchemy-card-tab"){
+    alchemyCardTab = btn.getAttribute("data-val") || "usar";
+    renderTab();
     return;
   }
   if(action==="toggle-all-alchemy-cards"){
@@ -1976,11 +1999,13 @@ function handleClick(e){
     var delta = parseInt(btn.getAttribute("data-delta")||"0", 10);
     var pItem = (c.poisons||[]).find(function(x){ return x.id === psId; });
     if(pItem){
-      pItem.dosis = Math.max(0, num(pItem.dosis, 0) + delta);
+      var dosisAntes = num(pItem.dosis, 0);
+      pItem.dosis = Math.max(0, dosisAntes + delta);
       markCharDirty(c.id, "poisons");
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
+      if(pItem.dosis < dosisAntes) alchemyUndoDose(c, pItem, dosisAntes - pItem.dosis, null);
     }
     return;
   }
@@ -2055,12 +2080,14 @@ function handleClick(e){
       pItem.dosis = num(pItem.dosis, 0) - 1;
       // Sin la rama de Cherk (pociones y ungüentos de otras fichas) cuenta en la única que se ve
       var drinkAxis = alchemyShowsCherk(c) ? "progCherk" : "progEnemigo";
+      var progAntes = pItem[drinkAxis];
       if(getAlchemyStageIndex(pItem[drinkAxis]) < 3) pItem[drinkAxis] = "probado";
       markCharDirty(c.id, "poisons");
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
       showToast("🛡️ " + c.name + " se toma '" + pItem.name + "'. Anota qué notó.", "success");
+      alchemyUndoDose(c, pItem, 1, progAntes !== pItem[drinkAxis] ? { axis: drinkAxis, val: progAntes } : null);
     }
     return;
   }
