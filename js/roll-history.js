@@ -278,7 +278,7 @@ function showRollHistoryInMenu(){
 
 async function deleteRollFromHistory(id){
   if(!id || !isGM() || !supabaseClient) return;
-  if(!confirm("¿Borrar esta tirada del historial?")) return;
+  if(!(await confirmarAccion({ titulo: "¿Borrar esta tirada del historial?", boton: "Borrar", peligro: true }))) return;
   var res = await supabaseClient.from("dice_rolls").delete().eq("id", id);
   if(res.error){ showToast("⚠️ No se pudo borrar la tirada", "error"); return; }
   rollHistoryView.items = rollHistoryView.items.filter(function(x){ return x.id !== id; });

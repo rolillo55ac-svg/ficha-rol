@@ -1,6 +1,6 @@
 {
-  "version": "1.4.101.0",
-  "build": "2026.10.25.06",
-  "updatedAt": "2026-10-25T09:00:00Z",
-  "changelog": "Reglas del juego ordenadas en un solo sitio (críticos y pifias, entrenamiento, Defensa y descanso largo) para que se calculen siempre igual."
+  "version": "1.4.102.0",
+  "build": "2026.10.25.07",
+  "updatedAt": "2026-10-25T12:00:00Z",
+  "changelog": "Todo lo que quita o resta pregunta antes (con Cancelar por defecto). Vida, maná, escudo y dinero solo preguntan si se baja más de 5 o se llega a 0, y siempre se puede deshacer unos segundos."
 }

@@ -170,7 +170,7 @@ async function createRollRequest(){
 
 async function cancelRollRequest(id){
   if(!isGM() || !id) return;
-  if(!confirm("¿Cancelar esta petición de tirada?")) return;
+  if(!(await confirmarAccion({ titulo: "¿Cancelar esta petición de tirada?", boton: "Cancelar petición", peligro: true }))) return;
   var res = await supabaseClient.from("roll_requests").update({ status: "cancelled" }).eq("id", id);
   if(res.error){ showToast("⚠️ No se pudo cancelar", "error"); return; }
   var rq = rollRequestsList.find(function(r){ return r.id === id; });

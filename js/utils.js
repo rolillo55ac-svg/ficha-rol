@@ -105,17 +105,19 @@ function showToast(message, type){
   setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3300);
 }
 
-function confirmarQuitar(nombre, detalle){
+// Ventana propia para confirmar lo que resta, quita o borra: Cancelar va primero y es el botón por defecto
+function confirmarAccion(o){
+  o = o || {};
   return new Promise(function(resolve){
     var ov = document.createElement("div");
     ov.className = "modal-overlay";
     ov.style.zIndex = "10002";
     ov.innerHTML = '<div class="modal confirm-quitar" role="alertdialog" aria-modal="true">'+
-      '<h2><span>¿Quitar «'+esc(nombre || "esto")+'»?</span></h2>'+
-      (detalle ? '<p class="confirm-quitar-txt">'+esc(detalle)+'</p>' : '')+
+      '<h2><span>'+esc(o.titulo || "¿Seguro?")+'</span></h2>'+
+      (o.texto ? '<p class="confirm-quitar-txt">'+esc(o.texto)+'</p>' : '')+
       '<div class="confirm-quitar-btns">'+
         '<button type="button" class="btn-solid-gold confirm-quitar-btn" data-r="0">Cancelar</button>'+
-        '<button type="button" class="btn-compact confirm-quitar-btn confirm-quitar-del" data-r="1">Quitar</button>'+
+        '<button type="button" class="btn-compact confirm-quitar-btn'+(o.peligro === false ? '' : ' confirm-quitar-del')+'" data-r="1">'+esc(o.boton || "Quitar")+'</button>'+
       '</div></div>';
     function fin(v){ if(ov.parentNode) ov.parentNode.removeChild(ov); resolve(v); }
     ov.addEventListener("click", function(e){
@@ -128,6 +130,75 @@ function confirmarQuitar(nombre, detalle){
     if(def) def.focus();
   });
 }
+
+function confirmarQuitar(nombre, detalle){
+  return confirmarAccion({ titulo: "¿Quitar «" + (nombre || "esto") + "»?", texto: detalle, boton: "Quitar", peligro: true });
+}
+
+// Botones de quitar que no preguntaban: se confirma aquí antes de que llegue el clic a su sitio de siempre.
+// Si se acepta, el clic se repite con btn._confirmado puesto (los que ya usaban confirm() lo miran).
+var CONFIRMAR_ACCIONES = {
+  "del-custom-buff": ["este buffo"],
+  "del-stone": ["esta piedra", "Se pierden su progreso y sus notas de investigación."],
+  "del-summon-trait": ["este rasgo"],
+  "del-summon-learned": ["esto que ha aprendido"],
+  "del-summon-teach": ["esta enseñanza"],
+  "del-summon-skill": ["esta tirada de la invocación"],
+  "remove-summon-img": ["la foto de la invocación"],
+  "poison-clear": ["el veneno", "Se quita el veneno con las cargas que le queden."],
+  "del-poison": ["esta fórmula", "Se quita del grimorio de la ficha."],
+  "del-passiveNeg": ["esta pasiva"],
+  "del-passivePos": ["esta pasiva"],
+  "del-goddess": ["esta fila"],
+  "del-milestone": ["este hito"],
+  "del-quest-task": ["esta tarea"],
+  "remove-map": ["la imagen del mapa"],
+  "remove-bestiary-img": ["la imagen de la criatura"],
+  "remove-quest-img": ["la imagen de la misión"],
+  "remove-clue-img": ["la imagen de la pista"],
+  "remove-quest-map": ["el mapa de la misión"],
+  "remove-portrait": ["el retrato"],
+  "remove-char-sound": ["el sonido"],
+  "del-pin": ["este marcador", "Se quita del mapa para todos."],
+  "delete-room-decor": ["esta decoración"],
+  "canva-delete-item": ["este mueble"],
+  "delete-furniture-item": ["este objeto del baúl"],
+  "del-char": function(btn){
+    var id = btn.getAttribute("data-id");
+    var ch = (state.characters || []).find(function(x){ return x.id === id || x.db_id === id; });
+    return { titulo: "¿Eliminar definitivamente a «" + (ch && ch.name || "este personaje") + "»?", texto: "Se borra la ficha entera. No se puede deshacer.", boton: "Eliminar" };
+  },
+  "clear-char-owner": function(btn){
+    var id = btn.getAttribute("data-id");
+    var ch = (state.characters || []).find(function(x){ return x.id === id || x.db_id === id; });
+    return { titulo: "¿Desvincular a «" + (ch && ch.ownerEmail || "este jugador") + "»?", texto: "El personaje quedará libre.", boton: "Desvincular" };
+  },
+  "delete-map": function(){
+    var m = (state.maps || []).find(function(x){ return x.id === state.activeMapId; });
+    var n = m ? (m.markers || []).length : 0;
+    return { titulo: "¿Eliminar definitivamente el mapa «" + (m && m.name || "este mapa") + "»?", texto: n > 0 ? "Se borran también sus " + n + " marcador(es)." : "", boton: "Eliminar" };
+  }
+};
+
+if(typeof document !== "undefined") document.addEventListener("click", function(e){
+  var btn = e.target && e.target.closest ? e.target.closest("[data-action]") : null;
+  if(!btn || btn._confirmado) return;
+  var q = CONFIRMAR_ACCIONES[btn.getAttribute("data-action")];
+  if(!q) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  var o = typeof q === "function" ? q(btn) : { titulo: "¿Quitar " + q[0] + "?", texto: q[1] || "", boton: "Quitar" };
+  if(!o) return;
+  o.peligro = true;
+  confirmarAccion(o).then(function(ok){
+    if(!ok) return;
+    // Si mientras tanto se volvió a pintar la pantalla, se repite el clic con una copia del botón
+    var b = btn;
+    if(!b.isConnected){ b = btn.cloneNode(true); b.style.display = "none"; document.body.appendChild(b); }
+    b._confirmado = true;
+    try { b.click(); } finally { b._confirmado = false; if(b !== btn && b.parentNode) b.parentNode.removeChild(b); }
+  });
+}, true);
 
 function avisoDeshacer(texto, onUndo){
   var old = document.getElementById("undoBar");
@@ -142,6 +213,25 @@ function avisoDeshacer(texto, onUndo){
   var t = setTimeout(quitar, 6000);
   bar.querySelector("button").addEventListener("click", function(){ quitar(); onUndo(); });
   document.body.appendChild(bar);
+  return bar;
+}
+
+// Para botones que se pulsan muchas veces seguidas (−1 vida, −5 oro): un solo Deshacer que suma todo lo bajado
+var deshacerSuma = null;
+function avisoDeshacerSuma(clave, cambio, texto, onUndo){
+  var bar = document.getElementById("undoBar");
+  var total = cambio;
+  if(deshacerSuma && deshacerSuma.clave === clave && bar && deshacerSuma.bar === bar) total += deshacerSuma.total;
+  else if(cambio >= 0) return;
+  if(total >= 0){ if(bar && bar.parentNode) bar.parentNode.removeChild(bar); deshacerSuma = null; return; }
+  var yo = { clave: clave, total: total };
+  yo.bar = avisoDeshacer(texto(total), function(){ if(deshacerSuma === yo) deshacerSuma = null; onUndo(total); });
+  deshacerSuma = yo;
+}
+
+// Bajar más de 5 de golpe o llegar a 0 pide confirmar antes
+function bajadaPideConfirmar(antes, despues){
+  return despues < antes && (antes - despues > 5 || (antes > 0 && despues <= 0));
 }
 
 function resizeImageFile(file, maxDim, quality, callback){

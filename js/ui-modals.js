@@ -845,7 +845,7 @@ function modalClick(e){
       return;
     }
     var charName = targetChar ? targetChar.name : "este personaje";
-    if(confirm("¿Eliminar definitivamente a \"" + charName + "\"?")){
+    if(btn._confirmado || confirm("¿Eliminar definitivamente a \"" + charName + "\"?")){
       var dbId = targetChar ? (targetChar.db_id || targetChar.id) : targetId;
       // Solo se borra en la nube por id: borrar por nombre se llevaba otras fichas con el mismo nombre
       var remoteId = targetChar ? targetChar.db_id : targetId;
@@ -919,7 +919,7 @@ function modalClick(e){
     var targetChar = (state.characters||[]).find(function(x){ return x.id===targetId || x.db_id===targetId; });
     if(!targetChar) return;
 
-    if(confirm("¿Desvincular a \"" + (targetChar.ownerEmail || "este jugador") + "\" de " + targetChar.name + "? El personaje quedará libre.")){
+    if(btn._confirmado || confirm("¿Desvincular a \"" + (targetChar.ownerEmail || "este jugador") + "\" de " + targetChar.name + "? El personaje quedará libre.")){
       targetChar.ownerEmail = "";
       targetChar.owner_id = null;
       targetChar._lastLocalEdit = Date.now();
