@@ -1529,6 +1529,7 @@ function renderLapidaryWorkshop(c, canEdit){
 
 var alchemyView = "recetario";
 var alchemySearch = "";
+var invSearch = "";
 var alchemyFilterType = "Todos";
 var alchemyFilterProg = "todos";
 var alchemyFilterTerrain = "Todos";
@@ -2211,6 +2212,13 @@ function tplInventario(c){
     "Armas", "Armadura y vestimenta", "Accesorios", "Consumibles", "Supervivencia", "Objetos de misión", "Materiales/Ingredientes", "Objetos especiales/únicos", "Miscelánea"
   ];
 
+  var invQ = String(invSearch || "").trim().toLowerCase();
+  function invMatchesSearch(it){
+    if(!invQ) return true;
+    return ((it.name || "") + " " + (it.desc || it.notes || "") + " " + (it.category || "")).toLowerCase().indexOf(invQ) !== -1;
+  }
+  var invSearchHtml = '<div class="inv-search-row"><input type="text" class="inv-search-input" id="invSearchInput" value="'+esc(invSearch)+'" placeholder="🔍 Buscar objeto" data-action="search-inventory"></div>';
+
   // Cabecera con selector de vista (Mochila Grid Beta vs Lista Clásica)
   var viewSwitcherHtml = '<div class="skills-view-switcher" role="group" aria-label="Modo de vista de inventario">'+
     '<button type="button" class="skills-view-btn '+(viewMode==="grid"?"active":"")+'" data-action="set-inv-view" data-val="grid" title="Cuadrícula visual inmersiva de mochila">'+
@@ -2248,7 +2256,7 @@ function tplInventario(c){
     ];
 
     var filteredItems = c.inventory.filter(function(it){
-      return matchesInvGroup(it, currentGroup);
+      return matchesInvGroup(it, currentGroup) && invMatchesSearch(it);
     });
 
     html += '<div class="backpack-container">'+
@@ -2256,6 +2264,7 @@ function tplInventario(c){
         '<div class="backpack-capacity-tag">🎒 <span>Objetos guardados: <b>'+c.inventory.length+'</b></span></div>'+
         (canEdit ? '<button class="btn-solid-gold" data-action="add-inventory-slot" style="padding:4px 12px;font-size:0.75rem;">+ Añadir Objeto</button>' : '')+
       '</div>'+
+      invSearchHtml+
       '<div class="backpack-tabs-bar k-seg k-seg-scroll">';
 
     groupsDef.forEach(function(g){
@@ -2273,7 +2282,7 @@ function tplInventario(c){
     if(filteredItems.length === 0){
       html += '<div class="backpack-empty-state">'+
         '<div class="backpack-empty-icon">🎒</div>'+
-        '<div class="backpack-empty-msg">'+(currentGroup === "all" ? 'La mochila está vacía.' : 'No hay objetos en esta categoría.')+'</div>'+
+        '<div class="backpack-empty-msg">'+(invQ ? 'Ningún objeto coincide con la búsqueda.' : currentGroup === "all" ? 'La mochila está vacía.' : 'No hay objetos en esta categoría.')+'</div>'+
         (canEdit ? '<button type="button" class="btn-solid-gold" data-action="add-inventory-slot" style="margin-top:6px;font-size:0.76rem;padding:6px 14px;">+ Añadir Primer Objeto</button>' : '')+
       '</div>';
     } else {
@@ -2326,24 +2335,22 @@ function tplInventario(c){
       catCounts[cat] = (catCounts[cat] || 0) + 1;
     });
 
-    html += '<div class="inv-filter-bar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;background:var(--bg-elev);padding:8px 10px;border-radius:6px;border:1px solid var(--line);flex-wrap:wrap;">'+
-      '<div style="font-size:.72rem;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.03em;">📂 Filtrar Categoría:</div>'+
-      '<select class="inv-category-filter" data-action="filter-inventory-category" style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:6px 8px;font-size:.82rem;color:var(--ink);flex:1;min-width:180px;max-width:320px;">'+
-        '<option value="all" '+(currentCat==="all"?'selected':'')+'>Todas las categorías ('+c.inventory.length+')</option>'+
-        categories.map(function(cat){
-          return '<option value="'+cat+'" '+(currentCat===cat?'selected':'')+'>'+cat+' ('+(catCounts[cat]||0)+')</option>';
-        }).join('')+
-      '</select>'+
+    html += invSearchHtml+'<div class="inv-cat-chips" role="group" aria-label="Filtrar por categoría">'+
+      '<button type="button" class="inv-cat-chip'+(currentCat==="all"?' active':'')+'" data-action="filter-inventory-category" data-val="all">Todo<span class="inv-cat-count">'+c.inventory.length+'</span></button>'+
+      categories.filter(function(cat){ return catCounts[cat] > 0 || currentCat === cat; }).map(function(cat){
+        return '<button type="button" class="inv-cat-chip'+(currentCat===cat?' active':'')+'" data-action="filter-inventory-category" data-val="'+esc(cat)+'">'+esc(cat)+'<span class="inv-cat-count">'+(catCounts[cat]||0)+'</span></button>';
+      }).join('')+
     '</div>';
 
     var filteredListItems = c.inventory.filter(function(it){
+      if(!invMatchesSearch(it)) return false;
       if(currentCat === "all") return true;
       return (it.category || "Miscelánea") === currentCat;
     });
 
     if(filteredListItems.length === 0){
       html += '<div style="font-size:.78rem;color:var(--ink-dim);font-style:italic;padding:14px;text-align:center;background:var(--bg-elev);border:1px dashed var(--line);border-radius:6px;margin-bottom:10px;">'+
-        (currentCat === "all" ? 'El inventario está vacío.' : 'No hay objetos registrados en la categoría "'+currentCat+'".')+
+        (invQ ? 'Ningún objeto coincide con la búsqueda.' : currentCat === "all" ? 'El inventario está vacío.' : 'No hay objetos registrados en la categoría "'+currentCat+'".')+
       '</div>';
     } else {
       filteredListItems.forEach(function(it){

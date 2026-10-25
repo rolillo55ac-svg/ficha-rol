@@ -71,6 +71,16 @@ function handleChange(e){
     if(qClr) qClr.hidden = !state.questSearch;
     return;
   }
+  if(e.target && e.target.id === "invSearchInput"){
+    invSearch = e.target.value;
+    renderTab();
+    var iInp = document.getElementById("invSearchInput");
+    if(iInp){
+      iInp.focus();
+      iInp.selectionStart = iInp.selectionEnd = iInp.value.length;
+    }
+    return;
+  }
   if(e.target && e.target.id === "alchemySearchInput"){
     alchemySearch = e.target.value;
     renderTab();
@@ -1239,7 +1249,7 @@ function handleClick(e){
     return;
   }
   if(action==="filter-inventory-category"){
-    state.invCategoryFilter = btn.value || "all";
+    state.invCategoryFilter = btn.getAttribute("data-val") || btn.value || "all";
     renderTab();
     return;
   }
