@@ -12148,3 +12148,13 @@ html.juice-off .lvlup-btns {
   .lr-num { min-width: 0; }
   .lr-row { gap: 8px; }
 }
+
+/* Ajustes › Cómo funciona */
+#dataModal .guia-buscar{width:100%;min-height:48px;padding:10px 14px;margin-bottom:12px;background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);color:var(--ink);font:inherit;font-size:1rem;box-sizing:border-box;}
+#dataModal .guia-tema{padding:0;gap:0;}
+#dataModal .guia-tema-head{display:flex;align-items:center;gap:12px;min-height:60px;padding:12px 14px;cursor:pointer;list-style:none;}
+#dataModal .guia-tema-head::-webkit-details-marker{display:none;}
+#dataModal .guia-tema-head .settings-row-title{flex:1;}
+#dataModal .guia-tema[open] .settings-row-chev{transform:rotate(90deg);}
+#dataModal .guia-p{margin:0;padding:0 14px 12px;font-size:1rem;line-height:1.5;color:var(--ink);}
+#dataModal .guia-ejemplo{margin:0 14px 14px;}
