@@ -1,6 +1,6 @@
 {
-  "version": "1.4.100.0",
-  "build": "2026.10.25.05",
-  "updatedAt": "2026-10-25T06:00:00Z",
-  "changelog": "Registro de errores: si algo falla en un móvil, el admin lo ve en Ajustes › Admin › Errores para poder arreglarlo."
+  "version": "1.4.101.0",
+  "build": "2026.10.25.06",
+  "updatedAt": "2026-10-25T09:00:00Z",
+  "changelog": "Reglas del juego ordenadas en un solo sitio (críticos y pifias, entrenamiento, Defensa y descanso largo) para que se calculen siempre igual."
 }
