@@ -2664,27 +2664,14 @@ main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow
 }
 .tab-btn span{display:block;width:100%;text-align:center;pointer-events:none;}
 .tab-btn::before{display:block;font-size:1.15rem;line-height:1.1;text-align:center;filter:grayscale(.4) opacity(.7);transition:filter var(--transition-fast), transform var(--transition-fast);pointer-events:none;}
-.tab-btn[data-tab="ficha"]::before{content:'📜';}
-.tab-btn[data-tab="mision"]::before{content:'🧭';}
-.tab-btn[data-tab="habilidades"]::before{content:'🎯';}
-.tab-btn[data-tab="entrenamiento"]::before{content:'🥋';}
-.tab-btn[data-tab="combate"]::before{content:'⚔️';}
-.tab-btn[data-tab="estados"]::before{content:'💫';}
-.tab-btn[data-tab="inventario"]::before{content:'🎒';}
-.tab-btn[data-tab="magia"]::before{content:'✨';}
-.tab-btn[data-tab="alquimia"]::before{content:'🧪';}
-.tab-btn[data-tab="invocaciones"]::before{content:'🐉';}
-.tab-btn[data-tab="bestiario"]::before{content:'🐾';}
-.tab-btn[data-tab="extra"]::before{content:'🔮';}
-.tab-btn[data-tab="mundo"]::before{content:'🗺️';}
-.tab-btn[data-tab="lapidario"]::before{content:'💎';}
-.tab-btn[data-tab="ficha"]::before,.tab-btn[data-tab="tiradas"]::before,.tab-btn[data-tab="inventario"]::before,.tab-btn[data-tab="comercio"]::before,.tab-btn[data-tab="casa"]::before{content:none;}
+.tab-btn::before{content:none;}
 .tab-btn .tab-ico-wrap{position:relative;display:block;width:28px;height:28px;margin:0 auto;pointer-events:none;}
 .tab-ico-img,.tab-ico-focus{position:absolute;top:0;left:0;width:28px;height:28px;display:block;pointer-events:none;transition:opacity .14s ease, transform .14s ease;}
 .tab-ico-img{opacity:.7;filter:saturate(.6);}
 .tab-ico-focus{opacity:0;}
 .tab-btn.active .tab-ico-img{opacity:0;}
 .tab-btn.active .tab-ico-focus{opacity:1;transform:scale(1.1);}
+.tab-btn[data-tab="bestiario"]:not(.active) .tab-ico-img,.tab-btn[data-tab="comercio"]:not(.active) .tab-ico-img{opacity:.95;filter:brightness(0) invert(.7) sepia(.35);}
 html.juice-off .tab-ico-img,html.juice-off .tab-ico-focus{transition:none;}
 @media (prefers-reduced-motion: reduce){.tab-ico-img,.tab-ico-focus{transition:none;}.tab-btn.active .tab-ico-focus{transform:none;}}
 .tab-btn:hover{color:var(--ink-dim);background:rgba(176,141,87,0.05);}
