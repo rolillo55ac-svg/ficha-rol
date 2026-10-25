@@ -138,6 +138,8 @@ function refreshMoneyView(c){
       el.value = moneyInt(c.money[part]);
       el.setAttribute('data-last-val', moneyInt(c.money[part]));
     }
+    var menos = document.querySelector('.money-btn.minus[data-part="' + part + '"]');
+    if(menos) menos.disabled = moneyInt(c.money[part]) <= 0;
   });
 }
 

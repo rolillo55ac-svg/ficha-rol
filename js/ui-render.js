@@ -2116,14 +2116,19 @@ function tplCoinImg(part, cls){
   return '<picture><source srcset="images/monedas/moneda-' + part + '-96.webp" type="image/webp"><img src="images/monedas/moneda-' + part + '-96.png" alt=""' + c + ' loading="lazy" width="96" height="96"></picture>';
 }
 
-// Botones de dinero: arriba se resta y abajo se suma la misma cantidad
-function tplMoneySteps(part){
-  var steps = [1, 5, 10, 25];
-  var name = part === "oro" ? "oro" : (part === "gremio" ? "gremio" : "plata");
-  return '<div class="money-steps" role="group" aria-label="Cambiar '+name+'">'+
-    steps.map(function(n){ return '<button type="button" class="btn-compact money-step-btn minus" data-action="money-step" data-part="'+part+'" data-delta="-'+n+'" aria-label="Quitar '+n+' de '+name+'">−'+n+'</button>'; }).join('')+
-    steps.map(function(n){ return '<button type="button" class="btn-compact money-step-btn plus" data-action="money-step" data-part="'+part+'" data-delta="'+n+'" aria-label="Añadir '+n+' de '+name+'">+'+n+'</button>'; }).join('')+
+// Dinero: un selector de cantidad arriba y, por moneda, solo un botón de restar y otro de sumar
+var moneyStepSel = 1;
+function tplMoneyAmounts(){
+  return '<div class="k-seg money-amounts" role="group" aria-label="Cantidad a mover"><span class="money-amounts-lbl">De</span>'+
+    [1, 5, 10, 25].map(function(n){ return '<button type="button" class="k-seg-btn'+(n === moneyStepSel ? ' active' : '')+'" data-action="money-amount" data-val="'+n+'" aria-pressed="'+(n === moneyStepSel)+'">'+n+'</button>'; }).join('')+
   '</div>';
+}
+
+function tplMoneySteps(part, cur){
+  var name = part === "oro" ? "oro" : (part === "gremio" ? "gremio" : "plata");
+  var n = moneyStepSel;
+  return '<button type="button" class="money-btn minus" data-action="money-step" data-part="'+part+'" data-delta="-'+n+'" aria-label="Quitar de '+name+'"'+(moneyInt(cur) <= 0 ? ' disabled' : '')+'>−'+n+'</button>'+
+    '<button type="button" class="money-btn plus" data-action="money-step" data-part="'+part+'" data-delta="'+n+'" aria-label="Añadir de '+name+'">+'+n+'</button>';
 }
 
 // Últimos movimientos de dinero (los lee el dueño de la ficha y el máster)
@@ -2136,7 +2141,7 @@ function tplMoneyLog(c){
 
 function tplMoneyLogRows(rows){
   if(!rows || !rows.length) return '';
-  return '<div class="money-log-title">Últimos movimientos</div>'+
+  return '<details class="money-details"><summary class="money-log-title">Últimos movimientos</summary>'+
     rows.slice(0, 5).map(function(r){
       var parts = [];
       if(r.delta_oro) parts.push(tplCoinImg("oro", "money-log-coin") + ' ' + (r.delta_oro > 0 ? '+' : '−') + esc(Math.abs(r.delta_oro)));
@@ -2148,7 +2153,7 @@ function tplMoneyLogRows(rows){
       var totalDelta = (r.delta_oro || 0) + (r.delta_plata || 0) + (r.delta_gremio || 0);
       return '<div class="money-log-row"><span class="money-log-delta'+(totalDelta < 0 ? ' neg' : '')+'">'+parts.join(' · ')+'</span>'+
         '<span class="money-log-meta">'+esc(who)+(who && when ? ' · ' : '')+esc(when)+'</span></div>';
-    }).join('');
+    }).join('')+'</details>';
 }
 
 function tplInventario(c){
@@ -2172,12 +2177,15 @@ function tplInventario(c){
 
   // Sección de Dinero (si la partida aún no tiene la función del dinero, solo se mira)
   var mEdit = canEdit && !moneyRpcMissing;
+  function moneyRowHtml(part, label){
+    return '<div class="money-row-c '+part+'">'+tplCoinImg(part, "money-coin")+
+      '<div class="money-info"><span class="money-name">'+label+'</span><input type="number" class="money-val" data-bind="money.'+part+'" data-last-val="'+moneyInt(c.money[part])+'" value="'+moneyInt(c.money[part])+'" '+(mEdit?'':'readonly')+'></div>'+
+      (mEdit ? tplMoneySteps(part, c.money[part]) : '')+'</div>';
+  }
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Dinero</span></div>'+
-    '<div class="money-row'+(mEdit?' has-steps':'')+'">'+
-      '<div class="money-field"><label>'+tplCoinImg("oro", "money-coin")+'Oro</label><input type="number" data-bind="money.oro" data-last-val="'+moneyInt(c.money.oro)+'" value="'+moneyInt(c.money.oro)+'" '+(mEdit?'':'readonly')+'>'+(mEdit?tplMoneySteps("oro"):'')+'</div>'+
-      '<div class="money-field"><label>'+tplCoinImg("plata", "money-coin")+'Plata</label><input type="number" data-bind="money.plata" data-last-val="'+moneyInt(c.money.plata)+'" value="'+moneyInt(c.money.plata)+'" '+(mEdit?'':'readonly')+'>'+(mEdit?tplMoneySteps("plata"):'')+'</div>'+
-      '<div class="money-field"><label>'+tplCoinImg("gremio", "money-coin")+'Gremio</label><input type="number" data-bind="money.gremio" data-last-val="'+moneyInt(c.money.gremio)+'" value="'+moneyInt(c.money.gremio)+'" '+(mEdit?'':'readonly')+'>'+(mEdit?tplMoneySteps("gremio"):'')+'</div>'+
-    '</div>'+(canEdit && moneyRpcMissing ? '<p class="settings-note">El dinero no se puede cambiar hasta que se actualice la partida.</p>' : '')+tplMoneyLog(c)+'</div>';
+    (mEdit ? tplMoneyAmounts() : '')+
+    '<div class="money-coins">'+moneyRowHtml("oro", "Oro")+moneyRowHtml("plata", "Plata")+moneyRowHtml("gremio", "Gremio")+'</div>'+
+    (canEdit && moneyRpcMissing ? '<p class="settings-note">El dinero no se puede cambiar hasta que se actualice la partida.</p>' : '')+tplMoneyLog(c)+'</div>';
   html += tplPoisonLoadout(c, canEdit);
 
   var categories = typeof INVENTORY_CATEGORIES !== "undefined" ? INVENTORY_CATEGORIES : [

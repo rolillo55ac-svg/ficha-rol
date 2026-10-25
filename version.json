@@ -1,6 +1,6 @@
 {
-  "version": "1.4.106.0",
-  "build": "2026.10.25.11",
+  "version": "1.4.107.0",
+  "build": "2026.10.25.12",
   "updatedAt": "2026-10-25T17:00:00Z",
-  "changelog": "El descanso largo del máster ahora está dentro del Reloj de la partida."
+  "changelog": "El dinero del Inventario es más compacto: eliges 1, 5, 10 o 25 y cada moneda tiene solo un botón de restar y otro de sumar."
 }
