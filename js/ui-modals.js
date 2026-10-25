@@ -211,13 +211,13 @@ function settingsScreenTitle(screen){
     cloud: "Copia en la nube", broadcast: "Avisar para que actualicen",
     donate: "Apoya el proyecto", partida: "Partida",
     password: "Mi contraseña", jugadores: "Jugadores", "cuenta-nueva": "Nueva cuenta", actividad: "Actividad",
-    mantenimiento: "Mantenimiento"
+    mantenimiento: "Mantenimiento", errores: "Errores"
   }[screen] || "Ajustes";
 }
 
 function openDataModal(screen){
   screen = (typeof screen === "string") ? screen : "main";
-  if((screen === "cloud" || screen === "broadcast" || screen === "jugadores" || screen === "cuenta-nueva" || screen === "actividad" || screen === "mantenimiento") && !isAdmin()) screen = "main";
+  if((screen === "cloud" || screen === "broadcast" || screen === "jugadores" || screen === "cuenta-nueva" || screen === "actividad" || screen === "mantenimiento" || screen === "errores") && !isAdmin()) screen = "main";
   if(screen === "password" && !currentUser) screen = "main";
   if(screen === "donate" && !DONATE_PAYPAL_ME) screen = "main";
   settingsScreen = screen;
@@ -281,6 +281,7 @@ function openDataModal(screen){
         settingsRow("settings-go", "jugadores", "👥", "Jugadores", "Crear cuentas, contraseñas y roles")+
         settingsRow("settings-go", "actividad", "🕒", "Actividad", "Entradas, intentos fallidos y tiempo de uso")+
         settingsRow("settings-go", "mantenimiento", "🔧", "Mantenimiento", (typeof mantenimientoEstado !== "undefined" && mantenimientoEstado.activo) ? "Activo: solo tú puedes usar la web" : "Cerrar la web a todos menos a ti")+
+        settingsRow("settings-go", "errores", "🐞", "Errores", "Fallos que han visto los jugadores")+
         settingsRow("discord-probar", "", "🔔", "Avisos a Discord", '<span id="settingsDiscordState">' + discordUltimoAvisoText() + '</span>')+
       '</div>';
     }
@@ -442,6 +443,10 @@ function openDataModal(screen){
     html += mantenimientoScreenHtml();
   }
 
+  else if(screen === "errores"){
+    html += erroresScreenHtml();
+  }
+
   document.getElementById("dataModal").innerHTML = html;
   document.getElementById("dataModalOverlay").classList.remove("hidden");
 
@@ -451,6 +456,7 @@ function openDataModal(screen){
     if(settingsScreen === "main") settingsCheckVersionLabel();
     if(settingsScreen === "jugadores") cargarCuentas();
     if(settingsScreen === "actividad") cargarActividad();
+    if(settingsScreen === "errores") cargarErrores();
   }, 50);
 }
 
@@ -708,6 +714,7 @@ function modalClick(e){
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
   if(action==="settings-go"){ openDataModal(btn.getAttribute("data-screen")); return; }
   if(action==="mant-cambiar"){ cambiarMantenimiento(btn); return; }
+  if(action==="errores-revisar"){ revisarError(btn); return; }
   if(action==="discord-probar"){
     var dEl = document.getElementById("settingsDiscordState");
     if(dEl) dEl.textContent = "Enviando aviso de prueba…";
