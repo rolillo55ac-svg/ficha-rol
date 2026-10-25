@@ -702,6 +702,8 @@ function modalClick(e){
   if(action==="open-feedback-modal"){ openFeedbackModal(); return; }
   if(action==="open-long-rest"){ openLongRestModal(); return; }
   if(action==="do-long-rest"){ doLongRest(btn); return; }
+  if(action==="long-rest-all"){ setLongRestAll(true); return; }
+  if(action==="long-rest-none"){ setLongRestAll(false); return; }
   if(action==="refresh-storage-stats"){ updateStorageStatsUI(true); return; }
   if(action==="unified-app-update-cache"){ executeUnifiedAppUpdate(true); return; }
   if(action==="settings-go"){ openDataModal(btn.getAttribute("data-screen")); return; }

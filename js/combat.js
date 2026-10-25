@@ -198,23 +198,84 @@ function longRestBuffIds(){
 function openLongRestModal(){
   if(!isGM()) return;
   var chars = (state.characters || []).filter(function(c){ return !c.isNPC && c.db_id; });
+  var resetIds = longRestBuffIds();
   var html = '<h2>🌙 Descanso largo<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
-  html += '<p style="font-size:.82rem;color:var(--ink-dim);margin:0 0 10px;">Vida y maná al máximo, escudo a 0 y se quitan los buffos marcados "Se resetea al descansar largo". Desmarca a quien no descansa.</p>';
+  html += '<p class="lr-help">Vida y maná al máximo, escudo a 0 y se quitan los buffos marcados "Se resetea al descansar largo".</p>';
   if(!chars.length){
-    html += '<p style="font-size:.85rem;color:var(--ink-dim);">No hay personajes guardados en la nube.</p>';
+    html += '<p class="lr-help">No hay personajes guardados en la nube.</p>';
+  } else {
+    html += '<div class="lr-top"><span class="lr-count" id="lrCount"></span>'+
+      '<span class="lr-all"><button type="button" class="lr-link" data-action="long-rest-all">Marcar todos</button> · <button type="button" class="lr-link" data-action="long-rest-none">Ninguno</button></span></div>';
   }
+  html += '<div class="lr-list">';
   chars.forEach(function(c){
-    html += '<label class="char-list-item" style="display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer;">'+
-      '<input type="checkbox" class="long-rest-check" value="'+esc(c.id)+'" checked style="width:22px;height:22px;flex:none;">'+
-      '<span class="cli-info"><span class="cli-name">'+esc(c.name)+'</span>'+
-      '<span class="cli-sub">Nv. '+esc(c.nivel||"1")+' · ❤️ '+num(c.combat && c.combat.pvActual,0)+'/'+getEffectiveMaxHp(c)+' · 💧 '+num(c.combat && c.combat.manaActual,0)+'/'+getEffectiveMaxMana(c)+'</span></span>'+
+    var copia = Object.assign({}, c, { activeBuffs: (c.activeBuffs || []).filter(function(ab){ return resetIds.indexOf(ab.id) === -1; }) });
+    var maxPv = getEffectiveMaxHp(copia), maxMp = getEffectiveMaxMana(copia);
+    var pv = num(c.combat && c.combat.pvActual, 0), mp = num(c.combat && c.combat.manaActual, 0);
+    var quita = (c.activeBuffs || []).filter(function(ab){ return resetIds.indexOf(ab.id) !== -1; }).map(function(ab){ return ab.name; }).filter(Boolean);
+    var face = safeUrl(c.portrait)
+      ? '<span class="lr-face" style="background-image:url(\''+esc(safeUrl(c.portrait))+'\')"></span>'
+      : '<span class="lr-face">'+esc((c.name || "?").charAt(0).toUpperCase())+'</span>';
+    html += '<label class="lr-row">'+
+      '<input type="checkbox" class="k-check long-rest-check" value="'+esc(c.id)+'" checked>'+
+      face+
+      '<span class="lr-main"><span class="lr-name">'+esc(c.name)+' <span class="lr-lv">NV. '+esc(c.nivel||"1")+'</span></span>'+
+        '<span class="lr-off">No descansa</span>'+
+        (quita.length ? '<span class="lr-quita">Se quita: '+esc(quita.join(", "))+'</span>' : '')+
+      '</span>'+
+      '<span class="lr-stats">'+lrStat("❤️", pv, maxPv, "")+lrStat("💧", mp, maxMp, " mana")+'</span>'+
     '</label>';
   });
+  html += '</div>';
   if(chars.length){
-    html += '<button type="button" class="btn-compact btn-solid-gold" style="width:100%;min-height:44px;margin-top:10px;" data-action="do-long-rest">🌙 Descansar</button>';
+    html += '<div class="lr-foot"><button type="button" class="btn-compact" data-action="close-modal">Cancelar</button>'+
+      '<button type="button" class="btn-compact btn-solid-gold" id="lrGo" data-action="do-long-rest">🌙 Descansar</button></div>';
   }
   document.getElementById("charModal").innerHTML = html;
   document.getElementById("charModalOverlay").classList.remove("hidden");
+  updateLongRestUi();
+}
+
+function lrStat(icon, cur, max, cls){
+  var pct = max > 0 ? Math.max(0, Math.min(100, Math.round(cur / max * 100))) : 0;
+  return '<span class="lr-stat">'+icon+' <span class="lr-bar'+cls+'"><i style="width:'+pct+'%"></i></span>'+
+    '<span class="lr-num">'+cur+'/'+max+(cur < max ? ' <b>→ máx.</b>' : '')+'</span></span>';
+}
+
+// Contador y botón según las casillas marcadas
+function updateLongRestUi(){
+  var all = document.querySelectorAll("#charModal .long-rest-check");
+  if(!all.length) return;
+  var n = 0;
+  Array.prototype.forEach.call(all, function(el){
+    if(el.checked) n++;
+    var row = el.closest(".lr-row");
+    if(row) row.classList.toggle("lr-skip", !el.checked);
+  });
+  var cnt = document.getElementById("lrCount");
+  if(cnt) cnt.textContent = n + " de " + all.length + " descansan";
+  var go = document.getElementById("lrGo");
+  if(go){ go.textContent = "🌙 Descansar (" + n + ")"; go.disabled = n === 0; }
+}
+
+function setLongRestAll(on){
+  Array.prototype.forEach.call(document.querySelectorAll("#charModal .long-rest-check"), function(el){ el.checked = on; });
+  updateLongRestUi();
+}
+
+document.addEventListener("change", function(e){
+  if(e.target && e.target.classList && e.target.classList.contains("long-rest-check")) updateLongRestUi();
+});
+
+// Luna que sube con fundido nocturno; sin movimiento si las animaciones están apagadas
+function playLongRestFx(){
+  var h = document.documentElement;
+  if(h.classList.contains("juice-off") || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  var fx = document.createElement("div");
+  fx.className = "lr-fx";
+  fx.innerHTML = '<span>🌙</span>';
+  document.body.appendChild(fx);
+  setTimeout(function(){ if(fx.parentNode) fx.parentNode.removeChild(fx); }, 700);
 }
 
 async function doLongRest(btn){
@@ -249,6 +310,7 @@ async function doLongRest(btn){
   } catch(e){}
   if(typeof loadRollHistory === "function") loadRollHistory();
   closeModals();
+  playLongRestFx();
   renderTopbar();
   renderTab();
   showToast("🌙 Descanso largo: " + done + (done === 1 ? " personaje descansado" : " personajes descansados"), "success");
