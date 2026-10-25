@@ -1,10 +1,18 @@
 // Modo mantenimiento: si el admin lo activa, los demás ven una pantalla de aviso y no pueden usar la web.
 // La protección real está en la base (056): mientras está activo, solo el admin puede escribir.
+// Las cuentas de prueba están marcadas en la base como exentas (059) y siguen usando la web.
 var mantenimientoEstado = { activo: false, mensaje: "" };
 var mantenimientoChannel = null;
+var mantenimientoExento = false;
 
 async function loadMantenimiento(){
   if(!supabaseClient || !currentUser) return;
+  mantenimientoExento = false;
+  try {
+    // Sin la 059 la función no existe: nadie queda exento
+    var ex = await supabaseClient.rpc("es_exento_mantenimiento");
+    mantenimientoExento = !ex.error && ex.data === true;
+  } catch(e){}
   try {
     var res = await supabaseClient.from("mantenimiento").select("activo, mensaje").eq("id", 1).maybeSingle();
     // Sin la 056 la tabla no existe: la web sigue como siempre
@@ -37,7 +45,7 @@ function setMantenimiento(row){
 
 function pintarMantenimiento(){
   var activo = mantenimientoEstado.activo && !!currentUser;
-  var admin = typeof esAdminReal === "function" && esAdminReal();
+  var admin = (typeof esAdminReal === "function" && esAdminReal()) || mantenimientoExento;
   var gate = document.getElementById("mantenimientoGate");
   var franja = document.getElementById("mantenimientoFranja");
   if(activo && !admin){
@@ -68,9 +76,11 @@ function pintarMantenimiento(){
       franja = document.createElement("div");
       franja.id = "mantenimientoFranja";
       franja.className = "mant-franja";
-      franja.textContent = "🔧 Mantenimiento activo · solo tú puedes usar la web";
       document.body.appendChild(franja);
     }
+    franja.textContent = mantenimientoExento && !(typeof esAdminReal === "function" && esAdminReal())
+      ? "🔧 Mantenimiento activo · cuenta de prueba exenta"
+      : "🔧 Mantenimiento activo · solo tú puedes usar la web";
     franja.hidden = false;
   } else if(franja){
     franja.hidden = true;
@@ -99,6 +109,9 @@ async function cambiarMantenimiento(btn){
     if(res.error) throw res.error;
     setMantenimiento(res.data || { activo: activo, mensaje: txt ? txt.value.trim() : "" });
     showToast(activo ? "Mantenimiento activado" : "Mantenimiento quitado", "success");
+    if(typeof postDiscord === "function") postDiscord({ content: activo
+      ? "🔧 Web en mantenimiento (" + PARTIDA_ACTUAL.nombre + ")."
+      : "✅ Web abierta otra vez (" + PARTIDA_ACTUAL.nombre + ")." });
     openDataModal("mantenimiento");
   } catch(e){
     btn.disabled = false;

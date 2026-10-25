@@ -1,6 +1,6 @@
 {
-  "version": "1.4.102.0",
-  "build": "2026.10.25.07",
-  "updatedAt": "2026-10-25T12:00:00Z",
-  "changelog": "Todo lo que quita o resta pregunta antes (con Cancelar por defecto). Vida, maná, escudo y dinero solo preguntan si se baja más de 5 o se llega a 0, y siempre se puede deshacer unos segundos."
+  "version": "1.4.103.0",
+  "build": "2026.10.25.08",
+  "updatedAt": "2026-10-25T13:00:00Z",
+  "changelog": "Mantenimiento: al activarlo o quitarlo desde Ajustes › Admin se avisa en Discord. Las cuentas de prueba pueden seguir usando la web durante el mantenimiento."
 }
