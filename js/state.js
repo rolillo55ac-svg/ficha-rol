@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.100.0";
-var APP_BUILD = "2026.10.25.05";
+var APP_VERSION = "1.4.101.0";
+var APP_BUILD = "2026.10.25.06";
 
 var state = null;
 var supabaseClient = null;
@@ -1599,7 +1599,7 @@ function parseShieldBonus(modStr){
 // Defensa = Esquivar base + 5, igual para todos: sin buffos de atributo (TK-T47Q)
 function defensaBase(c){
   if(!c) return 5;
-  return num(c.attrs ? c.attrs.destreza : 0, 0) + num(c.skillBonus ? c.skillBonus.esquivar : 0, 0) + 5;
+  return reglasDefensaBase(c.attrs ? c.attrs.destreza : 0, c.skillBonus ? c.skillBonus.esquivar : 0);
 }
 
 function getEffectiveCombatStat(statKey, c){
