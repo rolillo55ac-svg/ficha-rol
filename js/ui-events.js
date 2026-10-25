@@ -301,6 +301,8 @@ function pasoDinero(c, mPart, mDelta, sinPreguntar){
   c.money[mPart] = mNew;
   var mInput = document.querySelector('input[data-bind="money.' + mPart + '"]');
   if(mInput){ mInput.value = mNew; mInput.setAttribute("data-last-val", mNew); }
+  var mMinus = document.querySelector('.money-btn.minus[data-part="' + mPart + '"]');
+  if(mMinus) mMinus.disabled = mNew <= 0;
   try { if(navigator.vibrate) navigator.vibrate(10); } catch(eVib){}
   if(typeof playCoinSound === "function") playCoinSound();
   var mot = sinPreguntar === "deshacer" ? "deshacer" : undefined;
@@ -2307,6 +2309,22 @@ function handleClick(e){
   if(action==="del-passivePos"){ if(!c || !canEditChar(c)) return; var ppId = btn.getAttribute("data-id"); c.passivesPos = (c.passivesPos || []).filter(function(p){return p.id!==ppId;}); renderTab(); manageListItemRPC(c, 'passivesPos', 'remove', null, ppId); return; }
   if(action==="add-goddess"){ if(!c || !canEditChar(c)) return; c.goddessTable = c.goddessTable || []; var newGd = {id:uid(),nombre:"",gustos:"",disgustos:""}; c.goddessTable.push(newGd); renderTab(); manageListItemRPC(c, 'goddessTable', 'add', newGd); return; }
   if(action==="del-goddess"){ if(!c || !canEditChar(c)) return; var gdId = btn.getAttribute("data-id"); c.goddessTable = (c.goddessTable || []).filter(function(g){return g.id!==gdId;}); renderTab(); manageListItemRPC(c, 'goddessTable', 'remove', null, gdId); return; }
+  if(action==="money-amount"){
+    var mAmt = parseInt(btn.getAttribute("data-val"), 10);
+    if([1, 5, 10, 25].indexOf(mAmt) < 0) return;
+    moneyStepSel = mAmt;
+    document.querySelectorAll('[data-action="money-amount"]').forEach(function(b2){
+      var on = b2 === btn;
+      b2.classList.toggle("active", on);
+      b2.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    document.querySelectorAll('[data-action="money-step"]').forEach(function(b2){
+      var neg = parseInt(b2.getAttribute("data-delta"), 10) < 0;
+      b2.setAttribute("data-delta", (neg ? "-" : "") + mAmt);
+      b2.textContent = (neg ? "−" : "+") + mAmt;
+    });
+    return;
+  }
   if(action==="money-step"){
     if(!c || !canEditChar(c)) return;
     var mPart = btn.getAttribute("data-part");
