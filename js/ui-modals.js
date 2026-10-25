@@ -211,7 +211,7 @@ function settingsScreenTitle(screen){
     cloud: "Copia en la nube", broadcast: "Avisar para que actualicen",
     donate: "Apoya el proyecto", partida: "Partida",
     password: "Mi contraseña", jugadores: "Jugadores", "cuenta-nueva": "Nueva cuenta", actividad: "Actividad",
-    mantenimiento: "Mantenimiento", errores: "Errores"
+    mantenimiento: "Mantenimiento", errores: "Errores", guia: "Cómo funciona"
   }[screen] || "Ajustes";
 }
 
@@ -271,6 +271,7 @@ function openDataModal(screen){
       settingsRow("settings-go", "version", "🚀", "Versión", "", '<span class="settings-row-val" id="settingsVerState">v'+esc(curVerStr)+'</span>')+
       settingsRow("settings-go", "storage", "💾", "Almacenamiento", "Espacio en el móvil y en la nube")+
       settingsRow("settings-go", "backup", "📥", "Copia de seguridad", "Descargar mis datos")+
+      settingsRow("settings-go", "guia", "📖", "Cómo funciona", "Las reglas explicadas con ejemplos")+
       settingsRow("settings-go", "help", "📬", "Ayuda y sugerencias", "")+
     '</div>';
     // Mantenimiento y seguridad: solo el admin (el máster lleva la partida, no la base)
@@ -445,6 +446,10 @@ function openDataModal(screen){
 
   else if(screen === "errores"){
     html += erroresScreenHtml();
+  }
+
+  else if(screen === "guia"){
+    html += guiaHtml(window);
   }
 
   document.getElementById("dataModal").innerHTML = html;

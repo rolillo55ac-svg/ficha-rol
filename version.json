@@ -1,6 +1,6 @@
 {
-  "version": "1.4.104.0",
-  "build": "2026.10.25.09",
-  "updatedAt": "2026-10-25T14:00:00Z",
-  "changelog": "Barra inferior: iconos nuevos dibujados para Ficha, Tiradas, Inventario y Casa, con una versión distinta cuando la pestaña está abierta."
+  "version": "1.4.105.0",
+  "build": "2026.10.25.10",
+  "updatedAt": "2026-10-25T16:00:00Z",
+  "changelog": "Ajustes: nueva guía «Cómo funciona» con las reglas explicadas con ejemplos y buscador."
 }
