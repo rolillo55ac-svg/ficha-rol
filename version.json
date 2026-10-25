@@ -1,6 +1,6 @@
 {
-  "version": "1.4.99.0",
-  "build": "2026.10.25.04",
-  "updatedAt": "2026-10-25T03:30:00Z",
-  "changelog": "Ventana del descanso largo más clara: filas compactas con foto, barras de vida y maná, botón siempre visible y animación de luna."
+  "version": "1.4.100.0",
+  "build": "2026.10.25.05",
+  "updatedAt": "2026-10-25T06:00:00Z",
+  "changelog": "Registro de errores: si algo falla en un móvil, el admin lo ve en Ajustes › Admin › Errores para poder arreglarlo."
 }
