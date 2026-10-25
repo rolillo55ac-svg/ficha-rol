@@ -1,6 +1,6 @@
 {
-  "version": "1.4.108.0",
-  "build": "2026.10.25.13",
-  "updatedAt": "2026-10-25T18:00:00Z",
-  "changelog": "Todas las pestañas de la barra inferior tienen ya su icono propio, y la guía Cómo funciona explica ahora subir de nivel, monedas, La Casa y el Lapidario."
+  "version": "1.4.109.0",
+  "build": "2026.10.25.14",
+  "updatedAt": "2026-10-25T19:00:00Z",
+  "changelog": "Al crear algo (entrenamiento, misión, magia, arma, pista…) la pantalla te lleva a lo nuevo y lo marca con un brillo dorado. Nuevo icono para Piedras."
 }
