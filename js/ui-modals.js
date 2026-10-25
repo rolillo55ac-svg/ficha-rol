@@ -1014,7 +1014,7 @@ function modalClick(e){
     var iconVal = document.getElementById("invModalIconVal");
     var customInput = document.getElementById("invModalCustomIcon");
     var statusEl = document.getElementById("invModalIconStatus");
-    if(disp) disp.textContent = ico;
+    if(disp) disp.innerHTML = iconoDeEmoji(ico, "objetos", {tam:"l"});
     if(iconVal) iconVal.value = ico;
     if(customInput) customInput.value = ico;
     if(statusEl) statusEl.innerHTML = '<span class="status-custom">Personalizado</span>';
@@ -1038,7 +1038,7 @@ function modalClick(e){
       name: nameEl ? nameEl.value : "",
       category: catEl ? catEl.value : ""
     }) : "📦";
-    if(disp) disp.textContent = autoIco;
+    if(disp) disp.innerHTML = iconoDeEmoji(autoIco, "objetos", {tam:"l"});
     if(statusEl) statusEl.innerHTML = '<span class="status-auto">Automático</span>';
     var allBtns = document.querySelectorAll(".inv-preset-icon-btn");
     allBtns.forEach(function(b){ b.classList.remove("active"); });
@@ -1178,7 +1178,7 @@ function openInventoryItemModal(itemId){
     '<div class="inv-modal-content">'+
       '<div class="inv-modal-icon-header">'+
         '<div class="inv-modal-icon-wrap" data-action="focus-inv-icon" title="'+(canEdit?'Toca para personalizar el icono del objeto':'Icono del objeto')+'">'+
-          '<div class="inv-modal-icon-display" id="invModalIconDisplay">'+icon+'</div>'+
+          '<div class="inv-modal-icon-display" id="invModalIconDisplay">'+iconoDeEmoji(icon, "objetos", {tam:"l"})+'</div>'+
           (canEdit ? '<div class="inv-modal-icon-badge" title="Editar icono">✏️</div>' : '')+
         '</div>'+
         '<div class="inv-modal-title-area">'+
@@ -1200,7 +1200,7 @@ function openInventoryItemModal(itemId){
           '<div class="inv-preset-icons-shelf" id="invPresetIconsShelf">'+
             INVENTORY_PRESET_ICONS.map(function(ico){
               var isSel = (it.icon === ico);
-              return '<button type="button" class="inv-preset-icon-btn '+(isSel?'active':'')+'" data-action="pick-inv-icon" data-icon="'+ico+'" title="Elegir '+ico+'">'+ico+'</button>';
+              return '<button type="button" class="inv-preset-icon-btn '+(isSel?'active':'')+'" data-action="pick-inv-icon" data-icon="'+ico+'" title="Elegir '+ico+'">'+iconoDeEmoji(ico, "objetos", {tam:"m"})+'</button>';
             }).join('')+
           '</div>'+
           '<div class="inv-custom-icon-row">'+
@@ -1271,7 +1271,7 @@ function openInventoryItemModal(itemId){
             name: nameEl ? nameEl.value : "",
             category: catEl ? catEl.value : ""
           }) : "📦";
-          if(disp) disp.textContent = autoIco;
+          if(disp) disp.innerHTML = iconoDeEmoji(autoIco, "objetos", {tam:"l"});
           if(statusEl) statusEl.innerHTML = '<span class="status-auto">Automático</span>';
           var allBtns = document.querySelectorAll(".inv-preset-icon-btn");
           allBtns.forEach(function(b){ b.classList.remove("active"); });
@@ -1286,7 +1286,7 @@ function openInventoryItemModal(itemId){
             name: this.value,
             category: catEl ? catEl.value : ""
           }) : "📦";
-          if(disp) disp.textContent = autoIco;
+          if(disp) disp.innerHTML = iconoDeEmoji(autoIco, "objetos", {tam:"l"});
         }
       });
       if(!it.name){
@@ -1302,7 +1302,7 @@ function openInventoryItemModal(itemId){
             name: nameEl ? nameEl.value : "",
             category: this.value
           }) : "📦";
-          if(disp) disp.textContent = autoIco;
+          if(disp) disp.innerHTML = iconoDeEmoji(autoIco, "objetos", {tam:"l"});
         }
       });
     }

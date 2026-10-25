@@ -102,7 +102,7 @@ function updatePinModalPreview(){
     balloonEl.style.boxShadow = "0 0 14px " + color + "88";
   }
   if(iconEl){
-    iconEl.textContent = icon || tDef.icon || "📍";
+    iconEl.innerHTML = iconoDeEmoji(icon || tDef.icon || "📍", "mapa", {tam:"s"});
   }
   if(tagEl){
     tagEl.textContent = name;
@@ -144,14 +144,14 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
   var typeButtonsHtml = MAP_MARKER_TYPES.map(function(t){
     var isSel = (t.id === curTypeDef.id);
     return '<button type="button" class="pin-type-opt' + (isSel ? ' active' : '') + '" data-action="select-pin-type" data-type-id="' + t.id + '" data-type-name="' + esc(t.name) + '" data-type-icon="' + t.icon + '" data-type-color="' + t.color + '" style="--type-col:' + t.color + ';">' +
-      '<span class="pto-icon">' + t.icon + '</span>' +
+      '<span class="pto-icon">' + iconoDeEmoji(t.icon, "mapa", {tam:"m"}) + '</span>' +
       '<span class="pto-name">' + esc(t.name) + '</span>' +
     '</button>';
   }).join('');
 
   var iconButtonsHtml = MAP_PIN_ICONS.map(function(ic){
     var isSel = (ic === curIcon);
-    return '<button type="button" class="pin-icon-opt' + (isSel ? ' active' : '') + '" data-action="select-pin-icon" data-icon="' + ic + '">' + ic + '</button>';
+    return '<button type="button" class="pin-icon-opt' + (isSel ? ' active' : '') + '" data-action="select-pin-icon" data-icon="' + ic + '">' + iconoDeEmoji(ic, "mapa", {tam:"m"}) + '</button>';
   }).join('');
 
   var colorButtonsHtml = MAP_PIN_COLORS.map(function(c){
@@ -178,7 +178,7 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
       '<div class="pin-preview-stage">' +
         '<div class="map-pin pin-type-' + curTypeDef.id + ' is-preview">' +
           '<div class="pin-balloon" id="pinPreviewBalloon" style="background-color:' + curColor + ';box-shadow:0 0 14px ' + curColor + '88;">' +
-            '<div class="pin-icon" id="pinPreviewIcon">' + esc(curIcon) + '</div>' +
+            '<div class="pin-icon" id="pinPreviewIcon">' + iconoDeEmoji(curIcon, "mapa", {tam:"s"}) + '</div>' +
           '</div>' +
           '<div class="pin-tag" id="pinPreviewTag">' + esc(pin.name || 'Nuevo Punto') + '</div>' +
         '</div>' +

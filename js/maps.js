@@ -32,7 +32,7 @@ function tplMundoMapas(s){
       var tDef = (typeof getMarkerTypeDef === "function") ? getMarkerTypeDef(tid) : { id: tid, name: tid, icon: "📍", color: "#2A9D8F" };
       var isMuted = !!(filterState.hiddenTypes && filterState.hiddenTypes[tid]);
       return '<button type="button" class="map-filter-pill' + (isMuted ? ' is-muted' : ' is-active') + '" data-action="toggle-map-pin-filter" data-type-id="' + tid + '" style="--pill-col:' + tDef.color + ';" title="' + (isMuted ? 'Mostrar ' : 'Ocultar ') + esc(tDef.name) + '">' +
-        '<span class="mfp-icon">' + (tDef.icon || '📍') + '</span>' +
+        '<span class="mfp-icon">' + iconoDeEmoji(tDef.icon || '📍', "mapa", {tam:"s"}) + '</span>' +
         '<span class="mfp-label">' + esc(tDef.name) + '</span>' +
         '<span class="mfp-count">' + typeCounts[tid] + '</span>' +
       '</button>';
@@ -68,7 +68,7 @@ function tplMundoMapas(s){
 
         return '<div class="map-pin pin-type-' + tDef.id + '" style="left:' + num(m.x) + '%;top:' + num(m.y) + '%;" data-action="edit-pin" data-id="' + m.id + '" title="' + esc(m.name) + ' (' + esc(tDef.name) + ')">' +
           '<div class="pin-balloon" style="background-color:' + pinColor + ';box-shadow:0 0 10px ' + pinColor + '88;">' +
-            '<div class="pin-icon">' + esc(icon) + '</div>' +
+            '<div class="pin-icon">' + iconoDeEmoji(icon, "mapa", {tam:"s"}) + '</div>' +
           '</div>' +
           '<div class="pin-tag">' + esc(m.name) + '</div>' +
         '</div>';

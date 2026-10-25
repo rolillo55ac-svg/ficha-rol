@@ -2295,7 +2295,7 @@ function tplInventario(c){
         var descText = it.desc || it.notes || '';
 
         html += '<div class="backpack-slot occupied" data-action="inspect-inv-item" data-id="'+it.id+'" data-juice-card="i'+it.id+'" role="button" tabindex="0" title="'+esc(it.name)+'">'+
-          '<div class="slot-icon">'+icon+'</div>'+
+          '<div class="slot-icon">'+iconoDeEmoji(icon, "objetos", {tam:"m"})+'</div>'+
           '<div class="slot-name-label">'+esc(it.name || 'Objeto')+'</div>'+
           qtyBadge+
           '<div class="slot-tooltip">'+
@@ -2357,7 +2357,7 @@ function tplInventario(c){
         var itCat = it.category || "Miscelánea";
         var icon = getItemIcon(it);
         html += '<div class="list-row inv-row" data-juice-card="i'+it.id+'">'+
-          '<button type="button" class="inv-row-icon-btn" data-action="inspect-inv-item" data-id="'+it.id+'" title="Ver / editar detalle e icono de '+esc(it.name)+'">'+icon+'</button>'+
+          '<button type="button" class="inv-row-icon-btn" data-action="inspect-inv-item" data-id="'+it.id+'" title="Ver / editar detalle e icono de '+esc(it.name)+'">'+iconoDeEmoji(icon, "objetos", {tam:"m"})+'</button>'+
           '<input type="text" placeholder="Nombre del objeto" data-bind="inventory.'+it.id+'.name" value="'+esc(it.name)+'" '+(canEdit?'':'readonly')+'>'+
           '<select class="inv-cat-select" data-bind="inventory.'+it.id+'.category" aria-label="Categoría" '+(canEdit?'':'disabled')+'>'+
             categories.map(function(cat){
