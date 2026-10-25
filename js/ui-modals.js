@@ -178,7 +178,6 @@ function openCharModal(){
   }
   if(isGM()){
     html += '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;" data-action="add-npc">+ Crear Nuevo NPC</button>';
-    html += '<button class="btn-gm" style="width:100%;margin-top:8px;padding:8px;min-height:44px;" data-action="open-long-rest">🌙 Descanso largo</button>';
   }
   document.getElementById("charModal").innerHTML = html;
   document.getElementById("charModalOverlay").classList.remove("hidden");

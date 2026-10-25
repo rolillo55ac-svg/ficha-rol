@@ -1,6 +1,6 @@
 {
-  "version": "1.4.105.0",
-  "build": "2026.10.25.10",
-  "updatedAt": "2026-10-25T16:00:00Z",
-  "changelog": "Ajustes: nueva guía «Cómo funciona» con las reglas explicadas con ejemplos y buscador."
+  "version": "1.4.106.0",
+  "build": "2026.10.25.11",
+  "updatedAt": "2026-10-25T17:00:00Z",
+  "changelog": "El descanso largo del máster ahora está dentro del Reloj de la partida."
 }
