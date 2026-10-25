@@ -1,6 +1,6 @@
 {
-  "version": "1.4.98.0",
-  "build": "2026.10.25.03",
-  "updatedAt": "2026-10-25T02:30:00Z",
-  "changelog": "El dinero ya se guarda siempre: solo lo cambian los botones y la casilla, y nada más lo pisa. Si no se puede guardar, vuelve al valor de antes y avisa. Nueva moneda de gremio con iconos de monedas."
+  "version": "1.4.99.0",
+  "build": "2026.10.25.04",
+  "updatedAt": "2026-10-25T03:30:00Z",
+  "changelog": "Ventana del descanso largo más clara: filas compactas con foto, barras de vida y maná, botón siempre visible y animación de luna."
 }
