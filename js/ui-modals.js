@@ -267,27 +267,27 @@ function openDataModal(screen){
           '</span>'+
           '<span class="settings-row-chev">›</span>'+
         '</button>' : '')+
-      settingsRow("settings-go", "version", "🚀", "Versión", "", '<span class="settings-row-val" id="settingsVerState">v'+esc(curVerStr)+'</span>')+
-      settingsRow("settings-go", "storage", "💾", "Almacenamiento", "Espacio en el móvil y en la nube")+
-      settingsRow("settings-go", "backup", "📥", "Copia de seguridad", "Descargar mis datos")+
-      settingsRow("settings-go", "guia", "📖", "Cómo funciona", "Las reglas explicadas con ejemplos")+
-      settingsRow("settings-go", "help", "📬", "Ayuda y sugerencias", "")+
+      settingsRow("settings-go", "version", icono("version", {tam:"m"}), "Versión", "", '<span class="settings-row-val" id="settingsVerState">v'+esc(curVerStr)+'</span>')+
+      settingsRow("settings-go", "storage", icono("almacenamiento", {tam:"m"}), "Almacenamiento", "Espacio en el móvil y en la nube")+
+      settingsRow("settings-go", "backup", icono("almacenamiento", {tam:"m"}), "Copia de seguridad", "Descargar mis datos")+
+      settingsRow("settings-go", "guia", icono("guia", {tam:"m"}), "Cómo funciona", "Las reglas explicadas con ejemplos")+
+      settingsRow("settings-go", "help", icono("buzon", {tam:"m"}), "Ayuda y sugerencias", "")+
     '</div>';
     // Mantenimiento y seguridad: solo el admin (el máster lleva la partida, no la base)
     if(isAdmin()){
       html += '<div class="settings-group-title">Admin</div><div class="settings-list">'+
-        settingsRow("settings-go", "cloud", "☁️", "Copia en la nube", settingsLastBackupText())+
-        settingsRow("settings-go", "broadcast", "📢", "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
-        settingsRow("settings-go", "jugadores", "👥", "Jugadores", "Crear cuentas, contraseñas y roles")+
-        settingsRow("settings-go", "actividad", "🕒", "Actividad", "Entradas, intentos fallidos y tiempo de uso")+
-        settingsRow("settings-go", "mantenimiento", "🔧", "Mantenimiento", (typeof mantenimientoEstado !== "undefined" && mantenimientoEstado.activo) ? "Activo: solo tú puedes usar la web" : "Cerrar la web a todos menos a ti")+
-        settingsRow("settings-go", "errores", "🐞", "Errores", "Fallos que han visto los jugadores")+
-        settingsRow("discord-probar", "", "🔔", "Avisos a Discord", '<span id="settingsDiscordState">' + discordUltimoAvisoText() + '</span>')+
+        settingsRow("settings-go", "cloud", icono("nube", {tam:"m"}), "Copia en la nube", settingsLastBackupText())+
+        settingsRow("settings-go", "broadcast", icono("cuerno", {tam:"m"}), "Avisar para que actualicen", "Envía la orden a los jugadores conectados")+
+        settingsRow("settings-go", "jugadores", icono("jugadores", {tam:"m"}), "Jugadores", "Crear cuentas, contraseñas y roles")+
+        settingsRow("settings-go", "actividad", icono("actividad", {tam:"m"}), "Actividad", "Entradas, intentos fallidos y tiempo de uso")+
+        settingsRow("settings-go", "mantenimiento", icono("mantenimiento", {tam:"m"}), "Mantenimiento", (typeof mantenimientoEstado !== "undefined" && mantenimientoEstado.activo) ? "Activo: solo tú puedes usar la web" : "Cerrar la web a todos menos a ti")+
+        settingsRow("settings-go", "errores", icono("errores", {tam:"m"}), "Errores", "Fallos que han visto los jugadores")+
+        settingsRow("discord-probar", "", icono("avisos", {tam:"m"}), "Avisos a Discord", '<span id="settingsDiscordState">' + discordUltimoAvisoText() + '</span>')+
       '</div>';
     }
     html += '<div class="settings-list settings-logout">'+
-      (currentUser ? settingsRow("settings-go", "password", "🔑", "Mi contraseña", "Cambiarla") : '')+
-      settingsRow("auth-logout", "", "🚪", "Cerrar sesión", "", "", "settings-row-danger")+
+      (currentUser ? settingsRow("settings-go", "password", icono("contrasena", {tam:"m"}), "Mi contraseña", "Cambiarla") : '')+
+      settingsRow("auth-logout", "", icono("cerrar-sesion", {tam:"m"}), "Cerrar sesión", "", "", "settings-row-danger")+
     '</div>';
     html += '<div class="settings-foot">Rol Krysalis · v'+esc(curVerStr)+'</div>';
   }

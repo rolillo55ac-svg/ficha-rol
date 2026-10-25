@@ -24,16 +24,16 @@ function renderTopbar(){
   var canEdit = canEditChar(c);
   var roleBadgeHtml = '';
   if(isGM()){
-    roleBadgeHtml = (typeof isAdmin === 'function' && isAdmin()) ? '<span class="role-badge admin role-badge-vista" data-action="toggle-vista-jugador" role="button" tabindex="0" title="Tocar para ver la web como un jugador">🛡️ ADMIN</span>' : '<span class="role-badge gm">★ GM</span>';
+    roleBadgeHtml = (typeof isAdmin === 'function' && isAdmin()) ? '<span class="role-badge admin role-badge-vista" data-action="toggle-vista-jugador" role="button" tabindex="0" title="Tocar para ver la web como un jugador">' + icono("admin", {tam:"s"}) + ' ADMIN</span>' : '<span class="role-badge gm">' + icono("master", {tam:"s"}) + ' GM</span>';
     if(!isNPC){
       if(c.ownerEmail){
-        roleBadgeHtml += '<span class="char-owner-topbar-tag" title="Asignado a ' + esc(c.ownerEmail) + '">👤 ' + esc(c.ownerEmail) + '</span>';
+        roleBadgeHtml += '<span class="char-owner-topbar-tag" title="Asignado a ' + esc(c.ownerEmail) + '">' + icono("jugador", {tam:"s"}) + ' ' + esc(c.ownerEmail) + '</span>';
       } else {
         roleBadgeHtml += '<span class="char-owner-topbar-tag unassigned" title="Personaje sin jugador asignado">○ Libre</span>';
       }
     }
   } else if(typeof vistaComoJugador === 'function' && vistaComoJugador()){
-    roleBadgeHtml = '<span class="role-badge vista-jugador role-badge-vista" data-action="toggle-vista-jugador" role="button" tabindex="0" title="Estás viendo la web como un jugador. Toca para volver a admin">👤 VISTA JUGADOR</span>';
+    roleBadgeHtml = '<span class="role-badge vista-jugador role-badge-vista" data-action="toggle-vista-jugador" role="button" tabindex="0" title="Estás viendo la web como un jugador. Toca para volver a admin">' + icono("jugador", {tam:"s"}) + ' VISTA JUGADOR</span>';
   } else if(currentUser){
     if(canEdit){
       roleBadgeHtml = '<span class="role-badge player" title="Tu personaje (Control total)">Jugador</span>';
@@ -66,8 +66,8 @@ function renderTopbar(){
         (typeof gameClockPillHtml === "function" ? gameClockPillHtml() : '')+
         '<span id="syncBadge" class="sync-status">'+(currentUser?'● Nube':'○ Local')+'</span>'+
         roleBadgeHtml+
-        '<button class="' + feedbackBtnClass + '" data-action="open-feedback-modal" title="' + feedbackTitle + '" aria-label="Reportes">📬' + feedbackBadgeHtml + '</button>'+
-        '<button class="icon-btn" data-action="open-data-modal" title="Ajustes y Sesión" aria-label="Ajustes">&#9881;</button>'+
+        '<button class="' + feedbackBtnClass + '" data-action="open-feedback-modal" title="' + feedbackTitle + '" aria-label="Reportes">' + icono("buzon", {tam:"m", focus: unreadTickets > 0}) + feedbackBadgeHtml + '</button>'+
+        '<button class="icon-btn" data-action="open-data-modal" title="Ajustes y Sesión" aria-label="Ajustes">' + icono("ajustes", {tam:"m"}) + '</button>'+
       '</div>'+
     '</div>'+
     '<div class="gauges">'+
