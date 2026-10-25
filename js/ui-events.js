@@ -1020,10 +1020,11 @@ function handleClick(e){
     var attrChoice = prompt("Atributo base (fisico / destreza / inteligencia / percepcion / carisma):","destreza");
     if(ATTRS.indexOf(attrChoice)===-1) attrChoice="destreza";
     if(!c.customSkills) c.customSkills=[];
-    c.customSkills.push({id:uid(),name:nm,attr:attrChoice,bonus:1});
+    var newCs = {id:uid(),name:nm,attr:attrChoice,bonus:1};
+    c.customSkills.push(newCs);
     c._lastLocalEdit = Date.now(); markCharDirty(c.id);
     saveState(); renderTab();
-    showToast("Habilidad personalizada añadida", "success");
+    enfocarNuevo(newCs.id, "Habilidad creada");
     return;
   }
   if(action==="add-custom-buff"){
@@ -1032,6 +1033,7 @@ function handleClick(e){
     var newCb = {id:uid(),name:""};
     c.customBuffs.push(newCb);
     renderTab();
+    enfocarNuevo(newCb.id, "Buffo creado");
     manageListItemRPC(c, 'customBuffs', 'add', newCb);
     return;
   }
@@ -1120,9 +1122,10 @@ function handleClick(e){
   if(action==="add-global-weapon"){
     if(!isGM()) return;
     if(!state.weaponsCatalog) state.weaponsCatalog = [];
-    state.weaponsCatalog.push({id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción", visible:true});
+    var newGw = {id:uid(), name:"Nueva Arma", dano:"1d6", alcance:"Melé", critico:"Efecto crítico", desc:"Descripción", visible:true};
+    state.weaponsCatalog.push(newGw);
     saveState(true); pushSharedData({ weaponsCatalog: state.weaponsCatalog }); renderTab();
-    showToast("Arma añadida al catálogo", "success");
+    enfocarNuevo(newGw.id, "Arma añadida al catálogo");
     return;
   }
   if(action==="del-global-weapon"){
@@ -1152,9 +1155,10 @@ function handleClick(e){
   if(action==="add-global-buff"){
     if(!isGM()) return;
     if(!state.buffCatalog) state.buffCatalog = [];
-    state.buffCatalog.push({id:uid(), name:"Nuevo Buff", type:"buff", attr:"", bonus:"", duration:"permanent", durationTurns:0, desc:"", visible:true});
+    var newGb = {id:uid(), name:"Nuevo Buff", type:"buff", attr:"", bonus:"", duration:"permanent", durationTurns:0, desc:"", visible:true};
+    state.buffCatalog.push(newGb);
     saveState(true); pushSharedData({ buffCatalog: state.buffCatalog }); renderTab();
-    showToast("Buff añadido al catálogo", "success");
+    enfocarNuevo(newGb.id, "Buffo añadido al catálogo");
     return;
   }
   if(action==="del-global-buff"){
@@ -1187,6 +1191,7 @@ function handleClick(e){
     markCharDirty(c.id, { weapons: c.weapons });
     saveState(false);
     renderTab();
+    enfocarNuevo(newWpn.id, "Arma creada");
     if(typeof pushCharacterPatch === 'function'){
       pushCharacterPatch(c.id, { weapons: c.weapons });
     }
@@ -1207,6 +1212,7 @@ function handleClick(e){
     markCharDirty(c.id, { armors: c.armors });
     saveState(false);
     renderTab();
+    enfocarNuevo(newArm.id, "Armadura creada");
     if(typeof pushCharacterPatch === 'function'){
       pushCharacterPatch(c.id, { armors: c.armors });
     }
@@ -1289,6 +1295,7 @@ function handleClick(e){
     markCharDirty(c.id, { spells: c.spells });
     saveState(false);
     renderTab();
+    enfocarNuevo(newSp.id, "Magia creada");
     if(typeof pushCharacterPatch === 'function'){
       pushCharacterPatch(c.id, { spells: c.spells });
     }
@@ -1480,7 +1487,7 @@ function handleClick(e){
   }
   if(action==="add-stone"){ if(!c || !canEditChar(c)) return; c.stones = c.stones || []; var newSt = {id:"stn_" + uid(),estado:"en_bruto",color:"blanca",origen:"Minas / Cuevas",calidad:null,progDescubrimiento:"sin_descubrir",efectoConcreto:"",notasInvestigacion:""}; c.stones.push(newSt); renderTab(); manageListItemRPC(c, 'stones', 'add', newSt); return; }
   if(action==="del-stone"){ if(!c || !canEditChar(c)) return; var sid = btn.getAttribute("data-id"); c.stones = (c.stones || []).filter(function(s){return s.id!==sid;}); renderTab(); manageListItemRPC(c, 'stones', 'remove', null, sid); return; }
-  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",casillasMovimiento:"6",inteligencia:"",habilidades:"",tiradas:"",rasgos:"",notas:"",image:null}; c.summons.push(newSm); state._summonActive = state._summonActive || {}; state._summonActive[c.id] = newSm.id; state._summonEdit = true; renderTab(); manageListItemRPC(c, 'summons', 'add', newSm); return; }
+  if(action==="add-summon"){ if(!c || !canEditChar(c)) return; c.summons = c.summons || []; var newSm = {id:uid(),name:"",vida:"",defensa:"",absorcion:"",dano:"",movilidad:"",casillasMovimiento:"6",inteligencia:"",habilidades:"",tiradas:"",rasgos:"",notas:"",image:null}; c.summons.push(newSm); state._summonActive = state._summonActive || {}; state._summonActive[c.id] = newSm.id; state._summonEdit = true; renderTab(); enfocarNuevo(newSm.id, "Invocación creada"); manageListItemRPC(c, 'summons', 'add', newSm); return; }
   if(action==="del-summon"){ if(!c || !canEditChar(c)) return; var smId = btn.getAttribute("data-id"); c.summons = (c.summons || []).filter(function(s){return s.id!==smId;}); state._summonConfirmDel = null; renderTab(); manageListItemRPC(c, 'summons', 'remove', null, smId); return; }
   if(action==="toggle-summon-edit"){ if(!c || !canEditChar(c)) return; state._summonEdit = !state._summonEdit; state._summonConfirmDel = null; renderTab(); return; }
   if(action==="select-summon"){ if(!c) return; state._summonActive = state._summonActive || {}; state._summonActive[c.id] = btn.getAttribute("data-id"); state._summonConfirmDel = null; state._summonPhotoMenu = null; renderTab(); return; }
@@ -2262,7 +2269,7 @@ function handleClick(e){
       manageListItemRPC(c, 'poisons', 'add', newP);
       closeModals();
       renderTab();
-      showToast("Añadida al laboratorio: " + cat.name, "success");
+      enfocarNuevo(newP.id, "Añadida al laboratorio: " + cat.name);
     }
     return;
   }
@@ -2288,6 +2295,7 @@ function handleClick(e){
     markCharDirty(c.id, "poisons");
     saveState(false);
     renderTab();
+    enfocarNuevo(newPs.id, "Fórmula creada");
     manageListItemRPC(c, 'poisons', 'add', newPs);
     showToast("Fórmula artesanal añadida al grimorio", "info");
     return;
@@ -2335,7 +2343,7 @@ function handleClick(e){
   if(action==="add-training"){
     if(!c || !canEditChar(c)) return;
     c.trainings = c.trainings || [];
-    c.trainings.push({
+    var newTr = {
       id: uid(),
       name: "Nuevo Entrenamiento",
       category: "skill",
@@ -2352,11 +2360,13 @@ function handleClick(e){
       rolls: [],
       points: 0,
       createdAt: Date.now()
-    });
+    };
+    c.trainings.push(newTr);
     c._lastLocalEdit = Date.now();
     markCharDirty(c.id);
     saveState(false);
     renderTab();
+    enfocarNuevo(newTr.id, "Entrenamiento creado");
     return;
   }
   if(action==="del-training"){
@@ -2757,7 +2767,7 @@ function handleClick(e){
   }
   if(action==="add-bestiary"){
     if(!isGM()) return;
-    state.bestiary.push({
+    var newBe = {
       id: uid(),
       nombre: "Nueva Criatura",
       continente: "Todos",
@@ -2772,10 +2782,12 @@ function handleClick(e){
       movilidad: "",
       habilidades: "",
       visible: true
-    });
+    };
+    state.bestiary.push(newBe);
     saveState(true);
     pushSharedData();
     renderTab();
+    enfocarNuevo(newBe.id, "Criatura creada");
     return;
   }
   if(action==="del-bestiary"){
@@ -3119,7 +3131,7 @@ function handleClick(e){
     var qImage = imgEl ? imgEl.value.trim() : "";
 
     state.quests = state.quests || [];
-    state.quests.push({
+    var newQu = {
       id: uid(),
       title: title,
       type: qType,
@@ -3130,13 +3142,14 @@ function handleClick(e){
       image: qImage || null,
       status: "activa",
       tasks: []
-    });
+    };
+    state.quests.push(newQu);
 
     state._showNewQuestForm = false;
     saveState(true);
     pushSharedData({ quests: state.quests });
     renderTab();
-    showToast("Misión añadida: " + title, "success");
+    enfocarNuevo(newQu.id, "Misión creada: " + title);
     return;
   }
   if(action==="set-quest-type"){
@@ -3222,17 +3235,18 @@ function handleClick(e){
         var tTarget = parseInt(tTargetStr, 10);
         if(isNaN(tTarget) || tTarget < 1) tTarget = 1;
         qObj.tasks = qObj.tasks || [];
-        qObj.tasks.push({
+        var newQt = {
           id: uid(),
           text: tText.trim(),
           target: tTarget,
           current: 0,
           done: false
-        });
+        };
+        qObj.tasks.push(newQt);
         saveState(true);
         pushSharedData({ quests: state.quests });
         renderTab();
-        showToast("Objetivo añadido", "success");
+        enfocarNuevo(newQt.id, "Objetivo añadido");
       }
     }
     return;
@@ -3486,11 +3500,12 @@ function handleClick(e){
     var clTitle = prompt("Título del descubrimiento o pista:");
     if(clTitle && clTitle.trim()){
       state.questClues = state.questClues || [];
-      state.questClues.push({ id: uid(), title: clTitle.trim(), text: "", image: null, visible: true });
+      var newCl = { id: uid(), title: clTitle.trim(), text: "", image: null, visible: true };
+      state.questClues.push(newCl);
       saveState(true);
       pushSharedData({ questClues: state.questClues });
       renderTab();
-      showToast("Pista añadida", "success");
+      enfocarNuevo(newCl.id, "Pista añadida");
     }
     return;
   }

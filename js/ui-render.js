@@ -141,7 +141,7 @@ var GM_TABS = [
   {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
-var TAB_ICONOS = {ficha:"pergamino", tiradas:"d20", mision:"brujula", casa:"casa", habilidades:"cerebro", entrenamiento:"espantapajaros", combate:"puno", estados:"destellos", inventario:"mochila", comercio:"balanza", magia:"bola-cristal", alquimia:"pocion", lapidario:"diamante", invocaciones:"dragon", bestiario:"huellas", extra:"estrella", mundo:"mapa"};
+var TAB_ICONOS = {ficha:"pergamino", tiradas:"d20", mision:"brujula", casa:"casa", habilidades:"cerebro", entrenamiento:"espantapajaros", combate:"puno", estados:"destellos", inventario:"mochila", comercio:"balanza", magia:"bola-cristal", alquimia:"pocion", lapidario:"piedras", invocaciones:"dragon", bestiario:"huellas", extra:"estrella", mundo:"mapa"};
 
 function renderTabbar(){
   var tabs = isGM() ? GM_TABS : PLAYER_TABS;

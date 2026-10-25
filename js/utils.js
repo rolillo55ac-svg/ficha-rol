@@ -105,6 +105,38 @@ function showToast(message, type){
   setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3300);
 }
 
+// Lo recién creado: lleva la vista hasta el elemento, lo resalta, abre su edición y avisa
+// ref: elemento o id del objeto creado (se busca por data-id tras el repintado)
+function enfocarNuevo(ref, texto){
+  var intentos = 0;
+  function buscar(){
+    var el = ref;
+    if(typeof ref === "string"){
+      var sel = '[data-id="'+ref.replace(/"/g, '\\"')+'"],[data-tid="'+ref.replace(/"/g, '\\"')+'"],[id="'+ref.replace(/"/g, '\\"')+'"]';
+      var hit = document.querySelector(sel);
+      el = hit ? (hit.closest('[class*="card"],[class*="entry"],[class*="item"],[class*="row"],.section,li') || hit) : null;
+    }
+    if(!el || !document.body.contains(el)){
+      if(++intentos < 6) setTimeout(buscar, 80);
+      return;
+    }
+    var det = el.closest ? el.closest("details") : null;
+    if(det) det.open = true;
+    var animar = !(window.UIJuice && UIJuice.animOn && !UIJuice.animOn()) &&
+      !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+    try { el.scrollIntoView({behavior: animar ? "smooth" : "auto", block: "center"}); } catch(_){ el.scrollIntoView(); }
+    el.classList.remove("nuevo-destacado", "nuevo-destacado-fijo");
+    void el.offsetWidth;
+    el.classList.add(animar ? "nuevo-destacado" : "nuevo-destacado-fijo");
+    setTimeout(function(){ el.classList.remove("nuevo-destacado", "nuevo-destacado-fijo"); }, animar ? 1400 : 2000);
+    var campo = el.querySelector('input[type="text"]:not([disabled]),input:not([type]):not([disabled]),textarea:not([disabled])');
+    if(campo){ try { campo.focus({preventScroll: true}); if(campo.select) campo.select(); } catch(_){} }
+    if(texto) showToast("✓ "+texto, "success");
+    if(window.UIJuice && UIJuice.vibrar) UIJuice.vibrar(20);
+  }
+  setTimeout(buscar, 60);
+}
+
 // Ventana propia para confirmar lo que resta, quita o borra: Cancelar va primero y es el botón por defecto
 function confirmarAccion(o){
   o = o || {};
