@@ -1,6 +1,6 @@
 {
-  "version": "1.4.114.0",
-  "build": "2026.10.25.19",
+  "version": "1.4.115.0",
+  "build": "2026.10.25.20",
   "updatedAt": "2026-10-25T23:59:00Z",
-  "changelog": "El Escudo de la ficha, la pestaña Estados y Buffs, el coste de maná de los hechizos y el descanso largo usan ahora iconos dibujados en lugar de emojis."
+  "changelog": "Los objetos del inventario (lista, mochila y ventana del objeto) y los marcadores del mapa usan ahora iconos dibujados en lugar de emojis. Lo guardado no cambia."
 }
