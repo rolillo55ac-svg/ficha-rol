@@ -141,6 +141,8 @@ var GM_TABS = [
   {id:"extra",label:"Extra"}, {id:"mundo",label:"Mundo"}
 ];
 
+var TAB_ICONOS = {ficha:"pergamino", tiradas:"d20", inventario:"mochila", comercio:"balanza", casa:"casa"};
+
 function renderTabbar(){
   var tabs = isGM() ? GM_TABS : PLAYER_TABS;
   if(typeof CONFIG_ENABLE_HOUSE !== "undefined" && !CONFIG_ENABLE_HOUSE){
@@ -150,7 +152,7 @@ function renderTabbar(){
     var isActive = state.activeTab===t.id;
     // Contador de veredictos de talla pendientes para el máster
     var count = (t.id === "lapidario" && isGM() && typeof getPendingLapidaryVerdicts === "function") ? getPendingLapidaryVerdicts().length : 0;
-    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+(count ? ' ('+count+' pendientes)' : '')+'">'+((t.id==='casa' || t.id==='tiradas') ? '<img class="tab-ico-img" src="images/iconos/'+t.id+'.svg" alt="" width="30" height="30" decoding="async">' : '')+'<span>'+t.label+'</span>'+(count ? '<span class="tab-count">'+count+'</span>' : '')+'</button>';
+    return '<button class="tab-btn'+(isActive?' active':'')+'" data-action="switch-tab" data-tab="'+t.id+'" role="tab" aria-selected="'+(isActive)+'" aria-label="'+t.label+(count ? ' ('+count+' pendientes)' : '')+'">'+(TAB_ICONOS[t.id] ? '<span class="tab-ico-wrap"><img class="tab-ico-img" src="images/iconos/barra/'+TAB_ICONOS[t.id]+'.webp" alt="" width="28" height="28" decoding="async"><img class="tab-ico-focus" src="images/iconos/barra/'+TAB_ICONOS[t.id]+'-focus.webp" alt="" width="28" height="28" decoding="async"></span>' : '')+'<span>'+t.label+'</span>'+(count ? '<span class="tab-count">'+count+'</span>' : '')+'</button>';
   }).join('');
 }
 
