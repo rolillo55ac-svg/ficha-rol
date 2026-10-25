@@ -1893,21 +1893,9 @@ function triggerBg3Roll(launchIntensity){
     var grandTotal = chosen + modSum;
     bg3RollState.total = grandTotal;
 
-    var isCrit = false;
-    var isFumble = false;
-    if(bg3RollState.isDamage){
-      isCrit = (r1 === bg3RollState.sides);
-      isFumble = (r1 === 1);
-    } else if(bg3RollState.sides === 20){
-      isCrit = (chosen === 20);
-      isFumble = (chosen === 1);
-    } else if(bg3RollState.sides === 10){
-      isCrit = (chosen === 10);
-      isFumble = (chosen === 1);
-    } else {
-      isCrit = (chosen === bg3RollState.sides);
-      isFumble = (chosen === 1);
-    }
+    var cp = reglasCritPifia(bg3RollState.sides, chosen, bg3RollState.isDamage, r1);
+    var isCrit = cp.isCrit;
+    var isFumble = cp.isFumble;
     // Quien abre la tirada puede decidir crítico/pifia y el texto con el dado natural (entrenamiento)
     var landedInfo = null;
     if(typeof bg3RollState.onLanded === "function"){
@@ -2457,21 +2445,7 @@ function openRollModal(label, scoreText, detailHtml, sides, isCrit, isFumble, ad
 
 // Puntos de una tirada de entrenamiento según el dado natural (1 = pifia, máximo = crítico)
 function trainingRollResult(tr, roll, sides){
-  var narrative = tr && tr.category === "narrative";
-  var delta = 0, isCrit = false, isFumble = false;
-  if(roll === 1){
-    delta = narrative ? 0 : -5;
-    isFumble = !narrative;
-  } else if(roll === sides){
-    delta = 5;
-    isCrit = true;
-  } else if(roll >= 11 && roll <= 19){
-    delta = 3;
-  } else if(narrative || (roll >= 2 && roll <= 10)){
-    delta = 1;
-  }
-  var ptsText = (delta >= 0 ? "+" + delta : delta) + " pto" + (Math.abs(delta) === 1 ? "" : "s");
-  return { delta: delta, isCrit: isCrit, isFumble: isFumble, ptsText: ptsText };
+  return reglasEntrenamiento(tr && tr.category === "narrative", roll, sides);
 }
 
 function performD10Roll(charName, label, mod){

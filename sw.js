@@ -45,6 +45,7 @@ const PRECACHE_ASSETS = [
   './sounds/casa_puerta.mp3',
   './sounds/tiradas_dados.mp3',
   './js/partidas-config.js',
+  './js/reglas.js',
   './js/utils.js',
   './js/state.js',
   './js/supabase-client.js',

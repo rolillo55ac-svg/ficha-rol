@@ -1599,7 +1599,7 @@ function parseShieldBonus(modStr){
 // Defensa = Esquivar base + 5, igual para todos: sin buffos de atributo (TK-T47Q)
 function defensaBase(c){
   if(!c) return 5;
-  return num(c.attrs ? c.attrs.destreza : 0, 0) + num(c.skillBonus ? c.skillBonus.esquivar : 0, 0) + 5;
+  return reglasDefensaBase(c.attrs ? c.attrs.destreza : 0, c.skillBonus ? c.skillBonus.esquivar : 0);
 }
 
 function getEffectiveCombatStat(statKey, c){

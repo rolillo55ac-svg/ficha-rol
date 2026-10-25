@@ -209,7 +209,7 @@ function openLongRestModal(){
   }
   html += '<div class="lr-list">';
   chars.forEach(function(c){
-    var copia = Object.assign({}, c, { activeBuffs: (c.activeBuffs || []).filter(function(ab){ return resetIds.indexOf(ab.id) === -1; }) });
+    var copia = Object.assign({}, c, { activeBuffs: reglasBuffosTrasDescanso(c.activeBuffs, resetIds) });
     var maxPv = getEffectiveMaxHp(copia), maxMp = getEffectiveMaxMana(copia);
     var pv = num(c.combat && c.combat.pvActual, 0), mp = num(c.combat && c.combat.manaActual, 0);
     var quita = (c.activeBuffs || []).filter(function(ab){ return resetIds.indexOf(ab.id) !== -1; }).map(function(ab){ return ab.name; }).filter(Boolean);
@@ -289,7 +289,7 @@ async function doLongRest(btn){
     var c = (state.characters || []).find(function(x){ return x.id === id; });
     if(!c || !c.db_id) return;
     // Los máximos se calculan sin los buffos que se van a quitar
-    var copia = Object.assign({}, c, { activeBuffs: (c.activeBuffs || []).filter(function(ab){ return resetIds.indexOf(ab.id) === -1; }) });
+    var copia = Object.assign({}, c, { activeBuffs: reglasBuffosTrasDescanso(c.activeBuffs, resetIds) });
     items.push({ id: c.db_id, pv: getEffectiveMaxHp(copia), mana: getEffectiveMaxMana(copia), remove: resetIds });
   });
   if(!items.length) return;
