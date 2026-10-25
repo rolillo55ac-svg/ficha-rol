@@ -1,7 +1,7 @@
 // Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
 // Modo offline y carga rapida
 
-const CACHE_NAME = 'rol-krysalis-v1.4.107.0';
+const CACHE_NAME = 'rol-krysalis-v1.4.108.0';
 
 const PRECACHE_ASSETS = [
   './',
@@ -24,6 +24,30 @@ const PRECACHE_ASSETS = [
   './images/iconos/barra/balanza-focus.webp',
   './images/iconos/barra/casa.webp',
   './images/iconos/barra/casa-focus.webp',
+  './images/iconos/barra/brujula.webp',
+  './images/iconos/barra/brujula-focus.webp',
+  './images/iconos/barra/cerebro.webp',
+  './images/iconos/barra/cerebro-focus.webp',
+  './images/iconos/barra/espantapajaros.webp',
+  './images/iconos/barra/espantapajaros-focus.webp',
+  './images/iconos/barra/puno.webp',
+  './images/iconos/barra/puno-focus.webp',
+  './images/iconos/barra/destellos.webp',
+  './images/iconos/barra/destellos-focus.webp',
+  './images/iconos/barra/bola-cristal.webp',
+  './images/iconos/barra/bola-cristal-focus.webp',
+  './images/iconos/barra/pocion.webp',
+  './images/iconos/barra/pocion-focus.webp',
+  './images/iconos/barra/diamante.webp',
+  './images/iconos/barra/diamante-focus.webp',
+  './images/iconos/barra/dragon.webp',
+  './images/iconos/barra/dragon-focus.webp',
+  './images/iconos/barra/huellas.webp',
+  './images/iconos/barra/huellas-focus.webp',
+  './images/iconos/barra/estrella.webp',
+  './images/iconos/barra/estrella-focus.webp',
+  './images/iconos/barra/mapa.webp',
+  './images/iconos/barra/mapa-focus.webp',
   './images/apple-touch-icon.png',
   './images/monedas/moneda-oro-96.webp',
   './images/monedas/moneda-oro-96.png',

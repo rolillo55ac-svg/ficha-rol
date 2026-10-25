@@ -35,6 +35,19 @@ function reglasBuffosTrasDescanso(buffos, idsQuitar){
   return (buffos || []).filter(function(b){ return (idsQuitar || []).indexOf(b.id) === -1; });
 }
 
+// Lo que gana un personaje al subir a nivelNuevo: puntos de habilidad, vida máxima y maná máximo
+function reglasSubidaNivel(nivelNuevo, fisico){
+  var puntos = nivelNuevo > 20 ? 8 : (nivelNuevo > 10 ? 6 : 4);
+  var vida = Math.max(1, Math.ceil((parseFloat(fisico) || 0) / 2));
+  return { puntos: puntos, vida: vida, mana: nivelNuevo % 4 === 0 ? 5 : 0 };
+}
+
+// Cambio de moneda: 10 de plata = 1 de oro
+function reglasCambioPlata(plata){
+  var p = Math.max(0, Math.floor(parseFloat(plata) || 0));
+  return { oro: Math.floor(p / 10), sobra: p % 10 };
+}
+
 if(typeof module !== "undefined" && module.exports){
-  module.exports = { reglasCritPifia: reglasCritPifia, reglasEntrenamiento: reglasEntrenamiento, reglasDefensaBase: reglasDefensaBase, reglasBuffosTrasDescanso: reglasBuffosTrasDescanso };
+  module.exports = { reglasCritPifia: reglasCritPifia, reglasEntrenamiento: reglasEntrenamiento, reglasDefensaBase: reglasDefensaBase, reglasBuffosTrasDescanso: reglasBuffosTrasDescanso, reglasSubidaNivel: reglasSubidaNivel, reglasCambioPlata: reglasCambioPlata };
 }

@@ -43,11 +43,46 @@ var GUIA_TEMAS = [
       "Los buffos y debuffos son efectos temporales o permanentes que se aplican directamente sobre tu ficha.",
       "Pueden durar un número determinado de turnos o permanecer de forma indefinida, y algunos de ellos se reinician cuando realizas un descanso largo."
     ] },
+  { id: "nivel", ico: "⬆️", titulo: "Subir de nivel",
+    texto: [
+      "Quien te sube de nivel es el máster, con su botón de +Nivel. Tú no puedes subirte solo.",
+      "Cada nivel te da puntos de habilidad para repartir: 4 puntos hasta el nivel 10, 6 del nivel 11 al 20 y 8 a partir del 21.",
+      "Tu vida máxima sube la mitad de tu Físico (redondeando hacia arriba, y como mínimo 1), y tu vida se rellena del todo. Cada cuatro niveles (4, 8, 12...) tu maná máximo sube 5.",
+      "Los puntos por repartir los gastas en tu pestaña de Habilidades. Si el máster baja un nivel, se te quita lo que habías ganado con él, y para hacerlo tiene que confirmarlo."
+    ],
+    ejemplo: function(R){
+      var a = R.reglasSubidaNivel(5, 4), b = R.reglasSubidaNivel(8, 4);
+      return "Con Físico 4, al llegar al nivel 5 ganas " + a.puntos + " puntos y +" + a.vida + " de vida máxima. Al llegar al nivel 8 ganas además +" + b.mana + " de maná máximo.";
+    } },
   { id: "dinero", ico: "💰", titulo: "Dinero",
     texto: [
-      "Tu personaje puede manejar tres tipos de moneda: oro, plata y moneda de gremio. Tu saldo no puede ser inferior a 0.",
-      "Cuentas con botones que te permiten sumar o restar cantidades fijas de 1, 5, 10 o 25 directamente a tus fondos.",
-      "Si reduces una gran cantidad de golpe se te pedirá confirmación, y siempre dispondrás durante unos segundos de la opción de deshacer. Además, todos los movimientos quedan debidamente apuntados."
+      "Tu personaje maneja tres monedas: oro, plata y moneda de gremio. Diez de plata equivalen a uno de oro. La moneda de gremio es aparte: no se cambia por oro ni por plata.",
+      "El cambio entre oro y plata se hará en Comercio, que todavía no está disponible.",
+      "El dinero lo pueden mover el dueño de la ficha y el máster. Con los botones sumas o restas 1, 5, 10 o 25. Tu saldo nunca baja de 0.",
+      "Si restas una cantidad grande se te pedirá confirmación y siempre tendrás unos segundos para deshacer. Todos los movimientos quedan apuntados en \"Últimos movimientos\"."
+    ],
+    ejemplo: function(R){
+      var c = R.reglasCambioPlata(25);
+      return "25 de plata equivalen a " + c.oro + " de oro y " + c.sobra + " de plata.";
+    } },
+  { id: "extras", ico: "🧭", titulo: "Iniciativa, Movilidad y Defensa mágica",
+    texto: [
+      "Estos tres valores los pone el máster en tu ficha. De momento no se calculan solos.",
+      "Lo que sí se calcula solo es tu Defensa: Esquivar base más 5, sin contar buffos."
+    ] },
+  { id: "casa", ico: "🏠", titulo: "La Casa",
+    texto: [
+      "La Casa es una casa mágica que cambia con la partida: sube de nivel y da buffos.",
+      "El plano (estancias, tamaños y muebles) solo lo cambian el máster y el admin. Los jugadores la veis y podéis usar el baúl de cada estancia.",
+      "Cada jugador tiene su propia habitación. El máster puede darte permiso para editar la casa, jugador a jugador, y es quien gestiona los buffos de La Casa."
+    ] },
+  { id: "lapidario", ico: "💎", titulo: "Lapidario",
+    texto: [
+      "Tallar una piedra en bruto es un minijuego de cuatro pasos.",
+      "1. Desbaste: quitas la costra de la geoda sin golpear las fisuras. Cuantas menos fisuras toques, mejor nota.",
+      "2. Cortes: mueves la sierra por la piedra manteniéndote dentro de la línea; rozar el borde o ir fuera baja la nota.",
+      "3. Pulido: en cada pasada pulsas Pulir cuando la línea blanca pasa por la zona dorada, y cada pasada va más rápido.",
+      "4. Veredicto: ves la nota de cada paso, el riesgo de rotura y se hace una tirada de calidad (1d10 más bonos). La piedra queda esperando al máster, que decide si aguanta o se rompe; tú lo ves en cuanto lo decide."
     ] }
 ];
 
