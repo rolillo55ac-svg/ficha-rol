@@ -1,6 +1,6 @@
 {
-  "version": "1.4.115.0",
-  "build": "2026.10.25.20",
-  "updatedAt": "2026-10-25T23:59:00Z",
-  "changelog": "Los objetos del inventario (lista, mochila y ventana del objeto) y los marcadores del mapa usan ahora iconos dibujados en lugar de emojis. Lo guardado no cambia."
+  "version": "1.4.116.0",
+  "build": "2026.10.26.1",
+  "updatedAt": "2026-10-26T10:00:00Z",
+  "changelog": "La Casa usa ahora iconos dibujados en las placas de las estancias, la ficha de la estancia, los suelos y los iconos elegibles. Lo guardado no cambia."
 }

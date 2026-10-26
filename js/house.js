@@ -1737,7 +1737,7 @@ function toggleTexturePopover(btn){
       HOUSE_TEXTURES.forEach(function(t){
         var b = document.createElement("button");
         b.className = "house-texture-chip" + (curTex === t.id ? " active" : "");
-        b.innerHTML = '<span style="font-size:1.3rem;">' + t.icon + '</span><span style="font-weight:600;">' + t.name + '</span>';
+        b.innerHTML = '<span style="font-size:1.3rem;">' + ((typeof icono === "function" && typeof CASA_ICONOS !== "undefined" && CASA_ICONOS.suelos[t.id]) ? icono(CASA_ICONOS.suelos[t.id], { tam: "m", emoji: t.icon }) : t.icon) + '</span><span style="font-weight:600;">' + t.name + '</span>';
         b.addEventListener("click", function(){
           if(selR){
             selR.texture = t.id;
@@ -1802,7 +1802,7 @@ function toggleIconPopover(btn){
         chip.style.width = "34px"; chip.style.height = "34px"; chip.style.fontSize = "1.1rem";
         chip.style.background = "var(--bg-card)"; chip.style.border = "1px solid var(--line)";
         chip.style.borderRadius = "6px"; chip.style.cursor = "pointer";
-        chip.textContent = ic;
+        chip.innerHTML = (typeof iconoDeEmoji === "function") ? iconoDeEmoji(ic, "casa", { tam: "m" }) : ic;
         chip.addEventListener("click", function(){
           if(selR){
             selR.icon = ic;
@@ -1889,7 +1889,7 @@ function openHousePresetModal(){
   var gridHtml = '';
   HOUSE_PRESETS.forEach(function(pr, idx){
     gridHtml += '<div class="house-preset-card" data-action="select-preset-room" data-preset-idx="' + idx + '">' +
-      '<div class="house-preset-icon">' + pr.icon + '</div>' +
+      '<div class="house-preset-icon">' + houseIconoPreset(pr) + '</div>' +
       '<div>' +
       '  <div class="house-preset-name">' + esc(pr.name) + '</div>' +
       '  <div class="house-preset-sub">' + pr.w + ' x ' + pr.h + '</div>' +
@@ -2390,6 +2390,25 @@ function getRoomTypeIcon(type){
     case "biblioteca": return "📚";
     default: return "🚪";
   }
+}
+
+// Dibujo de la estancia por tipo; sin dibujo, el emoji de siempre
+function houseIconoTipo(type, tam){
+  if(typeof icono !== "function" || typeof CASA_ICONOS === "undefined") return getRoomTypeIcon(type);
+  return icono(CASA_ICONOS.estancias[type] || CASA_ICONOS.estancias.vacia, { tam: tam || "s", emoji: getRoomTypeIcon(type) });
+}
+
+// Icono guardado en la estancia (emoji en la base, no se toca); sin icono propio, el del tipo
+function houseIconoEstancia(icon, type, tam){
+  if(icon && typeof iconoDeEmoji === "function") return iconoDeEmoji(icon, "casa", { tam: tam || "s" });
+  if(icon) return esc(icon);
+  return houseIconoTipo(type, tam);
+}
+
+function houseIconoPreset(pr){
+  if(typeof iconoDeEmoji !== "function") return pr.icon;
+  var d = iconoDeEmoji(pr.icon, "casa", { tam: "m" });
+  return d.indexOf("<img") === 0 ? d : houseIconoTipo(pr.type, "m");
 }
 
 function getRoomTypeLabel(type){
@@ -5501,7 +5520,7 @@ function renderHouseGridRooms(floorNumber){
       doorHtml +
       miniLayoutHtml +
       '  <div class="house-room-title-plaque" title="' + esc(r.name) + ' (' + getRoomTypeLabel(r.room_type) + ')">' +
-      '    <span class="house-room-plaque-icon">' + getRoomTypeIcon(r.room_type) + '</span>' +
+      '    <span class="house-room-plaque-icon">' + houseIconoTipo(r.room_type, "s") + '</span>' +
       '    <span class="house-room-plaque-name house-room-name">' + esc(r.name) + '</span>' +
       (isEditMode ? ('    <div class="house-room-plaque-actions">' + studioBtnHtml + levelPillHtml + '</div>') : '') +
       '  </div>' +
@@ -5561,7 +5580,7 @@ function renderRoomPanel(roomId){
   var html = '<div class="house-room-sheet" id="houseRoomInspector">';
   html += '  <div class="house-sheet-handle"></div>';
   html += '  <div class="house-sheet-head">';
-  html += '    <span class="house-sheet-icon">' + esc(r.icon || getRoomTypeIcon(r.room_type) || '') + '</span>';
+  html += '    <span class="house-sheet-icon">' + houseIconoEstancia(r.icon, r.room_type, "m") + '</span>';
   html += '    <h3 class="house-sheet-title">' + esc(r.name || "Estancia") + '</h3>';
   html += '    <button class="house-sheet-close" data-action="close-room-inspector" title="Cerrar" aria-label="Cerrar">&times;</button>';
   html += '  </div>';
@@ -5641,7 +5660,7 @@ function renderRoomInspector(roomId){
   // Cabecera del Inspector
   html += '  <div class="house-inspector-header">';
   html += '    <div>';
-  html += '      <h3 class="house-inspector-title">' + getRoomTypeIcon(r.room_type) + ' ' + esc(r.name) + '</h3>';
+  html += '      <h3 class="house-inspector-title">' + houseIconoTipo(r.room_type, "s") + ' ' + esc(r.name) + '</h3>';
   html += '      <div class="house-inspector-meta">';
   html += '        <span class="house-room-type-tag ' + (r.room_type || 'otro') + '">' + getRoomTypeLabel(r.room_type) + '</span>';
   html += '        <span style="font-size:0.72rem;color:var(--ink-faint);">Planta ' + (r.floor || 1) + ' (' + (r.width||2) + 'x' + (r.height||2) + ')</span>';
