@@ -156,21 +156,21 @@ function rollHistoryItemHtml(r){
   var when = new Date(r.ts || Date.now());
   var realTime = when.toLocaleDateString("es-ES", { day: "numeric", month: "short" }) + ", " + when.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
   var icons = '';
-  if(r.success === true) icons += '<span title="CD superada">✅</span>';
-  else if(r.success === false) icons += '<span title="CD fallada">❌</span>';
-  if(r.requestId) icons += '<span title="Pedida por el máster">📣</span>';
-  if(r.mode === "adv") icons += '<span title="Ventaja">⬆</span>';
-  else if(r.mode === "disadv") icons += '<span title="Desventaja">⬇</span>';
+  if(r.success === true) icons += '<span title="CD superada">' + iconoUI("hecho") + '</span>';
+  else if(r.success === false) icons += '<span title="CD fallada">' + iconoUI("cerrar") + '</span>';
+  if(r.requestId) icons += '<span title="Pedida por el máster">' + icono("cuerno",{tam:"s"}) + '</span>';
+  if(r.mode === "adv") icons += '<span title="Ventaja">' + iconoUI("flecha-arriba") + '</span>';
+  else if(r.mode === "disadv") icons += '<span title="Desventaja">' + iconoUI("flecha-abajo") + '</span>';
   var det = [];
   det.push('<div class="rl-formula rh-num">' + esc(r.formulaText) + (r.isCrit ? " · ¡Crítico!" : (r.isFumble ? " · ¡Pifia!" : "")) + '</div>');
   if(r.dc !== null && r.dc !== undefined) det.push('<div class="rl-formula">CD ' + esc(r.dc) + (r.success === true ? " · superada" : (r.success === false ? " · fallada" : "")) + '</div>');
   var modeTxt = rollModeText(r.mode);
   if(modeTxt) det.push('<div class="rl-formula">' + modeTxt + '</div>');
   if(r.requestId) det.push('<div class="rl-formula">Pedida por el máster</div>');
-  if(r.hidden) det.push('<div class="rl-formula">🙈 Oculta</div>');
+  if(r.hidden) det.push('<div class="rl-formula">' + icono("oculto",{tam:"s"}) + ' Oculta</div>');
   det.push('<div class="rl-formula">' + esc(realTime) + '</div>');
   var delBtn = (isGM() && !rollHistoryTableMissing && /^[0-9a-f-]{36}$/i.test(String(r.id))) ?
-    '<button type="button" class="game-clock-btn roll-history-del" data-action="roll-history-delete" data-roll-id="' + esc(r.id) + '" aria-label="Borrar tirada">🗑</button>' : '';
+    '<button type="button" class="game-clock-btn roll-history-del" data-action="roll-history-delete" data-roll-id="' + esc(r.id) + '" aria-label="Borrar tirada">' + iconoUI("borrar") + '</button>' : '';
   return '<details class="roll-history-item rh-line" data-juice-card="r' + esc(r.id) + '">' +
       '<summary class="rh-sum">' +
         '<span class="rh-name"><span class="rl-char">' + esc(r.charName) + '</span> · <span class="rl-label">' + esc(r.label) + '</span></span>' +
@@ -224,7 +224,7 @@ function renderRollHistoryModal(){
         '<select id="rollHistoryChar" class="game-clock-input" aria-label="Filtrar por personaje"><option value="">Todos los personajes</option>' +
           names.map(function(n){ return '<option value="' + esc(n) + '"' + (n === v.charName ? " selected" : "") + '>' + esc(n) + '</option>'; }).join("") +
         '</select>' +
-        '<label class="roll-history-check"><input type="checkbox" id="rollHistoryRequested" class="k-check"' + (v.onlyRequested ? " checked" : "") + '> Solo 📣 del máster</label>' +
+        '<label class="roll-history-check"><input type="checkbox" id="rollHistoryRequested" class="k-check"' + (v.onlyRequested ? " checked" : "") + '> Solo ' + icono("cuerno",{tam:"s"}) + ' del máster</label>' +
       '</div>';
   }
   html += '<div class="roll-history-list">';
@@ -249,7 +249,7 @@ async function loadRollHistoryPage(){
     v.more = items.length === ROLL_HISTORY_PAGE;
   } catch(e){
     if(rollHistoryTableMissing) v.items = ((state && state.rollLog) || []).slice();
-    else showToast("⚠️ No se pudo leer el historial de tiradas", "error");
+    else showToast("No se pudo leer el historial de tiradas", "error", {icono:"peligro"});
     v.more = false;
   }
   v.loading = false;
@@ -280,7 +280,7 @@ async function deleteRollFromHistory(id){
   if(!id || !isGM() || !supabaseClient) return;
   if(!(await confirmarAccion({ titulo: "¿Borrar esta tirada del historial?", boton: "Borrar", peligro: true }))) return;
   var res = await supabaseClient.from("dice_rolls").delete().eq("id", id);
-  if(res.error){ showToast("⚠️ No se pudo borrar la tirada", "error"); return; }
+  if(res.error){ showToast("No se pudo borrar la tirada", "error", {icono:"peligro"}); return; }
   rollHistoryView.items = rollHistoryView.items.filter(function(x){ return x.id !== id; });
   if(rollHistoryCache) rollHistoryCache = rollHistoryCache.filter(function(x){ return x.id !== id; });
   renderRollHistoryModal();
