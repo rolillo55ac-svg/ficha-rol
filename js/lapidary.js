@@ -1368,7 +1368,7 @@ function renderLapidaryModalContent(){
 
   var html = '<div class="lapidary-modal-header">' +
     '<div class="lapidary-modal-title">' +
-      '<span class="lapidary-gem-icon" style="color:' + family.hex + ';filter:drop-shadow(0 0 10px ' + family.glow + ');">' + family.icon + '</span>' +
+      '<span class="lapidary-gem-icon" style="color:' + family.hex + ';filter:drop-shadow(0 0 10px ' + family.glow + ');">' + iconoDeEmoji(family.icon, "objetos", {tam:"l"}) + '</span>' +
       '<div>' +
         '<h2>Talla de Lapidario: ' + esc(family.gema) + '</h2>' +
         '<div class="lapidary-gem-subtitle">Familia: ' + esc(family.name) + ' (' + esc(family.familia) + ') &bull; Origen: ' + esc(stone.origen) + '</div>' +
@@ -3012,7 +3012,7 @@ function openAddRoughStoneModal(charId){
 
   var colorPills = (typeof MAGIC_STONE_FAMILIES !== "undefined" ? MAGIC_STONE_FAMILIES : []).map(function(fam, idx){
     return '<button type="button" class="f-pill add-stone-color-pill ' + (idx === 0 ? 'active' : '') + '" data-action="select-add-stone-color" data-color="' + fam.id + '" style="--pill-border:' + fam.hex + ';--pill-bg:' + fam.hex + '33;--pill-glow:' + fam.hex + '88;border-color:' + (idx === 0 ? fam.hex : 'rgba(255,255,255,0.18)') + ';">' +
-      fam.icon + ' Piedra ' + fam.name +
+      iconoDeEmoji(fam.icon, "objetos", {tam:"s"}) + ' Piedra ' + fam.name +
     '</button>';
   }).join('');
 

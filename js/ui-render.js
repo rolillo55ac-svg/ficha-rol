@@ -1340,7 +1340,7 @@ function renderLapidaryWorkshop(c, canEdit){
     '<div class="section-title"><span>' + icono("piedras",{tam:"s"}) + ' Taller de Lapidario y Talla Arcana</span></div>' +
     '<div class="lapidary-bench-top">' +
       '<div class="lapidary-tool-card">' +
-        '<div class="lapidary-tool-icon">' + curTier.icon + '</div>' +
+        '<div class="lapidary-tool-icon">' + iconoDeEmoji(curTier.icon, "objetos", {tam:"m"}) + '</div>' +
         '<div class="lapidary-tool-info">' +
           '<div class="lapidary-tool-name">' + esc(curTier.name) + ' <span class="lapidary-tool-bonus">+' + curTier.bonusRoll + ' a la Talla</span></div>' +
           '<div class="lapidary-tool-desc">' + esc(curTier.desc || "Herramientas de corte y facetado de gemas.") + '</div>' +
@@ -1437,7 +1437,7 @@ function renderLapidaryWorkshop(c, canEdit){
       html += '<div class="item-card quality-' + qId + ' lapidary-gem-card" id="stone-card-' + st.id + '">' +
         '<div class="lapidary-card-top">' +
           '<div class="lapidary-card-title-row">' +
-            '<span class="lapidary-card-icon" style="color:' + fam.hex + ';filter:drop-shadow(0 0 6px ' + (fam.glow || fam.hex) + ');">' + fam.icon + '</span>' +
+            '<span class="lapidary-card-icon" style="color:' + fam.hex + ';filter:drop-shadow(0 0 6px ' + (fam.glow || fam.hex) + ');">' + iconoDeEmoji(fam.icon, "objetos", {tam:"m"}) + '</span>' +
             '<div class="lapidary-card-main-title">' +
               '<h3>Piedra ' + esc(fam.name) + ' Pulida</h3>' +
               '<div class="lapidary-card-subtitle">Efecto Base: ' + esc(fam.familia) + '</div>' +
@@ -1512,7 +1512,7 @@ function renderLapidaryWorkshop(c, canEdit){
       (typeof MAGIC_STONE_FAMILIES !== "undefined" ? MAGIC_STONE_FAMILIES : []).map(function(f){
         return '<div class="lapidary-codex-card">' +
           '<div class="lapidary-codex-header">' +
-            '<span class="lapidary-codex-icon" style="color:' + f.hex + ';filter:drop-shadow(0 0 6px ' + f.glow + ');">' + f.icon + '</span>' +
+            '<span class="lapidary-codex-icon" style="color:' + f.hex + ';filter:drop-shadow(0 0 6px ' + f.glow + ');">' + iconoDeEmoji(f.icon, "objetos", {tam:"m"}) + '</span>' +
             '<div>' +
               '<b style="color:' + f.hex + ';">Piedra ' + esc(f.name) + '</b>' +
               '<div class="lapidary-codex-family">' + esc(f.familia) + '</div>' +
