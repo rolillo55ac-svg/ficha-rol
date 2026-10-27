@@ -1081,7 +1081,7 @@ function tplEstados(c){
         (ab.bonus ? 
           '<div class="abc-effect-row" style="margin-top:4px;">'+
             '<span class="abc-bonus-badge '+(isDebuff?'debuff':'buff')+'" style="display:inline-flex;align-items:center;gap:4px;font-size:.75rem;padding:2px 7px;border-radius:4px;font-weight:600;background:'+(isDebuff?'rgba(192,57,43,0.18)':'rgba(61,110,96,0.2)')+';color:'+(isDebuff?'#E88178':'var(--teal-light)')+';border:1px dashed '+(isDebuff?'rgba(232,129,120,0.5)':'rgba(61,110,96,0.5)')+';">'+
-              '🎯 Efecto: <b>'+esc(ab.bonus)+'</b>'+(ab.attr ? ' ('+esc(ab.attr)+')' : '')+
+              ''+icono("diana",{tam:"s"})+' Efecto: <b>'+esc(ab.bonus)+'</b>'+(ab.attr ? ' ('+esc(ab.attr)+')' : '')+
             '</span>'+
           '</div>' : '')+
         (ab.desc ? '<div class="abc-desc" style="font-size:.72rem;color:var(--ink-dim);font-style:italic;line-height:1.3;margin-top:3px;">'+esc(ab.desc)+'</div>' : '')+
@@ -1102,7 +1102,7 @@ function tplEstados(c){
       '<select data-action="assign-buff-from-catalog" class="kpick-native buff-quick-assign-select">'+
         '<option value="">-- Seleccionar buff o debuff para asignar --</option>'+
         unassignedBuffs.map(function(ub){
-          return '<option value="'+ub.id+'">'+(ub.type==='debuff'?'⚠️ [Debuff] ':'✨ [Buff] ')+esc(ub.name)+(ub.bonus?' ('+esc(ub.bonus)+')':'')+'</option>';
+          return '<option value="'+ub.id+'">'+(ub.type==='debuff'?'[Debuff] ':'[Buff] ')+esc(ub.name)+(ub.bonus?' ('+esc(ub.bonus)+')':'')+'</option>';
         }).join('')+
       '</select></div>'+
     '</div>';
@@ -1110,7 +1110,7 @@ function tplEstados(c){
 
   // Panel desplegable con los 3 estados claros para cada buff/debuff del catálogo
   html += '<details class="buff-catalog-details" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-top:10px;">'+
-    '<summary style="font-size:.75rem;color:var(--gold-light);cursor:pointer;user-select:none;font-weight:600;">📋 Ver todos los buffs y debuffs del catálogo ('+catalogBuffs.length+' totales) y sus 3 estados</summary>'+
+    '<summary style="font-size:.75rem;color:var(--gold-light);cursor:pointer;user-select:none;font-weight:600;">'+iconoUI("menu")+' Ver todos los buffs y debuffs del catálogo ('+catalogBuffs.length+' totales) y sus 3 estados</summary>'+
     '<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">';
 
   catalogBuffs.forEach(function(cbuff){
@@ -1119,27 +1119,27 @@ function tplEstados(c){
     var actionBtns = '';
 
     if(!assigned){
-      stateBadge = '<span class="buff-state-pill unassigned" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--ink-dim);border:1px solid var(--line);font-weight:600;">○ No asignado</span>';
+      stateBadge = '<span class="buff-state-pill unassigned" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--ink-dim);border:1px solid var(--line);font-weight:600;"><span class="dot"></span> No asignado</span>';
       if(canEdit){
         actionBtns = '<button type="button" class="btn-compact" data-action="assign-buff-from-catalog" data-id="'+cbuff.id+'" style="font-size:.68rem;padding:4px 8px;">+ Asignar</button>';
       }
     } else if(assigned.active === false){
-      stateBadge = '<span class="buff-state-pill assigned-inactive" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(180,130,40,0.18);color:#E5B869;border:1px solid rgba(180,130,40,0.35);font-weight:600;">⏸ Inactivo</span>';
+      stateBadge = '<span class="buff-state-pill assigned-inactive" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(180,130,40,0.18);color:#E5B869;border:1px solid rgba(180,130,40,0.35);font-weight:600;">'+iconoUI("pausa")+' Inactivo</span>';
       if(canEdit){
         actionBtns = '<button type="button" class="btn-compact" data-action="toggle-global-buff" data-id="'+cbuff.id+'" style="font-size:.68rem;padding:4px 8px;">Activar</button>'+
-          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">✕</button>';
+          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">'+iconoUI("cerrar")+'</button>';
       }
     } else {
-      stateBadge = '<span class="buff-state-pill assigned-active" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(61,110,96,0.25);color:var(--teal-light);border:1px solid var(--teal-light);font-weight:600;">✓ Activo</span>';
+      stateBadge = '<span class="buff-state-pill assigned-active" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(61,110,96,0.25);color:var(--teal-light);border:1px solid var(--teal-light);font-weight:600;">'+iconoUI("hecho")+' Activo</span>';
       if(canEdit){
         actionBtns = '<button type="button" class="btn-compact" data-action="toggle-global-buff" data-id="'+cbuff.id+'" style="font-size:.68rem;padding:4px 8px;">Desactivar</button>'+
-          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">✕</button>';
+          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">'+iconoUI("cerrar")+'</button>';
       }
     }
 
     html += '<div class="catalog-buff-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;flex-wrap:wrap;">'+
       '<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 200px;">'+
-        '<span style="font-size:.82rem;">'+(cbuff.type==='debuff'?'⚠️':'✨')+'</span>'+
+        '<span style="font-size:.82rem;">'+(cbuff.type==='debuff'?icono("debuff",{tam:"s"}):icono("buff",{tam:"s"}))+'</span>'+
         '<span style="font-size:.78rem;font-weight:600;color:var(--ink);">'+esc(cbuff.name)+(cbuff.bonus?' ('+esc(cbuff.bonus)+')':'')+'</span>'+
         stateBadge+
       '</div>'+
@@ -1163,8 +1163,8 @@ function tplEstados(c){
       var stacks = asp.activeStacks || 1;
       var statNote = (asp.statAttr && asp.statMod) ? ' ('+asp.statMod+' a '+asp.statAttr+(stacks>1?' x'+stacks:'')+')' : (stacks>1?' (x'+stacks+')':'');
       html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:rgba(61,110,96,0.15);border:1px solid var(--teal-light);border-radius:6px;">'+
-        '<span style="font-size:.8rem;color:var(--teal-light);font-weight:600;">✨ '+esc(asp.name || "Hechizo")+(stacks>1?' <b>(Cargas: '+stacks+')</b>':'')+statNote+'</span>'+
-        (canEdit ? '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Quitar carga de magia" style="min-width:28px;min-height:28px;width:28px;height:28px;" title="Quitar 1 carga">✕</button>' : '')+
+        '<span style="font-size:.8rem;color:var(--teal-light);font-weight:600;">'+icono("destellos",{tam:"s"})+' '+esc(asp.name || "Hechizo")+(stacks>1?' <b>(Cargas: '+stacks+')</b>':'')+statNote+'</span>'+
+        (canEdit ? '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Quitar carga de magia" style="min-width:28px;min-height:28px;width:28px;height:28px;" title="Quitar 1 carga">'+iconoUI("cerrar")+'</button>' : '')+
       '</div>';
     });
     html += '</div></div>';
@@ -1177,7 +1177,7 @@ function tplEstados(c){
     c.customBuffs.forEach(function(cbuff){
       html += '<div class="list-row text-row">'+
         '<input type="text" placeholder="Efecto de estado temporal" data-bind="customBuffs.'+cbuff.id+'.name" value="'+esc(cbuff.name)+'" '+(canEdit?'':'readonly')+'>'+
-        (canEdit ? '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">✕</button>' : '')+
+        (canEdit ? '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">'+iconoUI("cerrar")+'</button>' : '')+
       '</div>';
     });
   }
