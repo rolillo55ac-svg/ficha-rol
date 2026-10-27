@@ -12405,3 +12405,11 @@ html.juice-off .lvlup-btns {
   margin-left: 6px;
   opacity: .75;
 }
+
+
+.ico-ui{width:1em;height:1em;vertical-align:-.125em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dot{display:inline-block;width:.6em;height:.6em;border-radius:50%;vertical-align:middle}
+.dot-verde{background:var(--success)}
+.dot-amarillo{background:var(--warning)}
+.dot-rojo{background:var(--danger)}
+.dot-azul{background:currentColor}
