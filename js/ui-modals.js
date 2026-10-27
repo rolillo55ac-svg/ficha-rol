@@ -2193,7 +2193,7 @@ async function submitFeedbackReport(){
 
   if(btn){
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> Enviando reporte...';
+    btn.innerHTML = '<span>'+icono('actividad',{tam:'s'})+'</span> Enviando reporte...';
   }
 
   var report = buildFeedbackDiagnostic(currentFeedbackCategory, title, desc, contact);
@@ -2246,21 +2246,21 @@ async function submitFeedbackReport(){
 }
 
 function showPlayerSuccessScreen(report){
-  var html = '<h2>🎉 ¡Reporte Enviado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>'+icono('celebracion',{tam:'s'})+' ¡Reporte Enviado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="feedback-success-card">' +
-      '<div class="success-icon-badge">✅</div>' +
+      '<div class="success-icon-badge">'+iconoUI('hecho')+'</div>' +
       '<div class="success-title">Ticket Registrado con Éxito</div>' +
       '<p class="success-text">Tu reporte ha sido remitido al Administrador con los detalles de tu partida.</p>' +
     '</div>' +
 
     '<div style="background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.45;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-        '<span>🎫 <b>Ticket:</b></span>' +
+        '<span><b>Ticket:</b></span>' +
         '<span class="ticket-code-tag">#' + esc(report.ticketCode) + '</span>' +
       '</div>' +
-      '<div>📌 <b>Asunto:</b> ' + esc(report.title) + '</div>' +
-      '<div style="margin-top:4px;">🏷️ <b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
-      '<div style="margin-top:4px;color:var(--gold-light);">📌 <b>Estado:</b> <span class="ticket-badge pending">🟡 En revisión</span></div>' +
+      '<div><b>Asunto:</b> ' + esc(report.title) + '</div>' +
+      '<div style="margin-top:4px;"><b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
+      '<div style="margin-top:4px;color:var(--gold-light);"><b>Estado:</b> <span class="ticket-badge pending"><span class="dot dot-amarillo"></span> En revisión</span></div>' +
       '<div style="margin-top:8px;font-size:0.73rem;color:var(--ink-faint);border-top:1px dashed var(--line);padding-top:6px;">' +
         'El Administrador revisará tu reporte y te responderá directamente en la pestaña <b>"Mis Reportes y Respuestas"</b>.' +
       '</div>' +
@@ -2268,7 +2268,7 @@ function showPlayerSuccessScreen(report){
 
     '<div style="display:flex;flex-direction:column;gap:8px;">' +
       '<button type="button" class="btn-solid-gold" style="width:100%;padding:10px 14px;font-size:0.9rem;" data-action="switch-feedback-tab" data-tab="my_tickets">' +
-        '📬 Ver Mis Reportes y Respuestas' +
+        icono('buzon',{tam:'s'})+' Ver Mis Reportes y Respuestas' +
       '</button>' +
       '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
         'Cerrar' +
@@ -2303,15 +2303,15 @@ function openFeedbackAdminModal(filter){
 
   var filterPillsHtml = '<div class="admin-filter-bar">' +
     '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "all" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="all">Todos (' + allCount + ')</button>' +
-    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "pending" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="pending">🟡 Pendientes (' + pendingCount + ')</button>' +
-    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "in_progress" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="in_progress">🔵 En Proceso (' + inProgressCount + ')</button>' +
-    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "resolved" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="resolved">🟢 Atendidos (' + resolvedCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "pending" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="pending"><span class="dot dot-amarillo"></span> Pendientes (' + pendingCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "in_progress" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="in_progress"><span class="dot dot-azul"></span> En Proceso (' + inProgressCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "resolved" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="resolved"><span class="dot dot-verde"></span> Atendidos (' + resolvedCount + ')</button>' +
   '</div>';
 
   var reportsListHtml = '';
   if(!filteredReports.length){
     reportsListHtml = '<div class="admin-empty-state">' +
-      '<div style="font-size:2rem;margin-bottom:6px;">📭</div>' +
+      '<div style="font-size:2rem;margin-bottom:6px;">'+icono('buzon-vacio',{tam:'m'})+'</div>' +
       '<div style="font-weight:600;color:var(--ink);">No hay tickets en esta categoría</div>' +
       '<div style="font-size:0.75rem;color:var(--ink-faint);margin-top:4px;">Los reportes enviados por los jugadores aparecerán aquí directamente.</div>' +
     '</div>';
@@ -2331,9 +2331,9 @@ function openFeedbackAdminModal(filter){
             (triage.classification ? ('<span class="ticket-triage-badge">' + esc(triage.classification) + '</span>') : '') +
           '</div>' +
           '<div class="status-segmented-control">' +
-            '<button type="button" class="seg-btn ' + (st === 'pending' ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending" title="Marcar como Pendiente">🟡 Pendiente</button>' +
-            '<button type="button" class="seg-btn ' + (st === 'in_progress' ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress" title="Marcar En Proceso">🔵 En Proceso</button>' +
-            '<button type="button" class="seg-btn ' + (st === 'resolved' ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved" title="Marcar como Atendido">🟢 Atendido</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'pending' ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending" title="Marcar como Pendiente"><span class="dot dot-amarillo"></span> Pendiente</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'in_progress' ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress" title="Marcar En Proceso"><span class="dot dot-azul"></span> En Proceso</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'resolved' ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved" title="Marcar como Atendido"><span class="dot dot-verde"></span> Atendido</button>' +
           '</div>' +
         '</div>' +
 
@@ -2345,14 +2345,14 @@ function openFeedbackAdminModal(filter){
 
         // Fila 3: Mensaje del Jugador
         '<div class="admin-ticket-quote">' +
-          '<span class="quote-icon">💬</span>' +
+          '<span class="quote-icon">&ldquo;</span>' +
           '<div class="quote-text">' + esc(r.description) + '</div>' +
         '</div>' +
 
         // Fila 4: Detalles tecnicos
         '<details class="admin-ticket-accordion">' +
           '<summary class="admin-ticket-accordion-summary">' +
-            '<span>🔬 Información Técnica</span>' +
+            '<span>'+icono('lupa',{tam:'s'})+' Información Técnica</span>' +
             '<span class="accordion-hint">Detalles ▾</span>' +
           '</summary>' +
           '<div class="admin-ticket-accordion-body">' +
@@ -2360,9 +2360,9 @@ function openFeedbackAdminModal(filter){
               '<b>Detalle:</b> ' + esc(triage.diagnostic || "Sin análisis técnico.") +
             '</div>' +
             '<div class="admin-ticket-diag-row">' +
-              '<span class="admin-ticket-diag-text">🛠️ ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
+              '<span class="admin-ticket-diag-text">'+icono('mantenimiento',{tam:'s'})+' ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
               '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.68rem;border-color:rgba(88,101,242,0.5);color:#A5B4FC;white-space:nowrap;" data-action="copy-ticket-info" data-id="' + esc(r.id) + '">' +
-                '📋 Copiar Resumen' +
+                iconoUI('copiar')+' Copiar Resumen' +
               '</button>' +
             '</div>' +
           '</div>' +
@@ -2371,16 +2371,16 @@ function openFeedbackAdminModal(filter){
         // Fila 5: Área de Respuesta al Jugador
         '<div class="admin-ticket-reply-section">' +
           '<div class="reply-section-header">' +
-            '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">💬 Responder a ' + esc(contactName) + ':</span>' +
-            (triage.suggestedReply ? '<button type="button" class="btn-text-gold" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">🪄 Cargar plantilla</button>' : '') +
+            '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">Responder a ' + esc(contactName) + ':</span>' +
+            (triage.suggestedReply ? '<button type="button" class="btn-text-gold" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">'+icono('varita',{tam:'s'})+' Cargar plantilla</button>' : '') +
           '</div>' +
           '<textarea id="admin_reply_text_' + esc(r.id) + '" rows="2" class="admin-reply-textarea" placeholder="Escribe la respuesta que verá el jugador en su app...">' + esc(r.adminReply || "") + '</textarea>' +
           '<div class="reply-section-actions">' +
             '<span style="font-size:0.7rem;color:var(--ink-faint);">' + 
-              (r.resolvedAt ? ('✓ Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Esperando respuesta') + 
+              (r.resolvedAt ? (iconoUI('hecho')+' Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Esperando respuesta') + 
             '</span>' +
             '<button type="button" class="btn-solid-gold" style="padding:7px 14px;font-size:0.78rem;font-weight:700;" data-action="save-admin-reply" data-id="' + esc(r.id) + '">' +
-              '🚀 Guardar y Enviar' +
+              icono('version',{tam:'s'})+' Guardar y Enviar' +
             '</button>' +
           '</div>' +
         '</div>' +
@@ -2388,7 +2388,7 @@ function openFeedbackAdminModal(filter){
     }).join('');
   }
 
-  var html = '<h2>🛡️ Gestión de Tickets de Administración<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>'+icono('admin',{tam:'s'})+' Gestión de Tickets de Administración<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     filterPillsHtml +
     '<div class="admin-tickets-container">' +
       reportsListHtml +
@@ -2434,7 +2434,7 @@ function feedbackModalClick(e){
       if(txtEl){
         txtEl.value = reportAi.aiTriage.suggestedReply;
         txtEl.focus();
-        showToast("Sugerencia de IA cargada en el campo 🪄", "info");
+        showToast("Sugerencia de IA cargada en el campo", "info", {icono:"varita"});
       }
     }
     return;
