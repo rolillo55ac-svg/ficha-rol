@@ -252,7 +252,7 @@
 
       <!-- Cabecera de tirada -->
       <div class="bg3-header">
-        <button class="bg3-close-btn" data-action="close-bg3-roll" aria-label="Cerrar cámara de dados">✕</button>
+        <button class="bg3-close-btn" data-action="close-bg3-roll" aria-label="Cerrar cámara de dados"><svg class="ico-ui" aria-hidden="true"><use href="images/iconos/ui.svg#cerrar"/></svg></button>
         <div class="bg3-title" id="bg3RollTitle">Investigación</div>
         <div class="bg3-subtitle" id="bg3RollSubtitle">Prueba de Inteligencia (1d10)</div>
       </div>
@@ -274,9 +274,9 @@
 
       <!-- Selector de modalidad: Normal / Ventaja / Desventaja -->
       <div class="bg3-mode-bar" id="bg3ModeSelector">
-        <button class="bg3-mode-pill active" data-action="bg3-set-mode" data-mode="normal">⚔️ Normal</button>
-        <button class="bg3-mode-pill" data-action="bg3-set-mode" data-mode="adv">🍀 Ventaja</button>
-        <button class="bg3-mode-pill" data-action="bg3-set-mode" data-mode="disadv">💀 Desventaja</button>
+        <button class="bg3-mode-pill active" data-action="bg3-set-mode" data-mode="normal"><img class="ico ico-s" src="images/iconos/barra/puno.webp" alt="" data-emoji="⚔️" decoding="async" draggable="false"> Normal</button>
+        <button class="bg3-mode-pill" data-action="bg3-set-mode" data-mode="adv"><img class="ico ico-s" src="images/iconos/ficha/critico.webp" alt="" data-emoji="🍀" decoding="async" draggable="false"> Ventaja</button>
+        <button class="bg3-mode-pill" data-action="bg3-set-mode" data-mode="disadv"><img class="ico ico-s" src="images/iconos/ficha/pifia.webp" alt="" data-emoji="💀" decoding="async" draggable="false"> Desventaja</button>
       </div>
 
       <!-- Escenario y dado 3D -->
@@ -335,8 +335,8 @@
             <span class="bg3-cross-icon">✚</span> Añadir bonificador
           </button>
           <div class="bg3-post-actions hidden" id="bg3PostActions">
-            <button class="bg3-btn-secondary" data-action="bg3-reroll">🎲 Volver a tirar</button>
-            <button class="bg3-btn-primary" data-action="close-bg3-roll">✓ Aceptar</button>
+            <button class="bg3-btn-secondary" data-action="bg3-reroll"><img class="ico ico-s" src="images/iconos/barra/dado.webp" alt="" data-emoji="🎲" decoding="async" draggable="false"> Volver a tirar</button>
+            <button class="bg3-btn-primary" data-action="close-bg3-roll"><svg class="ico-ui" aria-hidden="true"><use href="images/iconos/ui.svg#hecho"/></svg> Aceptar</button>
           </div>
         </div>
 
@@ -344,7 +344,7 @@
         <div class="bg3-popover hidden" id="bg3AddModPopover">
           <div class="bg3-popover-title">
             <span>Añadir Bonificador Circunstancial</span>
-            <button class="bg3-popover-x" data-action="bg3-close-add-mod">✕</button>
+            <button class="bg3-popover-x" data-action="bg3-close-add-mod"><svg class="ico-ui" aria-hidden="true"><use href="images/iconos/ui.svg#cerrar"/></svg></button>
           </div>
           <div class="bg3-quick-pills">
             <button class="bg3-qpill" data-action="bg3-quick-mod" data-val="1">+1</button>
