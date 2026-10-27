@@ -1216,7 +1216,7 @@ function combatStat(label,bind,val,rollable){
 function renderSpellStatOptions(curVal){
   return '<option value="">-- Sin efecto en stats --</option>'+
     '<optgroup label="Combate y Vida">'+
-      '<option value="escudo" '+((curVal==='escudo'||curVal==='vida_falsa'||curVal==='escudoActual'||curVal==='vida falsa')?'selected':'')+'>🛡️ Escudo / Vida Falsa</option>'+
+      '<option value="escudo" '+((curVal==='escudo'||curVal==='vida_falsa'||curVal==='escudoActual'||curVal==='vida falsa')?'selected':'')+'>Escudo / Vida Falsa</option>'+
       '<option value="defensa" '+(curVal==='defensa'?'selected':'')+'>Defensa</option>'+
       '<option value="defensaMagica" '+(curVal==='defensaMagica'?'selected':'')+'>Defensa Mágica</option>'+
       '<option value="movilidad" '+(curVal==='movilidad'?'selected':'')+'>Movilidad</option>'+
@@ -1237,7 +1237,7 @@ function tplMagia(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes lanzar hechizos ni gastar maná en esta ficha.</span>'+
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes lanzar hechizos ni gastar maná en esta ficha.</span>'+
     '</div>';
   }
   html += renderSpellsGrimoire(c, canEdit);
@@ -1255,7 +1255,7 @@ function renderSpellsGrimoire(c, canEdit){
       var isActive = !!s.active;
       var stacks = s.activeStacks || (isActive ? 1 : 0);
       var hasStatMod = s.statAttr && s.statMod;
-      var statBadge = hasStatMod ? '<span class="spell-badge effect">✨ ' + esc(s.statMod) + ' ' + esc(s.statAttr) + (stacks > 1 ? ' (x' + stacks + ')' : '') + '</span>' : '';
+      var statBadge = hasStatMod ? '<span class="spell-badge effect">' + icono("destellos",{tam:"s"}) + ' ' + esc(s.statMod) + ' ' + esc(s.statAttr) + (stacks > 1 ? ' (x' + stacks + ')' : '') + '</span>' : '';
       var activeBadge = isActive ? '<span class="spell-badge active">ACTIVO' + (stacks > 1 ? ' x' + stacks : '') + '</span>' : '';
 
       if(canEdit && state._spellEdit && state._spellEdit[s.id]){
@@ -1267,11 +1267,11 @@ function renderSpellsGrimoire(c, canEdit){
             statBadge +
             (canEdit ? (isActive ?
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '" title="Lanzar de nuevo y superponer">+ Superponer (-' + num(s.coste, 1) + ' Maná)</button>' +
-              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">✕ Quitar Carga (' + stacks + ')</button>' :
-              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">⚡ Activar (-' + num(s.coste, 1) + ' Maná)</button>'
+              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">' + iconoUI("cerrar") + ' Quitar Carga (' + stacks + ')</button>' :
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">' + icono("iniciativa",{tam:"s"}) + ' Activar (-' + num(s.coste, 1) + ' Maná)</button>'
             ) : '') +
-            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">✓ Listo</button>' +
-            (canEdit ? '<button class="row-del" data-action="del-spell" data-id="' + s.id + '" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '') +
+            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">' + iconoUI("hecho") + ' Listo</button>' +
+            (canEdit ? '<button class="row-del" data-action="del-spell" data-id="' + s.id + '" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">' + iconoUI("cerrar") + '</button>' : '') +
           '</div>' +
         '</div>' +
         '<div class="spell-grid">' +
@@ -1296,16 +1296,16 @@ function renderSpellsGrimoire(c, canEdit){
           '<div class="spell-name-read">' + (esc(s.name) || 'Hechizo sin nombre') + '</div>' +
           '<div class="summon-pills-wrap spell-pills-read">' + activeBadge +
             '<span class="spell-pill">' + icono("mana", {tam:"s"}) + ' ' + num(s.coste, 1) + ' maná</span>' +
-            (s.rango ? '<span class="spell-pill">🎯 ' + esc(s.rango) + '</span>' : '') +
+            (s.rango ? '<span class="spell-pill">' + icono("diana",{tam:"s"}) + ' ' + esc(s.rango) + '</span>' : '') +
             statBadge +
           '</div>' +
           '<div class="spell-efecto-read' + (spOpen ? '' : ' spell-efecto-clamp') + '" data-action="toggle-spell-open" data-id="' + s.id + '">' + (s.efecto ? esc(s.efecto) : '<i>Sin descripción.</i>') + '</div>' +
           (canEdit ? '<div class="spell-act-row">' + (canEdit ? (isActive ?
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '" title="Lanzar de nuevo y superponer">+ Superponer (-' + num(s.coste, 1) + ' Maná)</button>' +
-              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">✕ Quitar Carga (' + stacks + ')</button>' :
-              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">⚡ Activar (-' + num(s.coste, 1) + ' Maná)</button>'
+              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">' + iconoUI("cerrar") + ' Quitar Carga (' + stacks + ')</button>' :
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">' + icono("iniciativa",{tam:"s"}) + ' Activar (-' + num(s.coste, 1) + ' Maná)</button>'
             ) : '') +
-            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">✏️ Editar</button>' +
+            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">' + iconoUI("editar") + ' Editar</button>' +
           '</div>' : '') +
         '</div>';
       }
@@ -1337,7 +1337,7 @@ function renderLapidaryWorkshop(c, canEdit){
 
   // 1. Panel Superior: Banco de Trabajo, Herramientas y Resumen
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + ' lapidary-bench-section">' +
-    '<div class="section-title"><span>💎 Taller de Lapidario y Talla Arcana</span></div>' +
+    '<div class="section-title"><span>' + icono("piedras",{tam:"s"}) + ' Taller de Lapidario y Talla Arcana</span></div>' +
     '<div class="lapidary-bench-top">' +
       '<div class="lapidary-tool-card">' +
         '<div class="lapidary-tool-icon">' + curTier.icon + '</div>' +
@@ -1358,19 +1358,19 @@ function renderLapidaryWorkshop(c, canEdit){
 
       '<div class="lapidary-stat-chips">' +
         '<div class="lapidary-stat-chip" title="Atributo Inteligencia">' +
-          '<span class="lapidary-stat-label">🧠 Inteligencia</span>' +
+          '<span class="lapidary-stat-label">' + icono("cerebro",{tam:"s"}) + ' Inteligencia</span>' +
           '<span class="lapidary-stat-val">+' + intVal + '</span>' +
         '</div>' +
         '<div class="lapidary-stat-chip" title="Bono de habilidad Piedras Mágicas">' +
-          '<span class="lapidary-stat-label">✨ Habilidad Piedras</span>' +
+          '<span class="lapidary-stat-label">' + icono("destellos",{tam:"s"}) + ' Habilidad Piedras</span>' +
           '<span class="lapidary-stat-val">+' + skillBonus + '</span>' +
         '</div>' +
         '<div class="lapidary-stat-chip" title="Total de gemas pulidas">' +
-          '<span class="lapidary-stat-label">💎 Pulidas</span>' +
+          '<span class="lapidary-stat-label">' + icono("piedras",{tam:"s"}) + ' Pulidas</span>' +
           '<span class="lapidary-stat-val">' + polishedStones.length + '</span>' +
         '</div>' +
         '<div class="lapidary-stat-chip gold" title="Gemas de calidad Perfecta">' +
-          '<span class="lapidary-stat-label">★ Perfectas</span>' +
+          '<span class="lapidary-stat-label">' + icono("estrella",{tam:"s"}) + ' Perfectas</span>' +
           '<span class="lapidary-stat-val">' + perfectStones.length + '</span>' +
         '</div>' +
       '</div>' +
@@ -1380,7 +1380,7 @@ function renderLapidaryWorkshop(c, canEdit){
   // 2. Bandeja de Minerales en Bruto (Listas para el Minijuego de Talla)
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">' +
     '<div class="section-title">' +
-      '<span>⛏️ Minerales y Gemas en Bruto (' + roughStones.length + ')</span>' +
+      '<span>' + icono("pico",{tam:"s"}) + ' Minerales y Gemas en Bruto (' + roughStones.length + ')</span>' +
       (canEdit ? '<button type="button" class="btn-compact" data-action="open-add-stone-modal" data-char-id="' + c.id + '" style="font-size:.68rem;">+ Añadir en Bruto</button>' : '') +
     '</div>';
 
@@ -1398,13 +1398,13 @@ function renderLapidaryWorkshop(c, canEdit){
             '<span class="lapidary-gem-dot" style="background:' + fam.hex + ';box-shadow:0 0 8px ' + (fam.glow || fam.hex) + ';"></span>' +
             '<b>Piedra ' + esc(fam.name) + ' en Bruto</b>' +
           '</div>' +
-          '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? "⛏️ " : "🪙 ") + esc(st.origen) + '</span>' +
+          '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? icono("pico",{tam:"s"}) + " " : icono("moneda-oro",{tam:"s"}) + " ") + esc(st.origen) + '</span>' +
         '</div>' +
         '<div class="lapidary-rough-desc">Familia: Piedra ' + esc(fam.name) + ' &bull; Potencial: <i>' + esc(fam.familia) + '</i></div>' +
         (st.notasInvestigacion ? '<div class="lapidary-rough-notes">' + esc(st.notasInvestigacion) + '</div>' : '') +
         '<div class="lapidary-rough-actions">' +
-          (canEdit ? '<button type="button" class="btn-solid-gold lapidary-btn-polish" data-action="open-lapidary-minigame" data-id="' + st.id + '" data-char-id="' + c.id + '">✨ Pulir en Taller</button>' : '') +
-          (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Descartar piedra">✕</button>' : '') +
+          (canEdit ? '<button type="button" class="btn-solid-gold lapidary-btn-polish" data-action="open-lapidary-minigame" data-id="' + st.id + '" data-char-id="' + c.id + '">' + icono("destellos",{tam:"s"}) + ' Pulir en Taller</button>' : '') +
+          (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Descartar piedra">' + iconoUI("cerrar") + '</button>' : '') +
         '</div>' +
       '</div>';
     });
@@ -1414,7 +1414,7 @@ function renderLapidaryWorkshop(c, canEdit){
 
   // 3. Colección de Piedras Pulidas (Joyel Mágico — Reutiliza .item-card y bordes de calidad, Punto 4)
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">' +
-    '<div class="section-title"><span>✨ Colección de Piedras Pulidas (' + polishedStones.length + ')</span></div>';
+    '<div class="section-title"><span>' + icono("destellos",{tam:"s"}) + ' Colección de Piedras Pulidas (' + polishedStones.length + ')</span></div>';
 
   if(!polishedStones.length){
     html += '<div style="font-size:.82rem;color:var(--ink-faint);font-style:italic;padding:12px 4px;text-align:center;background:rgba(0,0,0,0.15);border-radius:var(--radius-sm);border:1px dashed var(--line);">' +
@@ -1445,8 +1445,8 @@ function renderLapidaryWorkshop(c, canEdit){
           '</div>' +
           '<div class="lapidary-card-badges">' +
             '<span class="item-badge badge-' + qId + '" title="' + esc(qInfo.desc) + '">Calidad: ' + esc(qInfo.label) + '</span>' +
-            '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? "⛏️ " : "🪙 ") + esc(st.origen) + '</span>' +
-            (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Eliminar gema">✕</button>' : '') +
+            '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? icono("pico",{tam:"s"}) + " " : icono("moneda-oro",{tam:"s"}) + " ") + esc(st.origen) + '</span>' +
+            (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Eliminar gema">' + iconoUI("cerrar") + '</button>' : '') +
           '</div>' +
         '</div>' +
         (typeof renderLapidaryStoneStatus === "function" ? renderLapidaryStoneStatus(st) : '') +
@@ -1454,8 +1454,8 @@ function renderLapidaryWorkshop(c, canEdit){
         // Stepper de Progresión de Descubrimiento (Mismo patrón de 3 pasos)
         '<div class="lapidary-discovery-box">' +
           '<div class="lapidary-discovery-header">' +
-            '<span class="lapidary-discovery-title">🔍 Descubrimiento Arcana de Propiedades:</span>' +
-            (canEdit && !isConfirmed ? '<button type="button" class="btn-compact lapidary-btn-investigate" data-action="investigate-stone" data-id="' + st.id + '" data-char-id="' + c.id + '" title="Tirada de Inteligencia + Habilidad">🔬 Investigar Gema (1d10)</button>' : '') +
+            '<span class="lapidary-discovery-title">' + icono("lupa",{tam:"s"}) + ' Descubrimiento Arcana de Propiedades:</span>' +
+            (canEdit && !isConfirmed ? '<button type="button" class="btn-compact lapidary-btn-investigate" data-action="investigate-stone" data-id="' + st.id + '" data-char-id="' + c.id + '" title="Tirada de Inteligencia + Habilidad">' + icono("lupa",{tam:"s"}) + ' Investigar Gema (1d10)</button>' : '') +
           '</div>' +
           '<div class="lapidary-stepper-track">' +
             '<div class="lapidary-stepper-step ' + (pStep >= 1 ? 'active' : '') + ' ' + (pStep === 1 ? 'current' : '') + '">' +
@@ -1480,15 +1480,15 @@ function renderLapidaryWorkshop(c, canEdit){
           '<label class="lapidary-field-label">Efecto Mágico Concreto:</label>' +
           (isConfirmed ? 
             '<textarea class="lapidary-effect-input" data-bind="stones.' + st.id + '.efectoConcreto" placeholder="Efecto activo o pasivo verificado en acción..." ' + (canEdit ? '' : 'readonly') + '>' + esc(concreteEffect) + '</textarea>' :
-            '<div class="alchemy-mystery-fog"><span>🔒 Efecto concreto desconocido. Permanece oculto hasta ser confirmado o revelado por el GM.</span></div>'
+            '<div class="alchemy-mystery-fog"><span>' + iconoUI("candado") + ' Efecto concreto desconocido. Permanece oculto hasta ser confirmado o revelado por el GM.</span></div>'
           ) +
 
           // Tarjeta Confidencial Máster si no está confirmado y el usuario es GM
           (!isConfirmed && isMaster ?
             '<div class="alchemy-gm-confidential-card" style="margin-top:8px;">' +
               '<div class="alchemy-gm-confidential-header">' +
-                '<span class="alchemy-gm-badge">🔒 INFO SECRETA MÁSTER</span>' +
-                '<button type="button" class="alchemy-btn-reveal" data-action="stone-gm-reveal" data-id="' + st.id + '" data-char-id="' + c.id + '">👁️ Revelar a Jugador</button>' +
+                '<span class="alchemy-gm-badge">' + iconoUI("candado") + ' INFO SECRETA MÁSTER</span>' +
+                '<button type="button" class="alchemy-btn-reveal" data-action="stone-gm-reveal" data-id="' + st.id + '" data-char-id="' + c.id + '">' + iconoUI("ver") + ' Revelar a Jugador</button>' +
               '</div>' +
               '<div class="alchemy-gm-confidential-body"><b>Efecto Real Configurado:</b> ' + (concreteEffect ? esc(concreteEffect) : '<i>Sin efecto concreto redactado aún. Puedes escribirlo pulsando Revelar o editándolo como GM.</i>') + '</div>' +
             '</div>' : ''
@@ -1507,7 +1507,7 @@ function renderLapidaryWorkshop(c, canEdit){
 
   // 4. Códice de Piedras y Familias (Consulta y Lore de Krysalis)
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">' +
-    '<div class="section-title"><span>📜 Códice de Piedras Mágicas y Familias Arcanas</span></div>' +
+    '<div class="section-title"><span>' + icono("pergamino",{tam:"s"}) + ' Códice de Piedras Mágicas y Familias Arcanas</span></div>' +
     '<div class="lapidary-codex-grid">' +
       (typeof MAGIC_STONE_FAMILIES !== "undefined" ? MAGIC_STONE_FAMILIES : []).map(function(f){
         return '<div class="lapidary-codex-card">' +
@@ -1638,15 +1638,15 @@ function tplPoisonLoadout(c, canEdit){
   var rows = list.map(function(x){
     var data = ' data-kind="' + x.kind + '" data-id="' + x.id + '" data-poison="' + esc(x.poisonId) + '"';
     return '<div class="psn-row' + (x.n < 1 ? ' empty' : '') + '">' +
-      '<span class="psn-ico">' + (x.kind === "weapon" ? '⚔️' : '🏹') + '</span>' +
-      '<span class="psn-txt"><b>' + esc(x.label) + '</b><small>' + (x.kind === "weapon" ? '🧪 ' + esc(x.poison) + ' · ' : '') +
+      '<span class="psn-ico">' + (x.kind === "weapon" ? icono("puno",{tam:"s"}) : icono("destreza",{tam:"s"})) + '</span>' +
+      '<span class="psn-txt"><b>' + esc(x.label) + '</b><small>' + (x.kind === "weapon" ? '' + icono("pocion",{tam:"s"}) + ' ' + esc(x.poison) + ' · ' : '') +
         (x.n > 0 ? poisonLoadoutUnits(x) : 'Agotado') + '</small></span>' +
       (canEdit && x.n > 0 ? '<button type="button" class="psn-btn"' + data + ' data-action="poison-spend">Gastar 1</button>' : '') +
       (canEdit && x.n < 1 ? '<button type="button" class="psn-btn"' + data + ' data-action="poison-clear">Quitar</button>' : '') +
-      (gm ? '<button type="button" class="psn-btn gm"' + data + ' data-action="poison-undo" aria-label="Deshacer un uso">↩ +1</button>' : '') +
+      (gm ? '<button type="button" class="psn-btn gm"' + data + ' data-action="poison-undo" aria-label="Deshacer un uso">' + iconoUI("deshacer") + ' +1</button>' : '') +
     '</div>';
   }).join('');
-  return '<div class="section psn-section' + (c.isNPC ? ' gm-section' : '') + '"><div class="section-title"><span>🧪 Preparado con veneno</span></div>' +
+  return '<div class="section psn-section' + (c.isNPC ? ' gm-section' : '') + '"><div class="section-title"><span>' + icono("pocion",{tam:"s"}) + ' Preparado con veneno</span></div>' +
     '<div class="psn-list">' + rows + '</div></div>';
 }
 
@@ -1660,22 +1660,22 @@ function tplAlquimiaPreparar(c, p){
   var weapons = (c.weapons || []).filter(function(w){ return w.name; });
   var wBtns = weapons.map(function(w){
     var has = (Array.isArray(w.venenos) ? w.venenos : []).find(function(v){ return v.poisonId === p.id; });
-    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-weapon" data-id="' + p.id + '" data-wid="' + w.id + '">⚔️ ' + esc(w.name) +
+    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-weapon" data-id="' + p.id + '" data-wid="' + w.id + '">' + icono("puno",{tam:"s"}) + ' ' + esc(w.name) +
       '<small>+' + uses + ' cargas' + (has && num(has.cargas, 0) > 0 ? ' (ya tiene ' + num(has.cargas, 0) + ')' : '') + '</small></button>';
   }).join('');
   var srcs = (c.inventory || []).filter(function(it){ return !it.poisonId && POISON_AMMO_RE.test(it.name || "") && num(it.qty, 0) > 0; });
   var aBtns = srcs.map(function(it){
     var n = Math.min(uses, num(it.qty, 0));
-    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="' + it.id + '">🏹 ' + esc(poisonAmmoBaseName(it.name)) + ' con ' + esc(p.name) + ' ×' + n +
+    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="' + it.id + '">' + icono("destreza",{tam:"s"}) + ' ' + esc(poisonAmmoBaseName(it.name)) + ' con ' + esc(p.name) + ' ×' + n +
       '<small>Gasta ' + n + ' de "' + esc(it.name) + '" (tienes ' + num(it.qty, 0) + ')</small></button>';
   }).join('');
   if(!aBtns){
-    aBtns = '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="">🏹 Dardo con ' + esc(p.name) + ' ×' + uses +
+    aBtns = '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="">' + icono("destreza",{tam:"s"}) + ' Dardo con ' + esc(p.name) + ' ×' + uses +
       '<small>No hay dardos ni flechas en el inventario</small></button>';
   }
   return '<div class="alq-sheet-bg" data-action="alchemy-close-prepare">' +
     '<div class="alq-sheet" role="dialog" aria-label="Preparar veneno">' +
-      '<div class="alq-sheet-head"><h3>Preparar: ' + esc(p.name) + '</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-prepare" aria-label="Cerrar">✕</button></div>' +
+      '<div class="alq-sheet-head"><h3>Preparar: ' + esc(p.name) + '</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-prepare" aria-label="Cerrar">' + iconoUI("cerrar") + '</button></div>' +
       '<p class="alq-note">Gastas 1 dosis (tienes ' + num(p.dosis, 0) + ') y da <b>' + uses + ' usos</b>.</p>' +
       '<div class="alq-sheet-lbl">Impregnar un arma</div>' +
       (wBtns ? '<div class="psn-picks">' + wBtns + '</div>' : '<p class="alq-note">No hay armas en la pestaña Combate.</p>') +
