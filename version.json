@@ -1,6 +1,6 @@
 {
-  "version": "1.4.118.0",
-  "build": "2026.10.27.2",
+  "version": "1.4.119.0",
+  "build": "2026.10.27.3",
   "updatedAt": "2026-10-27T12:00:00Z",
-  "changelog": "Tiradas: iconos dibujados en las tarjetas de bonificador, el aviso de sonido y los textos del dado."
+  "changelog": "Misiones y mapas: iconos dibujados en las tarjetas, botones y avisos."
 }

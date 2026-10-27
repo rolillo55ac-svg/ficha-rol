@@ -26,8 +26,8 @@ function renderQuestCard(q, canEdit){
   html += '<div class="quest-card-header">'+
     '<div class="quest-card-title-col">'+
       '<div class="quest-card-badge-row">'+
-        '<span class="quest-type-badge '+qType+'">'+(isPrincipal ? '⭐ PRINCIPAL' : '◈ SECUNDARIA')+'</span>'+
-        (q.house===true ? '<span class="quest-type-badge secundaria">🏠 CASA</span>' : '')+
+        '<span class="quest-type-badge '+qType+'">'+(isPrincipal ? icono("mision", {tam:"s"}) + ' PRINCIPAL' : '◈ SECUNDARIA')+'</span>'+
+        (q.house===true ? '<span class="quest-type-badge secundaria">' + icono("casa", {tam:"s"}) + ' CASA</span>' : '')+
         (canEdit ?
           '<select class="quest-status-select" data-action="set-quest-status" data-id="'+q.id+'">'+
             '<option value="activa" '+(st==="activa"?"selected":"")+'>🟡 En curso</option>'+
@@ -44,14 +44,14 @@ function renderQuestCard(q, canEdit){
     '</div>'+
     (canEdit ?
       '<div class="quest-card-gm-actions">'+
-        (!q.image ? '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Subir foto de la misión">📷 Foto</button>' : '')+
+        (!q.image ? '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Subir foto de la misión">' + icono("camara", {tam:"s"}) + ' Foto</button>' : '')+
         (!q.image ? '<button class="btn-compact" data-action="url-quest-img" data-id="'+q.id+'" title="Pegar enlace de foto">URL</button>' : '')+
         '<select class="quest-type-select" data-action="set-quest-type" data-id="'+q.id+'" title="Cambiar categoría">'+
           '<option value="principal" '+(isPrincipal?'selected':'')+'>⭐ Principal</option>'+
           '<option value="secundaria" '+(!isPrincipal?'selected':'')+'>◈ Secundaria</option>'+
         '</select>'+
-        '<button type="button" class="btn-compact quest-house-toggle'+(q.house===true?' highlight':'')+'" data-action="toggle-quest-house" data-id="'+q.id+'" title="Marcar como misión de la Casa">🏠 '+(q.house===true?'Casa ✓':'Casa')+'</button>'+
-        '<button class="row-del" data-action="del-quest" data-id="'+q.id+'" title="Eliminar misión">✕</button>'+
+        '<button type="button" class="btn-compact quest-house-toggle'+(q.house===true?' highlight':'')+'" data-action="toggle-quest-house" data-id="'+q.id+'" title="Marcar como misión de la Casa">' + icono("casa", {tam:"s"}) + ' ' + (q.house===true ? 'Casa ' + iconoUI("hecho") : 'Casa') + '</button>'+
+        '<button class="row-del" data-action="del-quest" data-id="'+q.id+'" title="Eliminar misión">' + iconoUI("cerrar") + '</button>'+
       '</div>' : ''
     )+
   '</div>';
@@ -63,19 +63,19 @@ function renderQuestCard(q, canEdit){
     html += '<div class="quest-meta-chips">';
     if(canEdit){
       html += '<div class="quest-meta-chip editable">'+
-        '<span>📍</span>'+
+        '<span>' + icono("lugar", {tam:"s"}) + '</span>'+
         '<input type="text" data-scope="global" data-bind="quests.'+q.id+'.location" value="'+esc(q.location||"")+'" placeholder="Ubicación (ej: Ruinas de Valdor)">'+
       '</div>';
       html += '<div class="quest-meta-chip editable">'+
-        '<span>🏆</span>'+
+        '<span>' + icono("trofeo", {tam:"s"}) + '</span>'+
         '<input type="text" data-scope="global" data-bind="quests.'+q.id+'.reward" value="'+esc(q.reward||"")+'" placeholder="Recompensa (ej: 400 Oro, Gema)">'+
       '</div>';
     } else {
       if(hasLoc){
-        html += '<div class="quest-meta-chip"><span>📍</span> '+esc(q.location)+'</div>';
+        html += '<div class="quest-meta-chip"><span>' + icono("lugar", {tam:"s"}) + '</span> ' + esc(q.location) + '</div>';
       }
       if(hasRew){
-        html += '<div class="quest-meta-chip reward"><span>🏆</span> '+esc(q.reward)+'</div>';
+        html += '<div class="quest-meta-chip reward"><span>' + icono("trofeo", {tam:"s"}) + '</span> ' + esc(q.reward) + '</div>';
       }
     }
     html += '</div>';
@@ -98,16 +98,16 @@ function renderQuestCard(q, canEdit){
         '</div>';
       }).join('')+
       '<div class="quest-card-img-actions" style="position:absolute;bottom:6px;right:6px;display:flex;gap:4px;z-index:15;">'+
-        (cardMarkers.length ? '<span class="quest-markers-badge" style="background:rgba(0,0,0,0.8);color:var(--gold-light);padding:2px 7px;border-radius:4px;font-size:0.68rem;border:1px solid var(--line);align-self:center;backdrop-filter:blur(4px);">📍 '+cardMarkers.length+'</span>' : '')+
+        (cardMarkers.length ? '<span class="quest-markers-badge" style="background:rgba(0,0,0,0.8);color:var(--gold-light);padding:2px 7px;border-radius:4px;font-size:0.68rem;border:1px solid var(--line);align-self:center;backdrop-filter:blur(4px);">' + icono("lugar", {tam:"s"}) + ' ' + cardMarkers.length + '</span>' : '')+
         (canEdit ?
-          '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Cambiar foto de la misión">📷 Cambiar</button>'+
+          '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Cambiar foto de la misión">' + icono("camara", {tam:"s"}) + ' Cambiar</button>'+
           '<button class="btn-compact" data-action="url-quest-img" data-id="'+q.id+'" title="Cambiar por URL">URL</button>'+
-          '<button class="row-del" data-action="remove-quest-img" data-id="'+q.id+'" title="Quitar foto">✕</button>'
+          '<button class="row-del" data-action="remove-quest-img" data-id="'+q.id+'" title="Quitar foto">' + iconoUI("cerrar") + '</button>'
         : '')+
       '</div>'+
     '</div>'+
     '<div style="font-size:0.68rem;color:var(--ink-faint);margin:2px 0 6px;display:flex;justify-content:space-between;">'+
-      '<span>🗺️ Haz clic en la imagen para fijar puntos, secretos o peligros en esta misión.</span>'+
+      '<span>' + icono("mapa", {tam:"s"}) + ' Haz clic en la imagen para fijar puntos, secretos o peligros en esta misión.</span>'+
       (cardMarkers.length ? '<span>'+cardMarkers.length+' marcado(s)</span>' : '')+
     '</div>';
   }
@@ -163,11 +163,11 @@ function renderQuestCard(q, canEdit){
               '</div>'
             ) :
             (canEdit ?
-              '<button type="button" class="quest-task-btn-meta" data-action="prompt-quest-task-target" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Añadir meta numérica o contador (ej: 5 flores, 400 vidas)">🎯 +Meta</button>' : ''
+              '<button type="button" class="quest-task-btn-meta" data-action="prompt-quest-task-target" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Añadir meta numérica o contador (ej: 5 flores, 400 vidas)">' + icono("diana", {tam:"s"}) + ' +Meta</button>' : ''
             )
           )+
           (canEdit ?
-            '<button class="row-del" data-action="del-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Eliminar objetivo">✕</button>' : ''
+            '<button class="row-del" data-action="del-quest-task" data-qid="'+q.id+'" data-tid="'+tk.id+'" title="Eliminar objetivo">' + iconoUI("cerrar") + '</button>' : ''
           )+
         '</div>'+
         (hasCounter ?
@@ -223,13 +223,13 @@ function tplMision(c, s){
 
   var html = '<div class="section'+(canEdit?' gm-section':'')+'">'+
     '<div class="section-title">'+
-      '<span>🧭 Diario de Misión y Campaña'+(canEdit?' (GM)':'')+'</span>'+
-      (canEdit ? '<button class="btn-compact highlight" data-action="toggle-new-quest-form">'+(state._showNewQuestForm ? '✕ Cerrar Creador' : '+ Nueva Misión')+'</button>' : '')+
+      '<span>' + icono("brujula", {tam:"s"}) + ' Diario de Misión y Campaña'+(canEdit?' (GM)':'')+'</span>'+
+      (canEdit ? '<button class="btn-compact highlight" data-action="toggle-new-quest-form">'+(state._showNewQuestForm ? iconoUI("cerrar") + ' Cerrar Creador' : '+ Nueva Misión')+'</button>' : '')+
     '</div>';
 
   // 1. Resumen de la aventura / sesión
   html += '<div class="quest-banner">'+
-    '<div class="quest-header-title">📜 Resumen de la Aventura</div>'+
+    '<div class="quest-header-title">' + icono("pergamino", {tam:"s"}) + ' Resumen de la Aventura</div>'+
     (canEdit ? 
       '<textarea class="field" style="width:100%;min-height:55px;resize:vertical;background:rgba(0,0,0,0.25);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px;font-size:0.85rem;color:var(--ink);" data-scope="global" data-bind="sessionSummary" placeholder="Escribe aquí el resumen de los acontecimientos recientes...">'+esc(s.sessionSummary||"")+'</textarea>' :
       '<p style="font-size:0.86rem;color:var(--ink-dim);line-height:1.5;margin:4px 0 0;">'+(s.sessionSummary ? esc(s.sessionSummary) : '<em>El Master aún no ha añadido un resumen de la sesión.</em>')+'</p>'
@@ -260,12 +260,12 @@ function tplMision(c, s){
   html += '<div class="quest-map-box">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">'+
       '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:0.92rem;display:flex;align-items:center;gap:6px;">'+
-        '🗺️ ' + (canEdit ? '<input type="text" style="background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--gold-light);font-size:0.92rem;padding:2px;" data-scope="global" data-bind="questMap.name" value="'+esc(qMap.name||"Mapa del Encuentro")+'">' : esc(qMap.name||"Mapa del Encuentro"))+
+        icono("mapa", {tam:"s"}) + ' ' + (canEdit ? '<input type="text" style="background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--gold-light);font-size:0.92rem;padding:2px;" data-scope="global" data-bind="questMap.name" value="'+esc(qMap.name||"Mapa del Encuentro")+'">' : esc(qMap.name||"Mapa del Encuentro"))+
       '</div>'+
       (canEdit ? '<div style="display:flex;gap:5px;flex-wrap:wrap;">'+
         '<button class="btn-compact" data-action="upload-quest-map" title="Subir imagen de mapa para esta misión">Subir Foto</button>'+
         '<button class="btn-compact" data-action="url-quest-map" title="Pegar enlace de GitHub o web">Pegar URL</button>'+
-        (qMap.image ? '<button class="btn-compact" data-action="remove-quest-map" title="Quitar imagen del mapa">✕</button>' : '')+
+        (qMap.image ? '<button class="btn-compact" data-action="remove-quest-map" title="Quitar imagen del mapa">' + iconoUI("cerrar") + '</button>' : '')+
       '</div>' : '')+
     '</div>';
 
@@ -273,13 +273,13 @@ function tplMision(c, s){
     if(qMarkers.length > 0){
       html += '<div class="map-filter-bar quest-map-filter-bar" style="margin-top:6px;margin-bottom:8px;">' +
         '<div class="map-filter-header">' +
-          '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">📍 Marcadores del Encuentro (' + qMarkers.length + '):</span>' +
+          '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">' + icono("lugar", {tam:"s"}) + ' Marcadores del Encuentro (' + qMarkers.length + '):</span>' +
           '<div style="display:flex;gap:5px;align-items:center;">' +
             '<button type="button" class="btn-compact map-filter-toggle-all' + (qmFilter.hideAll ? ' is-off' : '') + '" data-action="toggle-quest-map-pins-all" style="padding:3px 8px;font-size:0.68rem;">' +
-              (qmFilter.hideAll ? '👁️ Mostrar todos' : '🚫 Ocultar todos') +
+              (qmFilter.hideAll ? iconoUI("ver") + ' Mostrar todos' : iconoUI("ocultar") + ' Ocultar todos') +
             '</button>' +
             ((Object.keys(qmFilter.hiddenTypes||{}).length > 0 || qmFilter.hideAll) ?
-              '<button type="button" class="btn-compact" data-action="reset-quest-map-pin-filter" style="padding:3px 8px;font-size:0.68rem;" title="Restablecer visibilidad">↺ Restablecer</button>' : '') +
+              '<button type="button" class="btn-compact" data-action="reset-quest-map-pin-filter" style="padding:3px 8px;font-size:0.68rem;" title="Restablecer visibilidad">' + iconoUI("recargar") + ' Restablecer</button>' : '') +
           '</div>' +
         '</div>' +
         '<div class="map-filter-shelf">' + qmTypePillsHtml + '</div>' +
@@ -305,7 +305,7 @@ function tplMision(c, s){
     '</div>';
 
     html += '<div style="font-size:0.7rem;color:var(--ink-faint);margin-top:4px;display:flex;justify-content:space-between;">'+
-      '<span>🗺️ Haz clic en cualquier parte del plano para fijar puntos clave, emboscadas, rutas o secretos.</span>'+
+      '<span>' + icono("mapa", {tam:"s"}) + ' Haz clic en cualquier parte del plano para fijar puntos clave, emboscadas, rutas o secretos.</span>'+
       '<span>'+qMarkers.length+' marcador(es)</span>'+
     '</div>';
   } else {
@@ -317,14 +317,14 @@ function tplMision(c, s){
   if(canEdit && state._showNewQuestForm){
     html += '<div class="new-quest-form-card" id="newQuestFormCard">'+
       '<div class="new-quest-form-title">'+
-        '<span>⚔️ Registrar Nueva Misión</span>'+
-        '<button class="row-del" data-action="toggle-new-quest-form" title="Cerrar">✕</button>'+
+        '<span>' + icono("puno", {tam:"s"}) + ' Registrar Nueva Misión</span>'+
+        '<button class="row-del" data-action="toggle-new-quest-form" title="Cerrar">' + iconoUI("cerrar") + '</button>'+
       '</div>'+
       '<div class="new-quest-form-body">'+
         '<div class="new-quest-type-selector">'+
           '<label class="quest-type-radio-label">'+
             '<input type="radio" name="newQuestType" value="principal" checked>'+
-            '<span class="radio-pill principal">⭐ Misión Principal</span>'+
+            '<span class="radio-pill principal">' + icono("mision", {tam:"s"}) + ' Misión Principal</span>'+
           '</label>'+
           '<label class="quest-type-radio-label">'+
             '<input type="radio" name="newQuestType" value="secundaria">'+
@@ -337,11 +337,11 @@ function tplMision(c, s){
         '</div>'+
         '<div class="form-row-2col">'+
           '<div class="form-group">'+
-            '<label style="font-size:0.75rem;color:var(--ink-dim);">📍 Ubicación / Zona</label>'+
+            '<label style="font-size:0.75rem;color:var(--ink-dim);">' + icono("lugar", {tam:"s"}) + ' Ubicación / Zona</label>'+
             '<input type="text" id="newQuestLocation" class="field" style="width:100%;font-size:0.82rem;" placeholder="Ej: Catacumbas Subterráneas">'+
           '</div>'+
           '<div class="form-group">'+
-            '<label style="font-size:0.75rem;color:var(--ink-dim);">🏆 Recompensa Prevista</label>'+
+            '<label style="font-size:0.75rem;color:var(--ink-dim);">' + icono("trofeo", {tam:"s"}) + ' Recompensa Prevista</label>'+
             '<input type="text" id="newQuestReward" class="field" style="width:100%;font-size:0.82rem;" placeholder="Ej: 500 Oro, Espada Rúnica">'+
           '</div>'+
         '</div>'+
@@ -350,12 +350,12 @@ function tplMision(c, s){
           '<textarea id="newQuestDesc" class="field" style="width:100%;min-height:55px;resize:vertical;font-size:0.82rem;" placeholder="Detalles conocidos, contactos, secretos o peligros..."></textarea>'+
         '</div>'+
         '<div class="form-group" style="margin-top:8px;">'+
-          '<label style="font-size:0.75rem;color:var(--ink-dim);">🖼️ Ilustración / Imagen (URL opcional o súbela tras crearla)</label>'+
+          '<label style="font-size:0.75rem;color:var(--ink-dim);">' + icono("cuadro", {tam:"s"}) + ' Ilustración / Imagen (URL opcional o súbela tras crearla)</label>'+
           '<input type="text" id="newQuestImage" class="field" style="width:100%;font-size:0.82rem;" placeholder="https://... (o déjalo vacío y súbela con 📷 Foto tras crearla)">'+
         '</div>'+
         '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">'+
           '<button class="btn-compact" data-action="toggle-new-quest-form">Cancelar</button>'+
-          '<button class="btn-compact highlight" data-action="submit-new-quest" style="background:var(--gold);color:#120D0A;font-weight:700;">⚔️ Guardar Misión</button>'+
+          '<button class="btn-compact highlight" data-action="submit-new-quest" style="background:var(--gold);color:#120D0A;font-weight:700;">' + icono("puno", {tam:"s"}) + ' Guardar Misión</button>'+
         '</div>'+
       '</div>'+
     '</div>';
@@ -378,9 +378,9 @@ function tplMision(c, s){
         '<div style="display:flex;justify-content:space-between;align-items:center;">'+
           (canEdit ?
             '<input type="text" style="font-family:var(--font-display);font-size:0.9rem;color:var(--gold-light);background:transparent;border:none;border-bottom:1px solid var(--line);flex:1;" data-scope="global" data-bind="questClues.'+cl.id+'.title" value="'+esc(cl.title)+'">' :
-            '<div class="clue-title">📜 '+esc(cl.title)+'</div>'
+            '<div class="clue-title">' + icono("pergamino", {tam:"s"}) + ' ' + esc(cl.title) + '</div>'
           )+
-          (canEdit ? '<button class="row-del" data-action="del-clue" data-id="'+cl.id+'" title="Eliminar pista">✕</button>' : '')+
+          (canEdit ? '<button class="row-del" data-action="del-clue" data-id="'+cl.id+'" title="Eliminar pista">' + iconoUI("cerrar") + '</button>' : '')+
         '</div>'+
         (canEdit ?
           '<textarea style="width:100%;min-height:45px;background:rgba(0,0,0,0.15);border:1px solid var(--line);border-radius:4px;padding:4px;font-size:0.8rem;color:var(--ink-dim);resize:vertical;" data-scope="global" data-bind="questClues.'+cl.id+'.text">'+esc(cl.text||"")+'</textarea>' :
@@ -391,7 +391,7 @@ function tplMision(c, s){
       }
       if(canEdit){
         html += '<div style="display:flex;gap:4px;margin-top:4px;">'+
-          '<button class="btn-compact" data-action="upload-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">📷 Foto</button>'+
+          '<button class="btn-compact" data-action="upload-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">' + icono("camara", {tam:"s"}) + ' Foto</button>'+
           '<button class="btn-compact" data-action="url-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">'+(cl.image?'Cambiar URL':'Pegar URL')+'</button>'+
           (cl.image ? '<button class="btn-compact" data-action="remove-clue-img" data-id="'+cl.id+'" style="font-size:0.68rem;">Quitar Foto</button>' : '')+
         '</div>';
