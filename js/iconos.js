@@ -49,3 +49,5 @@ function icoRespaldo(img){
 document.addEventListener("error", function(e){ icoRespaldo(e.target); }, true);
 // Los del HTML inicial pueden haber fallado antes de cargar este archivo
 document.querySelectorAll("img.ico").forEach(function(img){ if(img.complete && !img.naturalWidth) icoRespaldo(img); });
+function iconoUI(n,clase){ return '<svg class="ico-ui'+(clase?' '+clase:'')+'" aria-hidden="true"><use href="images/iconos/ui.svg#'+n+'"/></svg>'; }
+

@@ -94,13 +94,14 @@ function num(v,d){ var n=parseFloat(v); return isNaN(n)?(d||0):n; }
 function rollDie(sides){ return Math.floor(Math.random()*sides)+1; }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
-function showToast(message, type){
+function showToast(message, type, opts){
   type = type || "info";
   var container = document.getElementById("toastContainer");
   var toast = document.createElement("div");
   toast.className = "toast " + type;
   toast.setAttribute("role", "alert");
-  toast.textContent = message;
+  if(opts && opts.icono && typeof icono === "function"){ toast.innerHTML = icono(opts.icono,{tam:"s"}) + " "; toast.appendChild(document.createTextNode(message)); }
+  else toast.textContent = message;
   container.appendChild(toast);
   setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 3300);
 }

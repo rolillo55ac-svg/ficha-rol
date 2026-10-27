@@ -264,7 +264,7 @@ function alchemyCollectDistill(c, pItem){
   saveState(false);
   manageListItemRPC(c, 'poisons', 'update_item', pItem, pItem.id);
   renderTab();
-  showToast("⚗️ +1 dosis de '" + pItem.name + "'. Viales listos: " + pItem.dosis, "success");
+  showToast("+1 dosis de '" + pItem.name + "'. Viales listos: " + pItem.dosis, "success", {icono:"alambique"});
 }
 
 // Tocar fuera de las barras cierra la tira de botones de vida/escudo/maná
@@ -1897,7 +1897,7 @@ function handleClick(e){
       if(!ok) return;
       alchemyHoursOpen = false;
       renderTab();
-      showToast("⏳ Horas de destilado guardadas.", "success");
+      showToast("Horas de destilado guardadas.", "success", {icono:"actividad"});
     });
     return;
   }
@@ -2027,7 +2027,7 @@ function handleClick(e){
       // Con el reloj de la partida, destilar lleva horas de juego según la rareza
       var dCur = alchemyDistillState(pItem);
       if(dCur){
-        if(!dCur.ready){ showToast("⏳ '" + pItem.name + "' ya se está destilando: lista a las " + formatGameClock(dCur.until) + ".", "info"); return; }
+        if(!dCur.ready){ showToast("'" + pItem.name + "' ya se está destilando: lista a las " + formatGameClock(dCur.until) + ".", "info", {icono:"actividad"}); return; }
         alchemyCollectDistill(c, pItem);
         return;
       }
@@ -2051,7 +2051,7 @@ function handleClick(e){
         saveState(false);
         manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
         renderTab();
-        showToast("⚗️ Destilando '" + pItem.name + "': lista a las " + formatGameClock(pItem.distillUntil) + ".", "success");
+        showToast("Destilando '" + pItem.name + "': lista a las " + formatGameClock(pItem.distillUntil) + ".", "success", {icono:"alambique"});
         return;
       }
       pItem.dosis = num(pItem.dosis, 0) + 1;
@@ -2063,7 +2063,7 @@ function handleClick(e){
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
-      showToast("⚗️ Destilada 1 dosis de '" + pItem.name + "'. Viales listos: " + pItem.dosis, "success");
+      showToast("Destilada 1 dosis de '" + pItem.name + "'. Viales listos: " + pItem.dosis, "success", {icono:"alambique"});
     }
     return;
   }
@@ -2078,7 +2078,7 @@ function handleClick(e){
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
-      showToast("⚔️ Dosis de '" + pItem.name + "' usada en el arma. Anota qué le pasó al enemigo.", "info");
+      showToast("Dosis de '" + pItem.name + "' usada en el arma. Anota qué le pasó al enemigo.", "info", {icono:"fisico"});
     }
     return;
   }
@@ -2096,7 +2096,7 @@ function handleClick(e){
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', { dosis: pItem.dosis }, psId);
       renderTab();
-      showToast("🛡️ " + c.name + " se toma '" + pItem.name + "'. Anota qué notó.", "success");
+      showToast(c.name + " se toma '" + pItem.name + "'. Anota qué notó.", "success", {icono:"escudo"});
       alchemyUndoDose(c, pItem, 1, progAntes !== pItem[drinkAxis] ? { axis: drinkAxis, val: progAntes } : null);
     }
     return;
@@ -2120,7 +2120,7 @@ function handleClick(e){
     if(!pItem || num(pItem.dosis, 0) < 1){ alchemyPrepareId = null; renderTab(); return; }
     var uses = poisonUsesPerDose(pItem);
     var patch = {};
-    var msg = "";
+    var msg = "", toastIco = "fisico";
     if(action==="alchemy-prepare-weapon"){
       var wpn = (c.weapons||[]).find(function(w){ return w.id === btn.getAttribute("data-wid"); });
       if(!wpn) return;
@@ -2129,7 +2129,7 @@ function handleClick(e){
       if(vEntry) vEntry.cargas = Math.max(0, num(vEntry.cargas, 0)) + uses;
       else wpn.venenos.push({ poisonId: pItem.id, name: pItem.name, cargas: uses });
       patch.weapons = c.weapons;
-      msg = "⚔️ " + wpn.name + " impregnada con '" + pItem.name + "': +" + uses + " cargas.";
+      msg = wpn.name + " impregnada con '" + pItem.name + "': +" + uses + " cargas."; toastIco = "fisico";
     } else {
       var srcId = btn.getAttribute("data-src");
       var src = srcId ? (c.inventory||[]).find(function(it){ return it.id === srcId; }) : null;
@@ -2144,7 +2144,7 @@ function handleClick(e){
         c.inventory.push({ id: uid(), name: ammoName, qty: made, category: (src && src.category) || "Armas", poisonId: pItem.id, poisonName: pItem.name });
       }
       patch.inventory = c.inventory;
-      msg = "🏹 " + made + " × " + ammoName + " en el inventario.";
+      msg = made + " × " + ammoName + " en el inventario."; toastIco = "destreza";
     }
     pItem.dosis = num(pItem.dosis, 0) - 1;
     patch.poisons = c.poisons;
@@ -2153,7 +2153,7 @@ function handleClick(e){
     saveState(false);
     if(typeof pushCharacterPatch === 'function') pushCharacterPatch(c.id, patch);
     renderTab();
-    showToast(msg, "success");
+    showToast(msg, "success", {icono: toastIco});
     return;
   }
   if(action==="alchemy-mod-uses"){
@@ -2213,8 +2213,8 @@ function handleClick(e){
     saveState(false);
     if(typeof pushCharacterPatch === 'function') pushCharacterPatch(c.id, patch);
     renderTab();
-    if(action==="poison-spend") showToast("🧪 " + label + ": quedan " + left + ".", left > 0 ? "info" : "warning");
-    else if(action==="poison-undo") showToast("↩ " + label + ": vuelve a " + left + ".", "info");
+    if(action==="poison-spend") showToast(label + ": quedan " + left + ".", left > 0 ? "info" : "warning", {icono:"pocion"});
+    else if(action==="poison-undo") showToast(label + ": vuelve a " + left + ".", "info");
     return;
   }
   if(action==="alchemy-gm-reveal"){
@@ -2231,7 +2231,7 @@ function handleClick(e){
       saveState(false);
       manageListItemRPC(c, 'poisons', 'update_item', pItem, psId);
       renderTab();
-      showToast("👁️ Efecto revelado a todos los jugadores: " + text, "success");
+      showToast("Efecto revelado a todos los jugadores: " + text, "success", {icono:"percepcion"});
     }
     return;
   }
@@ -2258,7 +2258,7 @@ function handleClick(e){
       var mod = num(c.skillBonus && c.skillBonus.herboristeria, 0);
       var d20 = rollDie(20);
       var total = d20 + mod;
-      showToast("🎲 Extracción de " + sName + ": d20(" + d20 + ") + " + mod + " = " + total + (total >= cd ? " (¡Éxito! CD " + cd + ")" : " (Fallo, CD " + cd + ")"), total >= cd ? "success" : "warning");
+      showToast("Extracción de " + sName + ": d20(" + d20 + ") + " + mod + " = " + total + (total >= cd ? " (¡Éxito! CD " + cd + ")" : " (Fallo, CD " + cd + ")"), total >= cd ? "success" : "warning", {icono:"d20"});
     }
     return;
   }

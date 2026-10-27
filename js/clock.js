@@ -45,7 +45,7 @@ async function saveDistillHours(obj){
     return true;
   } catch(e){
     console.error("No se pudieron guardar las horas de destilado:", e);
-    showToast("⚠️ No se pudieron guardar las horas: " + ((e && e.message) || "error"), "error");
+    showToast("No se pudieron guardar las horas: " + ((e && e.message) || "error"), "error", {icono:"peligro"});
     return false;
   }
 }
@@ -138,7 +138,7 @@ function renderGameClockModal(){
         '<select id="gameClockHour" class="game-clock-input">' + hourOpts + '</select>' +
         '<button type="button" class="game-clock-btn primary" data-action="clock-set"' + (gameClockBusy ? " disabled" : "") + '>Poner</button>' +
       '</div>' +
-      '<button type="button" class="game-clock-btn game-clock-rest" data-action="clock-long-rest">🌙 Descanso largo…</button>';
+      '<button type="button" class="game-clock-btn game-clock-rest" data-action="clock-long-rest">' + icono("descanso", {tam:"s"}) + ' Descanso largo…</button>';
   } else {
     html += '<p class="game-clock-note">Solo el máster puede cambiar la hora.</p>';
   }
@@ -165,10 +165,10 @@ async function changeGameClock(rpcName, args){
     if(res.error) throw res.error;
     gameClockBusy = false;
     setGameClockTotal(res.data);
-    showToast("🕰️ " + formatGameClock(res.data), "success");
+    showToast(formatGameClock(res.data), "success", {icono:"reloj"});
   } catch(e){
     console.error("No se pudo cambiar el reloj:", e);
-    showToast("⚠️ No se pudo cambiar el reloj: " + ((e && e.message) || "error"), "error");
+    showToast("No se pudo cambiar el reloj: " + ((e && e.message) || "error"), "error", {icono:"peligro"});
   }
   gameClockBusy = false;
   renderGameClockModal();
