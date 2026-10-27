@@ -440,7 +440,7 @@ function playCharacterSound(c, isRemote){
     return;
   }
 
-  var icon = sound.icon || "🦇";
+
   var sName = sound.name || "Sonido";
 
   // Efecto visual en los botones de sonido
@@ -451,7 +451,7 @@ function playCharacterSound(c, isRemote){
   });
 
   if(typeof showToast === "function"){
-    showToast(icon + " " + c.name + " emite: " + sName, "info");
+    showToast(c.name + " emite: " + sName, "info", {icono: "murcielago"});
   }
 
   if(!soundEnabled()) return;
@@ -695,14 +695,14 @@ function getOrnateCupSvg(){
 /* Iconos SVG temáticos para las tarjetas de bonificador de BG3 */
 function getBg3ModIconSvg(type, iconHint){
   var h = (iconHint || type || "").toLowerCase();
-  if(h.includes("int") || h.includes("saber") || h.includes("magia") || h.includes("book")) return '<span>📖</span>';
-  if(h.includes("fis") || h.includes("fuerza") || h.includes("melee") || h.includes("espada")) return '<span>⚔️</span>';
-  if(h.includes("des") || h.includes("agil") || h.includes("distancia") || h.includes("arco")) return '<span>🏹</span>';
-  if(h.includes("per") || h.includes("ojo") || h.includes("advertir") || h.includes("buscar")) return '<span>👁️</span>';
-  if(h.includes("car") || h.includes("voz") || h.includes("lira") || h.includes("mask")) return '<span>🎭</span>';
-  if(h.includes("skill") || h.includes("entren") || h.includes("rango")) return '<span>🏅</span>';
-  if(h.includes("veneno") || h.includes("mono") || h.includes("maldicion")) return '<span>💀</span>';
-  return '<span>✨</span>';
+  if(h.includes("int") || h.includes("saber") || h.includes("magia") || h.includes("book")) return icono("intelecto", {tam:"s"});
+  if(h.includes("fis") || h.includes("fuerza") || h.includes("melee") || h.includes("espada")) return icono("fisico", {tam:"s"});
+  if(h.includes("des") || h.includes("agil") || h.includes("distancia") || h.includes("arco")) return icono("destreza", {tam:"s"});
+  if(h.includes("per") || h.includes("ojo") || h.includes("advertir") || h.includes("buscar")) return icono("percepcion", {tam:"s"});
+  if(h.includes("car") || h.includes("voz") || h.includes("lira") || h.includes("mask")) return icono("carisma", {tam:"s"});
+  if(h.includes("skill") || h.includes("entren") || h.includes("rango")) return icono("entrenada", {tam:"s"});
+  if(h.includes("veneno") || h.includes("mono") || h.includes("maldicion")) return icono("pifia", {tam:"s"});
+  return icono("destellos", {tam:"s"});
 }
 
 // Motor de dados 3D canvas
@@ -1683,8 +1683,8 @@ function openBg3RollModal(cfg){
   if(promptTextEl){
     var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 720);
     promptTextEl.textContent = isTouch
-      ? "📱 Agita el teléfono o toca el dado para lanzar"
-      : "🎲 Arrastra para girar o haz clic para lanzar";
+      ? "Agita el teléfono o toca el dado para lanzar"
+      : "Arrastra para girar o haz clic para lanzar";
   }
 
   updateBg3ModePills();
@@ -1736,7 +1736,7 @@ function renderBg3ModCards(){
       '<span class="bg3-card-val '+(v<0?'neg':'')+'">'+sign+v+'</span>'+
       '<div class="bg3-card-icon">'+icon+'</div>'+
       '<span class="bg3-card-lbl" title="'+esc(m.label)+'">'+esc(m.label)+'</span>'+
-      (m.custom ? '<button class="bg3-card-del" data-action="bg3-del-mod" data-idx="'+idx+'" title="Eliminar">✕</button>' : '')+
+      (m.custom ? '<button class="bg3-card-del" data-action="bg3-del-mod" data-idx="'+idx+'" title="Eliminar">' + iconoUI("cerrar") + '</button>' : '')+
     '</div>';
   });
 
