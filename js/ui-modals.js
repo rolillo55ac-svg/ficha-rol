@@ -1174,12 +1174,12 @@ function openInventoryItemModal(itemId){
   ];
   var itCat = it.category || "Miscelánea";
 
-  var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="save-inv-modal" data-id="'+it.id+'" aria-label="Cerrar">✕</button></div>'+
+  var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="save-inv-modal" data-id="'+it.id+'" aria-label="Cerrar">'+iconoUI("cerrar")+'</button></div>'+
     '<div class="inv-modal-content">'+
       '<div class="inv-modal-icon-header">'+
         '<div class="inv-modal-icon-wrap" data-action="focus-inv-icon" title="'+(canEdit?'Toca para personalizar el icono del objeto':'Icono del objeto')+'">'+
           '<div class="inv-modal-icon-display" id="invModalIconDisplay">'+iconoDeEmoji(icon, "objetos", {tam:"l"})+'</div>'+
-          (canEdit ? '<div class="inv-modal-icon-badge" title="Editar icono">✏️</div>' : '')+
+          (canEdit ? '<div class="inv-modal-icon-badge" title="Editar icono">'+iconoUI("editar")+'</div>' : '')+
         '</div>'+
         '<div class="inv-modal-title-area">'+
           (canEdit ?
@@ -1192,7 +1192,7 @@ function openInventoryItemModal(itemId){
       (canEdit ?
         '<div class="inv-modal-icon-section">'+
           '<div class="inv-modal-icon-sec-header">'+
-            '<label class="inv-modal-sec-label">🎨 Icono del Objeto</label>'+
+            '<label class="inv-modal-sec-label">Icono del Objeto</label>'+
             '<div class="inv-modal-icon-status" id="invModalIconStatus">'+
               (it.icon ? '<span class="status-custom">Personalizado</span>' : '<span class="status-auto">Automático</span>')+
             '</div>'+
@@ -1208,7 +1208,7 @@ function openInventoryItemModal(itemId){
               '<span class="inv-custom-icon-lbl">O escribe/pega cualquier emoji:</span>'+
               '<input type="text" id="invModalCustomIcon" class="inv-custom-icon-input" value="'+esc(it.icon || '')+'" placeholder="Ej: 🐉, ⚡, 🩸" maxlength="6" autocomplete="off">'+
             '</div>'+
-            '<button type="button" class="btn-compact inv-icon-auto-btn" data-action="reset-inv-icon" title="Restablece el icono según el nombre o categoría">🔄 Auto</button>'+
+            '<button type="button" class="btn-compact inv-icon-auto-btn" data-action="reset-inv-icon" title="Restablece el icono según el nombre o categoría">'+iconoUI("recargar")+' Auto</button>'+
           '</div>'+
           '<input type="hidden" id="invModalIconVal" value="'+esc(it.icon || '')+'">'+
         '</div>' : ''
@@ -1233,7 +1233,7 @@ function openInventoryItemModal(itemId){
         '<textarea id="invModalDesc" data-bind="inventory.'+it.id+'.desc" placeholder="Detalles, peso, propiedades mágicas o notas del objeto..." '+(canEdit?'':'readonly')+'>'+esc(it.desc || it.notes || '')+'</textarea>'+
       '</div>'+
       '<div class="modal-actions" style="margin-top:16px;display:flex;justify-content:space-between;gap:8px;">'+
-        (canEdit ? '<button class="btn-danger" data-action="del-inventory-modal" data-id="'+it.id+'">🗑️ Eliminar</button>' : '<div></div>')+
+        (canEdit ? '<button class="btn-danger" data-action="del-inventory-modal" data-id="'+it.id+'">'+iconoUI("borrar")+' Eliminar</button>' : '<div></div>')+
         (canEdit ?
           '<button class="btn-solid-gold" data-action="save-inv-modal" data-id="'+it.id+'">Guardar y Cerrar</button>' :
           '<button class="btn-solid-gold" data-action="close-modal">Cerrar</button>'
@@ -1336,7 +1336,7 @@ function openBeastMobilityModal(beastId, isSummon){
   var terrainInfo = (b.movilidad && b.movilidad.includes('(')) ? b.movilidad.slice(b.movilidad.indexOf('(')) : '';
   var creatureName = b.nombre || b.name || "Criatura";
 
-  var html = '<h2>🏃 Movilidad: '+esc(creatureName)+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
+  var html = '<h2>Movilidad: '+esc(creatureName)+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
     '<div class="beast-mov-modal-hero">'+
       '<div class="beast-mov-hero-label">Casillas de movimiento en tablero:</div>'+
       '<div class="beast-mov-stepper">'+
@@ -1354,9 +1354,9 @@ function openBeastMobilityModal(beastId, isSummon){
 
     '<div class="beast-tactical-box">'+
       '<div class="beast-tactical-title">⚡ Desplazamiento táctico en combate:</div>'+
-      '<div class="beast-tactical-row"><span>🚶 <strong>Paso Normal:</strong></span> <span><strong>'+curNum+'</strong> casillas ('+meters+' m)</span></div>'+
-      '<div class="beast-tactical-row"><span>🐎 <strong>A la Carrera / Galope:</strong></span> <span><strong>'+runCasillas+'</strong> casillas ('+runMeters+' m)</span></div>'+
-      '<div class="beast-tactical-row"><span>🌊 <strong>Terreno Difícil / Nadar:</strong></span> <span><strong>'+slowCasillas+'</strong> casillas ('+slowMeters+' m)</span></div>'+
+      '<div class="beast-tactical-row"><span><strong>Paso Normal:</strong></span> <span><strong>'+curNum+'</strong> casillas ('+meters+' m)</span></div>'+
+      '<div class="beast-tactical-row"><span><strong>A la Carrera / Galope:</strong></span> <span><strong>'+runCasillas+'</strong> casillas ('+runMeters+' m)</span></div>'+
+      '<div class="beast-tactical-row"><span><strong>Terreno Difícil / Nadar:</strong></span> <span><strong>'+slowCasillas+'</strong> casillas ('+slowMeters+' m)</span></div>'+
     '</div>'+
 
     '<div style="display:flex;gap:8px;margin-top:14px;">'+
@@ -1381,20 +1381,20 @@ function showConflictModal(localChar, remoteData, remoteTs){
 
   var html = '<div style="padding:6px 2px;">'+
     '<h2 style="display:flex;align-items:center;gap:8px;color:#FBBF24;margin-top:0;font-size:1.1rem;">'+
-      '<span>⚠️</span> <span>Conflicto de Edición Simultánea</span>'+
+      '<span>'+iconoUI("aviso")+'</span> <span>Conflicto de Edición Simultánea</span>'+
     '</h2>'+
     '<p style="font-size:0.88rem;color:var(--ink);line-height:1.5;margin-bottom:12px;">'+
       'Otro jugador o dispositivo ha guardado cambios en <strong>'+esc(charName)+'</strong> ('+timeStr+') mientras realizabas modificaciones locales.'+
     '</p>'+
     '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:10px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.4;">'+
-      '🔒 <strong>Tus cambios locales están protegidos:</strong> Se ha guardado una copia de seguridad en tu navegador para que nunca pierdas datos.'+
+      iconoUI("candado")+' <strong>Tus cambios locales están protegidos:</strong> Se ha guardado una copia de seguridad en tu navegador para que nunca pierdas datos.'+
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:10px;">'+
       '<button type="button" class="btn-solid-gold" style="width:100%;padding:11px 12px;font-size:0.85rem;" data-action="resolve-conflict-server">'+
-        '📥 Cargar versión del servidor (Recomendado)'+
+        iconoUI("descargar")+' Cargar versión del servidor (Recomendado)'+
       '</button>'+
       '<button type="button" class="btn-compact" style="width:100%;padding:10px 12px;font-size:0.82rem;border-color:rgba(239,68,68,0.5);color:#F87171;" data-action="resolve-conflict-local">'+
-        '⚠️ Forzar y sobrescribir con mis cambios locales'+
+        iconoUI("aviso")+' Forzar y sobrescribir con mis cambios locales'+
       '</button>'+
     '</div>'+
   '</div>';
