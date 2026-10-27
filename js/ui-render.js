@@ -690,13 +690,13 @@ function tplEntrenamiento(c){
   var html = '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">';
   
   html += '<div class="section-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-    '<span>🥋 Entrenamiento y Progresión</span>' +
+    '<span>' + icono("espantapajaros") + ' Entrenamiento y Progresión</span>' +
   '</div>' +
   (canEdit ? '<button class="btn-solid-gold btn-add-training" data-action="add-training">+ Nuevo Entrenamiento</button>' : '');
 
   if(!canEdit && currentUser){
     html += '<div class="tr-spectator-banner">' +
-      '<span style="font-size:1.15rem;flex:none;">👁️</span>' +
+      '<span style="font-size:1.15rem;flex:none;">' + icono("percepcion") + '</span>' +
       '<div>' +
         '<strong>Modo Espectador (Solo lectura):</strong> ' +
         (c.ownerEmail
@@ -731,13 +731,13 @@ function tplEntrenamiento(c){
       if(isGM()){
         gmMilestoneHtml = '<div class="tr-gm-milestone-box">' +
           '<div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;">' +
-            '<span style="color:var(--gold-light);font-weight:700;">👑 Hito del Máster (Puntos Meta):</span>' +
+            '<span style="color:var(--gold-light);font-weight:700;">' + icono("master") + ' Hito del Máster (Puntos Meta):</span>' +
             '<input type="number" min="1" step="5" data-action="set-training-goal" data-id="' + t.id + '" value="' + targetGoal + '" title="Puntos para completar este hito (Invisible para jugadores)" style="width:60px;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:3px 6px;color:var(--gold-light);font-family:var(--font-mono);font-weight:700;font-size:0.82rem;text-align:center;">' +
             '<span style="color:var(--ink-faint);font-size:0.7rem;">pts meta (Oculto a jugadores)</span>' +
           '</div>' +
           '<div style="font-size:0.72rem;display:flex;align-items:center;gap:6px;">' +
             (isCompleted
-              ? '<span style="color:#4ADE80;font-weight:700;background:rgba(46,139,87,0.25);border:1px solid rgba(74,222,128,0.4);padding:2px 8px;border-radius:4px;">🏆 ¡Hito alcanzado! (' + points + ' / ' + targetGoal + ' pts)</span>'
+              ? '<span style="color:#4ADE80;font-weight:700;background:rgba(46,139,87,0.25);border:1px solid rgba(74,222,128,0.4);padding:2px 8px;border-radius:4px;">' + icono("trofeo") + ' ¡Hito alcanzado! (' + points + ' / ' + targetGoal + ' pts)</span>'
               : '<span style="color:var(--gold-light);font-family:var(--font-mono);font-weight:600;">Progreso real: ' + points + ' / ' + targetGoal + ' pts (' + progressPct + '%)</span>'
             ) +
           '</div>' +
@@ -751,14 +751,14 @@ function tplEntrenamiento(c){
           '<label>Elemento a Mejorar</label>' +
           '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
             '<option value="">-- Seleccionar Hechizo o Invocación --</option>' +
-            '<optgroup label="✨ Hechizos">' +
+            '<optgroup label="Hechizos">' +
               (c.spells || []).map(function(sp){
-                return '<option value="spell:' + sp.id + '" ' + (t.linkedId === sp.id ? 'selected' : '') + '>✨ ' + esc(sp.name || "Hechizo") + '</option>';
+                return '<option value="spell:' + sp.id + '" ' + (t.linkedId === sp.id ? 'selected' : '') + '>' + esc(sp.name || "Hechizo") + '</option>';
               }).join('') +
             '</optgroup>' +
-            '<optgroup label="🐾 Invocaciones">' +
+            '<optgroup label="Invocaciones">' +
               (c.summons || []).map(function(sm){
-                return '<option value="summon:' + sm.id + '" ' + (t.linkedId === sm.id ? 'selected' : '') + '>🐾 ' + esc(sm.name || "Invocación") + '</option>';
+                return '<option value="summon:' + sm.id + '" ' + (t.linkedId === sm.id ? 'selected' : '') + '>' + esc(sm.name || "Invocación") + '</option>';
               }).join('') +
             '</optgroup>' +
           '</select>' +
@@ -768,15 +768,15 @@ function tplEntrenamiento(c){
         secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
           '<label>Atributo o Estadística</label>' +
           '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
-            '<option value="stat:pv" ' + (curTargetStat === "+10 PV" || t.linkedId === "stat:pv" ? 'selected' : '') + '>❤️ Vida (+10 PV)</option>' +
-            '<option value="stat:mana" ' + (curTargetStat === "+5 Maná" || t.linkedId === "stat:mana" ? 'selected' : '') + '>🔷 Maná (+5 Maná)</option>' +
-            '<option value="stat:defensa" ' + (curTargetStat === "+1 Defensa" || t.linkedId === "stat:defensa" ? 'selected' : '') + '>🛡️ Defensa (+1)</option>' +
-            '<option value="stat:iniciativa" ' + (curTargetStat === "+1 Iniciativa" || t.linkedId === "stat:iniciativa" ? 'selected' : '') + '>⚡ Iniciativa (+1)</option>' +
-            (isLegacyAttr && (curTargetStat === "+1 Físico" || t.linkedId === "stat:fisico") ? '<option value="stat:fisico" selected>💪 Físico (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Destreza" || t.linkedId === "stat:destreza") ? '<option value="stat:destreza" selected>🏃 Destreza (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Inteligencia" || t.linkedId === "stat:inteligencia") ? '<option value="stat:inteligencia" selected>🧠 Inteligencia (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Percepción" || t.linkedId === "stat:percepcion") ? '<option value="stat:percepcion" selected>👁️ Percepción (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Carisma" || t.linkedId === "stat:carisma") ? '<option value="stat:carisma" selected>🎭 Carisma (+1) · antiguo</option>' : '') +
+            '<option value="stat:pv" ' + (curTargetStat === "+10 PV" || t.linkedId === "stat:pv" ? 'selected' : '') + '>Vida (+10 PV)</option>' +
+            '<option value="stat:mana" ' + (curTargetStat === "+5 Maná" || t.linkedId === "stat:mana" ? 'selected' : '') + '>Maná (+5 Maná)</option>' +
+            '<option value="stat:defensa" ' + (curTargetStat === "+1 Defensa" || t.linkedId === "stat:defensa" ? 'selected' : '') + '>Defensa (+1)</option>' +
+            '<option value="stat:iniciativa" ' + (curTargetStat === "+1 Iniciativa" || t.linkedId === "stat:iniciativa" ? 'selected' : '') + '>Iniciativa (+1)</option>' +
+            (isLegacyAttr && (curTargetStat === "+1 Físico" || t.linkedId === "stat:fisico") ? '<option value="stat:fisico" selected>Físico (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Destreza" || t.linkedId === "stat:destreza") ? '<option value="stat:destreza" selected>Destreza (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Inteligencia" || t.linkedId === "stat:inteligencia") ? '<option value="stat:inteligencia" selected>Inteligencia (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Percepción" || t.linkedId === "stat:percepcion") ? '<option value="stat:percepcion" selected>Percepción (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Carisma" || t.linkedId === "stat:carisma") ? '<option value="stat:carisma" selected>Carisma (+1) · antiguo</option>' : '') +
           '</select>' +
         '</div>';
       } else if(catId === "skill"){
@@ -785,7 +785,7 @@ function tplEntrenamiento(c){
           '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
             '<option value="">-- Seleccionar Habilidad --</option>' +
             (typeof SKILL_DEFS !== "undefined" ? SKILL_DEFS : []).map(function(sdef){
-              return '<option value="skill:' + sdef.id + '" ' + (t.linkedId === sdef.id || t.linkedId === "skill:" + sdef.id ? 'selected' : '') + '>🎯 ' + esc(sdef.name) + '</option>';
+              return '<option value="skill:' + sdef.id + '" ' + (t.linkedId === sdef.id || t.linkedId === "skill:" + sdef.id ? 'selected' : '') + '>' + esc(sdef.name) + '</option>';
             }).join('') +
           '</select>' +
         '</div>';
@@ -801,7 +801,7 @@ function tplEntrenamiento(c){
             '</div>' +
             '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;flex-wrap:wrap;gap:4px;">' +
               '<div style="display:flex;align-items:center;gap:6px;">' +
-                (isCompleted ? '<button type="button" class="btn-solid-gold btn-compact" data-action="grant-training-reward" data-id="' + t.id + '" title="Otorgar +1 a la habilidad entrenada (GM)" style="padding:2px 7px;font-size:0.68rem;cursor:pointer;">🏆 Otorgar Recompensa (+1)</button>' : '') +
+                (isCompleted ? '<button type="button" class="btn-solid-gold btn-compact" data-action="grant-training-reward" data-id="' + t.id + '" title="Otorgar +1 a la habilidad entrenada (GM)" style="padding:2px 7px;font-size:0.68rem;cursor:pointer;">' + icono("trofeo") + ' Otorgar Recompensa (+1)</button>' : '') +
                 '<span>' + (isCompleted ? '¡Hito completado!' : 'Progreso hacia el hito del Máster...') + '</span>' +
               '</div>' +
               '<span style="color:var(--gold-light);font-weight:600;"><b>' + points + ' / ' + targetGoal + ' pts</b> (' + progressPct + '%)</span>' +
@@ -811,7 +811,7 @@ function tplEntrenamiento(c){
           if(isCompleted){
             progressHtml = '<div class="tr-player-complete-box">' +
               '<div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#4ADE80;font-weight:700;">' +
-                '<span>✨ ¡Hito de Entrenamiento Completado!</span>' +
+                '<span>' + icono("destellos") + ' ¡Hito de Entrenamiento Completado!</span>' +
                 '<span style="font-weight:400;color:var(--ink-dim);font-size:0.72rem;">Has alcanzado suficiente dominio. Habla con el Máster para recibir tu mejora.</span>' +
               '</div>' +
               '<span style="font-size:0.78rem;color:var(--gold-light);font-weight:700;font-family:var(--font-mono);flex:none;">' + points + ' pts acumulados</span>' +
@@ -822,7 +822,7 @@ function tplEntrenamiento(c){
                 '<div class="tr-progress-fill" style="background:linear-gradient(90deg, var(--gold), var(--teal-light));height:100%;border-radius:5px;width:' + Math.min(100, Math.max(8, points * 2)) + '%;opacity:0.85;"></div>' +
               '</div>' +
               '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;">' +
-                '<span>⏳ Entrenamiento en progreso... (Acumulando puntos de esfuerzo)</span>' +
+                '<span>' + icono("actividad") + ' Entrenamiento en progreso... (Acumulando puntos de esfuerzo)</span>' +
                 '<span style="color:var(--gold-light);font-weight:600;"><b>' + (points > 0 ? '+' + points : points) + ' pts</b> acumulados</span>' +
               '</div>' +
             '</div>';
@@ -843,7 +843,7 @@ function tplEntrenamiento(c){
             return '<div class="tr-mini-chip ' + chipClass + '" title="Tirada: ' + r.roll + ' (d' + r.sides + ')">' +
               '<span class="chip-val">' + r.roll + '</span>' +
               '<span class="chip-delta">' + sign + r.pts + '</span>' +
-              (canEdit ? '<button type="button" class="tr-chip-del" data-action="undo-training-roll" data-training-id="' + t.id + '" data-roll-id="' + r.id + '" title="Deshacer tirada">✕</button>' : '') +
+              (canEdit ? '<button type="button" class="tr-chip-del" data-action="undo-training-roll" data-training-id="' + t.id + '" data-roll-id="' + r.id + '" title="Deshacer tirada">&times;</button>' : '') +
             '</div>';
           }).join('') +
         '</div>';
@@ -859,7 +859,7 @@ function tplEntrenamiento(c){
               '<span class="tr-points-val" style="font-family:var(--font-mono);font-weight:700;font-size:.85rem;color:var(--gold-light);">' + (points > 0 ? '+' + points : points) + '</span>' +
               '<span class="tr-points-label" style="font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;">PTS</span>' +
             '</div>' +
-            (canEdit ? '<button class="row-del" data-action="del-training" data-id="' + t.id + '" title="Eliminar entrenamiento" aria-label="Eliminar" style="width:28px;height:28px;min-width:28px;min-height:28px;">✕</button>' : '') +
+            (canEdit ? '<button class="row-del" data-action="del-training" data-id="' + t.id + '" title="Eliminar entrenamiento" aria-label="Eliminar" style="width:28px;height:28px;min-width:28px;min-height:28px;">&times;</button>' : '') +
           '</div>' +
         '</div>' +
 
@@ -868,10 +868,10 @@ function tplEntrenamiento(c){
           '<div class="creature-field" style="flex:1;min-width:130px;">' +
             '<label>Categoría</label>' +
             '<select class="tr-cat-select k-input" data-action="set-training-category" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
-              '<option value="skill" ' + (catId === 'skill' ? 'selected' : '') + '>🎯 Habilidad</option>' +
-              '<option value="spell_summon" ' + (catId === 'spell_summon' ? 'selected' : '') + '>✨ Magia / Hechizo</option>' +
-              '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>⚔️ Combate</option>' +
-              '<option value="narrative" ' + (catId === 'narrative' ? 'selected' : '') + '>📜 Lore / Narrativa</option>' +
+              '<option value="skill" ' + (catId === 'skill' ? 'selected' : '') + '>Habilidad</option>' +
+              '<option value="spell_summon" ' + (catId === 'spell_summon' ? 'selected' : '') + '>Magia / Hechizo</option>' +
+              '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>Combate</option>' +
+              '<option value="narrative" ' + (catId === 'narrative' ? 'selected' : '') + '>Lore / Narrativa</option>' +
             '</select>' +
           '</div>' +
           secondaryHtml +
