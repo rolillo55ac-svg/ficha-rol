@@ -781,7 +781,7 @@ function renderGeodePhaseHTML(family){
     '<div class="lapidary-geode-hint" id="lapidaryGeodeHint"></div>' +
     '<div class="lapidary-geode-thumb">' +
       '<div class="lapidary-geode-seg" role="group" aria-label="Acción al tocar">' +
-        '<button type="button" id="lapidaryGeodeModeDig" data-action="geode-mode" data-mode="dig" aria-pressed="true">⛏ Picar</button>' +
+        '<button type="button" id="lapidaryGeodeModeDig" data-action="geode-mode" data-mode="dig" aria-pressed="true">' + icono("pico",{tam:"s"}) + ' Picar</button>' +
         '<button type="button" id="lapidaryGeodeModeFlag" data-action="geode-mode" data-mode="flag" aria-pressed="false">⚑ Marcar</button>' +
       '</div>' +
       '<button type="button" class="lapidary-geode-tool" id="lapidaryGeodeProbeBtn" data-action="geode-probe" aria-pressed="false">◎ Sonda <span class="count" id="lapidaryGeodeProbeCount">' + G.probes + '</span></button>' +
@@ -1725,7 +1725,7 @@ function cutStarsHTML(n){
 
 function cutGemsHTML(n){
   var s = "";
-  for(var k = 0; k < CUT_MAX_GEMS; k++) s += k < n ? "💎" : '<span class="off">💎</span>';
+  for(var k = 0; k < CUT_MAX_GEMS; k++) s += k < n ? icono("gema",{tam:"s"}) : '<span class="off">' + icono("gema",{tam:"s"}) + '</span>';
   return s;
 }
 
@@ -2207,7 +2207,7 @@ function applyCutModeUI(){
   if(!CG || !box) return;
   box.classList.toggle("is-dedo", CG.mode !== "joy");
   var b = document.getElementById("lapidaryCutMode");
-  if(b) b.innerHTML = CG.mode === "joy" ? '✋<span>Modo dedo</span>' : '🕹️<span>Joystick</span>';
+  if(b) b.innerHTML = CG.mode === "joy" ? icono("mano",{tam:"s"}) + '<span>Modo dedo</span>' : icono("joystick",{tam:"s"}) + '<span>Joystick</span>';
 }
 
 function bindCutJoysticks(){
@@ -2980,7 +2980,7 @@ function renderLapidaryStoneStatus(st){
   if(st.pendienteMaster){
     return '<div class="lapidary-verdict-status wait"><span class="ic">⏳</span><span>Calidad <b>' + esc(getStoneQuality(st.calidadTirada || st.calidad).label) + '</b>. <b>Esperando al máster</b>: decidirá si la piedra aguanta (riesgo ' + (st.riesgoRotura != null ? st.riesgoRotura : "?") + '%).</span></div>';
   }
-  if(st.veredictoMaster === "rota") return '<div class="lapidary-verdict-status brk"><span class="ic">✕</span><span>El máster decidió que la piedra <b>se rompió</b> al tallarla.</span></div>';
+  if(st.veredictoMaster === "rota") return '<div class="lapidary-verdict-status brk"><span class="ic">' + iconoUI("cerrar") + '</span><span>El máster decidió que la piedra <b>se rompió</b> al tallarla.</span></div>';
   if(st.veredictoMaster === "aguanta") return '<div class="lapidary-verdict-status okk"><span class="ic">◆</span><span>La piedra aguantó la talla.</span></div>';
   return "";
 }
@@ -3019,11 +3019,11 @@ function openAddRoughStoneModal(charId){
   var origins = ["Minas / Cuevas", "Comercio / Compra"];
   var originPills = origins.map(function(org, idx){
     return '<button type="button" class="f-pill add-stone-origin-pill ' + (idx === 0 ? 'active' : '') + '" data-action="select-add-stone-origin" data-origin="' + org + '">' +
-      (org.includes("Minas") ? "⛏️ " : "🪙 ") + org +
+      (org.includes("Minas") ? icono("pico",{tam:"s"}) : icono("moneda-oro",{tam:"s"})) + " " + org +
     '</button>';
   }).join('');
 
-  var html = '<h2>➕ Nueva Piedra en Bruto<button type="button" data-action="close-add-stone-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>' + iconoUI("mas") + ' Nueva Piedra en Bruto<button type="button" data-action="close-add-stone-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="field">' +
       '<label>Color de la Piedra Mágica</label>' +
       '<div class="filter-pills" id="addStoneColors" style="flex-wrap:wrap;gap:6px;margin-top:4px;">' + colorPills + '</div>' +
