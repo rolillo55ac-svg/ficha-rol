@@ -1490,7 +1490,7 @@ function deselectKonvaRoom(){
 
   var insp = document.getElementById("houseInspectorContainer");
   if(insp){
-    insp.innerHTML = '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl y de quién es.</div>';
+    insp.innerHTML = '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">'+icono("destellos",{tam:"s"})+' Toca una estancia del plano para ver su baúl y de quién es.</div>';
   }
 
   if(houseKonvaLayer && document.getElementById("canvasWrap")) houseKonvaLayer.draw();
@@ -1715,7 +1715,7 @@ function toggleKonvaGridSnap(){
   houseKonvaGridSnap = (houseKonvaGridSnap > 0) ? 0 : 40;
   var btn = document.getElementById("gridSnapBtn");
   if(btn){
-    btn.innerHTML = (houseKonvaGridSnap > 0) ? "🧲 Rejilla: casilla" : "🖐️ Rejilla: Libre";
+    btn.innerHTML = (houseKonvaGridSnap > 0) ? icono("iman",{tam:"s"}) + " Rejilla: casilla" : icono("mano",{tam:"s"}) + " Rejilla: Libre";
     btn.classList.toggle("active", houseKonvaGridSnap > 0);
   }
   if(typeof showToast === "function"){
@@ -1836,7 +1836,7 @@ function toggleFloorPopover(btn){
         b.className = "house-tool-btn";
         b.style.width = "100%";
         b.style.justifyContent = "flex-start";
-        b.innerHTML = "🏢 <b>" + esc(fl.name) + "</b> (" + esc(fl.sub || "") + ")";
+        b.innerHTML = icono("ciudad",{tam:"s"}) + " <b>" + esc(fl.name) + "</b> (" + esc(fl.sub || "") + ")";
         b.addEventListener("click", function(){
           selR.floor = fl.id;
           saveRoomChangesToRemoteAndBroadcast(selR, "floor");
@@ -1995,7 +1995,7 @@ function notifyHouseSaveFailed(){
   var el = document.getElementById("canvaSaveState");
   if(el){
     el.className = "cs-save is-error";
-    el.textContent = "✕ Sin guardar";
+    el.innerHTML = iconoUI("cerrar") + " Sin guardar";
   }
   if(Date.now() - lastHouseSaveFailToast < 5000) return;
   lastHouseSaveFailToast = Date.now();
@@ -2652,7 +2652,7 @@ async function addHouseProgress(amount, statName){
     h.progress_max = newMax;
 
     if(didLevelUp && typeof showToast === "function"){
-      showToast("¡La Casa Andante ha subido al Nivel " + newLvl + "! 🎉", "success");
+      showToast("¡La Casa Andante ha subido al Nivel " + newLvl + "!", "success", {icono:"celebracion"});
     } else if(typeof showToast === "function"){
       showToast("Progreso general: " + (amount > 0 ? "+" : "") + amount + " pts.", "info");
     }
@@ -2682,7 +2682,7 @@ async function addHouseProgress(amount, statName){
     h[mKey] = sMax;
 
     if(didStatUp && typeof showToast === "function"){
-      showToast("¡" + statName.toUpperCase() + " mejoró a Nivel " + sVal + "! ⭐", "success");
+      showToast("¡" + statName.toUpperCase() + " mejoró a Nivel " + sVal + "!", "success", {icono:"estrella"});
     } else if(typeof showToast === "function"){
       showToast(statName.toUpperCase() + ": +" + amount + " pts de progreso.", "info");
     }
@@ -2701,7 +2701,7 @@ async function grantRoomLevel(roomId){
   saveRoomChangesToRemoteAndBroadcast(r, "level");
   renderHouseView();
 
-  if(typeof showToast === "function") showToast("¡" + r.name + " subió a Nivel " + r.level + "! 🌟", "success");
+  if(typeof showToast === "function") showToast("¡" + r.name + " subió a Nivel " + r.level + "!", "success", {icono:"estrella"});
 }
 
 // ============================================================================
@@ -2794,7 +2794,7 @@ async function levelUpHouseUpgrade(upgradeId){
   renderHouseView();
 
   if(typeof showToast === "function"){
-    showToast("¡Mejora '" + upg.name + "' subió a Nivel " + upg.level + "! ✨ (" + (upg.bonus_value || "") + ")", "success");
+    showToast("¡Mejora '" + upg.name + "' subió a Nivel " + upg.level + "! (" + (upg.bonus_value || "") + ")", "success", {icono:"destellos"});
   }
 
   if(typeof supabaseClient !== "undefined" && supabaseClient && upg.id){
@@ -2857,7 +2857,7 @@ function applyHouseBuffToActiveChar(buffId){
   if(typeof saveState === "function") saveState(true);
 
   if(typeof showToast === "function"){
-    showToast("¡Buff '" + bDef.name + "' otorgado y activado en " + c.name + "! ✨", "success");
+    showToast("¡Buff '" + bDef.name + "' otorgado y activado en " + c.name + "!", "success", {icono:"destellos"});
   }
 
   renderHouseView();
@@ -2926,7 +2926,7 @@ function updateGhostPreview(roomId, targetX, targetY, targetW, targetH, isValid)
 
   if(!isValid){
     ghost.classList.add("collision");
-    ghost.innerHTML = "<span>⚠️ Ocupado (" + targetW + "x" + targetH + ")</span>";
+    ghost.innerHTML = "<span>" + icono("peligro",{tam:"s"}) + " Ocupado (" + targetW + "x" + targetH + ")</span>";
   } else {
     ghost.classList.remove("collision");
     ghost.innerHTML = "<span>(" + targetX + ", " + targetY + " · " + targetW + "x" + targetH + ")</span>";
@@ -3692,7 +3692,7 @@ function setCanvaSaveState(busy){
   var el = document.getElementById("canvaSaveState");
   if(!el) return;
   el.className = "cs-save" + (busy ? " is-busy" : "");
-  el.textContent = busy ? "Guardando…" : "✓ Guardado";
+  el.innerHTML = busy ? "Guardando…" : iconoUI("hecho") + " Guardado";
 }
 
 // ---------- Avisos ----------
@@ -3726,7 +3726,7 @@ function canvaShowToast(msg, withUndo){
   if(!host) return;
   host.innerHTML = '<div class="cs-toast" role="status"><span>' + esc(msg) + '</span>' +
     (withUndo ? '<button type="button" class="cs-toast-undo" data-action="canva-undo" data-room-id="' + esc(houseState.studioRoomId || "") + '">Deshacer</button>' : '') +
-    '<button type="button" class="cs-toast-x" data-action="canva-toast-close" aria-label="Cerrar aviso">✕</button></div>';
+    '<button type="button" class="cs-toast-x" data-action="canva-toast-close" aria-label="Cerrar aviso">'+iconoUI("cerrar")+'</button></div>';
   clearTimeout(canvaToastTimer);
   canvaToastTimer = setTimeout(function(){ host.innerHTML = ""; }, 4000);
 }
@@ -4036,14 +4036,14 @@ function renderCanvaStudioInner(r){
 
   // Barra superior: volver, nombre, guardado, vista girada, deshacer y rehacer
   html += '<div class="cs-top">';
-  html += '  <button type="button" class="cs-icon-btn" data-action="close-canva-studio" aria-label="Volver al plano" title="Volver al plano">←</button>';
+  html += '  <button type="button" class="cs-icon-btn" data-action="close-canva-studio" aria-label="Volver al plano" title="Volver al plano">'+iconoUI("flecha-izquierda")+'</button>';
   html += '  <div class="cs-title">';
   html += '    <h2>' + esc(r.name) + '</h2>';
   html += '    <div class="cs-sub">';
   html += '      <span>Estancia ' + (r.width || grid.cols) + '×' + (r.height || grid.rows) + '</span>';
   if(canEdit){
     var busy = (canvaPendingSaveRoomId === r.id);
-    html += '      <span class="cs-save' + (busy ? ' is-busy' : '') + '" id="canvaSaveState">' + (busy ? 'Guardando…' : '✓ Guardado') + '</span>';
+    html += '      <span class="cs-save' + (busy ? ' is-busy' : '') + '" id="canvaSaveState">' + (busy ? 'Guardando…' : iconoUI('hecho') + ' Guardado') + '</span>';
   }
   if(grid.cols !== grid.rows){
     html += '      <button type="button" class="cs-rotv" data-action="canva-toggle-rotview" aria-pressed="' + rot + '">⟲ Vista girada</button>';
@@ -4150,15 +4150,15 @@ function renderCanvaStudioDock(r, editing, canEdit, sel, grid, rot, total){
       html += '<div class="cs-dock-head cs-rename">';
       html += '  <input type="text" id="canvaRenameInput" class="cs-rename-input" maxlength="' + CANVA_NAME_MAX + '" value="' + esc(canvaItemName(it)) + '"' +
         (asset ? ' placeholder="' + esc(asset.name) + '"' : '') + ' aria-label="Nuevo nombre"' + attrs + ' autocomplete="off" enterkeyhint="done">';
-      html += '  <button type="button" class="cs-icon-btn is-ok" data-action="canva-rename-save"' + attrs + ' aria-label="Guardar nombre" title="Guardar nombre">✓</button>';
-      html += '  <button type="button" class="cs-icon-btn" data-action="canva-rename-cancel" aria-label="Cancelar" title="Cancelar">✕</button>';
+      html += '  <button type="button" class="cs-icon-btn is-ok" data-action="canva-rename-save"' + attrs + ' aria-label="Guardar nombre" title="Guardar nombre">'+iconoUI("hecho")+'</button>';
+      html += '  <button type="button" class="cs-icon-btn" data-action="canva-rename-cancel" aria-label="Cancelar" title="Cancelar">'+iconoUI("cerrar")+'</button>';
       html += '</div>';
       html += '<div class="cs-tip">Máximo ' + CANVA_NAME_MAX + ' letras.' + (asset ? ' Si lo dejas vacío vuelve a llamarse ' + esc(asset.name) + '.' : '') + '</div>';
     } else {
       html += '<div class="cs-dock-head">';
       html += '  <button type="button" class="cs-dock-name cs-rename-btn" data-action="canva-rename-start"' + attrs + ' aria-label="Renombrar ' + esc(canvaItemName(it)) + '" title="Renombrar"><span>' + esc(canvaItemName(it)) + '</span><span class="cs-pen" aria-hidden="true">✎</span></button>';
       html += '  <span class="cs-dock-size">' + vs.w + '×' + vs.h + ' casillas</span>';
-      html += '  <button type="button" class="cs-icon-btn" data-action="canva-deselect-item" aria-label="Quitar selección" title="Quitar selección">✕</button>';
+      html += '  <button type="button" class="cs-icon-btn" data-action="canva-deselect-item" aria-label="Quitar selección" title="Quitar selección">'+iconoUI("cerrar")+'</button>';
       html += '</div>';
     }
 
@@ -4171,7 +4171,7 @@ function renderCanvaStudioDock(r, editing, canEdit, sel, grid, rot, total){
       html += '  <button type="button" class="cs-act" data-action="canva-duplicate-item"' + attrs + '><span class="g">⧉</span>Duplicar</button>';
       html += '  <button type="button" class="cs-act" data-action="canva-relocate-item"' + attrs + '><span class="g">⌖</span>Recolocar</button>';
     }
-    html += '  <button type="button" class="cs-act is-danger" data-action="canva-delete-item"' + attrs + '><span class="g">✕</span>Quitar</button>';
+    html += '  <button type="button" class="cs-act is-danger" data-action="canva-delete-item"' + attrs + '><span class="g">'+iconoUI("cerrar")+'</span>Quitar</button>';
     html += '</div>';
 
     html += '<div class="cs-row">';
@@ -4186,10 +4186,10 @@ function renderCanvaStudioDock(r, editing, canEdit, sel, grid, rot, total){
     html += '    <button type="button" data-action="canva-size-view" data-axis="h" data-delta="1"' + attrs + ' aria-label="Más alto"' + (vs.h >= vMaxH ? ' disabled' : '') + '>+</button>';
     html += '  </div>';
     html += '  <div class="cs-nudge">';
-    html += '    <button type="button" data-action="canva-nudge-view" data-dx="-1" data-dy="0"' + attrs + ' aria-label="Mover a la izquierda">◀</button>';
-    html += '    <button type="button" data-action="canva-nudge-view" data-dx="0" data-dy="-1"' + attrs + ' aria-label="Mover arriba">▲</button>';
-    html += '    <button type="button" data-action="canva-nudge-view" data-dx="0" data-dy="1"' + attrs + ' aria-label="Mover abajo">▼</button>';
-    html += '    <button type="button" data-action="canva-nudge-view" data-dx="1" data-dy="0"' + attrs + ' aria-label="Mover a la derecha">▶</button>';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="-1" data-dy="0"' + attrs + ' aria-label="Mover a la izquierda">'+iconoUI("chevron-izquierda")+'</button>';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="0" data-dy="-1"' + attrs + ' aria-label="Mover arriba">'+iconoUI("chevron-arriba")+'</button>';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="0" data-dy="1"' + attrs + ' aria-label="Mover abajo">'+iconoUI("chevron-abajo")+'</button>';
+    html += '    <button type="button" data-action="canva-nudge-view" data-dx="1" data-dy="0"' + attrs + ' aria-label="Mover a la derecha">'+iconoUI("chevron-derecha")+'</button>';
     html += '  </div>';
     html += '</div>';
   }
@@ -4210,7 +4210,7 @@ function renderCanvaCatalogSheet(r){
   var html = '<div class="cs-sheet-bg" data-action="canva-close-catalog-bg">';
   html += '<div class="cs-sheet" role="dialog" aria-modal="true" aria-labelledby="canvaCatTitle">';
   html += '  <div class="cs-grab"></div>';
-  html += '  <div class="cs-sheet-h"><h2 id="canvaCatTitle">Añadir a la estancia</h2><button type="button" class="cs-icon-btn" data-action="canva-close-catalog" aria-label="Cerrar">✕</button></div>';
+  html += '  <div class="cs-sheet-h"><h2 id="canvaCatTitle">Añadir a la estancia</h2><button type="button" class="cs-icon-btn" data-action="canva-close-catalog" aria-label="Cerrar">'+iconoUI("cerrar")+'</button></div>';
   html += '  <div class="cs-chips">';
   CANVA_STUDIO_CATEGORIES.forEach(function(c){
     html += '<button type="button" data-action="canva-select-category" data-category="' + c.id + '" aria-pressed="' + (c.id === cur) + '">' + c.label + '</button>';
@@ -4565,7 +4565,7 @@ function handleHousePointerUp(e){
 
   if(!drag.isValid){
     if(typeof showToast === "function"){
-      showToast("⚠️ Posición ocupada o no permitida. Movimiento cancelado.", "warning");
+      showToast("Posición ocupada o no permitida. Movimiento cancelado.", "warning", {icono:"peligro"});
     }
     renderHouseView();
     return;
@@ -4644,7 +4644,7 @@ function nudgeSelectedRoom(dx, dy){
   var targetY = Math.max(0, Math.min(12, (r.pos_y || 0) + dy));
 
   if(checkRoomCollision(r.floor || 1, r.id, targetX, targetY, r.width || 2, r.height || 2)){
-    if(typeof showToast === "function") showToast("⚠️ Posición ocupada por otra habitación.", "warning");
+    if(typeof showToast === "function") showToast("Posición ocupada por otra habitación.", "warning", {icono:"peligro"});
     return;
   }
 
@@ -4665,7 +4665,7 @@ function resizeSelectedRoom(dw, dh){
   var targetH = Math.max(1, Math.min(6, (r.height || 2) + dh));
 
   if(checkRoomCollision(r.floor || 1, r.id, r.pos_x || 0, r.pos_y || 0, targetW, targetH)){
-    if(typeof showToast === "function") showToast("⚠️ Tamaño no permitido (colisiona con otra estancia).", "warning");
+    if(typeof showToast === "function") showToast("Tamaño no permitido (colisiona con otra estancia).", "warning", {icono:"peligro"});
     return;
   }
 
@@ -4742,7 +4742,7 @@ function renderHouseView(){
   html += '  <div class="section-title">';
   html += '    <span><img src="images/iconos/casa.svg" alt="" class="house-title-icon" width="20" height="20"> LA CASA</span>';
   if(canEditHousePerks()){
-    html += '    <button class="btn-compact house-head-lock" data-action="open-house-secrets" title="Panel secreto">🔒</button>';
+    html += '    <button class="btn-compact house-head-lock" data-action="open-house-secrets" title="Panel secreto">'+iconoUI("candado")+'</button>';
   }
   html += '  </div>';
   html += '  <div class="house-head-meta">';
@@ -4759,9 +4759,9 @@ function renderHouseView(){
 
   // 2. Tres pestañas segmentadas
   html += '<div class="house-tabs k-seg" role="tablist">';
-  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "plano" ? ' active' : '') + '" data-action="set-house-tab" data-tab="plano">🗺 Plano</button>';
-  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "mejoras" ? ' active' : '') + '" data-action="set-house-tab" data-tab="mejoras">✨ Mejoras</button>';
-  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "misiones" ? ' active' : '') + '" data-action="set-house-tab" data-tab="misiones">📜 Misiones</button>';
+  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "plano" ? ' active' : '') + '" data-action="set-house-tab" data-tab="plano">'+icono("mapa",{tam:"s"})+' Plano</button>';
+  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "mejoras" ? ' active' : '') + '" data-action="set-house-tab" data-tab="mejoras">'+icono("destellos",{tam:"s"})+' Mejoras</button>';
+  html += '  <button class="house-tab-btn k-seg-btn' + (tab === "misiones" ? ' active' : '') + '" data-action="set-house-tab" data-tab="misiones">'+icono("pergamino",{tam:"s"})+' Misiones</button>';
   html += '</div>';
 
   // Solo se pinta el contenido de la pestaña activa (las otras NO se generan en el HTML)
@@ -4798,7 +4798,7 @@ function renderHouseView(){
         html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">' + iconoUI("mas") + ' Añadir habitación</button>';
         html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>' + iconoUI("cerrar") + ' Eliminar seleccionada</button>';
       }
-      html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: casilla' : '🖐️ Rejilla: Libre') + '</button>';
+      html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? icono('iman',{tam:'s'}) + ' Rejilla: casilla' : icono('mano',{tam:'s'}) + ' Rejilla: Libre') + '</button>';
       html += '  </div>';
       // Ampliar la planta por cualquier lado para hacer sitio antes de colocar (solo el máster)
       if(gmMode){
@@ -4858,7 +4858,7 @@ function renderHouseView(){
     html += '    <button data-action="zoom-house-out" title="Alejar plano">−</button>';
     html += '    <span class="zlabel" id="zoomLabel">' + Math.round((houseKonvaZoom || 1.0) * 100) + '%</span>';
     html += '    <button data-action="zoom-house-in" title="Acercar plano">+</button>';
-    html += '    <button data-action="zoom-house-fit" title="Ajustar estancias a pantalla">📱 Ajustar</button>';
+    html += '    <button data-action="zoom-house-fit" title="Ajustar estancias a pantalla">Ajustar</button>';
     html += '  </div>';
     html += '</div>';
     html += '<div class="canvas-wrap' + (houseState.editMode ? '' : ' is-view') + '" id="canvasWrap">';
@@ -4868,7 +4868,7 @@ function renderHouseView(){
     // Barra de consejos interactiva (solo en modo Editar)
     if(houseState.editMode){
       html += '<div class="house-hint-bar">';
-      html += '  En <b>modo Editar</b>: arrastra una habitación para moverla (se ajusta a la casilla), tira de cualquiera de sus 8 esquinas y bordes o usa ➖/➕ en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
+      html += '  En <b>modo Editar</b>: arrastra una habitación para moverla (se ajusta a la casilla), tira de cualquiera de sus 8 esquinas y bordes o usa los botones − y + en la barra superior para redimensionarla libremente, y haz <b>doble clic / doble toque</b> para renombrarla. Arrastra el fondo para paneo o usa la rueda/pellizco para zoom.';
       html += '</div>';
     }
 
@@ -4898,7 +4898,7 @@ function renderHouseView(){
     if(houseState.selectedRoomId){
       html += renderRoomPanel(houseState.selectedRoomId);
     } else {
-      html += '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">💡 Toca una estancia del plano para ver su baúl y de quién es.</div>';
+      html += '<div style="font-size:0.9rem;color:var(--ink-faint);text-align:center;padding:14px;font-style:italic;">'+icono("destellos",{tam:"s"})+' Toca una estancia del plano para ver su baúl y de quién es.</div>';
     }
     html += '</div>';
 
@@ -4971,7 +4971,7 @@ function renderHouseUpgradesBox(){
   }
   perks.forEach(function(p){
     html += '  <div class="house-perk-card">';
-    html += '    <span class="house-perk-icon">' + esc(p.icon || "✨") + '</span>';
+    html += '    <span class="house-perk-icon">' + iconoDeEmoji(p.icon || "✨", "casa", {tam:"s"}) + '</span>';
     html += '    <div class="house-perk-text">';
     html += '      <div class="house-perk-name">' + esc(p.name || "") + '</div>';
     if(p.description) html += '      <div class="house-perk-desc">' + esc(p.description) + '</div>';
@@ -5026,8 +5026,8 @@ function openHousePerksEditor(){
     html += '  </div>';
     html += '  <textarea class="house-perk-in-desc" rows="2" maxlength="300" placeholder="Descripción corta" aria-label="Descripción">' + esc(p.description || "") + '</textarea>';
     html += '  <div class="house-perk-edit-btns">';
-    html += '    <button class="house-perk-mini" data-action="house-perk-move" data-perk-id="' + esc(p.id) + '" data-dir="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="Subir">▲</button>';
-    html += '    <button class="house-perk-mini" data-action="house-perk-move" data-perk-id="' + esc(p.id) + '" data-dir="1"' + (i === active.length - 1 ? ' disabled' : '') + ' aria-label="Bajar">▼</button>';
+    html += '    <button class="house-perk-mini" data-action="house-perk-move" data-perk-id="' + esc(p.id) + '" data-dir="-1"' + (i === 0 ? ' disabled' : '') + ' aria-label="Subir">'+iconoUI("chevron-arriba")+'</button>';
+    html += '    <button class="house-perk-mini" data-action="house-perk-move" data-perk-id="' + esc(p.id) + '" data-dir="1"' + (i === active.length - 1 ? ' disabled' : '') + ' aria-label="Bajar">'+iconoUI("chevron-abajo")+'</button>';
     html += '    <button class="house-perk-mini" data-action="house-perk-archive" data-perk-id="' + esc(p.id) + '">Archivar</button>';
     html += '    <button class="house-perk-mini gold" data-action="house-perk-save" data-perk-id="' + esc(p.id) + '">Guardar</button>';
     html += '  </div>';
@@ -5040,7 +5040,7 @@ function openHousePerksEditor(){
   html += '    <input type="text" id="housePerkNewName" class="house-perk-in-name" maxlength="60" placeholder="Nombre" aria-label="Nombre">';
   html += '  </div>';
   html += '  <textarea id="housePerkNewDesc" class="house-perk-in-desc" rows="2" maxlength="300" placeholder="Descripción corta" aria-label="Descripción"></textarea>';
-  html += '  <div class="house-perk-edit-btns"><button class="house-perk-mini gold" data-action="house-perk-add">➕ Añadir</button></div>';
+  html += '  <div class="house-perk-edit-btns"><button class="house-perk-mini gold" data-action="house-perk-add">'+iconoUI("mas")+' Añadir</button></div>';
   html += '</div>';
   if(archived.length){
     html += '<div class="house-info-sub">Archivadas</div>';
@@ -5421,12 +5421,12 @@ function renderHouseGridRooms(floorNumber){
 
     var ownerTag = '';
     if(owner){
-      ownerTag = '<span class="house-room-owner-tag" title="Habitación de ' + esc(owner.name) + '">👤 ' + esc(owner.name) + '</span>';
+      ownerTag = '<span class="house-room-owner-tag" title="Habitación de ' + esc(owner.name) + '">'+icono("jugador",{tam:"s"})+' ' + esc(owner.name) + '</span>';
     }
 
     var furnitureCount = Array.isArray(r.furniture) ? r.furniture.length : 0;
     var furnitureTag = furnitureCount > 0
-      ? '<span style="font-size:0.68rem;background:rgba(52,152,219,0.2);color:#85C1E9;padding:1px 5px;border-radius:3px;" title="' + furnitureCount + ' muebles instalados">📦 ' + furnitureCount + '</span>'
+      ? '<span style="font-size:0.68rem;background:rgba(52,152,219,0.2);color:#85C1E9;padding:1px 5px;border-radius:3px;" title="' + furnitureCount + ' muebles instalados">'+icono("caja",{tam:"s"})+' ' + furnitureCount + '</span>'
       : '';
 
     var wallClasses = getRoomWallClasses(r, rooms);
@@ -5448,7 +5448,7 @@ function renderHouseGridRooms(floorNumber){
 
       return '<div class="house-room-tile type-entrada ' + wallClasses + ' tex-entrada' + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + ' ' + customBgStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0" title="Entrada Principal de La Casa Andante">' +
         '  <div class="entrada-threshold-wrap">' +
-        '    <div class="entrada-doormat"><span>🚪 ENTRADA PRINCIPAL</span></div>' +
+        '    <div class="entrada-doormat"><span>'+icono("puerta-doble",{tam:"s"})+' ENTRADA PRINCIPAL</span></div>' +
         '    <div class="entrada-sub">Umbral Exterior</div>' +
         '  </div>' +
         entradaDimsFoot +
@@ -5459,7 +5459,7 @@ function renderHouseGridRooms(floorNumber){
     // 2. ESCALERAS: Comunicación vertical interactiva con salto de piso
     if(r.room_type === "escaleras" || r.id.includes("stairs")){
       var targetFloor = (floorNumber === 1) ? 2 : 1;
-      var dirLabel = (floorNumber === 1) ? "Subir a Planta 2 ▲" : "Bajar a Planta 1 ▼";
+      var dirLabel = (floorNumber === 1) ? "Subir a Planta 2" : "Bajar a Planta 1";
       var stairsDimsFoot = isEditMode
         ? '<div class="house-room-tile-foot"><span class="house-room-dims">' + (r.width || 2) + 'x' + (r.height || 2) + '</span></div>'
         : '';
@@ -5467,7 +5467,7 @@ function renderHouseGridRooms(floorNumber){
       return '<div class="house-room-tile type-escaleras ' + wallClasses + ' tex-escaleras' + (isSelected ? ' active' : '') + (isEditMode ? ' edit-draggable' : '') + '" style="' + gridStyle + ' ' + customBgStyle + '" data-action="select-house-room" data-room-id="' + r.id + '" data-pos-x="' + (r.pos_x || 0) + '" data-pos-y="' + (r.pos_y || 0) + '" data-width="' + (r.width || 2) + '" data-height="' + (r.height || 2) + '" role="button" tabindex="0" title="Escaleras conectores de plantas">' +
         '  <div class="house-stairs-visual">' +
         '    <div class="stairs-treads"></div>' +
-        '    <button class="house-stairs-action-btn" data-action="switch-house-floor" data-floor="' + targetFloor + '" title="Ir a la Planta ' + targetFloor + '">🪜 ' + dirLabel + '</button>' +
+        '    <button class="house-stairs-action-btn" data-action="switch-house-floor" data-floor="' + targetFloor + '" title="Ir a la Planta ' + targetFloor + '">'+icono("escaleras",{tam:"s"})+' ' + dirLabel + '</button>' +
         '  </div>' +
         stairsDimsFoot +
         resizeHandleHtml +
@@ -5507,7 +5507,7 @@ function renderHouseGridRooms(floorNumber){
 
     var miniLayoutHtml = '<div class="house-room-mini-layout">' + renderRoomMiniLayout(r) + '</div>';
     var studioBtnHtml = isEditMode
-      ? '<button class="btn-canva-studio-mini" data-action="open-canva-studio" data-room-id="' + r.id + '" title="Diseñar y decorar en Estudio Canva">🎨</button>'
+      ? '<button class="btn-canva-studio-mini" data-action="open-canva-studio" data-room-id="' + r.id + '" title="Diseñar y decorar en Estudio Canva">'+icono("paleta",{tam:"s"})+'</button>'
       : '';
     var levelPillHtml = isEditMode
       ? '<span class="house-room-level-pill">Nv. ' + (r.level || 1) + '</span>'
@@ -5586,7 +5586,7 @@ function renderRoomPanel(roomId){
   html += '  </div>';
 
   html += '  <div class="house-sheet-chips">';
-  if(!isPassage) html += '    <span class="house-sheet-chip">📦 Baúl · ' + itemCount + (itemCount === 1 ? ' objeto' : ' objetos') + '</span>';
+  if(!isPassage) html += '    <span class="house-sheet-chip">'+icono("caja",{tam:"s"})+' Baúl · ' + itemCount + (itemCount === 1 ? ' objeto' : ' objetos') + '</span>';
   if(owner && owner.name) html += '    <span class="house-sheet-chip">Habitación de ' + esc(owner.name) + '</span>';
   html += '  </div>';
 
@@ -5637,16 +5637,16 @@ function renderRoomInspector(roomId){
     pHtml += '      <span style="font-size:0.8rem;color:var(--ink-dim);">Los pasillos comunican estancias. Puedes cambiar su nombre, tono arquitectónico o redimensionarlo.</span>';
     pHtml += '      <div style="display:flex;gap:6px;">';
     if(canDecor){
-      pHtml += '        <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ Editar</button>';
+      pHtml += '        <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">'+iconoUI("editar")+' Editar</button>';
     }
     if(isGm){
-      pHtml += '        <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);">🗑️ Eliminar</button>';
+      pHtml += '        <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);">'+iconoUI("borrar")+' Eliminar</button>';
     }
     pHtml += '      </div>';
     pHtml += '    </div>';
     if(canDecor){
       pHtml += '    <div class="house-inspector-color-row">';
-      pHtml += '      <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Tono de la Galería:</span>';
+      pHtml += '      <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">'+icono("paleta",{tam:"s"})+' Suelo / Tono de la Galería:</span>';
       pHtml += '      ' + renderColorPaletteBar(r.id, r.color);
       pHtml += '    </div>';
     }
@@ -5674,8 +5674,8 @@ function renderRoomInspector(roomId){
 
   // Pestañas de Navegación dentro del Inspector
   html += '  <div class="house-inspector-nav">';
-  html += '    <button class="house-inspector-tab-btn' + (currentTab === "estancia" ? ' active' : '') + '" data-action="switch-inspector-tab" data-tab="estancia">📜 Estancia</button>';
-  html += '    <button class="house-inspector-tab-btn' + (currentTab === "muebles" ? ' active' : '') + '" data-action="switch-inspector-tab" data-tab="muebles">📦 Muebles y Almacén (' + (r.furniture ? r.furniture.length : 0) + ')</button>';
+  html += '    <button class="house-inspector-tab-btn' + (currentTab === "estancia" ? ' active' : '') + '" data-action="switch-inspector-tab" data-tab="estancia">'+icono("pergamino",{tam:"s"})+' Estancia</button>';
+  html += '    <button class="house-inspector-tab-btn' + (currentTab === "muebles" ? ' active' : '') + '" data-action="switch-inspector-tab" data-tab="muebles">'+icono("caja",{tam:"s"})+' Muebles y Almacén (' + (r.furniture ? r.furniture.length : 0) + ')</button>';
   html += '  </div>';
 
   // CONTENIDO PESTAÑA 1: ESTANCIA
@@ -5684,7 +5684,7 @@ function renderRoomInspector(roomId){
 
     if(canDecor){
       html += '  <div class="house-inspector-color-row" style="margin-top:10px;">';
-      html += '    <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">🎨 Suelo / Color de la Estancia:</span>';
+      html += '    <span style="font-size:0.75rem;color:var(--gold-light);font-weight:600;">'+icono("paleta",{tam:"s"})+' Suelo / Color de la Estancia:</span>';
       html += '    ' + renderColorPaletteBar(r.id, r.color);
       html += '  </div>';
     }
@@ -5692,10 +5692,10 @@ function renderRoomInspector(roomId){
     html += '  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;">';
     html += '    <button class="btn-solid-gold" data-action="open-canva-studio" data-room-id="' + r.id + '" style="font-size:0.85rem;padding:8px 14px;min-height:44px;">' + (canDecor ? 'Editar muebles' : 'Ver muebles') + '</button>';
     if(canDecor){
-      html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">✏️ ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
+      html += '    <button class="btn-compact" data-action="open-edit-room-modal" data-room-id="' + r.id + '">'+iconoUI("editar")+' ' + (isGm ? 'Modificar Estancia' : 'Decorar mi habitación') + '</button>';
     }
     if(isGm){
-      html += '    <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);" title="Eliminar habitación del plano">🗑️ Eliminar</button>';
+      html += '    <button class="btn-compact" data-action="delete-house-room" data-room-id="' + r.id + '" style="color:#E74C3C;border-color:rgba(231,76,60,0.4);" title="Eliminar habitación del plano">'+iconoUI("borrar")+' Eliminar</button>';
     }
     html += '  </div>';
   }
@@ -5724,7 +5724,7 @@ function renderRoomInspector(roomId){
         html += '        <span class="house-furniture-card-title">' + icon + ' ' + esc(fur.name) + '</span>';
         html += '        <div style="display:flex;gap:6px;align-items:center;">';
         if(canChest){
-          html += '          <button class="btn-compact" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + fur.id + '" style="font-size:0.68rem;padding:2px 6px;">➕ Guardar Objeto</button>';
+          html += '          <button class="btn-compact" data-action="open-add-item-modal" data-room-id="' + r.id + '" data-furniture-id="' + fur.id + '" style="font-size:0.68rem;padding:2px 6px;">'+iconoUI("mas")+' Guardar Objeto</button>';
         }
         html += '        </div>';
         html += '      </div>';
@@ -5759,7 +5759,7 @@ function renderRoomInspector(roomId){
     html += '  <div style="display:flex;justify-content:space-between;align-items:center;">';
     html += '    <div style="font-size:0.82rem;font-weight:700;color:var(--gold-light);">Mejoras y Buffs de la Estancia:</div>';
     if(isGm){
-      html += '    <button class="btn-compact highlight" data-action="open-add-upgrade-modal" data-room-id="' + r.id + '" style="font-size:0.72rem;padding:3px 8px;">➕ Nueva Mejora</button>';
+      html += '    <button class="btn-compact highlight" data-action="open-add-upgrade-modal" data-room-id="' + r.id + '" style="font-size:0.72rem;padding:3px 8px;">'+iconoUI("mas")+' Nueva Mejora</button>';
     }
     html += '  </div>';
 
@@ -5820,7 +5820,7 @@ function renderRoomInspector(roomId){
 function renderHouseEventsSection(){
   var events = houseState.events || [];
   var html = '<div class="house-events-section">';
-  html += '  <h3 class="house-events-title"><span>📜</span> Crónicas del Hogar Viviente (Historial)</h3>';
+  html += '  <h3 class="house-events-title"><span>'+icono("pergamino",{tam:"s"})+'</span> Crónicas del Hogar Viviente (Historial)</h3>';
 
   if(events.length === 0){
     html += '  <div style="font-size:0.75rem;color:var(--ink-dim);font-style:italic;">No hay eventos registrados todavía.</div>';
@@ -6155,7 +6155,7 @@ function openEditRoomModal(roomId){
 
   // Selector de Color y Suelo de la Estancia
   html += '  <div class="field" style="margin-top:8px;">' +
-    '    <label>🎨 Fondo y Suelo de la Estancia / Pasillo</label>' +
+    '    <label>'+icono("paleta",{tam:"s"})+' Fondo y Suelo de la Estancia / Pasillo</label>' +
     '    <div class="house-color-palette-bar" style="margin-top:4px;">';
   HOUSE_COLOR_PALETTES.forEach(function(p){
     var isSel = (r.color === p.hex || (!r.color && !p.hex));
@@ -6245,7 +6245,7 @@ function openCreateRoomModal(){
     '    <div class="field"><label>Alto</label><input type="number" id="newRoomHeight" min="1" max="6" value="2"></div>' +
     '  </div>' +
     '  <div class="field" style="margin-top:8px;">' +
-    '    <label>🎨 Fondo y Suelo de la Estancia</label>' +
+    '    <label>'+icono("paleta",{tam:"s"})+' Fondo y Suelo de la Estancia</label>' +
     '    <div class="house-color-palette-bar" style="margin-top:4px;">';
   HOUSE_COLOR_PALETTES.forEach(function(p){
     html += '<button type="button" class="house-color-chip' + (p.id === "default" ? ' is-active' : '') + '" style="background:' + (p.hex || '#1a1816') + ';" data-action="modal-select-color" data-color="' + p.hex + '" title="' + p.name + ' - ' + p.desc + '"></button>';
