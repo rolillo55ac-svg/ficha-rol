@@ -132,7 +132,7 @@ function enfocarNuevo(ref, texto){
     setTimeout(function(){ el.classList.remove("nuevo-destacado", "nuevo-destacado-fijo"); }, animar ? 1400 : 2000);
     var campo = el.querySelector('input[type="text"]:not([disabled]),input:not([type]):not([disabled]),textarea:not([disabled])');
     if(campo){ try { campo.focus({preventScroll: true}); if(campo.select) campo.select(); } catch(_){} }
-    if(texto) showToast("✓ "+texto, "success");
+    if(texto) showToast(texto, "success", {icono:"mision"});
     if(window.UIJuice && UIJuice.vibrar) UIJuice.vibrar(20);
   }
   setTimeout(buscar, 60);
@@ -969,10 +969,10 @@ async function checkForAppUpdates(isManual){
         badgeEl.className = "storage-pill optimal";
       }
       if(statusEl){
-        statusEl.innerHTML = '<span style="color:#10B981;">✓ Tienes la última versión oficial (v' + esc(currentVer) + ')</span>';
+        statusEl.innerHTML = '<span style="color:#10B981;">Tienes la última versión oficial (v' + esc(currentVer) + ')</span>';
       }
       if(isManual){
-        showToast("✓ Ya tienes la versión más reciente (v" + currentVer + ").", "success");
+        showToast("Ya tienes la versión más reciente (v" + currentVer + ").", "success", {icono:"version"});
       }
     }
   } catch(e){

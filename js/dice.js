@@ -2652,7 +2652,7 @@ function renderDiceRollTab(tabsHtml, closeBtn){
     '<div class="dice-mode-pills">'+
       '<button type="button" class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">' + icono("fisico", {tam:"s"}) + ' Normal</button>'+
       '<button type="button" class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">' + icono("critico", {tam:"s"}) + ' Ventaja</button>'+
-      '<button type="button" class="dmode-pill '+(diceConfig.mode==='disadv'?'active':'')+'" data-action="set-dice-mode" data-mode="disadv">💀 Desventaja</button>'+
+      '<button type="button" class="dmode-pill '+(diceConfig.mode==='disadv'?'active':'')+'" data-action="set-dice-mode" data-mode="disadv">'+icono("pifia",{tam:"s"})+' Desventaja</button>'+
     '</div>'+
     '<div class="cup-tray-label">Dados Poliédricos</div>'+
     '<div class="dtype-grid">'+diceCards+'</div>'+
@@ -2676,7 +2676,7 @@ function renderDiceRollTab(tabsHtml, closeBtn){
         '</div>'+
       '</div>'+
     '</div>'+
-    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>';
+    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">' + icono("d10",{tam:"s"}) + ' Lanzar ' + esc(fullFormula) + '</button>';
   if(inPage){ var body = document.getElementById("diceMenuBody"); if(body) body.innerHTML = rollHtml; }
   else document.getElementById("diceModal").innerHTML = rollHtml;
 }

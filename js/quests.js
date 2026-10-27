@@ -30,9 +30,9 @@ function renderQuestCard(q, canEdit){
         (q.house===true ? '<span class="quest-type-badge secundaria">' + icono("casa", {tam:"s"}) + ' CASA</span>' : '')+
         (canEdit ?
           '<select class="quest-status-select" data-action="set-quest-status" data-id="'+q.id+'">'+
-            '<option value="activa" '+(st==="activa"?"selected":"")+'>🟡 En curso</option>'+
-            '<option value="completada" '+(st==="completada"?"selected":"")+'>🟢 Completada</option>'+
-            '<option value="fallida" '+(st==="fallida"?"selected":"")+'>🔴 Fallida</option>'+
+            '<option value="activa" '+(st==="activa"?"selected":"")+'>En curso</option>'+
+            '<option value="completada" '+(st==="completada"?"selected":"")+'>Completada</option>'+
+            '<option value="fallida" '+(st==="fallida"?"selected":"")+'>Fallida</option>'+
           '</select>' :
           '<span class="quest-status-badge '+badgeClass+'">'+badgeLabel+'</span>'
         )+
@@ -47,7 +47,7 @@ function renderQuestCard(q, canEdit){
         (!q.image ? '<button class="btn-compact" data-action="upload-quest-img" data-id="'+q.id+'" title="Subir foto de la misión">' + icono("camara", {tam:"s"}) + ' Foto</button>' : '')+
         (!q.image ? '<button class="btn-compact" data-action="url-quest-img" data-id="'+q.id+'" title="Pegar enlace de foto">URL</button>' : '')+
         '<select class="quest-type-select" data-action="set-quest-type" data-id="'+q.id+'" title="Cambiar categoría">'+
-          '<option value="principal" '+(isPrincipal?'selected':'')+'>⭐ Principal</option>'+
+          '<option value="principal" '+(isPrincipal?'selected':'')+'>Principal</option>'+
           '<option value="secundaria" '+(!isPrincipal?'selected':'')+'>◈ Secundaria</option>'+
         '</select>'+
         '<button type="button" class="btn-compact quest-house-toggle'+(q.house===true?' highlight':'')+'" data-action="toggle-quest-house" data-id="'+q.id+'" title="Marcar como misión de la Casa">' + icono("casa", {tam:"s"}) + ' ' + (q.house===true ? 'Casa ' + iconoUI("hecho") : 'Casa') + '</button>'+
@@ -351,7 +351,7 @@ function tplMision(c, s){
         '</div>'+
         '<div class="form-group" style="margin-top:8px;">'+
           '<label style="font-size:0.75rem;color:var(--ink-dim);">' + icono("cuadro", {tam:"s"}) + ' Ilustración / Imagen (URL opcional o súbela tras crearla)</label>'+
-          '<input type="text" id="newQuestImage" class="field" style="width:100%;font-size:0.82rem;" placeholder="https://... (o déjalo vacío y súbela con 📷 Foto tras crearla)">'+
+          '<input type="text" id="newQuestImage" class="field" style="width:100%;font-size:0.82rem;" placeholder="https://... (o déjalo vacío y súbela con el botón Foto tras crearla)">'+
         '</div>'+
         '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">'+
           '<button class="btn-compact" data-action="toggle-new-quest-form">Cancelar</button>'+
@@ -554,7 +554,7 @@ function renderQuestBrowser(quests, canEdit){
       typeBtn("all", "Todas")+typeBtn("principal", icono('estrella',{tam:'s'})+" Principal")+typeBtn("secundaria", "◈ Secundaria")+typeBtn("casa", icono('casa',{tam:'s'})+" Casa")+
     '</div>'+
     '<div class="quest-search-wrap">'+
-      '<input type="text" class="quest-search-input k-input" id="questSearchInput" value="'+esc(state.questSearch || "")+'" placeholder="🔍 Buscar misión" autocomplete="off">'+
+      '<input type="text" class="quest-search-input k-input" id="questSearchInput" value="'+esc(state.questSearch || "")+'" placeholder="Buscar misión" autocomplete="off">'+
       '<button type="button" class="quest-search-clear" data-action="clear-quest-search" title="Borrar búsqueda"'+((state.questSearch || "") ? '' : ' hidden')+'>'+iconoUI('cerrar')+'</button>'+
     '</div>'+
   '</div>';
