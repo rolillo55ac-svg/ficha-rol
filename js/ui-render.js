@@ -2422,16 +2422,16 @@ function parseSummonRollItem(itemStr){
       formula = m2[2].trim();
     }
   }
-  var icon = "🎲";
+  var icon = icono("dado",{tam:"s"});
   var lLower = label.toLowerCase();
-  if(lLower.includes("melé") || lLower.includes("mele") || lLower.includes("ataque") || lLower.includes("mordisco") || lLower.includes("garra") || lLower.includes("picotazo")) icon = "⚔️";
-  else if(lLower.includes("atletismo") || lLower.includes("fuerza") || lLower.includes("carrera")) icon = "🏃";
-  else if(lLower.includes("inteligencia") || lLower.includes("conocimiento") || lLower.includes("arcana")) icon = "🧠";
-  else if(lLower.includes("percepción") || lLower.includes("percepcion") || lLower.includes("vista") || lLower.includes("oído") || lLower.includes("oido")) icon = "👁️";
-  else if(lLower.includes("sigilo") || lLower.includes("ocultar") || lLower.includes("esconder")) icon = "🥷";
-  else if(lLower.includes("supervivencia") || lLower.includes("rastreo") || lLower.includes("naturaleza")) icon = "🌿";
-  else if(lLower.includes("esquivar") || lLower.includes("evasión") || lLower.includes("evasion") || lLower.includes("agilidad")) icon = "💨";
-  else if(lLower.includes("daño") || lLower.includes("dano")) icon = "🩸";
+  if(lLower.includes("melé") || lLower.includes("mele") || lLower.includes("ataque") || lLower.includes("mordisco") || lLower.includes("garra") || lLower.includes("picotazo")) icon = icono("golpe",{tam:"s"});
+  else if(lLower.includes("atletismo") || lLower.includes("fuerza") || lLower.includes("carrera")) icon = icono("fuerza",{tam:"s"});
+  else if(lLower.includes("inteligencia") || lLower.includes("conocimiento") || lLower.includes("arcana")) icon = icono("intelecto",{tam:"s"});
+  else if(lLower.includes("percepción") || lLower.includes("percepcion") || lLower.includes("vista") || lLower.includes("oído") || lLower.includes("oido")) icon = icono("percepcion",{tam:"s"});
+  else if(lLower.includes("sigilo") || lLower.includes("ocultar") || lLower.includes("esconder")) icon = icono("sigilo",{tam:"s"});
+  else if(lLower.includes("supervivencia") || lLower.includes("rastreo") || lLower.includes("naturaleza")) icon = icono("hierbas",{tam:"s"});
+  else if(lLower.includes("esquivar") || lLower.includes("evasión") || lLower.includes("evasion") || lLower.includes("agilidad")) icon = icono("esquivar",{tam:"s"});
+  else if(lLower.includes("daño") || lLower.includes("dano")) icon = icono("sangrado",{tam:"s"});
 
   return { raw: s, label: label, formula: formula, icon: icon };
 }
@@ -2492,7 +2492,7 @@ function tplInvocaciones(c){
 
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">' +
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni gestionar invocaciones en esta ficha.</span>' +
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes modificar ni gestionar invocaciones en esta ficha.</span>' +
     '</div>';
   }
 
@@ -2500,7 +2500,7 @@ function tplInvocaciones(c){
   html += '<div class="section-title">';
   html += '<span>Invocaciones y familiares</span>';
   if(canEdit && c.summons.length > 0){
-    html += '<button type="button" class="btn-compact" data-action="toggle-summon-edit">' + (editing ? '✓ Listo' : '✎ Editar') + '</button>';
+    html += '<button type="button" class="btn-compact" data-action="toggle-summon-edit">' + (editing ? iconoUI("hecho") + ' Listo' : iconoUI("editar") + ' Editar') + '</button>';
   }
   html += '</div>';
 
@@ -2518,7 +2518,7 @@ function tplInvocaciones(c){
     var isAct = active && (s.id === active.id);
     var miniStyle = s.image ? (' style="background-image:url(\'' + esc(safeUrl(s.image)) + '\');"') : '';
     html += '<button type="button" class="summon-tab" role="tab" aria-selected="' + (isAct ? 'true' : 'false') + '" data-action="select-summon" data-id="' + s.id + '">';
-    html += '<span class="summon-tab-mini"' + miniStyle + '>' + (s.image ? '' : '🐾') + '</span>';
+    html += '<span class="summon-tab-mini"' + miniStyle + '>' + (s.image ? '' : icono("huellas",{tam:"s"})) + '</span>';
     html += '<span class="summon-tab-name">' + esc(s.name || 'Sin nombre') + '</span>';
     html += '</button>';
   });
@@ -2541,12 +2541,12 @@ function tplInvocaciones(c){
   html += '<div class="summon-header">';
   if(canEdit){
     html += '<button type="button" class="summon-avatar-btn"' + imgStyle + ' data-action="summon-photo-menu" data-id="' + s.id + '" aria-label="Cambiar foto">' +
-      (s.image ? '' : '🐾') +
-      '<span class="summon-cam-badge">📷</span>' +
+      (s.image ? '' : icono("huellas",{tam:"s"})) +
+      '<span class="summon-cam-badge">' + icono("camara",{tam:"s"}) + '</span>' +
     '</button>';
   } else {
     html += '<div class="summon-avatar-img"' + imgStyle + '>' +
-      (s.image ? '' : '🐾') +
+      (s.image ? '' : icono("huellas",{tam:"s"})) +
     '</div>';
   }
 
@@ -2593,7 +2593,7 @@ function tplInvocaciones(c){
       '<div class="creature-field beast-mobility-cell">' +
         '<label>Movilidad (Casillas)</label>' +
         '<button type="button" class="beast-mov-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">' +
-          '<span class="beast-mov-label">🏃 <strong>' + esc(movN) + '</strong> casillas</span>' +
+          '<span class="beast-mov-label">' + icono("movilidad",{tam:"s"}) + ' <strong>' + esc(movN) + '</strong> casillas</span>' +
           (s.movilidad && s.movilidad.includes('(') ? (' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>') : '') +
           '<span class="beast-mov-chevron">▾</span>' +
         '</button>' +
@@ -2602,21 +2602,21 @@ function tplInvocaciones(c){
   } else {
     html += '<div class="summon-chips-row">';
     if(s.defensa !== "" && s.defensa !== undefined && s.defensa !== null){
-      html += '<span class="summon-chip">🛡️ Def <b>' + esc(s.defensa) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("escudo",{tam:"s"}) + ' Def <b>' + esc(s.defensa) + '</b></span>';
     }
     if(s.absorcion !== "" && s.absorcion !== undefined && s.absorcion !== null){
-      html += '<span class="summon-chip">🧱 Abs <b>' + esc(s.absorcion) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("armadura",{tam:"s"}) + ' Abs <b>' + esc(s.absorcion) + '</b></span>';
     }
     if(s.dano !== "" && s.dano !== undefined && s.dano !== null){
-      html += '<span class="summon-chip">🗡️ <b>' + esc(s.dano) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("daga",{tam:"s"}) + ' <b>' + esc(s.dano) + '</b></span>';
     }
     if(canEdit){
-      html += '<button type="button" class="summon-chip summon-chip-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">🏃 <b>' + esc(movN) + '</b> <small>casillas</small></button>';
+      html += '<button type="button" class="summon-chip summon-chip-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">' + icono("movilidad",{tam:"s"}) + ' <b>' + esc(movN) + '</b> <small>casillas</small></button>';
     } else {
-      html += '<span class="summon-chip">🏃 <b>' + esc(movN) + '</b> <small>casillas</small></span>';
+      html += '<span class="summon-chip">' + icono("movilidad",{tam:"s"}) + ' <b>' + esc(movN) + '</b> <small>casillas</small></span>';
     }
     if(s.inteligencia !== "" && s.inteligencia !== undefined && s.inteligencia !== null){
-      html += '<span class="summon-chip">🧠 Int <b>' + esc(s.inteligencia) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("intelecto",{tam:"s"}) + ' Int <b>' + esc(s.inteligencia) + '</b></span>';
     }
     html += '</div>';
   }
@@ -2643,7 +2643,7 @@ function tplInvocaciones(c){
     });
     if(!hasDano){
       combatRolls.push({
-        item: { raw: "Daño " + s.dano, label: "Daño", formula: s.dano, icon: "🩸" },
+        item: { raw: "Daño " + s.dano, label: "Daño", formula: s.dano, icon: icono("sangrado",{tam:"s"}) },
         originalIndex: -1
       });
     }
@@ -2651,7 +2651,7 @@ function tplInvocaciones(c){
 
   html += '<div class="summon-block summon-rolls-block">' +
     '<div class="summon-block-header">' +
-      '<span class="summon-block-title">⚔️ Tiradas</span>' +
+      '<span class="summon-block-title">' + icono("golpe",{tam:"s"}) + ' Tiradas</span>' +
       (editing ? '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '">+ Añadir</button>' : '') +
     '</div>';
 
@@ -2667,7 +2667,7 @@ function tplInvocaciones(c){
           html += '<div class="summon-roll-box-edit">' +
             '<input type="text" class="summon-skill-input-name" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.label) + '" placeholder="Nombre">' +
             '<input type="text" class="summon-skill-input-formula" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.formula) + '" placeholder="Fórmula">' +
-            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">✕</button>' +
+            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>' +
           '</div>';
         } else {
           var fStr = it.formula || it.raw;
@@ -2689,7 +2689,7 @@ function tplInvocaciones(c){
           html += '<div class="summon-roll-box-edit">' +
             '<input type="text" class="summon-skill-input-name" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.label) + '" placeholder="Nombre">' +
             '<input type="text" class="summon-skill-input-formula" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.formula) + '" placeholder="Fórmula">' +
-            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">✕</button>' +
+            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>' +
           '</div>';
         } else {
           var fStr = it.formula || it.raw;
@@ -2718,7 +2718,7 @@ function tplInvocaciones(c){
     traits.forEach(function(t, tIdx){
       html += '<li>' +
         '<span class="summon-list-text">' + esc(t) + '</span>' +
-        (editing ? ('<button type="button" class="row-del" data-action="del-summon-trait" data-id="' + s.id + '" data-index="' + tIdx + '" aria-label="Quitar">✕</button>') : '') +
+        (editing ? ('<button type="button" class="row-del" data-action="del-summon-trait" data-id="' + s.id + '" data-index="' + tIdx + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>') : '') +
       '</li>';
     });
     html += '</ul>';
@@ -2739,7 +2739,7 @@ function tplInvocaciones(c){
   html += '<div class="summon-block summon-learned-block">' +
     '<div class="summon-block-header">' +
       '<span class="summon-block-title">Aprendizaje</span>' +
-      (canEdit ? ('<button type="button" class="btn-compact" data-action="toggle-summon-teach" data-id="' + s.id + '">📖 Enseñar</button>') : '') +
+      (canEdit ? ('<button type="button" class="btn-compact" data-action="toggle-summon-teach" data-id="' + s.id + '">' + icono("pergamino",{tam:"s"}) + ' Enseñar</button>') : '') +
     '</div>';
 
   if(canEdit && state._summonTeachOpen === s.id){
@@ -2778,8 +2778,8 @@ function tplInvocaciones(c){
           ((diaText || canEdit) ? ('<div class="summon-add-row">' +
             (diaText ? ('<span class="summon-list-dia">' + esc(diaText) + '</span>') : '') +
             (canEdit ? (
-              '<button type="button" class="btn-compact" data-action="learned-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '">✓ Ya lo sabe</button>' +
-              '<button type="button" class="row-del" data-action="del-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '" aria-label="Quitar">✕</button>'
+              '<button type="button" class="btn-compact" data-action="learned-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '">' + iconoUI("hecho") + ' Ya lo sabe</button>' +
+              '<button type="button" class="row-del" data-action="del-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>'
             ) : '') +
           '</div>') : '') +
         '</div>' +
@@ -2810,7 +2810,7 @@ function tplInvocaciones(c){
           (lPor ? ('<div class="summon-list-by">apuntado por ' + esc(lPor) + '</div>') : '') +
         '</div>' +
         (diaText ? ('<span class="summon-list-dia">' + esc(diaText) + '</span>') : '') +
-        (canEdit ? ('<button type="button" class="row-del" data-action="del-summon-learned" data-id="' + s.id + '" data-lid="' + esc(lId) + '" aria-label="Quitar">✕</button>') : '') +
+        (canEdit ? ('<button type="button" class="row-del" data-action="del-summon-learned" data-id="' + s.id + '" data-lid="' + esc(lId) + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>') : '') +
       '</li>';
     });
     html += '</ul>';
@@ -2868,8 +2868,8 @@ function tplInvocaciones(c){
   if(canEdit && state._summonPhotoMenu === s.id){
     html += '<div class="summon-photo-backdrop" data-action="close-summon-photo-menu"></div>' +
       '<div class="summon-photo-sheet" role="dialog" aria-label="Foto">' +
-        '<button type="button" class="btn-compact summon-sheet-btn" data-action="upload-summon-img" data-id="' + s.id + '">📷 Cambiar foto</button>' +
-        '<button type="button" class="btn-compact summon-sheet-btn" data-action="url-summon-img" data-id="' + s.id + '">🔗 Pegar URL</button>' +
+        '<button type="button" class="btn-compact summon-sheet-btn" data-action="upload-summon-img" data-id="' + s.id + '">' + icono("camara",{tam:"s"}) + ' Cambiar foto</button>' +
+        '<button type="button" class="btn-compact summon-sheet-btn" data-action="url-summon-img" data-id="' + s.id + '">' + iconoUI("enlace") + ' Pegar URL</button>' +
         (s.image ? ('<button type="button" class="btn-compact summon-sheet-btn summon-sheet-btn-danger" data-action="remove-summon-img" data-id="' + s.id + '">Quitar foto</button>') : '') +
         '<button type="button" class="btn-compact summon-sheet-btn" data-action="close-summon-photo-menu">Cancelar</button>' +
       '</div>';
@@ -2883,7 +2883,7 @@ function tplExtra(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar pasivas ni la tabla de diosas en esta ficha.</span>'+
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes modificar pasivas ni la tabla de diosas en esta ficha.</span>'+
     '</div>';
   }
   c.passivesNeg = c.passivesNeg || [];
@@ -2891,7 +2891,7 @@ function tplExtra(c){
   c.goddessTable = c.goddessTable || [];
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Negativas</span></div>';
   (c.passivesNeg||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">' + iconoUI("cerrar") + '</button>':'')+'</div>';
   });
   if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passiveNeg">+ Añadir pasiva negativa</button>';
@@ -2900,7 +2900,7 @@ function tplExtra(c){
 
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Positivas</span></div>';
   (c.passivesPos||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">' + iconoUI("cerrar") + '</button>':'')+'</div>';
   });
   if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passivePos">+ Añadir pasiva positiva</button>';
@@ -2913,7 +2913,7 @@ function tplExtra(c){
       '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Gustos" data-bind="goddessTable.'+g.id+'.gustos" value="'+esc(g.gustos)+'" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Disgustos" data-bind="goddessTable.'+g.id+'.disgustos" value="'+esc(g.disgustos)+'" '+(canEdit?'':'readonly')+'>'+
-      (canEdit?'<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">✕</button>':'')+
+      (canEdit?'<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">' + iconoUI("cerrar") + '</button>':'')+
     '</div>';
   });
   if(canEdit){
@@ -2929,11 +2929,11 @@ function tplMundo(s){
   var subtab = currentWorldSubtab || "mapas";
   var html = '<div class="section" style="margin-bottom:10px;">'+
     '<div class="filter-pills">'+
-      '<button class="f-pill '+(subtab==='mapas'?'active':'')+'" data-action="set-world-subtab" data-val="mapas">🗺️ Mapas</button>'+
-      '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">⚔️ Catálogo de Armas</button>'+
-      '<button class="f-pill '+(subtab==='buffs'?'active':'')+'" data-action="set-world-subtab" data-val="buffs">✨ Buffos</button>'+
-      '<button class="f-pill '+(subtab==='lore'?'active':'')+'" data-action="set-world-subtab" data-val="lore">📜 Lore y Flora</button>'+
-      '<button class="f-pill '+(subtab==='galeria'?'active':'')+'" data-action="set-world-subtab" data-val="galeria">🖼️ Galería</button>'+
+      '<button class="f-pill '+(subtab==='mapas'?'active':'')+'" data-action="set-world-subtab" data-val="mapas">' + icono("mapa",{tam:"s"}) + ' Mapas</button>'+
+      '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">' + icono("golpe",{tam:"s"}) + ' Catálogo de Armas</button>'+
+      '<button class="f-pill '+(subtab==='buffs'?'active':'')+'" data-action="set-world-subtab" data-val="buffs">' + icono("buff",{tam:"s"}) + ' Buffos</button>'+
+      '<button class="f-pill '+(subtab==='lore'?'active':'')+'" data-action="set-world-subtab" data-val="lore">' + icono("pergamino",{tam:"s"}) + ' Lore y Flora</button>'+
+      '<button class="f-pill '+(subtab==='galeria'?'active':'')+'" data-action="set-world-subtab" data-val="galeria">' + icono("cuadro",{tam:"s"}) + ' Galería</button>'+
     '</div>'+
   '</div>';
 
@@ -2964,9 +2964,9 @@ function tplMundoLore(s){
       '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills lore-pills">'+typePills+'</div></div>'+
       '<div class="filter-section"><div class="filter-label">Terreno</div><div class="filter-pills lore-pills">'+terrPills+'</div></div>':'')+
     '<div class="filter-pills lore-pills" style="margin:10px 0;border-bottom:1px solid var(--line);padding-bottom:6px;">'+
-      '<button class="f-pill '+(currentLoreSubtab==='objetos'?'active':'')+'" data-action="set-lore-subtab" data-val="objetos">🌿 Recursos / Objetos</button>'+
-      '<button class="f-pill '+(currentLoreSubtab==='pistas'?'active':'')+'" data-action="set-lore-subtab" data-val="pistas">📜 Pistas</button>'+
-      '<button class="f-pill '+(currentLoreSubtab==='npcs'?'active':'')+'" data-action="set-lore-subtab" data-val="npcs">👤 NPCs</button>'+
+      '<button class="f-pill '+(currentLoreSubtab==='objetos'?'active':'')+'" data-action="set-lore-subtab" data-val="objetos">' + icono("hierbas",{tam:"s"}) + ' Recursos / Objetos</button>'+
+      '<button class="f-pill '+(currentLoreSubtab==='pistas'?'active':'')+'" data-action="set-lore-subtab" data-val="pistas">' + icono("pergamino",{tam:"s"}) + ' Pistas</button>'+
+      '<button class="f-pill '+(currentLoreSubtab==='npcs'?'active':'')+'" data-action="set-lore-subtab" data-val="npcs">' + icono("jugador",{tam:"s"}) + ' NPCs</button>'+
     '</div>';
 
   var cat = currentLoreSubtab;
@@ -2989,12 +2989,12 @@ function tplMundoLore(s){
         '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'+
           '<span class="item-badge '+bClass+'">'+rName+'</span>'+
           (it.type ? '<span style="font-size:.62rem;color:var(--teal-light);font-weight:700;">['+esc(it.type)+']</span>' : '')+
-          (it.terrain ? '<span style="font-size:.62rem;color:var(--ink-faint);">📍 '+esc(it.terrain)+'</span>' : '')+
+          (it.terrain ? '<span style="font-size:.62rem;color:var(--ink-faint);">' + icono("lugar",{tam:"s"}) + ' '+esc(it.terrain)+'</span>' : '')+
         '</div>'+
         '<div style="display:flex;gap:4px;">'+
-          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-visibility" data-cat="' + cat + '" data-id="' + it.id + '" title="Mostrar/Ocultar para jugadores">'+(it.visible!==false?'👁️':'🙈')+'</button>' : '')+
-          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-edit" data-id="' + it.id + '" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing?'✔️':'✏️')+'</button>' : '')+
-          (canEdit ? '<button class="btn-compact lore-btn" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">✕</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-visibility" data-cat="' + cat + '" data-id="' + it.id + '" title="Mostrar/Ocultar para jugadores">'+(it.visible!==false?iconoUI("ver"):iconoUI("ocultar"))+'</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-edit" data-id="' + it.id + '" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing?iconoUI("hecho"):iconoUI("editar"))+'</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">' + iconoUI("cerrar") + '</button>' : '')+
         '</div>'+
       '</div>'+
       (canEdit && editing ? '<div class="creature-field lore-field"><label>Nombre</label><input type="text" class="k-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Nombre"></div>' : '<div class="lore-title">'+esc(it.title)+'</div>')+
