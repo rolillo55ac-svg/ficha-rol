@@ -425,7 +425,7 @@ async function uploadAudioToSupabase(file, rawFileName, callback){
         var pubRes = supabaseClient.storage.from('images').getPublicUrl(filePath);
         var publicUrl = (pubRes && pubRes.data && pubRes.data.publicUrl) ? pubRes.data.publicUrl : null;
         if(publicUrl){
-          showToast("¡Pista de audio subida con éxito! 🎵", "success");
+          showToast("¡Pista de audio subida con éxito!", "success");
           if(typeof callback === "function") callback(publicUrl, file.name);
           return;
         }
@@ -439,7 +439,7 @@ async function uploadAudioToSupabase(file, rawFileName, callback){
   if(file.size <= 1024 * 1024){
     var reader = new FileReader();
     reader.onload = function(e){
-      showToast("Audio guardado en almacenamiento local 🎵", "info");
+      showToast("Audio guardado en almacenamiento local", "info");
       if(typeof callback === "function") callback(e.target.result, file.name);
     };
     reader.onerror = function(){
@@ -761,7 +761,7 @@ async function executeUnifiedAppUpdate(isManual){
   if(typeof cleanOrphanStorage === "function") cleanOrphanStorage(true);
 
   if(isManual){
-    showToast("🚀 Limpiando caché y forzando última versión...", "info");
+    showToast("Limpiando caché y forzando última versión...", "info", {icono:"version"});
   }
 
   try {
@@ -822,7 +822,7 @@ function getAppUpdateBar(){
     bar.setAttribute("role", "status");
     bar.innerHTML = '<span class="app-update-bar__text"></span>' +
       '<button type="button" class="app-update-bar__btn"></button>' +
-      '<button type="button" class="app-update-bar__close" aria-label="Cerrar">✕</button>';
+      '<button type="button" class="app-update-bar__close" aria-label="Cerrar">' + iconoUI("cerrar") + '</button>';
     document.body.appendChild(bar);
     bar.querySelector(".app-update-bar__close").addEventListener("click", function(){
       if(appForcedUpdateTimer) return;
@@ -859,7 +859,7 @@ function showInstallHintOnce(){
   var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   bar.innerHTML = '<span class="app-update-bar__text"><b>Instálala como app</b>: va más fluida y no se recarga sin querer. ' +
     (ios ? 'En iPhone: Compartir › «Añadir a pantalla de inicio».' : 'En Android: menú ⋮ › «Instalar aplicación» o «Añadir a pantalla de inicio».') +
-    '</span><button type="button" class="app-update-bar__close" aria-label="Cerrar">✕</button>';
+    '</span><button type="button" class="app-update-bar__close" aria-label="Cerrar">' + iconoUI("cerrar") + '</button>';
   bar.querySelector(".app-update-bar__close").addEventListener("click", function(){
     try{ localStorage.setItem(KEY, "1"); }catch(e){}
     bar.remove();
@@ -938,11 +938,11 @@ async function checkForAppUpdates(isManual){
         badgeEl.className = "storage-pill warning";
       }
       if(statusEl){
-        statusEl.innerHTML = '<span style="color:#FDE047;font-weight:700;">⚠️ Nueva versión v' + esc(data.version) + ' disponible. ' + (alreadyAttempted ? 'Pulsa "Actualizar" para forzar recarga limpia.' : 'Actualizando automáticamente...') + '</span>';
+        statusEl.innerHTML = '<span style="color:#FDE047;font-weight:700;">' + iconoUI("aviso") + ' Nueva versión v' + esc(data.version) + ' disponible. ' + (alreadyAttempted ? 'Pulsa "Actualizar" para forzar recarga limpia.' : 'Actualizando automáticamente...') + '</span>';
       }
 
       if(isManual){
-        showToast("🚀 Aplicando actualización a v" + data.version + "...", "info");
+        showToast("Aplicando actualización a v" + data.version + "...", "info", {icono:"version"});
         executeUnifiedAppUpdate(true);
       } else if(appUpdateFirstCheckDone){
         showAppUpdateBar(data.version);
@@ -950,14 +950,14 @@ async function checkForAppUpdates(isManual){
         try {
           sessionStorage.setItem(reloadAttemptKey, "true");
         } catch(e){}
-        showToast("✨ ¡Nueva versión detectada (v" + data.version + ")! Actualizando app...", "info");
+        showToast("¡Nueva versión detectada (v" + data.version + ")! Actualizando app...", "info", {icono:"destellos"});
         setTimeout(function(){
           executeUnifiedAppUpdate(false);
         }, 1000);
       } else {
         if(!hasNotifiedUpdateAvailable){
           hasNotifiedUpdateAvailable = true;
-          showToast("⚠️ Versión v" + data.version + " disponible. Pulsa Actualizar en Ajustes si no se aplicó.", "warning", 6000);
+          showToast("Versión v" + data.version + " disponible. Pulsa Actualizar en Ajustes si no se aplicó.", "warning", {icono:"peligro"});
         }
       }
     } else {
@@ -1002,7 +1002,7 @@ async function broadcastForceAppUpdate(){
           timestamp: new Date().toISOString()
         }
       });
-      showToast("📢 Orden de actualización enviada a todos los jugadores conectados.", "success");
+      showToast("Orden de actualización enviada a todos los jugadores conectados.", "success", {icono:"cuerno"});
     } catch(err){
       showToast("Error al emitir orden: " + err.message, "warning");
     }

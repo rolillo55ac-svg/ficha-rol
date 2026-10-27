@@ -155,7 +155,7 @@ async function createRollRequest(){
     status: "open"
   };
   var res = await supabaseClient.from("roll_requests").insert(row);
-  if(res.error){ showToast("⚠️ No se pudo pedir la tirada", "error"); console.warn(res.error); return; }
+  if(res.error){ showToast("No se pudo pedir la tirada", "error", {icono:"peligro"}); console.warn(res.error); return; }
   if(row.has_secret_dc){
     var sres = await supabaseClient.from("roll_request_secrets").insert({ request_id: row.id, dc: dcNum });
     if(!sres.error) rollRequestSecretDc[row.id] = dcNum;
@@ -164,7 +164,7 @@ async function createRollRequest(){
   rollRequestsList.unshift(row);
   rollRequestDraft.note = "";
   sendRollRequestBroadcast(row.id);
-  showToast("📣 Tirada pedida: " + row.label, "success");
+  showToast("Tirada pedida: " + row.label, "success", {icono:"cuerno"});
   refreshRollRequestViews();
 }
 
@@ -172,7 +172,7 @@ async function cancelRollRequest(id){
   if(!isGM() || !id) return;
   if(!(await confirmarAccion({ titulo: "¿Cancelar esta petición de tirada?", boton: "Cancelar petición", peligro: true }))) return;
   var res = await supabaseClient.from("roll_requests").update({ status: "cancelled" }).eq("id", id);
-  if(res.error){ showToast("⚠️ No se pudo cancelar", "error"); return; }
+  if(res.error){ showToast("No se pudo cancelar", "error", {icono:"peligro"}); return; }
   var rq = rollRequestsList.find(function(r){ return r.id === id; });
   if(rq) rq.status = "cancelled";
   sendRollRequestBroadcast(id);
@@ -213,7 +213,7 @@ function renderRollRequestNotice(){
   var first = pend[0];
   el.setAttribute("data-req-id", first.req.id);
   el.setAttribute("data-char-id", first.char.db_id);
-  el.textContent = "📣 El máster te pide: " + first.req.label + (pend.length > 1 ? " (+" + (pend.length - 1) + ")" : "");
+  el.innerHTML = icono("cuerno", {tam:"s"}) + " El máster te pide: " + esc(first.req.label) + (pend.length > 1 ? " (+" + (pend.length - 1) + ")" : "");
 }
 
 function rollRequestStatusHtml(rq){
@@ -223,12 +223,12 @@ function rollRequestStatusHtml(rq){
     var c = (state.characters || []).find(function(x){ return x.db_id === cid; });
     var a = answers[cid];
     var name = (c && c.name) || (a && a.charName) || "Ficha";
-    var res = "⏳ Pendiente";
+    var resHtml = icono("actividad", {tam:"s"}) + " Pendiente";
     if(a){
       var ok = (typeof dc === "number") ? (a.total >= dc) : null;
-      res = "✓ " + a.total + (ok === true ? " ✅" : (ok === false ? " ❌" : ""));
-    } else if(rq.status !== "open") res = "—";
-    return '<div class="roll-request-row"><span>' + esc(name) + '</span><b>' + esc(res) + '</b></div>';
+      resHtml = "✓ " + esc(a.total) + (ok === true ? " " + iconoUI("hecho") : (ok === false ? " " + iconoUI("cerrar") : ""));
+    } else if(rq.status !== "open") resHtml = "—";
+    return '<div class="roll-request-row"><span>' + esc(name) + '</span><b>' + resHtml + '</b></div>';
   }).join("");
   var meta = [];
   if(typeof dc === "number") meta.push("CD " + dc + (rq.dc === null || rq.dc === undefined ? " (oculta)" : ""));
@@ -268,8 +268,8 @@ function renderRollRequestTab(){
         '<label class="roll-history-check"><input type="checkbox" id="rollReqDcVisible" class="k-check"' + (d.dcVisible ? " checked" : "") + '> CD visible</label>' +
       '</div>' +
       '<div class="dice-mode-pills">' +
-        '<button type="button" class="dmode-pill ' + (d.mode === "normal" ? "active" : "") + '" data-action="roll-request-mode" data-mode="normal">⚔️ Normal</button>' +
-        '<button type="button" class="dmode-pill ' + (d.mode === "adv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="adv">🍀 Ventaja</button>' +
+        '<button type="button" class="dmode-pill ' + (d.mode === "normal" ? "active" : "") + '" data-action="roll-request-mode" data-mode="normal">' + icono("fisico", {tam:"s"}) + ' Normal</button>' +
+        '<button type="button" class="dmode-pill ' + (d.mode === "adv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="adv">' + icono("critico", {tam:"s"}) + ' Ventaja</button>' +
         '<button type="button" class="dmode-pill ' + (d.mode === "disadv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="disadv">💀 Desventaja</button>' +
       '</div>' +
       '<div class="field"><label for="rollReqNote">Texto corto (opcional)</label>' +
