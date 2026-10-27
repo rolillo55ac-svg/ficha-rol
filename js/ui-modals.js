@@ -131,7 +131,7 @@ function openCharModal(){
       if(isGM()){
         ownerHtml = '<div class="char-owner-assign-box">' +
           '<div class="char-owner-info">' +
-            '<span class="char-owner-label">👤 Jugador:</span> ' +
+            '<span class="char-owner-label">' + icono("jugador", {tam:"s"}) + ' Jugador:</span> ' +
             (c.ownerEmail ? '<span class="char-owner-email">● ' + esc(c.ownerEmail) + '</span>' : '<span class="char-owner-empty">○ Sin asignar</span>') +
           '</div>' +
           '<div class="char-owner-actions">' +
