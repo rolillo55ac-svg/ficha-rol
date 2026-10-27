@@ -9856,6 +9856,7 @@ textarea,
 .lapidary-cuts-gems .off { filter: grayscale(1) brightness(.4); }
 .lapidary-cuts-stars { color: var(--gold-light); letter-spacing: 2px; font-size: 1rem; white-space: nowrap; min-height: 1.2em; }
 .lapidary-cuts-stars .off { color: #4a3329; }
+.lapidary-geode-chip .hearts .off .ico, .lapidary-cuts-stars .off .ico { filter: grayscale(1) brightness(.4); }
 .lapidary-cut-stage { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid var(--line); background: var(--bg-elev); }
 .lapidary-cut-stage canvas { display: block; width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 /* Joystick del corte: uno solo, flotante, en la zona de debajo del lienzo */

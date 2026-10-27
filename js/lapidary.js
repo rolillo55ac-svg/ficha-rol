@@ -362,7 +362,7 @@ function renderGeodeBoard(){
 
   var flags = G.cells.filter(function(x){ return x.flag || x.cracked; }).length;
   var hearts = "";
-  for(var k = 0; k < G.d.hearts; k++) hearts += (k < G.hearts ? "♥" : '<span class="off">♥</span>');
+  for(var k = 0; k < G.d.hearts; k++) hearts += (k < G.hearts ? icono("corazon") : '<span class="off">' + icono("corazon") + '</span>');
   var setHTML = function(id, v){ var el = document.getElementById(id); if(el) el.innerHTML = v; };
   setHTML("lapidaryGeodeHearts", hearts);
   setHTML("lapidaryGeodeFissures", String(Math.max(0, G.d.fissures - flags)));
@@ -1719,7 +1719,7 @@ function cutStarsFor(v){ return v >= 90 ? 3 : (v >= 75 ? 2 : (v >= 50 ? 1 : 0));
 
 function cutStarsHTML(n){
   var s = "";
-  for(var k = 0; k < 3; k++) s += k < n ? "★" : '<span class="off">★</span>';
+  for(var k = 0; k < 3; k++) s += k < n ? icono("estrella") : '<span class="off">' + icono("estrella") + '</span>';
   return s;
 }
 
@@ -1766,7 +1766,7 @@ function updateCutPanel(){
   setHTML("lapidaryCutSlots", LAPIDARY_CUTS.map(function(cc, i){
     var r = CG.results[i];
     return '<div class="lapidary-cut-slot' + (i === CG.idx ? " now" : "") + (CG.failed[i] ? " failed" : "") + '">' + esc(cc.name) +
-      '<span class="lapidary-cuts-stars">' + (r == null ? '<span class="off">★★★</span>' : cutStarsHTML(cutStarsFor(r))) + '</span></div>';
+      '<span class="lapidary-cuts-stars">' + (r == null ? '<span class="off">' + icono("estrella") + icono("estrella") + icono("estrella") + '</span>' : cutStarsHTML(cutStarsFor(r))) + '</span></div>';
   }).join(""));
   var retry = document.getElementById("lapidaryCutRetry");
   if(retry){
@@ -2022,7 +2022,7 @@ function cutLoseGem(reason){
   S.shakeUntil = performance.now() + 320;
   playGemFractureTick();
   if(typeof triggerBg3Haptic === "function") triggerBg3Haptic("fumble");
-  setCutHint('<span class="bad">' + reason + '</span> −1 💎');
+  setCutHint('<span class="bad">' + reason + '</span> −1 ' + icono("gema"));
   updateCutPanel();
   if(S.gems <= 0) finishCurrentCut(true);
 }
@@ -2386,7 +2386,7 @@ function openCutIntroSheet(idx){
     svg = '<svg viewBox="0 0 120 60" aria-hidden="true"><path d="M10 30 H110" stroke="#F3EADB" stroke-dasharray="5 5" stroke-width="1.6"/><g stroke="#76AC9D" stroke-width="1.6" fill="none"><path d="M40 36 V16 M35 21 L40 16 L45 21"/><path d="M60 36 V16 M55 21 L60 16 L65 21"/><path d="M80 36 V16 M75 21 L80 16 L85 21"/></g><circle cx="60" cy="44" r="7" fill="#7CC4A4"/><path d="M60 54 V58" stroke="#fff" stroke-opacity=".4"/></svg>';
   } else {
     title = "Inclusiones";
-    text = "Los <b>puntos oscuros</b> junto a la línea son inclusiones: tocarlas con el borde de la sierra cuesta 💎. Donde hay dos juntas, el paso es más estrecho: <b>pasa por el centro</b>.";
+    text = "Los <b>puntos oscuros</b> junto a la línea son inclusiones: tocarlas con el borde de la sierra cuesta " + icono("gema") + ". Donde hay dos juntas, el paso es más estrecho: <b>pasa por el centro</b>.";
     svg = '<svg viewBox="0 0 120 60" aria-hidden="true"><path d="M10 30 H110" stroke="#F3EADB" stroke-dasharray="5 5" stroke-width="1.6"/><circle cx="62" cy="20" r="5" fill="#140c0a" stroke="#000"/><circle cx="62" cy="40" r="5" fill="#140c0a" stroke="#000"/><circle cx="30" cy="22" r="5" fill="#140c0a" stroke="#000"/><path d="M50 30 H74" stroke="#DEC392" stroke-width="3" stroke-linecap="round"/></svg>';
   }
   CG.sheetOpen = true;
@@ -2809,11 +2809,11 @@ function resolveLapidaryCraft(c, stone, rollState, verdict){
     // Una tirada arruinada no necesita veredicto: la gema ya no sirve
     stone.pendienteMaster = false;
     playGemFracture();
-    showToast("⚠️ Corte irregular. Calidad: Arruinada (Tirada: " + grandTotal + ").", "warning");
+    showToast("Corte irregular. Calidad: Arruinada (Tirada: " + grandTotal + ").", "warning", {icono:"peligro"});
   } else {
     stone.pendienteMaster = true;
     playGemChime(quality.id);
-    showToast("💎 Talla terminada con calidad " + quality.label + " (" + grandTotal + "). Esperando al máster: decidirá si la piedra aguanta.", "success");
+    showToast("Talla terminada con calidad " + quality.label + " (" + grandTotal + "). Esperando al máster: decidirá si la piedra aguanta.", "success", {icono:"gema"});
   }
 
   saveState(false);
@@ -2866,11 +2866,11 @@ function handleRemoteLapidaryVerdict(event, p){
   var fam = getStoneFamily(p.stone.color);
   var q = getStoneQuality(p.stone.calidadTirada || p.stone.calidad);
   if(event === "lapidary_verdict_request" && typeof isGM === "function" && isGM()){
-    showToast("⚖️ " + (p.charName || c.name) + " ha tallado una " + fam.gema + " · Calidad " + q.label + " (" + p.stone.totalTirada + ") · Riesgo " + p.stone.riesgoRotura + "%. Decide en la pestaña Piedras.", "info");
+    showToast((p.charName || c.name) + " ha tallado una " + fam.gema + " · Calidad " + q.label + " (" + p.stone.totalTirada + ") · Riesgo " + p.stone.riesgoRotura + "%. Decide en la pestaña Piedras.", "info", {icono:"balanza"});
   } else if(event === "lapidary_verdict_resolved" && typeof canEditChar === "function" && canEditChar(c) && !(typeof isGM === "function" && isGM())){
     if(p.stone.veredictoMaster === "rota"){
       playGemFracture();
-      showToast("💥 El máster decide que tu " + fam.gema + " se rompe. Calidad: Arruinada.", "error");
+      showToast("El máster decide que tu " + fam.gema + " se rompe. Calidad: Arruinada.", "error", {icono:"golpe"});
     } else {
       playGemChime(p.stone.calidad);
       showToast("◆ ¡Tu " + fam.gema + " aguanta! Calidad " + q.label + ".", "success");
@@ -2954,7 +2954,7 @@ function renderLapidaryVerdictPanel(){
   var pending = getPendingLapidaryVerdicts();
   if(!pending.length) return "";
   var html = '<div class="section lapidary-verdict-panel">' +
-    '<div class="section-title"><span>⚖️ Veredictos pendientes (' + pending.length + ')</span></div>';
+    '<div class="section-title"><span>' + icono("balanza") + ' Veredictos pendientes (' + pending.length + ')</span></div>';
   pending.forEach(function(it){
     var st = it.stone, fam = getStoneFamily(st.color), q = getStoneQuality(st.calidadTirada || st.calidad);
     var d = lapidaryVerdictD100[st.id];
@@ -2978,7 +2978,7 @@ function renderLapidaryVerdictPanel(){
 // Aviso naranja en las tarjetas de piedra del jugador
 function renderLapidaryStoneStatus(st){
   if(st.pendienteMaster){
-    return '<div class="lapidary-verdict-status wait"><span class="ic">⏳</span><span>Calidad <b>' + esc(getStoneQuality(st.calidadTirada || st.calidad).label) + '</b>. <b>Esperando al máster</b>: decidirá si la piedra aguanta (riesgo ' + (st.riesgoRotura != null ? st.riesgoRotura : "?") + '%).</span></div>';
+    return '<div class="lapidary-verdict-status wait"><span class="ic">' + icono("actividad") + '</span><span>Calidad <b>' + esc(getStoneQuality(st.calidadTirada || st.calidad).label) + '</b>. <b>Esperando al máster</b>: decidirá si la piedra aguanta (riesgo ' + (st.riesgoRotura != null ? st.riesgoRotura : "?") + '%).</span></div>';
   }
   if(st.veredictoMaster === "rota") return '<div class="lapidary-verdict-status brk"><span class="ic">' + iconoUI("cerrar") + '</span><span>El máster decidió que la piedra <b>se rompió</b> al tallarla.</span></div>';
   if(st.veredictoMaster === "aguanta") return '<div class="lapidary-verdict-status okk"><span class="ic">◆</span><span>La piedra aguantó la talla.</span></div>';
@@ -3177,5 +3177,5 @@ function revealStoneSecretToPlayer(charId, stoneId){
   }
 
   renderTab();
-  showToast("👁️ Información secreta de la gema revelada al jugador.", "success");
+  showToast("Información secreta de la gema revelada al jugador.", "success", {icono:"percepcion"});
 }
