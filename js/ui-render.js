@@ -14,8 +14,8 @@ function renderTopbar(){
   var nameClass = isNPC ? 'char-name npc-name' : 'char-name';
 
   var hpNumsClass = curPv < 0 ? 'gauge-nums dying' : (curPv === 0 ? 'gauge-nums unconscious' : 'gauge-nums');
-  var hpStatusBadge = curPv < 0 ? '<span class="status-pill dying">💀 Agonizando ('+curPv+')</span>' : (curPv === 0 ? '<span class="status-pill unconscious">💤 Inconsciente</span>' : '');
-  var hpDebuffBadge = isHpDebuffed ? ' <small style="color:#E88178;font-weight:700;" title="Vida máxima reducida por debuff (Base: '+rawMaxHp+')">⚠️ Reducida de '+rawMaxHp+'</small>' : '';
+  var hpStatusBadge = curPv < 0 ? '<span class="status-pill dying">'+icono("hueso",{tam:"s"})+' Agonizando ('+curPv+')</span>' : (curPv === 0 ? '<span class="status-pill unconscious">'+icono("sueno",{tam:"s"})+' Inconsciente</span>' : '');
+  var hpDebuffBadge = isHpDebuffed ? ' <small style="color:#E88178;font-weight:700;" title="Vida máxima reducida por debuff (Base: '+rawMaxHp+')">'+iconoUI("aviso")+' Reducida de '+rawMaxHp+'</small>' : '';
 
   var crestContent = (c.portrait && c.portrait.trim())
     ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="crest-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="crest-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
@@ -38,7 +38,7 @@ function renderTopbar(){
     if(canEdit){
       roleBadgeHtml = '<span class="role-badge player" title="Tu personaje (Control total)">Jugador</span>';
     } else {
-      roleBadgeHtml = '<span class="role-badge spectator" title="Modo Espectador: Solo lectura">👁️ Espectador</span>';
+      roleBadgeHtml = '<span class="role-badge spectator" title="Modo Espectador: Solo lectura">'+iconoUI("ver")+' Espectador</span>';
     }
   } else {
     roleBadgeHtml = '<span class="role-badge player">Local</span>';
@@ -237,7 +237,7 @@ function tplFicha(c){
   var levelPointsPill = '';
   var ptsLibres = num(c.skillPoints, 0);
   if(!c.isNPC && ptsLibres > 0){
-    levelPointsPill = '<button type="button" class="lvl-points-pill" data-action="switch-tab" data-tab="habilidades" title="Ir a Habilidades">✨ '+ptsLibres+' '+(ptsLibres === 1 ? 'punto' : 'puntos')+' por repartir'+((c.skillPointsUnlocked || isGM()) ? '' : ' <small>(el máster abrirá el reparto)</small>')+'</button>';
+    levelPointsPill = '<button type="button" class="lvl-points-pill" data-action="switch-tab" data-tab="habilidades" title="Ir a Habilidades">'+icono("destellos",{tam:"s"})+' '+ptsLibres+' '+(ptsLibres === 1 ? 'punto' : 'puntos')+' por repartir'+((c.skillPointsUnlocked || isGM()) ? '' : ' <small>(el máster abrirá el reparto)</small>')+'</button>';
   }
 
   // Aviso de gemas talladas que esperan el veredicto del máster
@@ -296,7 +296,7 @@ function tplFicha(c){
       '<div>'+
         '<div class="field-grid">'+
           field("Nombre", "name", c.name, "text", ro)+
-          (isGM() && !c.isNPC ? '<div class="field"><label>👤 Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
+          (isGM() && !c.isNPC ? '<div class="field"><label>'+icono("jugador",{tam:"s"})+' Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
           '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(isGM() ? '' : 'readonly')+'>'+levelControl+'</div>'+levelPointsPill+'</div>'+
           '<div class="field"><label>Título</label><input type="text" data-bind="titulo" value="'+esc(c.titulo||"")+'" placeholder="ej: Vástago" '+(isGM() ? '' : 'readonly')+'></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text", ro)+
@@ -344,7 +344,7 @@ function tplHabilidades(c){
   var banner = '';
   if(!canEdit && currentUser){
     banner = '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni asignar puntos de habilidad en esta ficha.</span>'+
+      '<span>'+iconoUI("ver")+' Modo Espectador: Solo lectura. No puedes modificar ni asignar puntos de habilidad en esta ficha.</span>'+
     '</div>';
   } else if(isGM() && !c.isNPC){
     banner = '<div class="skill-pool-banner">'+
@@ -352,7 +352,7 @@ function tplHabilidades(c){
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
         '<button class="btn-solid-gold" data-action="gm-sub-skill-point" title="Quitar 1 punto de habilidad al personaje">-1 Pto (GM)</button>'+
         '<button class="btn-solid-gold" data-action="gm-add-skill-point" title="Dar 1 punto de habilidad al personaje">+1 Pto (GM)</button>'+
-        '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>'+
+        '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?iconoUI("candado")+' Bloquear Asignación (GM)':iconoUI("candado-abierto")+' Permitir Asignación (GM)')+'</button>'+
       '</div>'+
     '</div>';
   } else if(c.isNPC && isGM()){
