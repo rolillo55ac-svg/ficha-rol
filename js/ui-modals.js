@@ -132,23 +132,23 @@ function openCharModal(){
         ownerHtml = '<div class="char-owner-assign-box">' +
           '<div class="char-owner-info">' +
             '<span class="char-owner-label">' + icono("jugador", {tam:"s"}) + ' Jugador:</span> ' +
-            (c.ownerEmail ? '<span class="char-owner-email">● ' + esc(c.ownerEmail) + '</span>' : '<span class="char-owner-empty">○ Sin asignar</span>') +
+            (c.ownerEmail ? '<span class="char-owner-email">' + esc(c.ownerEmail) + '</span>' : '<span class="char-owner-empty">Sin asignar</span>') +
           '</div>' +
           '<div class="char-owner-actions">' +
             '<button type="button" class="btn-compact" data-action="assign-char-owner" data-id="' + c.id + '" style="font-size:0.7rem;padding:3px 7px;">' +
-              (c.ownerEmail ? '✏️ Cambiar' : '➕ Asignar') +
+              (c.ownerEmail ? iconoUI("editar") + ' Cambiar' : iconoUI("mas") + ' Asignar') +
             '</button>' +
-            (c.ownerEmail ? '<button type="button" class="btn-compact" data-action="clear-char-owner" data-id="' + c.id + '" title="Desvincular jugador" style="font-size:0.7rem;padding:3px 6px;color:var(--crimson-light);">✕</button>' : '') +
+            (c.ownerEmail ? '<button type="button" class="btn-compact" data-action="clear-char-owner" data-id="' + c.id + '" title="Desvincular jugador" style="font-size:0.7rem;padding:3px 6px;color:var(--crimson-light);">' + iconoUI("cerrar") + '</button>' : '') +
           '</div>' +
         '</div>';
       } else if(currentUser) {
         var isMine = isCharOwner(c, currentUser);
         ownerHtml = '<div style="margin-top:6px;font-size:0.72rem;display:flex;align-items:center;gap:4px;">' +
           (isMine
-            ? '<span class="char-owner-badge mine">⭐ Tu Personaje (Control total)</span>'
+            ? '<span class="char-owner-badge mine">' + icono("estrella", {tam:"s"}) + ' Tu Personaje (Control total)</span>'
             : (c.ownerEmail
-                ? '<span class="char-owner-badge other">👁️ De: ' + esc(c.ownerEmail) + ' (Espectador)</span>'
-                : '<span class="char-owner-badge unassigned">○ Sin asignar (Solo lectura)</span>'
+                ? '<span class="char-owner-badge other">' + iconoUI("ver") + ' De: ' + esc(c.ownerEmail) + ' (Espectador)</span>'
+                : '<span class="char-owner-badge unassigned">Sin asignar (Solo lectura)</span>'
               )
           ) +
         '</div>';
@@ -164,11 +164,11 @@ function openCharModal(){
             '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · '+(c.titulo?esc(c.titulo)+' · ':''))+esc(c.trabajo||"Aventurero")+'</div>'+
           '</div>'+
         '</div>'+
-        (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;">✕</button>':'')+
+        (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;">' + iconoUI("cerrar") + '</button>':'')+
       '</div>'+
       ownerHtml +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(176,141,87,0.15);width:100%;flex-wrap:wrap;">'+
-        '<span style="font-size:0.72rem;color:var(--ink-dim);letter-spacing:0.02em;">🎨 Color de acento:</span>'+
+        '<span style="font-size:0.72rem;color:var(--ink-dim);letter-spacing:0.02em;">' + icono("paleta", {tam:"s"}) + ' Color de acento:</span>'+
         '<div class="theme-swatches">'+swatches+'</div>'+
       '</div>'+
     '</div>';
@@ -236,23 +236,23 @@ function openDataModal(screen){
     '</div>';
     if(PARTIDAS.length > 1){
       html += '<div class="settings-list">'+
-        settingsRow("settings-go", "partida", "🗺️", "Partida: "+esc(PARTIDA_ACTUAL.nombre), "Cambiar")+
+        settingsRow("settings-go", "partida", icono("mapa", {tam:"m"}), "Partida: "+esc(PARTIDA_ACTUAL.nombre), "Cambiar")+
       '</div>';
     }
     html += '<div class="settings-group-title">Preferencias</div><div class="settings-list">'+
       '<button type="button" class="settings-row" data-action="toggle-sound" role="switch" aria-checked="'+(soundEnabled() ? 'true' : 'false')+'">'+
-        '<span class="settings-row-ico">🔊</span>'+
+        '<span class="settings-row-ico">' + iconoUI("sonido") + '</span>'+
         '<span class="settings-row-txt"><span class="settings-row-title">Sonidos</span><span class="settings-row-sub">Dados, pestañas y sonidos de personaje</span></span>'+
         '<span class="settings-switch'+(soundEnabled() ? ' on' : '')+'"></span>'+
       '</button>'+
       (window.UIJuice ?
         '<button type="button" class="settings-row" data-action="toggle-juice" data-juice="vib" role="switch" aria-checked="'+(UIJuice.vibOn() ? 'true' : 'false')+'">'+
-          '<span class="settings-row-ico">📳</span>'+
+          '<span class="settings-row-ico">' + iconoUI("vibracion") + '</span>'+
           '<span class="settings-row-txt"><span class="settings-row-title">Vibración</span><span class="settings-row-sub">Pequeñas vibraciones al tocar y tirar dados</span></span>'+
           '<span class="settings-switch'+(UIJuice.vibOn() ? ' on' : '')+'"></span>'+
         '</button>'+
         '<button type="button" class="settings-row" data-action="toggle-juice" data-juice="anim" role="switch" aria-checked="'+(UIJuice.animOn() ? 'true' : 'false')+'">'+
-          '<span class="settings-row-ico">✨</span>'+
+          '<span class="settings-row-ico">' + icono("destellos", {tam:"m"}) + '</span>'+
           '<span class="settings-row-txt"><span class="settings-row-title">Animaciones</span><span class="settings-row-sub">Destellos y movimientos al tocar y cambiar números</span></span>'+
           '<span class="settings-switch'+(UIJuice.animOn() ? ' on' : '')+'"></span>'+
         '</button>' : '')+
