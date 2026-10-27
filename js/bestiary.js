@@ -17,8 +17,8 @@ function tplBestiario(s){
 
   var mountPills = [
     {id:"Todos", label:"Todas"},
-    {id:"monturas", label:"🐎 Solo Monturas"},
-    {id:"no_monturas", label:"🚶 No montables"}
+    {id:"monturas", label:icono("caballo",{tam:"s"}) + " Solo Monturas"},
+    {id:"no_monturas", label:icono("a-pie",{tam:"s"}) + " No montables"}
   ].map(function(m){
     return '<button class="f-pill '+(bestiaryMountFilter===m.id?'active':'')+'" data-action="set-bestiary-mount" data-val="'+m.id+'">'+m.label+'</button>';
   }).join('');
@@ -48,7 +48,7 @@ function tplBestiario(s){
         '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:wrap;">'+
           (canEdit ? '<input type="text" class="creature-name-input" data-scope="global" placeholder="Nombre de criatura" data-bind="bestiary.'+b.id+'.nombre" value="'+esc(b.nombre)+'">' : '<div style="font-family:var(--font-display);color:var(--gold-light);font-size:1.05rem;font-weight:700;">'+esc(b.nombre)+'</div>')+
           '<span class="item-badge '+bClass+'">'+rName+'</span>'+
-          '<span class="mount-pill '+(b.montable?'is-mount':'no-mount')+'">'+(b.montable?'🐎 Montura':'🚶 No montable')+'</span>'+
+          '<span class="mount-pill '+(b.montable?'is-mount':'no-mount')+'">'+(b.montable ? icono("caballo", {tam:"s"}) + ' Montura' : icono("a-pie", {tam:"s"}) + ' No montable')+'</span>'+
         '</div>'+
         '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'+
           (canEdit ? '<select class="creature-select" data-scope="global" data-bind="bestiary.'+b.id+'.rarity" title="Rareza">'+
@@ -57,18 +57,18 @@ function tplBestiario(s){
           (canEdit ? '<select class="creature-select" data-scope="global" data-bind="bestiary.'+b.id+'.continente" title="Continente">'+
             CONTINENTES.map(function(ct){return '<option value="'+ct+'" '+((b.continente||"Todos")===ct?'selected':'')+'>'+ct+'</option>';}).join('')+
           '</select>' : '<span style="font-size:.7rem;color:var(--ink-dim);">'+esc(b.continente||"Todos")+'</span>')+
-          (canEdit ? '<button class="btn-compact '+(b.montable?'btn-solid-gold':'')+'" data-action="toggle-bestiary-mountable" data-id="'+b.id+'" title="Alternar si es montura">'+(b.montable?'🐎 Montable':'🚶 No montable')+'</button>' : '')+
-          (canEdit ? '<button class="btn-compact" data-action="toggle-bestiary-visibility" data-id="'+b.id+'" title="Mostrar/Ocultar para jugadores">'+(b.visible!==false?'👁️':'🙈')+'</button>' : '')+
-          (canEdit ? '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'" aria-label="Eliminar criatura">✕</button>' : '')+
+          (canEdit ? '<button class="btn-compact '+(b.montable?'btn-solid-gold':'')+'" data-action="toggle-bestiary-mountable" data-id="'+b.id+'" title="Alternar si es montura">'+(b.montable ? icono("caballo", {tam:"s"}) + ' Montable' : icono("a-pie", {tam:"s"}) + ' No montable')+'</button>' : '')+
+          (canEdit ? '<button class="btn-compact" data-action="toggle-bestiary-visibility" data-id="'+b.id+'" title="Mostrar/Ocultar para jugadores">'+(b.visible!==false ? iconoUI("ver") : iconoUI("ocultar"))+'</button>' : '')+
+          (canEdit ? '<button class="row-del" data-action="del-bestiary" data-id="'+b.id+'" aria-label="Eliminar criatura">' + iconoUI("cerrar") + '</button>' : '')+
         '</div>'+
       '</div>'+
       '<div class="creature-layout">'+
         '<div class="creature-profile-box">'+
-          '<div class="creature-avatar-img"'+imgStyle+' title="'+esc(b.nombre)+'">'+(b.image ? '' : '🐉')+'</div>'+
+          '<div class="creature-avatar-img"'+imgStyle+' title="'+esc(b.nombre)+'">'+(b.image ? '' : icono("dragon", {tam:"s"}))+'</div>'+
           (canEdit ? '<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:2px;">'+
             '<button class="btn-compact" data-action="upload-bestiary-img" data-id="'+b.id+'" title="Subir foto desde archivo">Foto</button>'+
             '<button class="btn-compact" data-action="url-bestiary-img" data-id="'+b.id+'" title="Pegar URL de foto">URL</button>'+
-            (b.image ? '<button class="btn-compact" data-action="remove-bestiary-img" data-id="'+b.id+'" title="Quitar foto">✕</button>' : '')+
+            (b.image ? '<button class="btn-compact" data-action="remove-bestiary-img" data-id="'+b.id+'" title="Quitar foto">' + iconoUI("cerrar") + '</button>' : '')+
           '</div>' : '')+
         '</div>'+
         '<div style="flex:1;min-width:0;">'+
@@ -80,15 +80,15 @@ function tplBestiario(s){
             '<div class="creature-field beast-mobility-cell">'+
               '<label>Movilidad (Casillas)</label>'+
               '<button type="button" class="beast-mov-btn" data-action="pick-beast-mov" data-id="'+b.id+'" title="Haz clic para seleccionar o consultar las casillas de movimiento">'+
-                '<span class="beast-mov-label">🏃 <strong>'+esc(b.casillasMovimiento || (b.movilidad ? (b.movilidad.match(/\d+/)?b.movilidad.match(/\d+/)[0]:'8') : '8'))+'</strong> casillas</span>'+
+                '<span class="beast-mov-label">' + icono("movilidad", {tam:"s"}) + ' <strong>'+esc(b.casillasMovimiento || (b.movilidad ? (b.movilidad.match(/\d+/)?b.movilidad.match(/\d+/)[0]:'8') : '8'))+'</strong> casillas</span>'+
                 (b.movilidad && b.movilidad.includes('(') ? ' <span class="beast-terrain-pill">'+esc(b.movilidad.slice(b.movilidad.indexOf('(')))+'</span>' : '')+
                 '<span class="beast-mov-chevron">▾</span>'+
               '</button>'+
             '</div>'+
-            (canEdit ? creatureFieldGlobal("Doma (Dif.)","bestiary."+b.id+".doma",b.doma||"3") : '<div class="creature-field"><label>Doma (Dif.)</label><span style="font-size:.8rem;color:var(--gold-light);font-weight:700;">🎯 Dif. '+esc(b.doma||"-")+'</span></div>')+
+            (canEdit ? creatureFieldGlobal("Doma (Dif.)","bestiary."+b.id+".doma",b.doma||"3") : '<div class="creature-field"><label>Doma (Dif.)</label><span style="font-size:.8rem;color:var(--gold-light);font-weight:700;">' + icono("diana", {tam:"s"}) + ' Dif. '+esc(b.doma||"-")+'</span></div>')+
           '</div>'+
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px;flex-wrap:wrap;">'+
-            '<button class="tame-btn" data-action="roll-tame" data-name="'+esc(b.nombre)+'" data-diff="'+esc(b.doma||"3")+'" title="Realizar tirada de doma con d10">🎲 Tirada de Doma (Dif. '+esc(b.doma||"3")+')</button>'+
+            '<button class="tame-btn" data-action="roll-tame" data-name="'+esc(b.nombre)+'" data-diff="'+esc(b.doma||"3")+'" title="Realizar tirada de doma con d10">' + icono("dado", {tam:"s"}) + ' Tirada de Doma (Dif. '+esc(b.doma||"3")+')</button>'+
           '</div>'+
           '<div class="creature-field" style="margin-top:6px;"><label>Habilidades y Rasgos</label>'+
             (canEdit ? '<textarea class="creature-notes" data-scope="global" data-bind="bestiary.'+b.id+'.habilidades">'+esc(b.habilidades||b.notas||"")+'</textarea>' : (b.habilidades||b.notas?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.habilidades||b.notas)+'</p>':''))+

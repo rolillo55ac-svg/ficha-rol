@@ -13,11 +13,11 @@ function tplMundoArmas(s){
       (editing ? '<div class="creature-field lore-field"><label>Nombre</label><input type="text" class="k-input" '+bind+'name" value="'+esc(w.name)+'" placeholder="Nombre del arma"></div>'
                : '<div class="lore-title weapon-title">'+esc(w.name)+'</div>')+
       '<div class="weapon-actions">'+
-        (isLocked ? '<span class="weapon-status-badge locked" title="Arma bloqueada por el Máster">🔒 Bloqueada</span>' : '<span class="weapon-status-badge visible" title="Arma visible y usable para todos">👁️ Visible</span>')+
+        (isLocked ? '<span class="weapon-status-badge locked" title="Arma bloqueada por el Máster">' + iconoUI("candado") + ' Bloqueada</span>' : '<span class="weapon-status-badge visible" title="Arma visible y usable para todos">' + iconoUI("ver") + ' Visible</span>')+
         (canEdit ?
-          '<button class="btn-compact lore-btn" data-action="toggle-weapon-edit" data-id="'+w.id+'" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing?'✔️':'✏️')+'</button>'+
-          '<button class="btn-compact lore-btn btn-lock-weapon '+(isLocked?'locked':'')+'" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="'+(isLocked?'Desbloquear arma para jugadores':'Bloquear arma para jugadores')+'">'+(isLocked?'🔓 Desbloquear':'🔒 Bloquear')+'</button>'+
-          '<button class="btn-compact lore-btn" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>'
+          '<button class="btn-compact lore-btn" data-action="toggle-weapon-edit" data-id="'+w.id+'" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing ? iconoUI("hecho") : iconoUI("editar"))+'</button>'+
+          '<button class="btn-compact lore-btn btn-lock-weapon '+(isLocked?'locked':'')+'" data-action="toggle-weapon-visibility" data-id="'+w.id+'" title="'+(isLocked?'Desbloquear arma para jugadores':'Bloquear arma para jugadores')+'">'+(isLocked ? iconoUI("candado-abierto") + ' Desbloquear' : iconoUI("candado") + ' Bloquear')+'</button>'+
+          '<button class="btn-compact lore-btn" data-action="del-global-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">' + iconoUI("cerrar") + '</button>'
         : '')+
       '</div>';
     if(editing){
@@ -28,10 +28,10 @@ function tplMundoArmas(s){
         '<div class="creature-field lore-field"><label>Efecto en crítico</label><input type="text" class="k-input" '+bind+'critico" value="'+esc(w.critico)+'" placeholder="Ej: Doble daño / Sangrado"></div>'+
         '<div class="creature-field lore-field"><label>Descripción / Lore</label><textarea class="k-input" '+bind+'desc" placeholder="Descripción...">'+esc(w.desc)+'</textarea></div>';
     } else {
-      var pills = (w.dano ? '<span class="spell-pill">⚔️ '+esc(w.dano)+'</span>' : '')+
-        (w.alcance ? '<span class="spell-pill">🎯 '+esc(w.alcance)+'</span>' : '');
+      var pills = (w.dano ? '<span class="spell-pill">' + icono("fisico", {tam:"s"}) + ' ' + esc(w.dano) + '</span>' : '')+
+        (w.alcance ? '<span class="spell-pill">' + icono("diana", {tam:"s"}) + ' ' + esc(w.alcance) + '</span>' : '');
       if(pills) html += '<div class="spell-pills-read weapon-pills">'+pills+'</div>';
-      if(w.critico) html += '<p class="lore-text weapon-crit"><b>💥 Crítico:</b> '+esc(w.critico)+'</p>';
+      if(w.critico) html += '<p class="lore-text weapon-crit"><b>' + icono("golpe", {tam:"s"}) + ' Crítico:</b> '+esc(w.critico)+'</p>';
       if(w.desc) html += '<p class="lore-text">'+esc(w.desc)+'</p>';
     }
     html += '</div>';
@@ -93,8 +93,8 @@ function tplMundoBuffs(s){
             '<option value="buff" '+((b.type||'buff')==='buff'?'selected':'')+'>Buff</option>'+
             '<option value="debuff" '+((b.type||'buff')==='debuff'?'selected':'')+'>Debuff</option>'+
           '</select>'+
-          '<button class="btn-compact" data-action="toggle-buff-visibility" data-id="'+b.id+'" title="Mostrar/Ocultar">'+(b.visible!==false?'👁️':'🙈')+'</button>'+
-          '<button class="row-del" data-action="del-global-buff" data-id="'+b.id+'" aria-label="Eliminar">✕</button>'+
+          '<button class="btn-compact" data-action="toggle-buff-visibility" data-id="'+b.id+'" title="Mostrar/Ocultar">'+(b.visible!==false ? iconoUI("ver") : iconoUI("ocultar"))+'</button>'+
+          '<button class="row-del" data-action="del-global-buff" data-id="'+b.id+'" aria-label="Eliminar">' + iconoUI("cerrar") + '</button>'+
         '</div>' : '<span style="font-size:.7rem;color:'+(b.type==='debuff'?'var(--danger)':'var(--teal-light)')+';">'+(b.type==='debuff'?'Debuff':'Buff')+'</span>')+
       '</div>'+
       '<div class="creature-grid buff-grid">'+
@@ -110,7 +110,7 @@ function tplMundoBuffs(s){
           '</select></div>' : '<div class="creature-field"><label>Duración</label><span style="font-size:.8rem;color:var(--ink-dim);">'+esc(b.duration==='turns'?(b.durationTurns||0)+' turnos':'Permanente')+'</span></div>')+
         (canEdit && b.duration==='turns' ? '<div class="creature-field"><label>Nº Turnos</label><input type="number" min="1" data-scope="global" data-bind="buffCatalog.'+b.id+'.durationTurns" value="'+num(b.durationTurns,1)+'"></div>' : '')+
       '</div>'+
-      (canEdit ? '<label class="creature-field" style="flex-direction:row;align-items:center;gap:8px;min-height:44px;cursor:pointer;"><input type="checkbox" data-action="toggle-buff-longrest" data-id="'+b.id+'"'+(b.longRestReset===true?' checked':'')+' style="width:22px;height:22px;flex:none;"> 🌙 Se resetea al descansar largo</label>' : (b.longRestReset===true ? '<div class="creature-field"><span style="font-size:.8rem;color:var(--ink-dim);">🌙 Se resetea al descansar largo</span></div>' : ''))+
+      (canEdit ? '<label class="creature-field" style="flex-direction:row;align-items:center;gap:8px;min-height:44px;cursor:pointer;"><input type="checkbox" data-action="toggle-buff-longrest" data-id="'+b.id+'"'+(b.longRestReset===true?' checked':'')+' style="width:22px;height:22px;flex:none;"> ' + icono("descanso", {tam:"s"}) + ' Se resetea al descansar largo</label>' : (b.longRestReset===true ? '<div class="creature-field"><span style="font-size:.8rem;color:var(--ink-dim);">' + icono("descanso", {tam:"s"}) + ' Se resetea al descansar largo</span></div>' : ''))+
       (canEdit ? '<div class="creature-field"><label>Descripción</label><textarea class="creature-notes" data-scope="global" data-bind="buffCatalog.'+b.id+'.desc">'+esc(b.desc)+'</textarea></div>' : (b.desc?'<p style="font-size:.78rem;color:var(--ink-dim);margin-top:4px;">'+esc(b.desc)+'</p>':''))+
     '</div>';
   });
