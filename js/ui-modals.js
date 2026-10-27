@@ -2545,7 +2545,7 @@ function feedbackModalClick(e){
         "• Acción sugerida: " + (triageP.technicalAction || "Inspeccionar componente") + "\n" +
         "• Entorno: " + ((targetP.system && targetP.system.os) ? (targetP.system.os + " - " + targetP.system.browser) : "Navegador Web");
       fallbackCopyText(promptText);
-      showToast("Información del ticket copiada 📋", "success");
+      showToast("Información del ticket copiada", "success");
     }
     return;
   }
@@ -2642,7 +2642,7 @@ function feedbackModalClick(e){
       sendDiscordWebhookReply(targetSave, replyText);
 
       openFeedbackAdminModal();
-      showToast("¡Respuesta enviada al jugador y notificada 🟢!", "success");
+      showToast("¡Respuesta enviada al jugador y notificada!", "success");
     }
     return;
   }
@@ -2671,7 +2671,7 @@ function feedbackModalClick(e){
       "DROP POLICY IF EXISTS \"Allow update app_feedback\" ON public.app_feedback;\n" +
       "CREATE POLICY \"Allow update app_feedback\" ON public.app_feedback FOR UPDATE USING (true);";
     fallbackCopyText(sqlMigrationText);
-    showToast("¡SQL de migración copiado! Pégalo en el SQL Editor de Supabase 📋", "success");
+    showToast("¡SQL de migración copiado! Pégalo en el SQL Editor de Supabase", "success");
     return;
   }
 
@@ -2687,7 +2687,7 @@ function feedbackModalClick(e){
 
     sendDiscordWebhookReport(testReport).then(function(res){
       if(res.success){
-        showToast("¡Mensaje de prueba enviado a tu Discord! 🎮", "success");
+        showToast("¡Mensaje de prueba enviado a tu Discord!", "success");
       } else {
         showToast("Error al enviar a Discord.", "error");
       }
@@ -2701,7 +2701,7 @@ function feedbackModalClick(e){
     if(targetR){
       sendDiscordWebhookReport(targetR).then(function(res){
         if(res.success){
-          showToast("Enviado a Discord 🎮", "success");
+          showToast("Enviado a Discord", "success");
         } else {
           showToast("No se pudo enviar a Discord.", "warning");
         }
@@ -2715,7 +2715,7 @@ function fallbackCopyText(text){
   try {
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){
-        showToast("Copiado al portapapeles 📋", "success");
+        showToast("Copiado al portapapeles", "success");
       }).catch(function(){
         execCommandCopy(text);
       });
@@ -2737,7 +2737,7 @@ function execCommandCopy(text){
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    showToast("Copiado al portapapeles 📋", "success");
+    showToast("Copiado al portapapeles", "success");
   } catch(e){
     showToast("No se pudo copiar automáticamente.", "warning");
   }
@@ -2812,12 +2812,12 @@ function openCharSoundModal(c){
         '<strong>' + esc(p.name) + '</strong>' +
         '<small>' + esc(p.desc) + '</small>' +
       '</div>' +
-      '<span class="char-sound-preset-check">✓</span>' +
+      '<span class="char-sound-preset-check">'+iconoUI("hecho")+'</span>' +
     '</button>';
   }).join('');
 
   var html = '<h2>' +
-    '<span>🎵 Sonido de ' + esc(c.name) + '</span>' +
+    '<span>'+iconoUI("sonido")+' Sonido de ' + esc(c.name) + '</span>' +
     '<button type="button" data-action="close-modal" aria-label="Cerrar">&times;</button>' +
   '</h2>' +
   '<p style="font-size:0.85rem;color:var(--ink-dim);margin:0 0 14px;line-height:1.4;">Elige un efecto de sonido predefinido o introduce un nombre, icono y audio para tu personaje.</p>' +
@@ -2832,16 +2832,16 @@ function openCharSoundModal(c){
     '<div class="field"><label>Pista de Audio (.mp3, .wav, .ogg) <small style="color:var(--ink-faint);">(Opcional)</small></label>' +
       '<div style="display:flex;gap:6px;align-items:center;">' +
         '<input type="text" id="charSoundUrlInput" value="' + esc(curUrl) + '" placeholder="sounds/..., https://... o sube archivo" style="flex:1;min-width:0;">' +
-        '<button type="button" class="btn-compact" data-action="upload-char-sound-file" title="Subir archivo de audio desde tu dispositivo" style="white-space:nowrap;padding:7px 11px;font-size:0.80rem;display:flex;align-items:center;gap:4px;flex:0 0 auto;">📁 Subir</button>' +
+        '<button type="button" class="btn-compact" data-action="upload-char-sound-file" title="Subir archivo de audio desde tu dispositivo" style="white-space:nowrap;padding:7px 11px;font-size:0.80rem;display:flex;align-items:center;gap:4px;flex:0 0 auto;">'+iconoUI("carpeta")+' Subir</button>' +
       '</div>' +
     '</div>' +
   '</div>' +
   '<input type="hidden" id="charSoundTypeInput" value="' + esc(curType) + '">' +
   '<div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">' +
-    '<button type="button" class="btn-compact" data-action="test-modal-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;" title="Escuchar sonido">▶ Probar</button>' +
-    '<button type="button" class="btn-solid-gold" data-action="save-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;">✓ Guardar</button>' +
+    '<button type="button" class="btn-compact" data-action="test-modal-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;" title="Escuchar sonido">Probar</button>' +
+    '<button type="button" class="btn-solid-gold" data-action="save-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;">'+iconoUI("hecho")+' Guardar</button>' +
     (curName ? '<button type="button" class="btn-compact" data-action="remove-char-sound" style="padding:9px 12px;color:var(--danger);border-color:rgba(200,75,87,0.4);" title="Quitar sonido de este personaje">Quitar</button>' : '') +
-    '<button type="button" class="btn-compact" data-action="close-modal" style="padding:9px 14px;">✕ Cancelar</button>' +
+    '<button type="button" class="btn-compact" data-action="close-modal" style="padding:9px 14px;">'+iconoUI("cerrar")+' Cancelar</button>' +
   '</div>';
 
   var modal = document.getElementById("charSoundModal");
@@ -2971,11 +2971,11 @@ function openAlchemyCatalogModal(c){
       'Selecciona cualquier sustancia catalogada en el mundo de Krysalis para añadirla a tu laboratorio o grimorio.' +
     '</p>' +
     '<div style="margin-bottom:10px;">' +
-      '<input type="text" id="alchemyModalSearchInp" placeholder="🔍 Filtrar sustancias, efectos o terrenos..." style="width:100%;padding:7px 10px;background:rgba(18,13,10,0.85);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:0.8rem;" value="">' +
+      '<input type="text" id="alchemyModalSearchInp" placeholder="Filtrar sustancias, efectos o terrenos..." style="width:100%;padding:7px 10px;background:rgba(18,13,10,0.85);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:0.8rem;" value="">' +
     '</div>' +
     '<div class="filter-pills" id="alchemyModalTypePills" style="margin-bottom:12px;gap:4px;flex-wrap:wrap;">' +
       ['Todos', 'Veneno', 'Poción', 'Ungüento'].map(function(t){
-        return '<button type="button" class="f-pill ' + (t === 'Todos' ? 'active' : '') + '" data-action="alchemy-modal-filter-type" data-val="' + t + '">' + (t === 'Veneno' ? '🧪 ' : (t === 'Poción' ? '✨ ' : (t === 'Ungüento' ? '🌿 ' : ''))) + t + '</button>';
+        return '<button type="button" class="f-pill ' + (t === 'Todos' ? 'active' : '') + '" data-action="alchemy-modal-filter-type" data-val="' + t + '">' + (t === 'Veneno' ? icono('pocion',{tam:'s'})+' ' : (t === 'Poción' ? icono('destellos',{tam:'s'})+' ' : (t === 'Ungüento' ? icono('hierbas',{tam:'s'})+' ' : ''))) + t + '</button>';
       }).join('') +
     '</div>' +
     '<div id="alchemyModalListContainer" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px;">' +
@@ -3024,7 +3024,7 @@ function renderAlchemyCatalogModalList(c){
     });
 
     var rColor = s.rarity === 'Legendaria' ? '#FDE047' : (s.rarity === 'Muy rara' ? '#C084FC' : (s.rarity === 'Rara' ? '#60A5FA' : '#C2B196'));
-    var typeIcon = s.type === 'Poción' ? '✨' : (s.type === 'Ungüento' ? '🌿' : '🧪');
+    var typeIcon = s.type === 'Poción' ? icono('destellos',{tam:'s'}) : (s.type === 'Ungüento' ? icono('hierbas',{tam:'s'}) : icono('pocion',{tam:'s'}));
 
     html += '<div style="background:rgba(25,18,13,0.85);border:1px solid var(--line);border-left:3px solid ' + rColor + ';border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:4px;">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">' +
@@ -3034,18 +3034,18 @@ function renderAlchemyCatalogModalList(c){
           '<span style="font-size:0.62rem;color:' + rColor + ';border:1px solid ' + rColor + ';padding:0 4px;border-radius:4px;">' + esc(s.rarity) + '</span>' +
         '</div>' +
         (alreadyHas ? 
-          '<span style="font-size:0.68rem;color:var(--teal-light);font-weight:700;">✓ En tu laboratorio</span>' :
+          '<span style="font-size:0.68rem;color:var(--teal-light);font-weight:700;">'+iconoUI("hecho")+' En tu laboratorio</span>' :
           '<button type="button" class="btn-compact btn-solid-gold" data-action="add-from-alchemy-catalog" data-subst-id="' + s.id + '" style="padding:3px 8px;font-size:0.68rem;">+ Añadir a Ficha</button>') +
       '</div>' +
       '<div style="font-size:0.68rem;color:var(--ink-faint);display:flex;gap:8px;flex-wrap:wrap;">' +
-        '<span>🗺️ ' + esc(s.terrain) + ' (' + esc(s.continent) + ')</span>' +
-        '<span>🌱 <i>' + esc(s.rawMaterial) + '</i></span>' +
+        '<span>'+icono('mapa',{tam:'s'})+' ' + esc(s.terrain) + ' (' + esc(s.continent) + ')</span>' +
+        '<span>'+icono('brote',{tam:'s'})+' <i>' + esc(s.rawMaterial) + '</i></span>' +
         '<span>CD Extracción: ' + s.dificultadExtraccion + '</span>' +
       '</div>' +
       ((s.efectoEnemigo || s.efectoCherk) ?
         '<div style="font-size:0.72rem;color:var(--ink-dim);line-height:1.3;margin-top:2px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
-          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:#FF8A96;font-weight:600;">⚔️ Enemigo:</span> ' + esc(s.efectoEnemigo) + '</div>' +
-          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:var(--teal-light);font-weight:600;">🛡️ Propio:</span> ' + esc(s.efectoCherk) + '</div>' +
+          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:#FF8A96;font-weight:600;">'+icono('puno',{tam:'s'})+' Enemigo:</span> ' + esc(s.efectoEnemigo) + '</div>' +
+          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:var(--teal-light);font-weight:600;">'+icono('escudo',{tam:'s'})+' Propio:</span> ' + esc(s.efectoCherk) + '</div>' +
         '</div>' : '') +
     '</div>';
   });
@@ -3075,7 +3075,7 @@ function kPickerOpen(sel, title){
   var cur = sel.value;
   var html = '<div class="kpick-bg" id="kpickBg"><div class="kpick" role="dialog" aria-modal="true" aria-label="'+esc(title)+'">'+
     '<div class="kpick-grab"></div>'+
-    '<div class="kpick-head"><h2>'+esc(title)+'</h2><button type="button" class="kpick-x" data-kp-close="1" aria-label="Cerrar">✕</button></div>'+
+    '<div class="kpick-head"><h2>'+esc(title)+'</h2><button type="button" class="kpick-x" data-kp-close="1" aria-label="Cerrar">'+iconoUI("cerrar")+'</button></div>'+
     '<div class="kpick-search"><input type="search" class="k-input" id="kpickSearch" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"></div>'+
     '<div class="kpick-list" id="kpickList">'+
     opts.map(function(o, i){
