@@ -1,6 +1,6 @@
 {
-  "version": "1.4.119.0",
-  "build": "2026.10.27.3",
+  "version": "1.4.120.0",
+  "build": "2026.10.27.4",
   "updatedAt": "2026-10-27T12:00:00Z",
-  "changelog": "Misiones y mapas: iconos dibujados en las tarjetas, botones y avisos."
+  "changelog": "Avisos de peticiones de tirada y utilidades: más iconos dibujados."
 }
