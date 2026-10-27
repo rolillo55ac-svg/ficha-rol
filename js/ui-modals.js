@@ -1544,7 +1544,7 @@ function handleRemoteTicketReply(data){
   if(changed){
     savePlayerTickets(myTickets);
     if(typeof renderTopbar === "function") renderTopbar();
-    showToast("📬 ¡El Administrador ha respondido a tu reporte #" + (data.ticketCode || "") + "!", "success");
+    showToast("¡El Administrador ha respondido a tu reporte #" + (data.ticketCode || "") + "!", "success", {icono:"buzon"});
     var modal = document.getElementById("feedbackModal");
     var overlay = document.getElementById("feedbackModalOverlay");
     if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
@@ -1562,7 +1562,7 @@ function handleRemoteNewTicket(data){
     if(state.feedbackReports.length > 50) state.feedbackReports.pop();
     saveState(false);
     if(isGM()){
-      showToast("🔔 Nuevo ticket recibido: #" + (data.ticketCode || data.title), "info");
+      showToast("Nuevo ticket recibido: #" + (data.ticketCode || data.title), "info", {icono:"avisos"});
       var modal = document.getElementById("feedbackModal");
       var overlay = document.getElementById("feedbackModalOverlay");
       if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "admin"){
@@ -1664,7 +1664,7 @@ async function syncPlayerTicketsWithSupabase(skipModalRefresh){
       savePlayerTickets(tickets);
       if(typeof renderTopbar === "function") renderTopbar();
       if(hadNewReply){
-        showToast("📬 Tienes una nueva respuesta del Administrador en tus reportes", "info");
+        showToast("Tienes una nueva respuesta del Administrador en tus reportes", "info", {icono:"buzon"});
       }
       if(!skipModalRefresh){
         var modal = document.getElementById("feedbackModal");
@@ -1793,15 +1793,15 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
 
   var gmPanelBtn = isGM() ? 
     '<button type="button" class="btn-compact feedback-gm-panel-btn" data-action="open-feedback-admin">' +
-      '🎮 Panel de Administración: Gestionar tickets' +
+      icono('admin',{tam:'s'}) + ' Panel de Administración: Gestionar tickets' +
     '</button>' : '';
 
   var tabsHeader = '<div class="feedback-nav-tabs">' +
     '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "new" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="new">' +
-      '<span>📝 Nuevo Reporte</span>' +
+      '<span>' + iconoUI('editar') + ' Nuevo Reporte</span>' +
     '</button>' +
     '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "my_tickets" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="my_tickets">' +
-      '<span>📬 Mis Reportes ' + (hasNewReply ? '<span class="feedback-badge-dot" title="Tienes respuestas nuevas"></span>' : '') + ' (' + myTickets.length + ')</span>' +
+      '<span>' + icono('buzon',{tam:'s'}) + ' Mis Reportes ' + (hasNewReply ? '<span class="feedback-badge-dot" title="Tienes respuestas nuevas"></span>' : '') + ' (' + myTickets.length + ')</span>' +
     '</button>' +
   '</div>';
 
@@ -1844,12 +1844,12 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
       '</div>' +
 
       '<div class="feedback-privacy-note">' +
-        '🔒 <b>100% Privado y Directo:</b> Tu reporte generará un ticket con código único. El Administrador te responderá directamente en la pestaña <b>"Mis Reportes"</b>.' +
+        iconoUI('candado') + ' <b>100% Privado y Directo:</b> Tu reporte generará un ticket con código único. El Administrador te responderá directamente en la pestaña <b>"Mis Reportes"</b>.' +
       '</div>' +
 
       '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
         '<button type="button" class="btn-solid-gold feedback-submit-btn" id="btnSubmitFeedback" data-action="submit-feedback-report">' +
-          '🚀 Enviar Reporte al Administrador' +
+          icono('version',{tam:'s'}) + ' Enviar Reporte al Administrador' +
         '</button>' +
         '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
           'Cancelar' +
@@ -1859,11 +1859,11 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
     // Vista "Mis Reportes y Respuestas"
     if(!myTickets.length){
       contentHtml = '<div style="text-align:center;padding:30px 16px;color:var(--ink-faint);line-height:1.5;">' +
-        '<div style="font-size:2.2rem;margin-bottom:8px;">📭</div>' +
+        '<div style="font-size:2.2rem;margin-bottom:8px;">' + icono('buzon-vacio') + '</div>' +
         '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);margin-bottom:6px;">No tienes reportes enviados aún</div>' +
         '<p style="font-size:0.82rem;margin:0 0 16px;">Cualquier duda, error o sugerencia que envíes aparecerá aquí junto a la respuesta oficial del Administrador.</p>' +
         '<button type="button" class="btn-solid-gold" style="padding:8px 16px;font-size:0.85rem;" data-action="switch-feedback-tab" data-tab="new">' +
-          '📝 Enviar mi primer reporte' +
+          iconoUI('editar') + ' Enviar mi primer reporte' +
         '</button>' +
       '</div>';
     } else {
@@ -1871,23 +1871,23 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
         var st = t.status || "pending";
         var statusBadge = '';
         if(st === "resolved"){
-          statusBadge = '<span class="ticket-badge resolved">🟢 Resuelto</span>';
+          statusBadge = '<span class="ticket-badge resolved"><span class="dot dot-verde"></span> Resuelto</span>';
         } else if(st === "in_progress"){
-          statusBadge = '<span class="ticket-badge in_progress">🔵 En proceso</span>';
+          statusBadge = '<span class="ticket-badge in_progress"><span class="dot dot-azul"></span> En proceso</span>';
         } else {
-          statusBadge = '<span class="ticket-badge pending">🟡 En revisión</span>';
+          statusBadge = '<span class="ticket-badge pending"><span class="dot dot-amarillo"></span> En revisión</span>';
         }
 
         var replyBlock = '';
         if(t.adminReply){
           replyBlock = '<div class="player-reply-box">' +
-            '<div class="player-reply-header">🛡️ Respuesta Oficial del Administrador:</div>' +
+            '<div class="player-reply-header">' + icono('escudo',{tam:'s'}) + ' Respuesta Oficial del Administrador:</div>' +
             '<div class="player-reply-body">' + esc(t.adminReply) + '</div>' +
             (t.resolvedAt ? '<div style="font-size:0.68rem;color:var(--ink-faint);margin-top:6px;text-align:right;">Respondido el ' + esc(new Date(t.resolvedAt).toLocaleString()) + '</div>' : '') +
           '</div>';
         } else {
           replyBlock = '<div style="margin-top:8px;font-size:0.75rem;color:var(--ink-faint);background:rgba(0,0,0,0.25);border-radius:4px;padding:6px 8px;border-left:2px solid var(--line);">' +
-            (st === "in_progress" ? '🔵 El Administrador está trabajando en solucionar esta incidencia.' : '⏳ En cola de revisión. El Administrador te responderá aquí tan pronto lo evalúe.') +
+            (st === "in_progress" ? '<span class="dot dot-azul"></span> El Administrador está trabajando en solucionar esta incidencia.' : '<span class="dot dot-amarillo"></span> En cola de revisión. El Administrador te responderá aquí tan pronto lo evalúe.') +
           '</div>';
         }
 
@@ -1915,7 +1915,7 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
     }
   }
 
-  var html = '<h2>📬 Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>' + icono('buzon',{tam:'s'}) + ' Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     gmPanelBtn +
     tabsHeader +
     contentHtml;
