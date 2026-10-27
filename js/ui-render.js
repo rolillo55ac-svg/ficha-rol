@@ -197,13 +197,13 @@ function tplLapidario(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes tallar ni modificar las piedras en esta ficha.</span>'+
+      '<span>'+iconoUI("ver")+' Modo Espectador: Solo lectura. No puedes tallar ni modificar las piedras en esta ficha.</span>'+
     '</div>';
   }
   if(typeof renderLapidaryWorkshop === 'function'){
     html += renderLapidaryWorkshop(c, canEdit);
   } else {
-    html += '<div style="padding:32px;text-align:center;color:var(--ink-faint);">⚙️ Taller de Lapidario cargando...</div>';
+    html += '<div style="padding:32px;text-align:center;color:var(--ink-faint);">Taller de Lapidario cargando...</div>';
   }
   return html;
 }
@@ -217,7 +217,7 @@ function tplFicha(c){
           '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="-1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">-</button>'+
           '<span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--gold-light);min-width:30px;text-align:center;">'+num(c.attrs[a],0)+'</span>'+
           '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">+</button>'+
-          '<button class="dice-btn" data-action="roll-attr" data-attr="'+a+'" style="width:22px;height:22px;font-size:0.75rem;margin-left:2px;" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)">🎲</button>'+
+          '<button class="dice-btn" data-action="roll-attr" data-attr="'+a+'" style="width:22px;height:22px;font-size:0.75rem;margin-left:2px;" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)">'+icono("d10",{tam:"s"})+'</button>'+
         '</div>'+
       '</div>';
     }
@@ -242,7 +242,7 @@ function tplFicha(c){
 
   // Aviso de gemas talladas que esperan el veredicto del máster
   var pendingStones = (c.stones || []).filter(function(st){ return st.pendienteMaster; });
-  var stoneNotice = pendingStones.length ? '<div class="lapidary-verdict-status wait" style="margin-bottom:12px;"><span class="ic">⏳</span><span><b>' + (pendingStones.length === 1 ? 'Una gema tallada espera' : pendingStones.length + ' gemas talladas esperan') + ' al máster</b>: decidirá si aguanta' + (pendingStones.length === 1 ? '' : 'n') + '. Lo verás en la pestaña Piedras.</span></div>' : '';
+  var stoneNotice = pendingStones.length ? '<div class="lapidary-verdict-status wait" style="margin-bottom:12px;"><span class="ic">'+icono("actividad",{tam:"s"})+'</span><span><b>' + (pendingStones.length === 1 ? 'Una gema tallada espera' : pendingStones.length + ' gemas talladas esperan') + ' al máster</b>: decidirá si aguanta' + (pendingStones.length === 1 ? '' : 'n') + '. Lo verás en la pestaña Piedras.</span></div>' : '';
 
   var sound = c.charSound;
   if(!sound && (c.id === "char_ink" || (c.name && c.name.toLowerCase().includes("ink")))){
@@ -280,17 +280,17 @@ function tplFicha(c){
     stoneNotice+
     (!canEdit && currentUser ?
       '<div class="tr-spectator-banner" style="margin-bottom:12px;">'+
-        '<span style="font-size:1.15rem;flex:none;">👁️</span>'+
+        '<span style="font-size:1.15rem;flex:none;">'+iconoUI("ver")+'</span>'+
         '<div><strong>Modo Espectador:</strong> Consultando la ficha de <b>'+esc(c.name)+'</b> en modo solo lectura. No puedes modificar sus datos ni su equipo.</div>'+
       '</div>' : '')+
     '<div class="ficha-layout">'+
       '<div class="portrait-box">'+
-        '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':'👤')+'</div>'+
+        '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':icono("jugador"))+'</div>'+
         (canEdit ?
           '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+
             '<button class="btn-compact" data-action="upload-portrait" title="Subir foto desde archivo">Foto</button>'+
             '<button class="btn-compact" data-action="url-portrait" title="Pegar enlace de GitHub o web">URL</button>'+
-            (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">✕</button>' : '')+
+            (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">'+iconoUI("cerrar")+'</button>' : '')+
           '</div>' : '')+
       '</div>'+
       '<div>'+
