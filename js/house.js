@@ -5183,14 +5183,14 @@ function renderHouseSecretStatRow(s){
   return '<div class="house-secret-stat">' +
     '<input type="text" class="house-secret-stat-name" maxlength="40" placeholder="Estadística" value="' + esc(s.name || "") + '" aria-label="Estadística">' +
     '<input type="text" class="house-secret-stat-value" maxlength="40" placeholder="Valor" value="' + esc(s.value || "") + '" aria-label="Valor">' +
-    '<button class="house-perk-mini" data-action="house-secret-stat-remove" aria-label="Quitar">✕</button></div>';
+    '<button class="house-perk-mini" data-action="house-secret-stat-remove" aria-label="Quitar">'+iconoUI("cerrar")+'</button></div>';
 }
 
 function openHouseSecretsPanel(){
   var hs = houseSecrets["house:" + houseState.house.id] || {};
   var html = '<div class="house-secret-note">Solo lo ves tú. Los jugadores no reciben nada de esto.</div>';
   html += '<div class="house-secret-perk">';
-  html += '  <div class="house-perk-name">🏠 La casa</div>';
+  html += '  <div class="house-perk-name">La casa</div>';
   [["", "Vida", "houseSecretHp", hs.hp], ["max", "Vida máxima", "houseSecretHpMax", hs.hp_max]].forEach(function(f){
     html += '  <div class="house-secret-hp-row"><span class="house-secret-hp-label">' + f[1] + '</span>';
     html += '<button class="house-perk-mini" data-action="house-secret-hp" data-field="' + f[0] + '" data-delta="-1" aria-label="Restar">−</button>';
@@ -5206,7 +5206,7 @@ function openHouseSecretsPanel(){
     html += '  <div class="house-secret-stats">';
     (Array.isArray(ps.stats) ? ps.stats : []).forEach(function(s){ html += renderHouseSecretStatRow(s); });
     html += '  </div>';
-    html += '  <button class="house-perk-mini" data-action="house-secret-stat-add">➕ Estadística</button>';
+    html += '  <button class="house-perk-mini" data-action="house-secret-stat-add">'+iconoUI("mas")+' Estadística</button>';
     html += '  <textarea class="house-perk-in-desc house-secret-perk-notes" rows="2" placeholder="Notas secretas" aria-label="Notas secretas">' + esc(ps.notes || "") + '</textarea>';
     html += '</div>';
   });
@@ -5220,7 +5220,7 @@ function renderHouseRoomEditorsList(){
   var editors = houseRoomEditors();
   var seen = {};
   var html = '<div class="house-secret-perk" id="houseRoomEditorsList">';
-  html += '  <div class="house-perk-name">🛏️ Puede editar su habitación</div>';
+  html += '  <div class="house-perk-name">Puede editar su habitación</div>';
   html += '  <div class="house-secret-note">Mover y cambiar el tamaño, solo de su habitación. Los demás solo usan el baúl.</div>';
   (houseState.rooms || []).forEach(function(r){
     var cid = r.owner_character_id;
@@ -5230,7 +5230,7 @@ function renderHouseRoomEditorsList(){
     var ch = ((typeof state !== "undefined" && state.characters) || []).find(function(c){ return c.id === cid || c.db_id === cid; });
     var name = (ch && ch.name) || getRoomOwnerInfo(cid).name;
     html += '  <div class="house-secret-hp-row"><span class="house-secret-hp-label">' + esc(name) + '</span>';
-    html += '<button class="house-perk-mini" data-action="toggle-house-room-editor" data-char-id="' + esc(cid) + '" aria-pressed="' + on + '">' + (on ? '✅ Sí' : '🚫 No') + '</button></div>';
+    html += '<button class="house-perk-mini" data-action="toggle-house-room-editor" data-char-id="' + esc(cid) + '" aria-pressed="' + on + '">' + (on ? iconoUI("hecho") + ' Sí' : iconoUI("cerrar") + ' No') + '</button></div>';
   });
   if(!Object.keys(seen).length) html += '  <div class="house-secret-note">Ninguna habitación tiene dueño todavía.</div>';
   html += '</div>';
@@ -5338,9 +5338,9 @@ function renderHouseQuestsBox(){
       if(q.reward && !/nivel/i.test(q.reward)){
         pillText = q.reward;
       } else if(levelNum !== null && !isNaN(levelNum)){
-        pillText = "⬆ Nivel " + levelNum;
+        pillText = "Nivel " + levelNum;
       } else {
-        pillText = "⬆ Nivel " + orderNum;
+        pillText = "Nivel " + orderNum;
       }
 
       var tasks = Array.isArray(q.tasks) ? q.tasks : [];
@@ -5359,7 +5359,7 @@ function renderHouseQuestsBox(){
         tasks.forEach(function(t){
           var isDone = isHouseTaskDone(t);
           var taskName = t.text || t.title || t.name || "Tarea";
-          html += '      <li class="house-hist-task' + (isDone ? ' is-done' : '') + '">' + (isDone ? '✓ ' : '○ ') + esc(taskName) + '</li>';
+          html += '      <li class="house-hist-task' + (isDone ? ' is-done' : '') + '">' + (isDone ? iconoUI("hecho") + ' ' : '') + esc(taskName) + '</li>';
         });
         html += '    </ul>';
       }
@@ -5777,21 +5777,21 @@ function renderRoomInspector(roomId){
         html += '    <div class="house-upgrade-item' + (isUnlocked ? ' unlocked' : '') + '">';
         html += '      <div class="house-upgrade-info">';
         html += '        <div class="house-upgrade-title">';
-        html += '          <span>' + (isUnlocked ? '✅ ' : '🔒 ') + esc(u.name) + '</span>';
+        html += '          <span>' + iconoUI(isUnlocked ? "hecho" : "candado") + ' ' + esc(u.name) + '</span>';
         html += '          <span style="font-size:0.7rem;font-family:var(--font-mono);background:rgba(212,175,55,0.2);color:var(--gold-light);padding:1px 5px;border-radius:3px;">Nv. ' + (u.level || 1) + '</span>';
         html += '        </div>';
         html += '        <div class="house-upgrade-desc">' + esc(u.description || '') + '</div>';
 
         if(buffItem){
-          html += '        <div class="house-buff-tag">🎁 Otorga buff: <b>' + esc(buffItem.name) + '</b> (' + esc(buffItem.bonus || "+1") + ' a ' + esc(buffItem.attr || "todo") + ')</div>';
+          html += '        <div class="house-buff-tag">Otorga buff: <b>' + esc(buffItem.name) + '</b> (' + esc(buffItem.bonus || "+1") + ' a ' + esc(buffItem.attr || "todo") + ')</div>';
         }
         html += '      </div>';
 
         html += '      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">';
         if(isGm){
           html += '        <div style="display:flex;gap:4px;">';
-          html += '          <button class="btn-compact" data-action="level-up-house-upgrade" data-upgrade-id="' + u.id + '" style="font-size:0.68rem;padding:2px 6px;color:#F1C40F;" title="Subir nivel y potenciar buff">⬆️ Mejorar Buff</button>';
-          html += '          <button class="btn-compact" data-action="toggle-house-upgrade" data-upgrade-id="' + u.id + '" style="font-size:0.68rem;padding:2px 6px;">' + (isUnlocked ? '🔒 Bloquear' : '🔓 Desbloquear') + '</button>';
+          html += '          <button class="btn-compact" data-action="level-up-house-upgrade" data-upgrade-id="' + u.id + '" style="font-size:0.68rem;padding:2px 6px;color:#F1C40F;" title="Subir nivel y potenciar buff">'+iconoUI("flecha-arriba")+' Mejorar Buff</button>';
+          html += '          <button class="btn-compact" data-action="toggle-house-upgrade" data-upgrade-id="' + u.id + '" style="font-size:0.68rem;padding:2px 6px;">' + iconoUI(isUnlocked ? "candado" : "candado-abierto") + (isUnlocked ? ' Bloquear' : ' Desbloquear') + '</button>';
           html += '        </div>';
         } else {
           html += '        <span style="font-size:0.7rem;font-weight:700;color:' + (isUnlocked ? '#2ECC71' : 'var(--ink-dim)') + ';">' + (isUnlocked ? 'Desbloqueada' : 'Requiere Nv.' + u.required_house_level) + '</span>';
@@ -5800,9 +5800,9 @@ function renderRoomInspector(roomId){
         if(isUnlocked && buffItem && curChar){
           var alreadyApplied = (curChar.activeBuffs || []).some(function(ab){ return ab.id === buffItem.id; });
           if(alreadyApplied){
-            html += '        <span style="font-size:0.68rem;color:#2ECC71;font-weight:700;">✓ Activo en ' + esc(curChar.name) + '</span>';
+            html += '        <span style="font-size:0.68rem;color:#2ECC71;font-weight:700;">'+iconoUI("hecho")+' Activo en ' + esc(curChar.name) + '</span>';
           } else {
-            html += '        <button class="house-apply-buff-btn" data-action="apply-house-buff" data-buff-id="' + buffItem.id + '" title="Aplicar este buff a tu personaje activo">✨ Aplicar a ' + esc(curChar.name) + '</button>';
+            html += '        <button class="house-apply-buff-btn" data-action="apply-house-buff" data-buff-id="' + buffItem.id + '" title="Aplicar este buff a tu personaje activo">Aplicar a ' + esc(curChar.name) + '</button>';
           }
         }
 
