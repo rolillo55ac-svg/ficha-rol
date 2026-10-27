@@ -2191,7 +2191,7 @@ function tplInventario(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar el dinero ni los objetos del inventario en esta ficha.</span>'+
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes modificar el dinero ni los objetos del inventario en esta ficha.</span>'+
     '</div>';
   }
 
@@ -2222,10 +2222,10 @@ function tplInventario(c){
   // Cabecera con selector de vista (Mochila Grid Beta vs Lista Clásica)
   var viewSwitcherHtml = '<div class="skills-view-switcher" role="group" aria-label="Modo de vista de inventario">'+
     '<button type="button" class="skills-view-btn '+(viewMode==="grid"?"active":"")+'" data-action="set-inv-view" data-val="grid" title="Cuadrícula visual inmersiva de mochila">'+
-      '<span class="view-btn-icon">🎒</span> Mochila Grid'+
+      '<span class="view-btn-icon">' + icono("mochila",{tam:"s"}) + '</span> Mochila Grid'+
     '</button>'+
     '<button type="button" class="skills-view-btn '+(viewMode==="list"?"active":"")+'" data-action="set-inv-view" data-val="list" title="Vista tradicional en lista">'+
-      '<span class="view-btn-icon">📋</span> Lista Clásica'+
+      '<span class="view-btn-icon">' + icono("pergamino",{tam:"s"}) + '</span> Lista Clásica'+
     '</button>'+
   '</div>';
 
@@ -2248,11 +2248,11 @@ function tplInventario(c){
     });
 
     var groupsDef = [
-      { id: "all", label: "Todo", icon: "🎒", count: groupCounts.all },
-      { id: "combate", label: "Combate", icon: "⚔️", count: groupCounts.combate },
-      { id: "consumibles", label: "Consumibles", icon: "🧪", count: groupCounts.consumibles },
-      { id: "aventura", label: "Aventura", icon: "⛺", count: groupCounts.aventura },
-      { id: "botin", label: "Botín / Varios", icon: "💎", count: groupCounts.botin }
+      { id: "all", label: "Todo", icon: icono("mochila",{tam:"s"}), count: groupCounts.all },
+      { id: "combate", label: "Combate", icon: icono("daga",{tam:"s"}), count: groupCounts.combate },
+      { id: "consumibles", label: "Consumibles", icon: icono("pocion",{tam:"s"}), count: groupCounts.consumibles },
+      { id: "aventura", label: "Aventura", icon: icono("campamento",{tam:"s"}), count: groupCounts.aventura },
+      { id: "botin", label: "Botín / Varios", icon: icono("gema",{tam:"s"}), count: groupCounts.botin }
     ];
 
     var filteredItems = c.inventory.filter(function(it){
@@ -2261,7 +2261,7 @@ function tplInventario(c){
 
     html += '<div class="backpack-container">'+
       '<div class="backpack-header-bar">'+
-        '<div class="backpack-capacity-tag">🎒 <span>Objetos guardados: <b>'+c.inventory.length+'</b></span></div>'+
+        '<div class="backpack-capacity-tag">' + icono("mochila",{tam:"s"}) + ' <span>Objetos guardados: <b>'+c.inventory.length+'</b></span></div>'+
         (canEdit ? '<button class="btn-solid-gold" data-action="add-inventory-slot" style="padding:4px 12px;font-size:0.75rem;">+ Añadir Objeto</button>' : '')+
       '</div>'+
       invSearchHtml+
@@ -2281,7 +2281,7 @@ function tplInventario(c){
 
     if(filteredItems.length === 0){
       html += '<div class="backpack-empty-state">'+
-        '<div class="backpack-empty-icon">🎒</div>'+
+        '<div class="backpack-empty-icon">' + icono("mochila",{tam:"s"}) + '</div>'+
         '<div class="backpack-empty-msg">'+(invQ ? 'Ningún objeto coincide con la búsqueda.' : currentGroup === "all" ? 'La mochila está vacía.' : 'No hay objetos en esta categoría.')+'</div>'+
         (canEdit ? '<button type="button" class="btn-solid-gold" data-action="add-inventory-slot" style="margin-top:6px;font-size:0.76rem;padding:6px 14px;">+ Añadir Primer Objeto</button>' : '')+
       '</div>';
@@ -2365,7 +2365,7 @@ function tplInventario(c){
             }).join('')+
           '</select>'+
           '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'" '+(canEdit?'':'readonly')+'>'+
-          (canEdit ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '<div></div>')+
+          (canEdit ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">' + iconoUI("cerrar") + '</button>' : '<div></div>')+
         '</div>';
       });
     }
