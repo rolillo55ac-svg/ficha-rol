@@ -901,7 +901,7 @@ function tplEntrenamiento(c){
           (canRoll ? (
             '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
               '<button type="button" class="btn-compact tr-roll-btn" data-action="roll-training" data-id="' + t.id + '" style="padding:5px 9px;font-size:.78rem;font-weight:700;">' +
-                '🎲 Tirar Automático (d' + sides + ')' +
+                icono("dado") + ' Tirar Automático (d' + sides + ')' +
               '</button>' +
               '<div class="tr-manual-group" style="display:inline-flex;align-items:center;gap:3px;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:2px 4px;">' +
                 '<input type="number" min="1" max="' + sides + '" class="tr-manual-input k-input" data-manual-for="' + t.id + '" placeholder="1-' + sides + '" title="Tirada de dado físico" style="width:44px;background:none;border:none;color:var(--ink);font-family:var(--font-mono);font-size:.8rem;text-align:center;">' +
@@ -931,13 +931,13 @@ function tplCombate(c){
 
   // 1. Subnavegación rápida entre Combate y Estados
   html += '<div class="combat-subnav-pills k-seg">'+
-    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="combate">' + icono("puno") + ' Combate y Armas</button>'+
     '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="estados">' + icono("aturdido", {tam:"s"}) + ' Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar combate, armas ni armaduras en esta ficha.</span>'+
+      '<span>' + icono("percepcion") + ' Modo Espectador: Solo lectura. No puedes modificar combate, armas ni armaduras en esta ficha.</span>'+
     '</div>';
   }
 
@@ -945,9 +945,9 @@ function tplCombate(c){
   if(activeBuffsList.length > 0 || activeDebuffsList.length > 0 || activeSpells.length > 0){
     html += '<div class="combat-status-strip" data-action="switch-tab" data-tab="estados" role="button" title="Haz clic para ver y gestionar estados en detalle">'+
       '<div class="css-left">'+
-        (activeBuffsList.length > 0 ? '<span class="css-badge-buff">✨ '+activeBuffsList.length+' Buff'+(activeBuffsList.length>1?'s':'')+'</span>' : '')+
-        (activeDebuffsList.length > 0 ? '<span class="css-badge-debuff">⚠️ '+activeDebuffsList.length+' Debuff'+(activeDebuffsList.length>1?'s':'')+'</span>' : '')+
-        (activeSpells.length > 0 ? '<span class="css-badge-spell">🪄 '+activeSpells.length+' Magia'+(activeSpells.length>1?'s':'')+'</span>' : '')+
+        (activeBuffsList.length > 0 ? '<span class="css-badge-buff">'+icono("destellos")+' '+activeBuffsList.length+' Buff'+(activeBuffsList.length>1?'s':'')+'</span>' : '')+
+        (activeDebuffsList.length > 0 ? '<span class="css-badge-debuff">'+icono("peligro")+' '+activeDebuffsList.length+' Debuff'+(activeDebuffsList.length>1?'s':'')+'</span>' : '')+
+        (activeSpells.length > 0 ? '<span class="css-badge-spell">'+icono("varita")+' '+activeSpells.length+' Magia'+(activeSpells.length>1?'s':'')+'</span>' : '')+
       '</div>'+
       '<div class="css-right">Gestionar Estados ➔</div>'+
     '</div>';
@@ -981,7 +981,7 @@ function tplCombate(c){
     var isBlocked = selectedCatItem ? (selectedCatItem.visible === false) : false;
     var infoText = selectedCatItem ? ('Daño: ' + esc(selectedCatItem.dano) + ' | Alcance: ' + esc(selectedCatItem.alcance)) : 'Selecciona un arma del compendio';
     if(isBlocked){
-      infoText += ' | <span style="color:#F87171;font-weight:700;">[🔒 Bloqueada por el Máster - No usable]</span>';
+      infoText += ' | <span style="color:#F87171;font-weight:700;">[' + iconoUI("candado") + ' Bloqueada por el Máster - No usable]</span>';
     }
 
     var gridCols = canEdit ? '1fr 36px 36px' : '1fr 36px';
@@ -995,10 +995,10 @@ function tplCombate(c){
         }).join('')+
       '</select></div>'+
       (isBlocked && !isGM()
-        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
+        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">' + iconoUI("candado") + '</button>'
         : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño ('+esc(selectedCatItem ? selectedCatItem.dano : "1d6")+')" aria-label="Tirar daño">&#127922;</button>'
       )+
-      (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
+      (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">' + iconoUI("cerrar") + '</button>' : '')+
     '</div>'+
     '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
   });
@@ -1015,7 +1015,7 @@ function tplCombate(c){
       '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo" '+(canEdit?'':'readonly')+'>'+
-      (canEdit ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
+      (canEdit ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">' + iconoUI("cerrar") + '</button>' : '')+
     '</div>';
   });
   if(canEdit){
@@ -1035,13 +1035,13 @@ function tplEstados(c){
 
   // 1. Subnavegación rápida entre Combate y Estados
   html += '<div class="combat-subnav-pills k-seg">'+
-    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="combate">' + icono("puno") + ' Combate y Armas</button>'+
     '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="estados">' + icono("aturdido", {tam:"s"}) + ' Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar los estados de este personaje.</span>'+
+      '<span>' + icono("percepcion") + ' Modo Espectador: Solo lectura. No puedes modificar los estados de este personaje.</span>'+
     '</div>';
   }
 
@@ -1065,7 +1065,7 @@ function tplEstados(c){
       html += '<div class="'+cardClass+'">'+
         '<div class="abc-header">'+
           '<div class="abc-tags">'+
-            '<span class="abc-type-tag '+(isDebuff?'debuff':'buff')+'">'+(isDebuff?'⚠️ DEBUFF':'✨ BUFF')+'</span>'+
+            '<span class="abc-type-tag '+(isDebuff?'debuff':'buff')+'">'+(isDebuff?icono("peligro")+' DEBUFF':icono("destellos")+' BUFF')+'</span>'+
             (ab.duration ? '<span class="abc-duration-tag" style="font-size:.68rem;color:var(--gold-light);background:rgba(176,141,87,0.15);padding:2px 6px;border-radius:4px;">⏱️ '+esc(ab.duration)+'</span>' : '')+
           '</div>'+
           '<div class="abc-actions">'+
