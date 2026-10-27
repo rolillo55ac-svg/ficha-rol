@@ -296,7 +296,7 @@ function openDataModal(screen){
     html += '<div class="settings-panel"><p>Al cambiar de partida se cierra la sesión y entras con tu cuenta de esa partida.</p></div>';
     html += '<div class="settings-list">'+
       PARTIDAS.map(function(p){
-        return settingsRow("partida-pick", "", p.id === PARTIDA_ACTUAL.id ? "✅" : "🗺️", esc(p.nombre), p.id === PARTIDA_ACTUAL.id ? "Partida actual" : "").replace('data-action="partida-pick"', 'data-action="partida-pick" data-partida="'+esc(p.id)+'"');
+        return settingsRow("partida-pick", "", p.id === PARTIDA_ACTUAL.id ? iconoUI("hecho") : icono("mapa"), esc(p.nombre), p.id === PARTIDA_ACTUAL.id ? "Partida actual" : "").replace('data-action="partida-pick"', 'data-action="partida-pick" data-partida="'+esc(p.id)+'"');
       }).join("")+
     '</div>';
   }
@@ -325,7 +325,7 @@ function openDataModal(screen){
     html += '<div class="storage-cards-grid">'+
       '<div class="storage-card local">'+
         '<div class="storage-card-head">'+
-          '<div class="storage-card-name"><span class="storage-card-icon">💾</span> Local (Navegador)</div>'+
+          '<div class="storage-card-name"><span class="storage-card-icon">'+icono("almacenamiento")+'</span> Local (Navegador)</div>'+
           '<span class="storage-pill '+localPillClass+'" id="localPill">'+local.pct+'%</span>'+
         '</div>'+
         '<div class="storage-bar-track"><div class="storage-bar-fill local '+localPillClass+'" id="localBarFill" style="width:'+Math.max(2, local.pct)+'%;"></div></div>'+
@@ -338,7 +338,7 @@ function openDataModal(screen){
       '</div>'+
       '<div class="storage-card cloud">'+
         '<div class="storage-card-head">'+
-          '<div class="storage-card-name"><span class="storage-card-icon">☁️</span> Supabase (Nube)</div>'+
+          '<div class="storage-card-name"><span class="storage-card-icon">'+icono("nube")+'</span> Supabase (Nube)</div>'+
           '<span class="storage-pill optimal" id="cloudPill">Consultando...</span>'+
         '</div>'+
         '<div class="storage-bar-track"><div class="storage-bar-fill cloud" id="cloudBarFill" style="width:0%;"></div></div>'+
@@ -350,7 +350,7 @@ function openDataModal(screen){
       '</div>'+
       '<div class="storage-card cloud">'+
         '<div class="storage-card-head">'+
-          '<div class="storage-card-name"><span class="storage-card-icon">🗄️</span> Base de datos</div>'+
+          '<div class="storage-card-name"><span class="storage-card-icon">'+icono("despensa")+'</span> Base de datos</div>'+
           '<span class="storage-pill optimal" id="dbPill">Consultando...</span>'+
         '</div>'+
         '<div class="storage-bar-track"><div class="storage-bar-fill cloud" id="dbBarFill" style="width:0%;"></div></div>'+
@@ -361,7 +361,7 @@ function openDataModal(screen){
       '</div>'+
       (isAdmin() ?
         '<div class="storage-card cloud">'+
-          '<div class="storage-card-head"><div class="storage-card-name"><span class="storage-card-icon">📊</span> Consumo de Supabase</div></div>'+
+          '<div class="storage-card-head"><div class="storage-card-name"><span class="storage-card-icon"></span>Consumo de Supabase</div></div>'+
           '<div class="storage-card-note">El tamaño de la base y las fotos se miden arriba. Los registros (logs), las descargas y las llamadas no se pueden medir desde la web: mira el panel de Supabase (Organización › Usage).</div>'+
           '<a class="summon-roll-pill" href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener">Abrir el panel de Supabase</a>'+
         '</div>' : '')+
@@ -411,7 +411,7 @@ function openDataModal(screen){
       '<p class="settings-note donate-lead">El admin programa por las noches, y Haku, jefe de seguridad (el de la manta), cobra en croquetas. Hace semanas que no le suben el sueldo y ha empezado a mirar mal a todo el mundo.</p>'+
       '<div class="donate-options">'+
         '<a class="donate-opt btn-solid-gold" href="' + esc(DONATE_PAYPAL_ME + "/2EUR") + '" target="_blank" rel="noopener" data-donate="1">'+
-          '<span class="donate-opt-icon">🦴</span>'+
+          '<span class="donate-opt-icon">'+icono("hueso")+'</span>'+
           '<span class="donate-opt-text"><strong>Una croqueta para Haku</strong><small>Te mirará un poco menos mal</small></span>'+
           '<span class="donate-opt-amount">2 €</span>'+
         '</a>'+
@@ -421,7 +421,7 @@ function openDataModal(screen){
           '<span class="donate-opt-amount">1,50 €</span>'+
         '</a>'+
         '<a class="donate-opt summon-roll-pill" href="' + esc(DONATE_PAYPAL_ME) + '" target="_blank" rel="noopener" data-donate="1">'+
-          '<span class="donate-opt-icon">🎁</span>'+
+          '<span class="donate-opt-icon">'+icono("regalo")+'</span>'+
           '<span class="donate-opt-text"><strong>Lo que tú quieras</strong><small>Tú pones la cantidad en PayPal</small></span>'+
           '<span class="donate-opt-amount">?</span>'+
         '</a>'+
@@ -506,11 +506,11 @@ async function updateStorageStatsUI(showToastFeedback){
       if(localAction){
         localAction.innerHTML = (local.base64Count > 0 ?
           '<div style="margin-top:4px;padding:6px 8px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:4px;display:flex;flex-direction:column;gap:5px;">'+
-            '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">⚠️ Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
-            '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
+            '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">'+iconoUI("aviso")+' Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
+            '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">'+icono("version")+' Migrar fotos a Supabase (Liberar espacio)</button>'+
           '</div>' :
           '<div style="display:flex;justify-content:flex-end;margin-top:2px;">'+
-            '<button class="btn-compact settings-btn" data-action="clean-orphan-storage" style="color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">🧹 Limpiar restos de versiones viejas</button>'+
+            '<button class="btn-compact settings-btn" data-action="clean-orphan-storage" style="color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">Limpiar restos de versiones viejas</button>'+
           '</div>'
         );
       }
@@ -623,7 +623,7 @@ function showDonateThanks(){
         '<video class="donate-video" src="images/haku-gracias.mp4" loop playsinline preload="none" aria-label="Haku bailando con chubasquero amarillo y gorro de rana"></video>'+
         '<h3 class="donate-title">¡Haku baila por ti!</h3>'+
         '<p class="settings-note">Si has donado, gracias de corazón (y de estómago). Si solo estabas mirando, Haku baila igual: es muy profesional.</p>'+
-        '<button type="button" class="btn-compact donate-sound" hidden>🔊 Activar la música</button>'+
+        '<button type="button" class="btn-compact donate-sound" hidden>'+iconoUI("sonido")+' Activar la música</button>'+
         '<button type="button" class="btn-solid-gold donate-close">Seguir jugando</button>'+
       '</div>';
     document.body.appendChild(thanks);
