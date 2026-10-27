@@ -9,7 +9,7 @@ function tplMundoMapas(s){
   var canEditMap = isGM() || !currentUser;
   var html = '<div class="section'+(canEditMap?' gm-section':'')+'"><div class="section-title">'+
     '<span>'+(canEditMap?'Cartografía y Mapas (GM)':'Cartografía y Mapas')+'</span>'+
-    '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga y sincronización">🔄 Sincronizar</button>'+
+    '<button class="btn-compact" data-action="sync-map-now" title="Forzar descarga y sincronización">' + iconoUI("recargar") + ' Sincronizar</button>'+
   '</div>'+
   (canEditMap ? '<div class="map-toolbar">'+
     '<button class="btn-compact" data-action="add-new-map-url" title="Crear un mapa nuevo independiente mediante enlace / URL">+ Nuevo Mapa (URL)</button>'+
@@ -41,15 +41,15 @@ function tplMundoMapas(s){
     html += '<div class="map-filter-bar">' +
       '<div class="map-filter-header">' +
         '<div style="display:flex;align-items:center;gap:6px;">' +
-          '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">🗺️ Filtro de Marcadores:</span>' +
+          '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">' + icono("mapa", {tam:"s"}) + ' Filtro de Marcadores:</span>' +
           '<span style="font-size:0.7rem;color:var(--ink-faint);">(' + allPins.length + ' puntos)</span>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:4px;">' +
           '<button type="button" class="btn-compact map-filter-toggle-all' + (filterState.hideAll ? ' is-off' : '') + '" data-action="toggle-map-pins-all" style="padding:3px 8px;font-size:0.68rem;">' +
-            (filterState.hideAll ? '👁️ Mostrar Todos' : '🙈 Ocultar Todos') +
+            (filterState.hideAll ? iconoUI("ver") + ' Mostrar Todos' : icono("oculto", {tam:"s"}) + ' Ocultar Todos') +
           '</button>' +
           ((Object.keys(filterState.hiddenTypes||{}).length > 0 || filterState.hideAll) ?
-            '<button type="button" class="btn-compact" data-action="reset-map-pin-filter" style="padding:3px 8px;font-size:0.68rem;" title="Restablecer visibilidad de todos los tipos">↺ Restablecer</button>' : '') +
+            '<button type="button" class="btn-compact" data-action="reset-map-pin-filter" style="padding:3px 8px;font-size:0.68rem;" title="Restablecer visibilidad de todos los tipos">' + iconoUI("recargar") + ' Restablecer</button>' : '') +
         '</div>' +
       '</div>' +
       '<div class="map-filter-shelf">' + typePillsHtml + '</div>' +
@@ -84,7 +84,7 @@ function tplMundoMapas(s){
       '<button class="btn-compact" data-action="upload-map" title="Cambiar la imagen de este mapa subiendo un archivo">Subir Foto</button>'+
       '<button class="btn-compact" data-action="url-map" title="Cambiar la imagen de este mapa pegando un enlace URL">Pegar URL</button>'+
       (curMap.image?'<button class="btn-compact" data-action="remove-map" title="Quitar la foto pero conservar el mapa y sus marcadores">Quitar Foto</button>':'')+
-      (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map" title="Eliminar este mapa completo">✕ Borrar este Mapa</button>':'')+
+      (s.maps.length>1?'<button class="btn-compact" style="margin-left:auto;color:var(--danger);" data-action="delete-map" title="Eliminar este mapa completo">' + iconoUI("cerrar") + ' Borrar este Mapa</button>':'')+
     '</div>';
   }
   html += '</div>';
