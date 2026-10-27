@@ -207,7 +207,7 @@ function tplMundoGaleria(s){
 
   var html = '<div class="section">' +
     '<div class="section-title">' +
-      '<span>🖼️ Galería</span>' +
+      '<span>' + icono("cuadro", {tam:"s"}) + ' Galería</span>' +
       '<span class="gallery-counter">' + total + ' / ' + GALLERY_MAX + '</span>' +
     '</div>' +
     '<div class="gallery-toolbar">' +
@@ -224,7 +224,7 @@ function tplMundoGaleria(s){
     if(galleryUploading){
       html += '<span class="btn-solid-gold gallery-upload-btn gallery-uploading" aria-disabled="true">Subiendo…</span>';
     } else {
-      html += '<label class="btn-solid-gold gallery-upload-btn">📷 Subir foto<input type="file" accept="image/*" class="gallery-file" hidden></label>';
+      html += '<label class="btn-solid-gold gallery-upload-btn">' + icono("camara", {tam:"s"}) + ' Subir foto<input type="file" accept="image/*" class="gallery-file" hidden></label>';
     }
   }
 
@@ -276,10 +276,10 @@ function renderGalleryViewer(){
   var metaStr = "Subida por " + uploader + (dateStr ? " · " + dateStr : "");
   var canDel = galleryCanDelete(it);
 
-  var html = '<button type="button" class="gallery-viewer-close" data-action="gal-close" aria-label="Cerrar">✕</button>';
+  var html = '<button type="button" class="gallery-viewer-close" data-action="gal-close" aria-label="Cerrar">' + iconoUI("cerrar") + '</button>';
   if(list.length > 1){
-    html += '<button type="button" class="gallery-viewer-nav gallery-viewer-prev" data-action="gal-prev" aria-label="Anterior">‹</button>' +
-      '<button type="button" class="gallery-viewer-nav gallery-viewer-next" data-action="gal-next" aria-label="Siguiente">›</button>';
+    html += '<button type="button" class="gallery-viewer-nav gallery-viewer-prev" data-action="gal-prev" aria-label="Anterior">' + iconoUI("chevron-izquierda") + '</button>' +
+      '<button type="button" class="gallery-viewer-nav gallery-viewer-next" data-action="gal-next" aria-label="Siguiente">' + iconoUI("chevron-derecha") + '</button>';
   }
 
   html += '<div class="gallery-viewer-body">' +
@@ -346,7 +346,7 @@ function tplHistoria(c){
   if(!st){
     loadStory(c);
     return '<div class="section" id="storySection">' +
-      '<div class="section-title"><span>📖 Historia</span></div>' +
+      '<div class="section-title"><span>' + icono("guia", {tam:"s"}) + ' Historia</span></div>' +
       '<div class="story-loading">Cargando…</div>' +
     '</div>';
   }
@@ -356,8 +356,8 @@ function tplHistoria(c){
 
   var html = '<div class="section" id="storySection">' +
     '<div class="section-title">' +
-      '<span>📖 Historia</span>' +
-      (canEdit && !isEditing ? '<button type="button" class="btn-compact story-btn" data-action="story-edit">✏️ Editar</button>' : '') +
+      '<span>' + icono("guia", {tam:"s"}) + ' Historia</span>' +
+      (canEdit && !isEditing ? '<button type="button" class="btn-compact story-btn" data-action="story-edit">' + iconoUI("editar") + ' Editar</button>' : '') +
     '</div>';
 
   if(isEditing){
