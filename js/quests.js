@@ -482,11 +482,11 @@ function renderQuestRow(q, canEdit){
   var st = questStatusOf(q);
   var pr = questProgress(q);
   var open = state.questOpenId === q.id;
-  var meta = st === "completada" ? '✓ Completada' + (q.completedAt ? ' · ' + questDateLabel(q.completedAt) : '')
-    : (st === "fallida" ? '✕ Fallida' : pr.done + '/' + pr.total + ' objetivos');
+  var meta = st === "completada" ? iconoUI('hecho') + ' Completada' + (q.completedAt ? ' · ' + questDateLabel(q.completedAt) : '')
+    : (st === "fallida" ? iconoUI('cerrar') + ' Fallida' : pr.done + '/' + pr.total + ' objetivos');
   var html = '<div class="quest-row ' + qType + ' ' + st + (open ? ' is-open' : '') + '" id="questrow-'+q.id+'">'+
     '<div class="quest-row-head" role="button" tabindex="0" aria-expanded="'+(open?'true':'false')+'" data-action="toggle-quest-open" data-id="'+q.id+'">'+
-      (q.image ? '<img class="quest-row-thumb" src="'+esc(q.image)+'" alt="" loading="lazy">' : '<span class="quest-row-icon">'+(q.house===true ? '🏠' : (qType === "principal" ? '⭐' : '◈'))+'</span>')+
+      (q.image ? '<img class="quest-row-thumb" src="'+esc(q.image)+'" alt="" loading="lazy">' : '<span class="quest-row-icon">'+(q.house===true ? icono('casa',{tam:'s'}) : (qType === "principal" ? icono('estrella',{tam:'s'}) : '◈'))+'</span>')+
       '<div class="quest-row-main">'+
         '<div class="quest-row-title">'+esc(q.title || "Misión sin título")+'</div>'+
         '<div class="quest-row-bar"><div class="quest-row-fill" style="width:'+pr.pct+'%;"></div></div>'+
@@ -498,7 +498,7 @@ function renderQuestRow(q, canEdit){
     html += '<div class="quest-row-body">'+renderQuestCard(q, canEdit);
     if(canEdit){
       html += st === "activa"
-        ? '<button type="button" class="btn-solid-gold quest-done-btn" data-action="quest-complete" data-id="'+q.id+'">✓ Marcar como completada</button>'
+        ? '<button type="button" class="btn-solid-gold quest-done-btn" data-action="quest-complete" data-id="'+q.id+'">'+iconoUI('hecho')+' Marcar como completada</button>'
         : '<button type="button" class="btn-compact quest-done-btn" data-action="quest-reopen" data-id="'+q.id+'">↺ Reabrir</button>';
     }
     html += '</div>';
@@ -530,7 +530,7 @@ function renderQuestList(quests, canEdit){
     if(group && questTypeOf(q) !== lastType){
       lastType = questTypeOf(q);
       var n = list.filter(function(x){ return questTypeOf(x) === lastType; }).length;
-      html += '<div class="quest-section-header '+lastType+'"><span>'+(lastType === "principal" ? '⭐ Principales' : '◈ Secundarias')+' · '+n+'</span></div>';
+      html += '<div class="quest-section-header '+lastType+'"><span>'+(lastType === "principal" ? icono('estrella',{tam:'s'})+' Principales' : '◈ Secundarias')+' · '+n+'</span></div>';
     }
     html += renderQuestRow(q, canEdit);
   });
@@ -551,16 +551,16 @@ function renderQuestBrowser(quests, canEdit){
       (cnt.fallida || v.st === "fallida" ? '<button type="button" class="k-seg-btn'+(v.st==="fallida"?' active':'')+'" data-action="filter-quest-status" data-filter="fallida">Fallidas ('+cnt.fallida+')</button>' : '')+
     '</div>'+
     '<div class="quest-type-chips">'+
-      typeBtn("all", "Todas")+typeBtn("principal", "⭐ Principal")+typeBtn("secundaria", "◈ Secundaria")+typeBtn("casa", "🏠 Casa")+
+      typeBtn("all", "Todas")+typeBtn("principal", icono('estrella',{tam:'s'})+" Principal")+typeBtn("secundaria", "◈ Secundaria")+typeBtn("casa", icono('casa',{tam:'s'})+" Casa")+
     '</div>'+
     '<div class="quest-search-wrap">'+
       '<input type="text" class="quest-search-input k-input" id="questSearchInput" value="'+esc(state.questSearch || "")+'" placeholder="🔍 Buscar misión" autocomplete="off">'+
-      '<button type="button" class="quest-search-clear" data-action="clear-quest-search" title="Borrar búsqueda"'+((state.questSearch || "") ? '' : ' hidden')+'>✕</button>'+
+      '<button type="button" class="quest-search-clear" data-action="clear-quest-search" title="Borrar búsqueda"'+((state.questSearch || "") ? '' : ' hidden')+'>'+iconoUI('cerrar')+'</button>'+
     '</div>'+
   '</div>';
   if(!quests.length){
     return html + '<div class="quest-empty-box">'+
-      '<div style="font-size:1.8rem;margin-bottom:6px;">🧭</div>'+
+      '<div style="font-size:1.8rem;margin-bottom:6px;">'+icono('brujula',{tam:'m'})+'</div>'+
       '<div style="font-family:var(--font-display);font-size:1rem;color:var(--gold-light);">Sin misiones registradas</div>'+
       '<p style="font-size:0.82rem;color:var(--ink-faint);margin:4px 0 0;">El Máster aún no ha asignado objetivos de campaña a los aventureros.</p>'+
     '</div>';
