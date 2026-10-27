@@ -4795,8 +4795,8 @@ function renderHouseView(){
     if(houseState.editMode){
       html += '  <div class="house-action-row">';
       if(gmMode){
-        html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">➕ Añadir habitación</button>';
-        html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>✕ Eliminar seleccionada</button>';
+        html += '    <button class="house-act-btn primary" data-action="open-preset-room-modal">' + iconoUI("mas") + ' Añadir habitación</button>';
+        html += '    <button class="house-act-btn danger" id="delRoomBtn" data-action="quick-delete-selected-room"' + (houseState.selectedRoomId ? '' : ' disabled') + '>' + iconoUI("cerrar") + ' Eliminar seleccionada</button>';
       }
       html += '    <button class="house-act-btn" data-action="toggle-house-grid-snap" id="gridSnapBtn" title="Ajuste magnético a rejilla">' + (houseKonvaGridSnap > 0 ? '🧲 Rejilla: casilla' : '🖐️ Rejilla: Libre') + '</button>';
       html += '  </div>';
@@ -4804,10 +4804,10 @@ function renderHouseView(){
       if(gmMode){
         html += '  <div class="house-action-row house-expand-row">';
         html += '    <span class="house-expand-label">Ampliar planta:</span>';
-        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="left" title="Una columna más a la izquierda" aria-label="Ampliar planta a la izquierda">⬅️</button>';
-        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="right" title="Una columna más a la derecha" aria-label="Ampliar planta a la derecha">➡️</button>';
-        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="up" title="Una fila más arriba" aria-label="Ampliar planta por arriba">⬆️</button>';
-        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="down" title="Una fila más abajo" aria-label="Ampliar planta por abajo">⬇️</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="left" title="Una columna más a la izquierda" aria-label="Ampliar planta a la izquierda">'+iconoUI("flecha-izquierda")+'</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="right" title="Una columna más a la derecha" aria-label="Ampliar planta a la derecha">'+iconoUI("flecha-derecha")+'</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="up" title="Una fila más arriba" aria-label="Ampliar planta por arriba">'+iconoUI("flecha-arriba")+'</button>';
+        html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="down" title="Una fila más abajo" aria-label="Ampliar planta por abajo">'+iconoUI("flecha-abajo")+'</button>';
         html += '    <button class="house-act-btn" data-action="expand-house-floor" data-side="fit" title="Quitar el sitio vacío que sobra alrededor de las estancias">Quitar vacío</button>';
         html += '  </div>';
       }
@@ -4822,29 +4822,29 @@ function renderHouseView(){
     // La barra de herramientas de estancia solo existe en modo Editar
     if(houseState.editMode){
       html += '  <div class="house-quick-tools' + selBarVis + '" id="roomQuickBar">';
-      html += '    <div class="house-quick-tools-title">🎯 <b id="rqRoomName">' + esc(selIconName) + '</b></div>';
+      html += '    <div class="house-quick-tools-title"><b id="rqRoomName">' + esc(selIconName) + '</b></div>';
       html += '    <div class="house-quick-tools-group">';
-      if(gmMode) html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">✏️ Renombrar</button>';
+      if(gmMode) html += '      <button class="house-tool-btn" data-action="quick-rename-selected-room">'+iconoUI("editar")+' Renombrar</button>';
       html += '      <div class="house-tool-stepper" title="Ancho de la habitación">';
-      html += '        <span>↔️</span>';
-      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="-40" title="Reducir ancho">➖</button>';
+      html += '        <span></span>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="-40" title="Reducir ancho">'+iconoUI("menos")+'</button>';
       html += '        <span id="rqWidthLabel">' + (selRoom ? Math.max(1, selRoom.width || Math.round((selRoom.w || 160)/40)) : 4) + '</span>';
-      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="40" title="Aumentar ancho">➕</button>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="w" data-delta="40" title="Aumentar ancho">'+iconoUI("mas")+'</button>';
       html += '      </div>';
       html += '      <div class="house-tool-stepper" title="Alto de la habitación">';
-      html += '        <span>↕️</span>';
-      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="-40" title="Reducir alto">➖</button>';
+      html += '        <span></span>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="-40" title="Reducir alto">'+iconoUI("menos")+'</button>';
       html += '        <span id="rqHeightLabel">' + (selRoom ? Math.max(1, selRoom.height || Math.round((selRoom.h || 120)/40)) : 3) + '</span>';
-      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="40" title="Aumentar alto">➕</button>';
+      html += '        <button class="house-tool-subbtn" data-action="quick-step-room-size" data-axis="h" data-delta="40" title="Aumentar alto">'+iconoUI("mas")+'</button>';
       html += '      </div>';
       if(gmMode){
-        html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">🪵 Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
-        html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">🎨 Color</button>';
-        html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">🏷️ Icono</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-texture-menu">Suelo: <span id="rqTexLabel">' + selTexName + '</span></button>';
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-color-menu">Color</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-icon-menu">'+iconoUI("etiqueta")+' Icono</button>';
         html += '      <button class="house-tool-btn highlight" data-action="open-canva-studio" data-room-id="' + (selRoom ? selRoom.id : '') + '">Editar muebles</button>';
-        html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">📋 Duplicar</button>';
-        html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">🏢 Planta</button>';
-        html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">🗑️</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-duplicate-selected-room">'+iconoUI("copiar")+' Duplicar</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-toggle-floor-menu">Planta</button>';
+        html += '      <button class="house-tool-btn" data-action="quick-delete-selected-room" style="color:#E88178;">'+iconoUI("borrar")+'</button>';
       }
       html += '    </div>';
       html += '  </div>';
