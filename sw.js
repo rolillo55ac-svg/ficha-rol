@@ -1,7 +1,7 @@
 // Service Worker - Rol Krysalis 1.0v (Modo Pruebas)
 // Modo offline y carga rapida
 
-const CACHE_NAME = 'rol-krysalis-v1.4.122.0';
+const CACHE_NAME = 'rol-krysalis-v1.4.123.0';
 
 const PRECACHE_ASSETS = [
   './',
@@ -15,6 +15,18 @@ const PRECACHE_ASSETS = [
   './images/iconos/casa.svg',
   './images/iconos/tiradas.svg',
   './images/iconos/ui.svg',
+  './images/iconos/extra/piedra-blanca.webp',
+  './images/iconos/extra/piedra-roja.webp',
+  './images/iconos/extra/piedra-azul.webp',
+  './images/iconos/extra/piedra-verde.webp',
+  './images/iconos/extra/piedra-negra.webp',
+  './images/iconos/extra/piedra-morada.webp',
+  './images/iconos/extra/musica.webp',
+  './images/iconos/extra/vibracion.webp',
+  './images/iconos/extra/mensaje.webp',
+  './images/iconos/extra/flor-lis.webp',
+  './images/iconos/extra/cafe.webp',
+  './images/iconos/extra/bailarin.webp',
   './images/iconos/barra/pergamino.webp',
   './images/iconos/barra/pergamino-focus.webp',
   './images/iconos/barra/d20.webp',

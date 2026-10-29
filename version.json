@@ -1,6 +1,6 @@
 {
-  "version": "1.4.122.0",
-  "build": "2026.10.29.2",
-  "updatedAt": "2026-10-29T18:00:00Z",
-  "changelog": "El Reloj de la partida estrena campos y botones con el estilo de la web."
+  "version": "1.4.123.0",
+  "build": "2026.10.29.3",
+  "updatedAt": "2026-10-29T20:30:00Z",
+  "changelog": "Piedras de colores, ajustes y títulos con dibujos propios, y etiqueta de rol centrada."
 }

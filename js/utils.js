@@ -58,6 +58,8 @@ var MAGIC_STONE_FAMILIES = [
   { id: "morado",   name: "Morada",   hex: "#A855F7", glow: "rgba(168, 85, 247, 0.75)",  gema: "Piedra Morada",      familia: "Dominación Mental",         desc: "Control de otra persona sin su consentimiento (Sugestión forzada, marioneta mental)", icon: "👁️" }
 ];
 
+var STONE_ICONO = { blanca:"piedra-blanca", rojo:"piedra-roja", azul:"piedra-azul", amarilla:"piedras", verde:"piedra-verde", negra:"piedra-negra", morado:"piedra-morada" };
+
 var LAPIDARY_TIERS = [
   { id: "hierro",   name: "Puntas de Hierro",   tier: 1, bonusRoll: 0, icon: "⛏️", desc: "Herramienta rudimentaria. Sin bonificador a la tirada." },
   { id: "bronce",   name: "Puntas de Bronce",   tier: 2, bonusRoll: 1, icon: "🔨", desc: "Corte básico pulido. Bono +1 a la tirada." },

@@ -241,13 +241,13 @@ function openDataModal(screen){
     }
     html += '<div class="settings-group-title">Preferencias</div><div class="settings-list">'+
       '<button type="button" class="settings-row" data-action="toggle-sound" role="switch" aria-checked="'+(soundEnabled() ? 'true' : 'false')+'">'+
-        '<span class="settings-row-ico">' + iconoUI("sonido") + '</span>'+
+        '<span class="settings-row-ico">' + icono("musica", {tam:"m"}) + '</span>'+
         '<span class="settings-row-txt"><span class="settings-row-title">Sonidos</span><span class="settings-row-sub">Dados, pestañas y sonidos de personaje</span></span>'+
         '<span class="settings-switch'+(soundEnabled() ? ' on' : '')+'"></span>'+
       '</button>'+
       (window.UIJuice ?
         '<button type="button" class="settings-row" data-action="toggle-juice" data-juice="vib" role="switch" aria-checked="'+(UIJuice.vibOn() ? 'true' : 'false')+'">'+
-          '<span class="settings-row-ico">' + iconoUI("vibracion") + '</span>'+
+          '<span class="settings-row-ico">' + icono("vibracion", {tam:"m"}) + '</span>'+
           '<span class="settings-row-txt"><span class="settings-row-title">Vibración</span><span class="settings-row-sub">Pequeñas vibraciones al tocar y tirar dados</span></span>'+
           '<span class="settings-switch'+(UIJuice.vibOn() ? ' on' : '')+'"></span>'+
         '</button>'+
@@ -416,7 +416,7 @@ function openDataModal(screen){
           '<span class="donate-opt-amount">2 €</span>'+
         '</a>'+
         '<a class="donate-opt summon-roll-pill" href="' + esc(DONATE_PAYPAL_ME + "/1.5EUR") + '" target="_blank" rel="noopener" data-donate="1">'+
-          '<span class="donate-opt-icon">☕</span>'+
+          '<span class="donate-opt-icon">'+icono("cafe")+'</span>'+
           '<span class="donate-opt-text"><strong>Un café para el admin</strong><small>Para el próximo arreglo a las 3 de la mañana</small></span>'+
           '<span class="donate-opt-amount">1,50 €</span>'+
         '</a>'+
@@ -426,7 +426,7 @@ function openDataModal(screen){
           '<span class="donate-opt-amount">?</span>'+
         '</a>'+
       '</div>'+
-      '<div class="donate-preview"><video src="images/haku-gracias.mp4" autoplay loop muted playsinline preload="metadata" aria-label="Haku bailando con chubasquero amarillo y gorro de rana"></video><p class="settings-note">Esto pasa cuando alguien dona 🕺</p></div>'+
+      '<div class="donate-preview"><video src="images/haku-gracias.mp4" autoplay loop muted playsinline preload="metadata" aria-label="Haku bailando con chubasquero amarillo y gorro de rana"></video><p class="settings-note">Esto pasa cuando alguien dona '+icono("bailarin",{tam:"s"})+'</p></div>'+
       '<p class="settings-note donate-fine">Es totalmente voluntario y la web seguirá siendo gratis para todos.<br>Haku va a poner esa cara igual, pero con croquetas la pone más contento.</p>'+
     '</div>';
   }

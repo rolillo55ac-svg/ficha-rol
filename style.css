@@ -286,6 +286,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .role-badge{
   font-size:.58rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;
   padding:2px 6px;border-radius:20px;border:1px solid var(--line);color:var(--ink-faint);background:var(--bg-card);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:3px;line-height:1;
 }
 .role-badge.gm{border-color:var(--gm-light);color:var(--gm-light);background:linear-gradient(135deg, rgba(139,69,19,0.35), rgba(210,105,30,0.15));box-shadow:0 0 10px -2px rgba(210,105,30,0.6);}
 .role-badge.admin{border-color:var(--gold-light);color:var(--gold-light);background:linear-gradient(135deg, rgba(176,141,87,0.30), rgba(176,141,87,0.10));box-shadow:0 0 10px -2px rgba(176,141,87,0.6);}
@@ -411,8 +412,7 @@ main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow
 .section-title::after{content:'';position:absolute;left:0;bottom:-1px;height:1px;width:64px;background:linear-gradient(90deg,var(--gold),transparent);}
 .section.gm-section .section-title::after{background:linear-gradient(90deg,var(--gm-light),transparent);}
 .section-title > span:first-child{display:flex;align-items:center;gap:7px;}
-.section-title > span:first-child::before{content:'❖';color:var(--blood-light);font-size:.95rem;filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),0.6));}
-.section.gm-section .section-title > span:first-child::before{content:'⚜️';}
+.section-title > span:first-child::before{content:'';display:inline-block;width:1.1rem;height:1.1rem;background:url(images/iconos/extra/flor-lis.webp) center/contain no-repeat;filter:drop-shadow(0 0 4px rgba(var(--accent-rgb),0.6));}
 
 /* HERO PROFILE */
 .ficha-layout{display:grid;grid-template-columns:220px 1fr;gap:18px;}
