@@ -23,8 +23,8 @@ function cuentaPassField(id, label){
   return '<div class="field cuenta-field"><label for="'+id+'">'+label+'</label>'+
     '<div class="cuenta-pass-row">'+
       '<input type="password" id="'+id+'" value="'+esc(proponerPassword())+'" autocomplete="new-password" autocapitalize="none" spellcheck="false">'+
-      '<button type="button" class="btn-compact cuenta-pass-btn" data-action="cuenta-pass-otra" data-for="'+id+'" aria-label="Otra propuesta">🔄</button>'+
-      '<button type="button" class="btn-compact cuenta-pass-btn" data-action="cuenta-pass-ver" data-for="'+id+'" aria-label="Ver contraseña">👁</button>'+
+      '<button type="button" class="btn-compact cuenta-pass-btn" data-action="cuenta-pass-otra" data-for="'+id+'" aria-label="Otra propuesta">' + iconoUI("recargar") + '</button>'+
+      '<button type="button" class="btn-compact cuenta-pass-btn" data-action="cuenta-pass-ver" data-for="'+id+'" aria-label="Ver contraseña">' + iconoUI("ver") + '</button>'+
       '<button type="button" class="btn-compact cuenta-pass-btn" data-action="cuenta-pass-copiar" data-for="'+id+'">Copiar</button>'+
     '</div></div>';
 }
@@ -595,7 +595,7 @@ function pintarActividad(){
           var disp = actTipoDispositivo(x.userAgent);
           var fin = x.finDate ? ((x.aprox ? "≈ " : "") + actHora(x.finDate) + " · " + (x.aprox ? "≈ " : "") + actFormatoDuracion(x.finDate.getTime() - x.inicioDate.getTime())) :
             (x.enCurso ? "sigue dentro" : "sin fin");
-          return '<div class="act-ses">' + esc(cuentaFecha(x.inicio)) + ' → ' + esc(fin) + (disp ? ' · ' + esc(disp) : '') + '</div>';
+          return '<div class="act-ses">' + esc(cuentaFecha(x.inicio)) + ' ' + iconoUI("flecha-derecha") + ' ' + esc(fin) + (disp ? ' · ' + esc(disp) : '') + '</div>';
         }).join("") + jg.eventos.map(function(ev){
           return '<div class="act-ses">' + esc(cuentaFecha(ev.at)) + ' · ' + esc(NOMBRES_EVENTOS[ev.evento]) + '</div>';
         }).join("");
@@ -696,8 +696,8 @@ function actCuandoEntro(d){
 function actTipoDispositivo(ua){
   ua = String(ua || "");
   if(!ua) return "";
-  if(/iPhone|iPad|Android/i.test(ua)) return "📱 móvil";
-  if(/Windows|Mac|Linux/i.test(ua)) return "💻 PC";
+  if(/iPhone|iPad|Android/i.test(ua)) return "móvil";
+  if(/Windows|Mac|Linux/i.test(ua)) return "PC";
   return ua;
 }
 

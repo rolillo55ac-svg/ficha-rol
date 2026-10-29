@@ -46,7 +46,7 @@ function tplMundoMapas(s){
         '</div>' +
         '<div style="display:flex;align-items:center;gap:4px;">' +
           '<button type="button" class="btn-compact map-filter-toggle-all' + (filterState.hideAll ? ' is-off' : '') + '" data-action="toggle-map-pins-all" style="padding:3px 8px;font-size:0.68rem;">' +
-            (filterState.hideAll ? iconoUI("ver") + ' Mostrar Todos' : icono("oculto", {tam:"s"}) + ' Ocultar Todos') +
+            (filterState.hideAll ? iconoUI("ver") + ' Mostrar Todos' : iconoUI("ocultar") + ' Ocultar Todos') +
           '</button>' +
           ((Object.keys(filterState.hiddenTypes||{}).length > 0 || filterState.hideAll) ?
             '<button type="button" class="btn-compact" data-action="reset-map-pin-filter" style="padding:3px 8px;font-size:0.68rem;" title="Restablecer visibilidad de todos los tipos">' + iconoUI("recargar") + ' Restablecer</button>' : '') +

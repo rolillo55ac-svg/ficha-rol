@@ -1952,16 +1952,16 @@ function triggerBg3Roll(launchIntensity){
         var diceVal = r1 + (r2 !== null ? " (" + (bg3RollState.mode === "adv" ? "Ventaja " : "Desventaja ") + r2 + ")" : "") + (extraSum > 0 ? " +" + extraSum : "");
 
         var breakdownHtml = '<div class="v-breakdown-row">' +
-          '<span class="v-chip v-chip-dice" title="Tirada de dados"><span class="v-chip-label">🎲 ' + diceLabel + '</span> <b>' + diceVal + '</b></span>';
+          '<span class="v-chip v-chip-dice" title="Tirada de dados"><span class="v-chip-label">' + icono("dado", {tam:"s"}) + ' ' + diceLabel + '</span> <b>' + diceVal + '</b></span>';
 
         if(modSum !== 0){
           var modSign = modSum > 0 ? "+" + modSum : String(modSum);
           breakdownHtml += '<span class="v-chip-op">+</span>' +
-            '<span class="v-chip v-chip-mod" title="Bonificadores"><span class="v-chip-label">⚡ Bono</span> <b>' + modSign + '</b></span>';
+            '<span class="v-chip v-chip-mod" title="Bonificadores"><span class="v-chip-label">' + icono("iniciativa", {tam:"s"}) + ' Bono</span> <b>' + modSign + '</b></span>';
         }
 
         breakdownHtml += '<span class="v-chip-op">=</span>' +
-          '<span class="v-chip v-chip-total" title="Total final"><span class="v-chip-label">★ Total</span> <b>' + grandTotal + '</b></span>' +
+          '<span class="v-chip v-chip-total" title="Total final"><span class="v-chip-label">Total</span> <b>' + grandTotal + '</b></span>' +
           '</div>';
 
         if(landedInfo && landedInfo.formulaSuffix) breakdownHtml += '<div class="bg3-landed-note">' + esc(landedInfo.formulaSuffix) + '</div>';
@@ -2537,7 +2537,7 @@ function handleRemoteDiceRoll(rollObj){
 
   var critText = rollObj.isCrit ? " ¡Éxito Crítico!" : (rollObj.isFumble ? " ¡Pifia!" : "");
   var toastType = rollObj.isCrit ? "success" : (rollObj.isFumble ? "error" : "info");
-  showToast("🎲 " + rollObj.charName + " tiró " + rollObj.label + ": " + rollObj.total + critText, toastType);
+  showToast(rollObj.charName + " tiró " + rollObj.label + ": " + rollObj.total + critText, toastType, {icono: "dado"});
 
   if(rollObj.isCrit) playBg3Crit();
   else if(rollObj.isFumble) playBg3Fumble();
@@ -2570,7 +2570,7 @@ function canAskRolls(){
 function openDiceModal(){
   diceCtx = "modal";
   document.getElementById("diceModalOverlay").classList.remove("hidden");
-  var closeBtn = '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">✕</button>';
+  var closeBtn = '<button class="row-del" data-action="close-modal" aria-label="Cerrar" style="min-width:30px;min-height:30px;font-size:1rem;">' + iconoUI("cerrar") + '</button>';
   renderDiceRollTab('', closeBtn);
 }
 
@@ -2595,12 +2595,12 @@ function renderTiradasPage(){
   var canAsk = canAskRolls();
   if(["tirar", "historial", "pedir"].indexOf(diceMenuTab) < 0 || (diceMenuTab === "pedir" && !canAsk)) diceMenuTab = "tirar";
   try { localStorage.setItem(tiradasSubKey(), diceMenuTab); } catch(e){}
-  var tabs = [{ id: "tirar", txt: "🎲 Tirar" }, { id: "historial", txt: "📜 Historial" }];
-  if(canAsk) tabs.push({ id: "pedir", txt: "📣 Pedir tirada" });
+  var tabs = [{ id: "tirar", txt: icono("dado", {tam:"s"}) + " Tirar" }, { id: "historial", txt: icono("pergamino", {tam:"s"}) + " Historial" }];
+  if(canAsk) tabs.push({ id: "pedir", txt: icono("cuerno", {tam:"s"}) + " Pedir tirada" });
   var tabsHtml = '<div class="dice-menu-tabs k-seg" role="tablist">' + tabs.map(function(t){
     return '<button type="button" role="tab" class="dice-menu-tab k-seg-btn' + (diceMenuTab === t.id ? ' active' : '') + '" aria-selected="' + (diceMenuTab === t.id) + '" data-action="dice-menu-tab" data-tab="' + t.id + '">' + t.txt + '</button>';
   }).join('') + '</div>';
-  main.innerHTML = '<div id="tiradasPage" class="section"><div class="section-title">🎲 Tiradas</div>' + tabsHtml + '<div id="diceMenuBody"></div></div>';
+  main.innerHTML = '<div id="tiradasPage" class="section"><div class="section-title">' + icono("dado", {tam:"s"}) + ' Tiradas</div>' + tabsHtml + '<div id="diceMenuBody"></div></div>';
   if(diceMenuTab === "pedir") renderRollRequestTab();
   else if(diceMenuTab === "historial"){ if(typeof showRollHistoryInMenu === "function") showRollHistoryInMenu(); }
   else renderDiceRollTab();
@@ -2650,9 +2650,9 @@ function renderDiceRollTab(tabsHtml, closeBtn){
   var rollHtml =
     rollHead +
     '<div class="dice-mode-pills">'+
-      '<button type="button" class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">⚔️ Normal</button>'+
-      '<button type="button" class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">🍀 Ventaja</button>'+
-      '<button type="button" class="dmode-pill '+(diceConfig.mode==='disadv'?'active':'')+'" data-action="set-dice-mode" data-mode="disadv">💀 Desventaja</button>'+
+      '<button type="button" class="dmode-pill '+(diceConfig.mode==='normal'?'active':'')+'" data-action="set-dice-mode" data-mode="normal">' + icono("fisico", {tam:"s"}) + ' Normal</button>'+
+      '<button type="button" class="dmode-pill '+(diceConfig.mode==='adv'?'active':'')+'" data-action="set-dice-mode" data-mode="adv">' + icono("critico", {tam:"s"}) + ' Ventaja</button>'+
+      '<button type="button" class="dmode-pill '+(diceConfig.mode==='disadv'?'active':'')+'" data-action="set-dice-mode" data-mode="disadv">'+icono("pifia",{tam:"s"})+' Desventaja</button>'+
     '</div>'+
     '<div class="cup-tray-label">Dados Poliédricos</div>'+
     '<div class="dtype-grid">'+diceCards+'</div>'+
@@ -2676,7 +2676,7 @@ function renderDiceRollTab(tabsHtml, closeBtn){
         '</div>'+
       '</div>'+
     '</div>'+
-    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">🎲 Lanzar ' + esc(fullFormula) + '</button>';
+    '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-dice-btn">' + icono("d10",{tam:"s"}) + ' Lanzar ' + esc(fullFormula) + '</button>';
   if(inPage){ var body = document.getElementById("diceMenuBody"); if(body) body.innerHTML = rollHtml; }
   else document.getElementById("diceModal").innerHTML = rollHtml;
 }

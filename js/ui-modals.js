@@ -131,24 +131,24 @@ function openCharModal(){
       if(isGM()){
         ownerHtml = '<div class="char-owner-assign-box">' +
           '<div class="char-owner-info">' +
-            '<span class="char-owner-label">👤 Jugador:</span> ' +
-            (c.ownerEmail ? '<span class="char-owner-email">● ' + esc(c.ownerEmail) + '</span>' : '<span class="char-owner-empty">○ Sin asignar</span>') +
+            '<span class="char-owner-label">' + icono("jugador", {tam:"s"}) + ' Jugador:</span> ' +
+            (c.ownerEmail ? '<span class="char-owner-email">' + esc(c.ownerEmail) + '</span>' : '<span class="char-owner-empty">Sin asignar</span>') +
           '</div>' +
           '<div class="char-owner-actions">' +
             '<button type="button" class="btn-compact" data-action="assign-char-owner" data-id="' + c.id + '" style="font-size:0.7rem;padding:3px 7px;">' +
-              (c.ownerEmail ? '✏️ Cambiar' : '➕ Asignar') +
+              (c.ownerEmail ? iconoUI("editar") + ' Cambiar' : iconoUI("mas") + ' Asignar') +
             '</button>' +
-            (c.ownerEmail ? '<button type="button" class="btn-compact" data-action="clear-char-owner" data-id="' + c.id + '" title="Desvincular jugador" style="font-size:0.7rem;padding:3px 6px;color:var(--crimson-light);">✕</button>' : '') +
+            (c.ownerEmail ? '<button type="button" class="btn-compact" data-action="clear-char-owner" data-id="' + c.id + '" title="Desvincular jugador" style="font-size:0.7rem;padding:3px 6px;color:var(--crimson-light);">' + iconoUI("cerrar") + '</button>' : '') +
           '</div>' +
         '</div>';
       } else if(currentUser) {
         var isMine = isCharOwner(c, currentUser);
         ownerHtml = '<div style="margin-top:6px;font-size:0.72rem;display:flex;align-items:center;gap:4px;">' +
           (isMine
-            ? '<span class="char-owner-badge mine">⭐ Tu Personaje (Control total)</span>'
+            ? '<span class="char-owner-badge mine">' + icono("estrella", {tam:"s"}) + ' Tu Personaje (Control total)</span>'
             : (c.ownerEmail
-                ? '<span class="char-owner-badge other">👁️ De: ' + esc(c.ownerEmail) + ' (Espectador)</span>'
-                : '<span class="char-owner-badge unassigned">○ Sin asignar (Solo lectura)</span>'
+                ? '<span class="char-owner-badge other">' + iconoUI("ver") + ' De: ' + esc(c.ownerEmail) + ' (Espectador)</span>'
+                : '<span class="char-owner-badge unassigned">Sin asignar (Solo lectura)</span>'
               )
           ) +
         '</div>';
@@ -164,11 +164,11 @@ function openCharModal(){
             '<div class="cli-sub">'+(isNPC?'NPC · ':'Nv. '+esc(c.nivel||"1")+' · '+(c.titulo?esc(c.titulo)+' · ':''))+esc(c.trabajo||"Aventurero")+'</div>'+
           '</div>'+
         '</div>'+
-        (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;">✕</button>':'')+
+        (canDelete?'<button type="button" class="row-del" data-action="del-char" data-id="'+c.id+'" aria-label="Eliminar personaje" title="Eliminar personaje" style="min-width:32px;min-height:32px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;">' + iconoUI("cerrar") + '</button>':'')+
       '</div>'+
       ownerHtml +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(176,141,87,0.15);width:100%;flex-wrap:wrap;">'+
-        '<span style="font-size:0.72rem;color:var(--ink-dim);letter-spacing:0.02em;">🎨 Color de acento:</span>'+
+        '<span style="font-size:0.72rem;color:var(--ink-dim);letter-spacing:0.02em;">' + icono("paleta", {tam:"s"}) + ' Color de acento:</span>'+
         '<div class="theme-swatches">'+swatches+'</div>'+
       '</div>'+
     '</div>';
@@ -236,23 +236,23 @@ function openDataModal(screen){
     '</div>';
     if(PARTIDAS.length > 1){
       html += '<div class="settings-list">'+
-        settingsRow("settings-go", "partida", "🗺️", "Partida: "+esc(PARTIDA_ACTUAL.nombre), "Cambiar")+
+        settingsRow("settings-go", "partida", icono("mapa", {tam:"m"}), "Partida: "+esc(PARTIDA_ACTUAL.nombre), "Cambiar")+
       '</div>';
     }
     html += '<div class="settings-group-title">Preferencias</div><div class="settings-list">'+
       '<button type="button" class="settings-row" data-action="toggle-sound" role="switch" aria-checked="'+(soundEnabled() ? 'true' : 'false')+'">'+
-        '<span class="settings-row-ico">🔊</span>'+
+        '<span class="settings-row-ico">' + iconoUI("sonido") + '</span>'+
         '<span class="settings-row-txt"><span class="settings-row-title">Sonidos</span><span class="settings-row-sub">Dados, pestañas y sonidos de personaje</span></span>'+
         '<span class="settings-switch'+(soundEnabled() ? ' on' : '')+'"></span>'+
       '</button>'+
       (window.UIJuice ?
         '<button type="button" class="settings-row" data-action="toggle-juice" data-juice="vib" role="switch" aria-checked="'+(UIJuice.vibOn() ? 'true' : 'false')+'">'+
-          '<span class="settings-row-ico">📳</span>'+
+          '<span class="settings-row-ico">' + iconoUI("vibracion") + '</span>'+
           '<span class="settings-row-txt"><span class="settings-row-title">Vibración</span><span class="settings-row-sub">Pequeñas vibraciones al tocar y tirar dados</span></span>'+
           '<span class="settings-switch'+(UIJuice.vibOn() ? ' on' : '')+'"></span>'+
         '</button>'+
         '<button type="button" class="settings-row" data-action="toggle-juice" data-juice="anim" role="switch" aria-checked="'+(UIJuice.animOn() ? 'true' : 'false')+'">'+
-          '<span class="settings-row-ico">✨</span>'+
+          '<span class="settings-row-ico">' + icono("destellos", {tam:"m"}) + '</span>'+
           '<span class="settings-row-txt"><span class="settings-row-title">Animaciones</span><span class="settings-row-sub">Destellos y movimientos al tocar y cambiar números</span></span>'+
           '<span class="settings-switch'+(UIJuice.animOn() ? ' on' : '')+'"></span>'+
         '</button>' : '')+
@@ -296,7 +296,7 @@ function openDataModal(screen){
     html += '<div class="settings-panel"><p>Al cambiar de partida se cierra la sesión y entras con tu cuenta de esa partida.</p></div>';
     html += '<div class="settings-list">'+
       PARTIDAS.map(function(p){
-        return settingsRow("partida-pick", "", p.id === PARTIDA_ACTUAL.id ? "✅" : "🗺️", esc(p.nombre), p.id === PARTIDA_ACTUAL.id ? "Partida actual" : "").replace('data-action="partida-pick"', 'data-action="partida-pick" data-partida="'+esc(p.id)+'"');
+        return settingsRow("partida-pick", "", p.id === PARTIDA_ACTUAL.id ? iconoUI("hecho") : icono("mapa"), esc(p.nombre), p.id === PARTIDA_ACTUAL.id ? "Partida actual" : "").replace('data-action="partida-pick"', 'data-action="partida-pick" data-partida="'+esc(p.id)+'"');
       }).join("")+
     '</div>';
   }
@@ -325,7 +325,7 @@ function openDataModal(screen){
     html += '<div class="storage-cards-grid">'+
       '<div class="storage-card local">'+
         '<div class="storage-card-head">'+
-          '<div class="storage-card-name"><span class="storage-card-icon">💾</span> Local (Navegador)</div>'+
+          '<div class="storage-card-name"><span class="storage-card-icon">'+icono("almacenamiento")+'</span> Local (Navegador)</div>'+
           '<span class="storage-pill '+localPillClass+'" id="localPill">'+local.pct+'%</span>'+
         '</div>'+
         '<div class="storage-bar-track"><div class="storage-bar-fill local '+localPillClass+'" id="localBarFill" style="width:'+Math.max(2, local.pct)+'%;"></div></div>'+
@@ -338,7 +338,7 @@ function openDataModal(screen){
       '</div>'+
       '<div class="storage-card cloud">'+
         '<div class="storage-card-head">'+
-          '<div class="storage-card-name"><span class="storage-card-icon">☁️</span> Supabase (Nube)</div>'+
+          '<div class="storage-card-name"><span class="storage-card-icon">'+icono("nube")+'</span> Supabase (Nube)</div>'+
           '<span class="storage-pill optimal" id="cloudPill">Consultando...</span>'+
         '</div>'+
         '<div class="storage-bar-track"><div class="storage-bar-fill cloud" id="cloudBarFill" style="width:0%;"></div></div>'+
@@ -350,7 +350,7 @@ function openDataModal(screen){
       '</div>'+
       '<div class="storage-card cloud">'+
         '<div class="storage-card-head">'+
-          '<div class="storage-card-name"><span class="storage-card-icon">🗄️</span> Base de datos</div>'+
+          '<div class="storage-card-name"><span class="storage-card-icon">'+icono("despensa")+'</span> Base de datos</div>'+
           '<span class="storage-pill optimal" id="dbPill">Consultando...</span>'+
         '</div>'+
         '<div class="storage-bar-track"><div class="storage-bar-fill cloud" id="dbBarFill" style="width:0%;"></div></div>'+
@@ -361,7 +361,7 @@ function openDataModal(screen){
       '</div>'+
       (isAdmin() ?
         '<div class="storage-card cloud">'+
-          '<div class="storage-card-head"><div class="storage-card-name"><span class="storage-card-icon">📊</span> Consumo de Supabase</div></div>'+
+          '<div class="storage-card-head"><div class="storage-card-name"><span class="storage-card-icon"></span>Consumo de Supabase</div></div>'+
           '<div class="storage-card-note">El tamaño de la base y las fotos se miden arriba. Los registros (logs), las descargas y las llamadas no se pueden medir desde la web: mira el panel de Supabase (Organización › Usage).</div>'+
           '<a class="summon-roll-pill" href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener">Abrir el panel de Supabase</a>'+
         '</div>' : '')+
@@ -411,7 +411,7 @@ function openDataModal(screen){
       '<p class="settings-note donate-lead">El admin programa por las noches, y Haku, jefe de seguridad (el de la manta), cobra en croquetas. Hace semanas que no le suben el sueldo y ha empezado a mirar mal a todo el mundo.</p>'+
       '<div class="donate-options">'+
         '<a class="donate-opt btn-solid-gold" href="' + esc(DONATE_PAYPAL_ME + "/2EUR") + '" target="_blank" rel="noopener" data-donate="1">'+
-          '<span class="donate-opt-icon">🦴</span>'+
+          '<span class="donate-opt-icon">'+icono("hueso")+'</span>'+
           '<span class="donate-opt-text"><strong>Una croqueta para Haku</strong><small>Te mirará un poco menos mal</small></span>'+
           '<span class="donate-opt-amount">2 €</span>'+
         '</a>'+
@@ -421,7 +421,7 @@ function openDataModal(screen){
           '<span class="donate-opt-amount">1,50 €</span>'+
         '</a>'+
         '<a class="donate-opt summon-roll-pill" href="' + esc(DONATE_PAYPAL_ME) + '" target="_blank" rel="noopener" data-donate="1">'+
-          '<span class="donate-opt-icon">🎁</span>'+
+          '<span class="donate-opt-icon">'+icono("regalo")+'</span>'+
           '<span class="donate-opt-text"><strong>Lo que tú quieras</strong><small>Tú pones la cantidad en PayPal</small></span>'+
           '<span class="donate-opt-amount">?</span>'+
         '</a>'+
@@ -506,11 +506,11 @@ async function updateStorageStatsUI(showToastFeedback){
       if(localAction){
         localAction.innerHTML = (local.base64Count > 0 ?
           '<div style="margin-top:4px;padding:6px 8px;background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.3);border-radius:4px;display:flex;flex-direction:column;gap:5px;">'+
-            '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">⚠️ Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
-            '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">🚀 Migrar fotos a Supabase (Liberar espacio)</button>'+
+            '<div style="font-size:0.7rem;color:#FDE047;line-height:1.3;">'+iconoUI("aviso")+' Tienes <b>'+local.base64Count+' foto(s)</b> en local ('+local.base64BytesStr+').</div>'+
+            '<button class="btn-compact highlight" data-action="migrate-local-images" style="font-size:0.7rem;background:var(--gold);color:#120D0A;font-weight:700;padding:5px 8px;">'+icono("version")+' Migrar fotos a Supabase (Liberar espacio)</button>'+
           '</div>' :
           '<div style="display:flex;justify-content:flex-end;margin-top:2px;">'+
-            '<button class="btn-compact settings-btn" data-action="clean-orphan-storage" style="color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">🧹 Limpiar restos de versiones viejas</button>'+
+            '<button class="btn-compact settings-btn" data-action="clean-orphan-storage" style="color:var(--ink-dim);" title="Elimina rastros de versiones anteriores">Limpiar restos de versiones viejas</button>'+
           '</div>'
         );
       }
@@ -623,7 +623,7 @@ function showDonateThanks(){
         '<video class="donate-video" src="images/haku-gracias.mp4" loop playsinline preload="none" aria-label="Haku bailando con chubasquero amarillo y gorro de rana"></video>'+
         '<h3 class="donate-title">¡Haku baila por ti!</h3>'+
         '<p class="settings-note">Si has donado, gracias de corazón (y de estómago). Si solo estabas mirando, Haku baila igual: es muy profesional.</p>'+
-        '<button type="button" class="btn-compact donate-sound" hidden>🔊 Activar la música</button>'+
+        '<button type="button" class="btn-compact donate-sound" hidden>'+iconoUI("sonido")+' Activar la música</button>'+
         '<button type="button" class="btn-solid-gold donate-close">Seguir jugando</button>'+
       '</div>';
     document.body.appendChild(thanks);
@@ -1174,12 +1174,12 @@ function openInventoryItemModal(itemId){
   ];
   var itCat = it.category || "Miscelánea";
 
-  var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="save-inv-modal" data-id="'+it.id+'" aria-label="Cerrar">✕</button></div>'+
+  var html = '<div class="modal-title"><span>Detalle del Objeto</span><button class="modal-close" data-action="save-inv-modal" data-id="'+it.id+'" aria-label="Cerrar">'+iconoUI("cerrar")+'</button></div>'+
     '<div class="inv-modal-content">'+
       '<div class="inv-modal-icon-header">'+
         '<div class="inv-modal-icon-wrap" data-action="focus-inv-icon" title="'+(canEdit?'Toca para personalizar el icono del objeto':'Icono del objeto')+'">'+
           '<div class="inv-modal-icon-display" id="invModalIconDisplay">'+iconoDeEmoji(icon, "objetos", {tam:"l"})+'</div>'+
-          (canEdit ? '<div class="inv-modal-icon-badge" title="Editar icono">✏️</div>' : '')+
+          (canEdit ? '<div class="inv-modal-icon-badge" title="Editar icono">'+iconoUI("editar")+'</div>' : '')+
         '</div>'+
         '<div class="inv-modal-title-area">'+
           (canEdit ?
@@ -1192,7 +1192,7 @@ function openInventoryItemModal(itemId){
       (canEdit ?
         '<div class="inv-modal-icon-section">'+
           '<div class="inv-modal-icon-sec-header">'+
-            '<label class="inv-modal-sec-label">🎨 Icono del Objeto</label>'+
+            '<label class="inv-modal-sec-label">Icono del Objeto</label>'+
             '<div class="inv-modal-icon-status" id="invModalIconStatus">'+
               (it.icon ? '<span class="status-custom">Personalizado</span>' : '<span class="status-auto">Automático</span>')+
             '</div>'+
@@ -1208,7 +1208,7 @@ function openInventoryItemModal(itemId){
               '<span class="inv-custom-icon-lbl">O escribe/pega cualquier emoji:</span>'+
               '<input type="text" id="invModalCustomIcon" class="inv-custom-icon-input" value="'+esc(it.icon || '')+'" placeholder="Ej: 🐉, ⚡, 🩸" maxlength="6" autocomplete="off">'+
             '</div>'+
-            '<button type="button" class="btn-compact inv-icon-auto-btn" data-action="reset-inv-icon" title="Restablece el icono según el nombre o categoría">🔄 Auto</button>'+
+            '<button type="button" class="btn-compact inv-icon-auto-btn" data-action="reset-inv-icon" title="Restablece el icono según el nombre o categoría">'+iconoUI("recargar")+' Auto</button>'+
           '</div>'+
           '<input type="hidden" id="invModalIconVal" value="'+esc(it.icon || '')+'">'+
         '</div>' : ''
@@ -1233,7 +1233,7 @@ function openInventoryItemModal(itemId){
         '<textarea id="invModalDesc" data-bind="inventory.'+it.id+'.desc" placeholder="Detalles, peso, propiedades mágicas o notas del objeto..." '+(canEdit?'':'readonly')+'>'+esc(it.desc || it.notes || '')+'</textarea>'+
       '</div>'+
       '<div class="modal-actions" style="margin-top:16px;display:flex;justify-content:space-between;gap:8px;">'+
-        (canEdit ? '<button class="btn-danger" data-action="del-inventory-modal" data-id="'+it.id+'">🗑️ Eliminar</button>' : '<div></div>')+
+        (canEdit ? '<button class="btn-danger" data-action="del-inventory-modal" data-id="'+it.id+'">'+iconoUI("borrar")+' Eliminar</button>' : '<div></div>')+
         (canEdit ?
           '<button class="btn-solid-gold" data-action="save-inv-modal" data-id="'+it.id+'">Guardar y Cerrar</button>' :
           '<button class="btn-solid-gold" data-action="close-modal">Cerrar</button>'
@@ -1336,7 +1336,7 @@ function openBeastMobilityModal(beastId, isSummon){
   var terrainInfo = (b.movilidad && b.movilidad.includes('(')) ? b.movilidad.slice(b.movilidad.indexOf('(')) : '';
   var creatureName = b.nombre || b.name || "Criatura";
 
-  var html = '<h2>🏃 Movilidad: '+esc(creatureName)+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
+  var html = '<h2>Movilidad: '+esc(creatureName)+'<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>'+
     '<div class="beast-mov-modal-hero">'+
       '<div class="beast-mov-hero-label">Casillas de movimiento en tablero:</div>'+
       '<div class="beast-mov-stepper">'+
@@ -1353,10 +1353,10 @@ function openBeastMobilityModal(beastId, isSummon){
     '</div>'+
 
     '<div class="beast-tactical-box">'+
-      '<div class="beast-tactical-title">⚡ Desplazamiento táctico en combate:</div>'+
-      '<div class="beast-tactical-row"><span>🚶 <strong>Paso Normal:</strong></span> <span><strong>'+curNum+'</strong> casillas ('+meters+' m)</span></div>'+
-      '<div class="beast-tactical-row"><span>🐎 <strong>A la Carrera / Galope:</strong></span> <span><strong>'+runCasillas+'</strong> casillas ('+runMeters+' m)</span></div>'+
-      '<div class="beast-tactical-row"><span>🌊 <strong>Terreno Difícil / Nadar:</strong></span> <span><strong>'+slowCasillas+'</strong> casillas ('+slowMeters+' m)</span></div>'+
+      '<div class="beast-tactical-title">' + icono("iniciativa", {tam:"s"}) + ' Desplazamiento táctico en combate:</div>'+
+      '<div class="beast-tactical-row"><span><strong>Paso Normal:</strong></span> <span><strong>'+curNum+'</strong> casillas ('+meters+' m)</span></div>'+
+      '<div class="beast-tactical-row"><span><strong>A la Carrera / Galope:</strong></span> <span><strong>'+runCasillas+'</strong> casillas ('+runMeters+' m)</span></div>'+
+      '<div class="beast-tactical-row"><span><strong>Terreno Difícil / Nadar:</strong></span> <span><strong>'+slowCasillas+'</strong> casillas ('+slowMeters+' m)</span></div>'+
     '</div>'+
 
     '<div style="display:flex;gap:8px;margin-top:14px;">'+
@@ -1381,20 +1381,20 @@ function showConflictModal(localChar, remoteData, remoteTs){
 
   var html = '<div style="padding:6px 2px;">'+
     '<h2 style="display:flex;align-items:center;gap:8px;color:#FBBF24;margin-top:0;font-size:1.1rem;">'+
-      '<span>⚠️</span> <span>Conflicto de Edición Simultánea</span>'+
+      '<span>'+iconoUI("aviso")+'</span> <span>Conflicto de Edición Simultánea</span>'+
     '</h2>'+
     '<p style="font-size:0.88rem;color:var(--ink);line-height:1.5;margin-bottom:12px;">'+
       'Otro jugador o dispositivo ha guardado cambios en <strong>'+esc(charName)+'</strong> ('+timeStr+') mientras realizabas modificaciones locales.'+
     '</p>'+
     '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:10px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.4;">'+
-      '🔒 <strong>Tus cambios locales están protegidos:</strong> Se ha guardado una copia de seguridad en tu navegador para que nunca pierdas datos.'+
+      iconoUI("candado")+' <strong>Tus cambios locales están protegidos:</strong> Se ha guardado una copia de seguridad en tu navegador para que nunca pierdas datos.'+
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:10px;">'+
       '<button type="button" class="btn-solid-gold" style="width:100%;padding:11px 12px;font-size:0.85rem;" data-action="resolve-conflict-server">'+
-        '📥 Cargar versión del servidor (Recomendado)'+
+        iconoUI("descargar")+' Cargar versión del servidor (Recomendado)'+
       '</button>'+
       '<button type="button" class="btn-compact" style="width:100%;padding:10px 12px;font-size:0.82rem;border-color:rgba(239,68,68,0.5);color:#F87171;" data-action="resolve-conflict-local">'+
-        '⚠️ Forzar y sobrescribir con mis cambios locales'+
+        iconoUI("aviso")+' Forzar y sobrescribir con mis cambios locales'+
       '</button>'+
     '</div>'+
   '</div>';
@@ -1544,7 +1544,7 @@ function handleRemoteTicketReply(data){
   if(changed){
     savePlayerTickets(myTickets);
     if(typeof renderTopbar === "function") renderTopbar();
-    showToast("📬 ¡El Administrador ha respondido a tu reporte #" + (data.ticketCode || "") + "!", "success");
+    showToast("¡El Administrador ha respondido a tu reporte #" + (data.ticketCode || "") + "!", "success", {icono:"buzon"});
     var modal = document.getElementById("feedbackModal");
     var overlay = document.getElementById("feedbackModalOverlay");
     if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "player" && currentFeedbackTab === "my_tickets"){
@@ -1562,7 +1562,7 @@ function handleRemoteNewTicket(data){
     if(state.feedbackReports.length > 50) state.feedbackReports.pop();
     saveState(false);
     if(isGM()){
-      showToast("🔔 Nuevo ticket recibido: #" + (data.ticketCode || data.title), "info");
+      showToast("Nuevo ticket recibido: #" + (data.ticketCode || data.title), "info", {icono:"avisos"});
       var modal = document.getElementById("feedbackModal");
       var overlay = document.getElementById("feedbackModalOverlay");
       if(overlay && !overlay.classList.contains("hidden") && modal && modal.getAttribute("data-mode") === "admin"){
@@ -1664,7 +1664,7 @@ async function syncPlayerTicketsWithSupabase(skipModalRefresh){
       savePlayerTickets(tickets);
       if(typeof renderTopbar === "function") renderTopbar();
       if(hadNewReply){
-        showToast("📬 Tienes una nueva respuesta del Administrador en tus reportes", "info");
+        showToast("Tienes una nueva respuesta del Administrador en tus reportes", "info", {icono:"buzon"});
       }
       if(!skipModalRefresh){
         var modal = document.getElementById("feedbackModal");
@@ -1793,15 +1793,15 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
 
   var gmPanelBtn = isGM() ? 
     '<button type="button" class="btn-compact feedback-gm-panel-btn" data-action="open-feedback-admin">' +
-      '🎮 Panel de Administración: Gestionar tickets' +
+      icono('admin',{tam:'s'}) + ' Panel de Administración: Gestionar tickets' +
     '</button>' : '';
 
   var tabsHeader = '<div class="feedback-nav-tabs">' +
     '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "new" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="new">' +
-      '<span>📝 Nuevo Reporte</span>' +
+      '<span>' + iconoUI('editar') + ' Nuevo Reporte</span>' +
     '</button>' +
     '<button type="button" class="feedback-nav-tab ' + (currentFeedbackTab === "my_tickets" ? "active" : "") + '" data-action="switch-feedback-tab" data-tab="my_tickets">' +
-      '<span>📬 Mis Reportes ' + (hasNewReply ? '<span class="feedback-badge-dot" title="Tienes respuestas nuevas"></span>' : '') + ' (' + myTickets.length + ')</span>' +
+      '<span>' + icono('buzon',{tam:'s'}) + ' Mis Reportes ' + (hasNewReply ? '<span class="feedback-badge-dot" title="Tienes respuestas nuevas"></span>' : '') + ' (' + myTickets.length + ')</span>' +
     '</button>' +
   '</div>';
 
@@ -1809,10 +1809,10 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
 
   if(currentFeedbackTab === "new"){
     var catOptions = [
-      { id: "bug", label: "🐛 Error / Bug", desc: "Algo no funciona o se rompió" },
-      { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o propuesta de mejora" },
-      { id: "balance", label: "⚖️ Reglas / Balance", desc: "Cálculo, daño o habilidad" },
-      { id: "otro", label: "💬 Consulta / Otro", desc: "Duda general del juego" }
+      { id: "bug", label: icono("errores", {tam:"s"}) + " Error / Bug", desc: "Algo no funciona o se rompió" },
+      { id: "sugerencia", label: icono("cerebro", {tam:"s"}) + " Sugerencia", desc: "Idea o propuesta de mejora" },
+      { id: "balance", label: icono("balanza", {tam:"s"}) + " Reglas / Balance", desc: "Cálculo, daño o habilidad" },
+      { id: "otro", label: icono("buzon", {tam:"s"}) + " Consulta / Otro", desc: "Duda general del juego" }
     ];
 
     var catPills = catOptions.map(function(cat){
@@ -1844,12 +1844,12 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
       '</div>' +
 
       '<div class="feedback-privacy-note">' +
-        '🔒 <b>100% Privado y Directo:</b> Tu reporte generará un ticket con código único. El Administrador te responderá directamente en la pestaña <b>"Mis Reportes"</b>.' +
+        iconoUI('candado') + ' <b>100% Privado y Directo:</b> Tu reporte generará un ticket con código único. El Administrador te responderá directamente en la pestaña <b>"Mis Reportes"</b>.' +
       '</div>' +
 
       '<div class="feedback-actions" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">' +
         '<button type="button" class="btn-solid-gold feedback-submit-btn" id="btnSubmitFeedback" data-action="submit-feedback-report">' +
-          '🚀 Enviar Reporte al Administrador' +
+          icono('version',{tam:'s'}) + ' Enviar Reporte al Administrador' +
         '</button>' +
         '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
           'Cancelar' +
@@ -1859,11 +1859,11 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
     // Vista "Mis Reportes y Respuestas"
     if(!myTickets.length){
       contentHtml = '<div style="text-align:center;padding:30px 16px;color:var(--ink-faint);line-height:1.5;">' +
-        '<div style="font-size:2.2rem;margin-bottom:8px;">📭</div>' +
+        '<div style="font-size:2.2rem;margin-bottom:8px;">' + icono('buzon-vacio') + '</div>' +
         '<div style="font-weight:700;font-size:0.95rem;color:var(--ink);margin-bottom:6px;">No tienes reportes enviados aún</div>' +
         '<p style="font-size:0.82rem;margin:0 0 16px;">Cualquier duda, error o sugerencia que envíes aparecerá aquí junto a la respuesta oficial del Administrador.</p>' +
         '<button type="button" class="btn-solid-gold" style="padding:8px 16px;font-size:0.85rem;" data-action="switch-feedback-tab" data-tab="new">' +
-          '📝 Enviar mi primer reporte' +
+          iconoUI('editar') + ' Enviar mi primer reporte' +
         '</button>' +
       '</div>';
     } else {
@@ -1871,23 +1871,23 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
         var st = t.status || "pending";
         var statusBadge = '';
         if(st === "resolved"){
-          statusBadge = '<span class="ticket-badge resolved">🟢 Resuelto</span>';
+          statusBadge = '<span class="ticket-badge resolved"><span class="dot dot-verde"></span> Resuelto</span>';
         } else if(st === "in_progress"){
-          statusBadge = '<span class="ticket-badge in_progress">🔵 En proceso</span>';
+          statusBadge = '<span class="ticket-badge in_progress"><span class="dot dot-azul"></span> En proceso</span>';
         } else {
-          statusBadge = '<span class="ticket-badge pending">🟡 En revisión</span>';
+          statusBadge = '<span class="ticket-badge pending"><span class="dot dot-amarillo"></span> En revisión</span>';
         }
 
         var replyBlock = '';
         if(t.adminReply){
           replyBlock = '<div class="player-reply-box">' +
-            '<div class="player-reply-header">🛡️ Respuesta Oficial del Administrador:</div>' +
+            '<div class="player-reply-header">' + icono('escudo',{tam:'s'}) + ' Respuesta Oficial del Administrador:</div>' +
             '<div class="player-reply-body">' + esc(t.adminReply) + '</div>' +
             (t.resolvedAt ? '<div style="font-size:0.68rem;color:var(--ink-faint);margin-top:6px;text-align:right;">Respondido el ' + esc(new Date(t.resolvedAt).toLocaleString()) + '</div>' : '') +
           '</div>';
         } else {
           replyBlock = '<div style="margin-top:8px;font-size:0.75rem;color:var(--ink-faint);background:rgba(0,0,0,0.25);border-radius:4px;padding:6px 8px;border-left:2px solid var(--line);">' +
-            (st === "in_progress" ? '🔵 El Administrador está trabajando en solucionar esta incidencia.' : '⏳ En cola de revisión. El Administrador te responderá aquí tan pronto lo evalúe.') +
+            (st === "in_progress" ? '<span class="dot dot-azul"></span> El Administrador está trabajando en solucionar esta incidencia.' : '<span class="dot dot-amarillo"></span> En cola de revisión. El Administrador te responderá aquí tan pronto lo evalúe.') +
           '</div>';
         }
 
@@ -1915,7 +1915,7 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
     }
   }
 
-  var html = '<h2>📬 Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>' + icono('buzon',{tam:'s'}) + ' Buzón de Reportes y Sugerencias<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     gmPanelBtn +
     tabsHeader +
     contentHtml;
@@ -2193,7 +2193,7 @@ async function submitFeedbackReport(){
 
   if(btn){
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> Enviando reporte...';
+    btn.innerHTML = '<span>'+icono('actividad',{tam:'s'})+'</span> Enviando reporte...';
   }
 
   var report = buildFeedbackDiagnostic(currentFeedbackCategory, title, desc, contact);
@@ -2246,21 +2246,21 @@ async function submitFeedbackReport(){
 }
 
 function showPlayerSuccessScreen(report){
-  var html = '<h2>🎉 ¡Reporte Enviado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>'+icono('celebracion',{tam:'s'})+' ¡Reporte Enviado!<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="feedback-success-card">' +
-      '<div class="success-icon-badge">✅</div>' +
+      '<div class="success-icon-badge">'+iconoUI('hecho')+'</div>' +
       '<div class="success-title">Ticket Registrado con Éxito</div>' +
       '<p class="success-text">Tu reporte ha sido remitido al Administrador con los detalles de tu partida.</p>' +
     '</div>' +
 
     '<div style="background:rgba(0,0,0,0.35);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:var(--ink-dim);line-height:1.45;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-        '<span>🎫 <b>Ticket:</b></span>' +
+        '<span><b>Ticket:</b></span>' +
         '<span class="ticket-code-tag">#' + esc(report.ticketCode) + '</span>' +
       '</div>' +
-      '<div>📌 <b>Asunto:</b> ' + esc(report.title) + '</div>' +
-      '<div style="margin-top:4px;">🏷️ <b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
-      '<div style="margin-top:4px;color:var(--gold-light);">📌 <b>Estado:</b> <span class="ticket-badge pending">🟡 En revisión</span></div>' +
+      '<div><b>Asunto:</b> ' + esc(report.title) + '</div>' +
+      '<div style="margin-top:4px;"><b>Categoría:</b> ' + esc(report.categoryLabel) + '</div>' +
+      '<div style="margin-top:4px;color:var(--gold-light);"><b>Estado:</b> <span class="ticket-badge pending"><span class="dot dot-amarillo"></span> En revisión</span></div>' +
       '<div style="margin-top:8px;font-size:0.73rem;color:var(--ink-faint);border-top:1px dashed var(--line);padding-top:6px;">' +
         'El Administrador revisará tu reporte y te responderá directamente en la pestaña <b>"Mis Reportes y Respuestas"</b>.' +
       '</div>' +
@@ -2268,7 +2268,7 @@ function showPlayerSuccessScreen(report){
 
     '<div style="display:flex;flex-direction:column;gap:8px;">' +
       '<button type="button" class="btn-solid-gold" style="width:100%;padding:10px 14px;font-size:0.9rem;" data-action="switch-feedback-tab" data-tab="my_tickets">' +
-        '📬 Ver Mis Reportes y Respuestas' +
+        icono('buzon',{tam:'s'})+' Ver Mis Reportes y Respuestas' +
       '</button>' +
       '<button type="button" class="btn-compact" style="width:100%;padding:8px;font-size:0.8rem;" data-action="close-feedback-modal">' +
         'Cerrar' +
@@ -2303,15 +2303,15 @@ function openFeedbackAdminModal(filter){
 
   var filterPillsHtml = '<div class="admin-filter-bar">' +
     '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "all" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="all">Todos (' + allCount + ')</button>' +
-    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "pending" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="pending">🟡 Pendientes (' + pendingCount + ')</button>' +
-    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "in_progress" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="in_progress">🔵 En Proceso (' + inProgressCount + ')</button>' +
-    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "resolved" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="resolved">🟢 Atendidos (' + resolvedCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "pending" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="pending"><span class="dot dot-amarillo"></span> Pendientes (' + pendingCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "in_progress" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="in_progress"><span class="dot dot-azul"></span> En Proceso (' + inProgressCount + ')</button>' +
+    '<button type="button" class="admin-filter-pill ' + (adminFeedbackFilter === "resolved" ? "active" : "") + '" data-action="filter-admin-tickets" data-filter="resolved"><span class="dot dot-verde"></span> Atendidos (' + resolvedCount + ')</button>' +
   '</div>';
 
   var reportsListHtml = '';
   if(!filteredReports.length){
     reportsListHtml = '<div class="admin-empty-state">' +
-      '<div style="font-size:2rem;margin-bottom:6px;">📭</div>' +
+      '<div style="font-size:2rem;margin-bottom:6px;">'+icono('buzon-vacio',{tam:'m'})+'</div>' +
       '<div style="font-weight:600;color:var(--ink);">No hay tickets en esta categoría</div>' +
       '<div style="font-size:0.75rem;color:var(--ink-faint);margin-top:4px;">Los reportes enviados por los jugadores aparecerán aquí directamente.</div>' +
     '</div>';
@@ -2331,9 +2331,9 @@ function openFeedbackAdminModal(filter){
             (triage.classification ? ('<span class="ticket-triage-badge">' + esc(triage.classification) + '</span>') : '') +
           '</div>' +
           '<div class="status-segmented-control">' +
-            '<button type="button" class="seg-btn ' + (st === 'pending' ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending" title="Marcar como Pendiente">🟡 Pendiente</button>' +
-            '<button type="button" class="seg-btn ' + (st === 'in_progress' ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress" title="Marcar En Proceso">🔵 En Proceso</button>' +
-            '<button type="button" class="seg-btn ' + (st === 'resolved' ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved" title="Marcar como Atendido">🟢 Atendido</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'pending' ? 'active pending' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="pending" title="Marcar como Pendiente"><span class="dot dot-amarillo"></span> Pendiente</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'in_progress' ? 'active in_progress' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="in_progress" title="Marcar En Proceso"><span class="dot dot-azul"></span> En Proceso</button>' +
+            '<button type="button" class="seg-btn ' + (st === 'resolved' ? 'active resolved' : '') + '" data-action="set-ticket-status" data-id="' + esc(r.id) + '" data-status="resolved" title="Marcar como Atendido"><span class="dot dot-verde"></span> Atendido</button>' +
           '</div>' +
         '</div>' +
 
@@ -2345,14 +2345,14 @@ function openFeedbackAdminModal(filter){
 
         // Fila 3: Mensaje del Jugador
         '<div class="admin-ticket-quote">' +
-          '<span class="quote-icon">💬</span>' +
+          '<span class="quote-icon">&ldquo;</span>' +
           '<div class="quote-text">' + esc(r.description) + '</div>' +
         '</div>' +
 
         // Fila 4: Detalles tecnicos
         '<details class="admin-ticket-accordion">' +
           '<summary class="admin-ticket-accordion-summary">' +
-            '<span>🔬 Información Técnica</span>' +
+            '<span>'+icono('lupa',{tam:'s'})+' Información Técnica</span>' +
             '<span class="accordion-hint">Detalles ▾</span>' +
           '</summary>' +
           '<div class="admin-ticket-accordion-body">' +
@@ -2360,9 +2360,9 @@ function openFeedbackAdminModal(filter){
               '<b>Detalle:</b> ' + esc(triage.diagnostic || "Sin análisis técnico.") +
             '</div>' +
             '<div class="admin-ticket-diag-row">' +
-              '<span class="admin-ticket-diag-text">🛠️ ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
+              '<span class="admin-ticket-diag-text">'+icono('mantenimiento',{tam:'s'})+' ' + esc(triage.technicalAction || "Revisar componente reportado.") + '</span>' +
               '<button type="button" class="btn-compact" style="padding:4px 8px;font-size:0.68rem;border-color:rgba(88,101,242,0.5);color:#A5B4FC;white-space:nowrap;" data-action="copy-ticket-info" data-id="' + esc(r.id) + '">' +
-                '📋 Copiar Resumen' +
+                iconoUI('copiar')+' Copiar Resumen' +
               '</button>' +
             '</div>' +
           '</div>' +
@@ -2371,16 +2371,16 @@ function openFeedbackAdminModal(filter){
         // Fila 5: Área de Respuesta al Jugador
         '<div class="admin-ticket-reply-section">' +
           '<div class="reply-section-header">' +
-            '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">💬 Responder a ' + esc(contactName) + ':</span>' +
-            (triage.suggestedReply ? '<button type="button" class="btn-text-gold" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">🪄 Cargar plantilla</button>' : '') +
+            '<span style="font-size:0.75rem;font-weight:700;color:var(--gold-light);">Responder a ' + esc(contactName) + ':</span>' +
+            (triage.suggestedReply ? '<button type="button" class="btn-text-gold" data-action="autofill-ai-reply" data-id="' + esc(r.id) + '">'+icono('varita',{tam:'s'})+' Cargar plantilla</button>' : '') +
           '</div>' +
           '<textarea id="admin_reply_text_' + esc(r.id) + '" rows="2" class="admin-reply-textarea" placeholder="Escribe la respuesta que verá el jugador en su app...">' + esc(r.adminReply || "") + '</textarea>' +
           '<div class="reply-section-actions">' +
             '<span style="font-size:0.7rem;color:var(--ink-faint);">' + 
-              (r.resolvedAt ? ('✓ Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Esperando respuesta') + 
+              (r.resolvedAt ? (iconoUI('hecho')+' Respondido el ' + esc(new Date(r.resolvedAt).toLocaleDateString())) : 'Esperando respuesta') + 
             '</span>' +
             '<button type="button" class="btn-solid-gold" style="padding:7px 14px;font-size:0.78rem;font-weight:700;" data-action="save-admin-reply" data-id="' + esc(r.id) + '">' +
-              '🚀 Guardar y Enviar' +
+              icono('version',{tam:'s'})+' Guardar y Enviar' +
             '</button>' +
           '</div>' +
         '</div>' +
@@ -2388,7 +2388,7 @@ function openFeedbackAdminModal(filter){
     }).join('');
   }
 
-  var html = '<h2>🛡️ Gestión de Tickets de Administración<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2>'+icono('admin',{tam:'s'})+' Gestión de Tickets de Administración<button data-action="close-feedback-modal" aria-label="Cerrar">&times;</button></h2>' +
     filterPillsHtml +
     '<div class="admin-tickets-container">' +
       reportsListHtml +
@@ -2434,7 +2434,7 @@ function feedbackModalClick(e){
       if(txtEl){
         txtEl.value = reportAi.aiTriage.suggestedReply;
         txtEl.focus();
-        showToast("Sugerencia de IA cargada en el campo 🪄", "info");
+        showToast("Sugerencia de IA cargada en el campo", "info", {icono:"varita"});
       }
     }
     return;
@@ -2545,7 +2545,7 @@ function feedbackModalClick(e){
         "• Acción sugerida: " + (triageP.technicalAction || "Inspeccionar componente") + "\n" +
         "• Entorno: " + ((targetP.system && targetP.system.os) ? (targetP.system.os + " - " + targetP.system.browser) : "Navegador Web");
       fallbackCopyText(promptText);
-      showToast("Información del ticket copiada 📋", "success");
+      showToast("Información del ticket copiada", "success");
     }
     return;
   }
@@ -2642,7 +2642,7 @@ function feedbackModalClick(e){
       sendDiscordWebhookReply(targetSave, replyText);
 
       openFeedbackAdminModal();
-      showToast("¡Respuesta enviada al jugador y notificada 🟢!", "success");
+      showToast("¡Respuesta enviada al jugador y notificada!", "success");
     }
     return;
   }
@@ -2671,7 +2671,7 @@ function feedbackModalClick(e){
       "DROP POLICY IF EXISTS \"Allow update app_feedback\" ON public.app_feedback;\n" +
       "CREATE POLICY \"Allow update app_feedback\" ON public.app_feedback FOR UPDATE USING (true);";
     fallbackCopyText(sqlMigrationText);
-    showToast("¡SQL de migración copiado! Pégalo en el SQL Editor de Supabase 📋", "success");
+    showToast("¡SQL de migración copiado! Pégalo en el SQL Editor de Supabase", "success");
     return;
   }
 
@@ -2687,7 +2687,7 @@ function feedbackModalClick(e){
 
     sendDiscordWebhookReport(testReport).then(function(res){
       if(res.success){
-        showToast("¡Mensaje de prueba enviado a tu Discord! 🎮", "success");
+        showToast("¡Mensaje de prueba enviado a tu Discord!", "success");
       } else {
         showToast("Error al enviar a Discord.", "error");
       }
@@ -2701,7 +2701,7 @@ function feedbackModalClick(e){
     if(targetR){
       sendDiscordWebhookReport(targetR).then(function(res){
         if(res.success){
-          showToast("Enviado a Discord 🎮", "success");
+          showToast("Enviado a Discord", "success");
         } else {
           showToast("No se pudo enviar a Discord.", "warning");
         }
@@ -2715,7 +2715,7 @@ function fallbackCopyText(text){
   try {
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){
-        showToast("Copiado al portapapeles 📋", "success");
+        showToast("Copiado al portapapeles", "success");
       }).catch(function(){
         execCommandCopy(text);
       });
@@ -2737,7 +2737,7 @@ function execCommandCopy(text){
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    showToast("Copiado al portapapeles 📋", "success");
+    showToast("Copiado al portapapeles", "success");
   } catch(e){
     showToast("No se pudo copiar automáticamente.", "warning");
   }
@@ -2807,17 +2807,17 @@ function openCharSoundModal(c){
   var presetsHtml = CHAR_SOUND_PRESETS.map(function(p){
     var isSelected = (curType === p.type) || (curName.toLowerCase() === p.name.toLowerCase());
     return '<button type="button" class="char-sound-preset-card ' + (isSelected ? 'active' : '') + '" data-action="pick-char-sound-preset" data-name="' + esc(p.name) + '" data-icon="' + esc(p.icon) + '" data-type="' + esc(p.type) + '" data-url="' + esc(p.url) + '">' +
-      '<span class="preset-icon">' + p.icon + '</span>' +
+      '<span class="preset-icon">' + soundIconHtml(p.icon) + '</span>' +
       '<div class="preset-info">' +
         '<strong>' + esc(p.name) + '</strong>' +
         '<small>' + esc(p.desc) + '</small>' +
       '</div>' +
-      '<span class="char-sound-preset-check">✓</span>' +
+      '<span class="char-sound-preset-check">'+iconoUI("hecho")+'</span>' +
     '</button>';
   }).join('');
 
   var html = '<h2>' +
-    '<span>🎵 Sonido de ' + esc(c.name) + '</span>' +
+    '<span>'+iconoUI("sonido")+' Sonido de ' + esc(c.name) + '</span>' +
     '<button type="button" data-action="close-modal" aria-label="Cerrar">&times;</button>' +
   '</h2>' +
   '<p style="font-size:0.85rem;color:var(--ink-dim);margin:0 0 14px;line-height:1.4;">Elige un efecto de sonido predefinido o introduce un nombre, icono y audio para tu personaje.</p>' +
@@ -2832,16 +2832,16 @@ function openCharSoundModal(c){
     '<div class="field"><label>Pista de Audio (.mp3, .wav, .ogg) <small style="color:var(--ink-faint);">(Opcional)</small></label>' +
       '<div style="display:flex;gap:6px;align-items:center;">' +
         '<input type="text" id="charSoundUrlInput" value="' + esc(curUrl) + '" placeholder="sounds/..., https://... o sube archivo" style="flex:1;min-width:0;">' +
-        '<button type="button" class="btn-compact" data-action="upload-char-sound-file" title="Subir archivo de audio desde tu dispositivo" style="white-space:nowrap;padding:7px 11px;font-size:0.80rem;display:flex;align-items:center;gap:4px;flex:0 0 auto;">📁 Subir</button>' +
+        '<button type="button" class="btn-compact" data-action="upload-char-sound-file" title="Subir archivo de audio desde tu dispositivo" style="white-space:nowrap;padding:7px 11px;font-size:0.80rem;display:flex;align-items:center;gap:4px;flex:0 0 auto;">'+iconoUI("carpeta")+' Subir</button>' +
       '</div>' +
     '</div>' +
   '</div>' +
   '<input type="hidden" id="charSoundTypeInput" value="' + esc(curType) + '">' +
   '<div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">' +
-    '<button type="button" class="btn-compact" data-action="test-modal-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;" title="Escuchar sonido">▶ Probar</button>' +
-    '<button type="button" class="btn-solid-gold" data-action="save-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;">✓ Guardar</button>' +
+    '<button type="button" class="btn-compact" data-action="test-modal-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;" title="Escuchar sonido">Probar</button>' +
+    '<button type="button" class="btn-solid-gold" data-action="save-char-sound" style="flex:1;min-width:110px;padding:9px 12px;font-size:0.86rem;">'+iconoUI("hecho")+' Guardar</button>' +
     (curName ? '<button type="button" class="btn-compact" data-action="remove-char-sound" style="padding:9px 12px;color:var(--danger);border-color:rgba(200,75,87,0.4);" title="Quitar sonido de este personaje">Quitar</button>' : '') +
-    '<button type="button" class="btn-compact" data-action="close-modal" style="padding:9px 14px;">✕ Cancelar</button>' +
+    '<button type="button" class="btn-compact" data-action="close-modal" style="padding:9px 14px;">'+iconoUI("cerrar")+' Cancelar</button>' +
   '</div>';
 
   var modal = document.getElementById("charSoundModal");
@@ -2971,11 +2971,11 @@ function openAlchemyCatalogModal(c){
       'Selecciona cualquier sustancia catalogada en el mundo de Krysalis para añadirla a tu laboratorio o grimorio.' +
     '</p>' +
     '<div style="margin-bottom:10px;">' +
-      '<input type="text" id="alchemyModalSearchInp" placeholder="🔍 Filtrar sustancias, efectos o terrenos..." style="width:100%;padding:7px 10px;background:rgba(18,13,10,0.85);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:0.8rem;" value="">' +
+      '<input type="text" id="alchemyModalSearchInp" placeholder="Filtrar sustancias, efectos o terrenos..." style="width:100%;padding:7px 10px;background:rgba(18,13,10,0.85);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--ink);font-size:0.8rem;" value="">' +
     '</div>' +
     '<div class="filter-pills" id="alchemyModalTypePills" style="margin-bottom:12px;gap:4px;flex-wrap:wrap;">' +
       ['Todos', 'Veneno', 'Poción', 'Ungüento'].map(function(t){
-        return '<button type="button" class="f-pill ' + (t === 'Todos' ? 'active' : '') + '" data-action="alchemy-modal-filter-type" data-val="' + t + '">' + (t === 'Veneno' ? '🧪 ' : (t === 'Poción' ? '✨ ' : (t === 'Ungüento' ? '🌿 ' : ''))) + t + '</button>';
+        return '<button type="button" class="f-pill ' + (t === 'Todos' ? 'active' : '') + '" data-action="alchemy-modal-filter-type" data-val="' + t + '">' + (t === 'Veneno' ? icono('pocion',{tam:'s'})+' ' : (t === 'Poción' ? icono('destellos',{tam:'s'})+' ' : (t === 'Ungüento' ? icono('hierbas',{tam:'s'})+' ' : ''))) + t + '</button>';
       }).join('') +
     '</div>' +
     '<div id="alchemyModalListContainer" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px;">' +
@@ -3024,7 +3024,7 @@ function renderAlchemyCatalogModalList(c){
     });
 
     var rColor = s.rarity === 'Legendaria' ? '#FDE047' : (s.rarity === 'Muy rara' ? '#C084FC' : (s.rarity === 'Rara' ? '#60A5FA' : '#C2B196'));
-    var typeIcon = s.type === 'Poción' ? '✨' : (s.type === 'Ungüento' ? '🌿' : '🧪');
+    var typeIcon = s.type === 'Poción' ? icono('destellos',{tam:'s'}) : (s.type === 'Ungüento' ? icono('hierbas',{tam:'s'}) : icono('pocion',{tam:'s'}));
 
     html += '<div style="background:rgba(25,18,13,0.85);border:1px solid var(--line);border-left:3px solid ' + rColor + ';border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:4px;">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">' +
@@ -3034,18 +3034,18 @@ function renderAlchemyCatalogModalList(c){
           '<span style="font-size:0.62rem;color:' + rColor + ';border:1px solid ' + rColor + ';padding:0 4px;border-radius:4px;">' + esc(s.rarity) + '</span>' +
         '</div>' +
         (alreadyHas ? 
-          '<span style="font-size:0.68rem;color:var(--teal-light);font-weight:700;">✓ En tu laboratorio</span>' :
+          '<span style="font-size:0.68rem;color:var(--teal-light);font-weight:700;">'+iconoUI("hecho")+' En tu laboratorio</span>' :
           '<button type="button" class="btn-compact btn-solid-gold" data-action="add-from-alchemy-catalog" data-subst-id="' + s.id + '" style="padding:3px 8px;font-size:0.68rem;">+ Añadir a Ficha</button>') +
       '</div>' +
       '<div style="font-size:0.68rem;color:var(--ink-faint);display:flex;gap:8px;flex-wrap:wrap;">' +
-        '<span>🗺️ ' + esc(s.terrain) + ' (' + esc(s.continent) + ')</span>' +
-        '<span>🌱 <i>' + esc(s.rawMaterial) + '</i></span>' +
+        '<span>'+icono('mapa',{tam:'s'})+' ' + esc(s.terrain) + ' (' + esc(s.continent) + ')</span>' +
+        '<span>'+icono('brote',{tam:'s'})+' <i>' + esc(s.rawMaterial) + '</i></span>' +
         '<span>CD Extracción: ' + s.dificultadExtraccion + '</span>' +
       '</div>' +
       ((s.efectoEnemigo || s.efectoCherk) ?
         '<div style="font-size:0.72rem;color:var(--ink-dim);line-height:1.3;margin-top:2px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
-          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:#FF8A96;font-weight:600;">⚔️ Enemigo:</span> ' + esc(s.efectoEnemigo) + '</div>' +
-          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:var(--teal-light);font-weight:600;">🛡️ Propio:</span> ' + esc(s.efectoCherk) + '</div>' +
+          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:#FF8A96;font-weight:600;">'+icono('puno',{tam:'s'})+' Enemigo:</span> ' + esc(s.efectoEnemigo) + '</div>' +
+          '<div style="background:rgba(0,0,0,0.25);padding:4px 6px;border-radius:4px;"><span style="color:var(--teal-light);font-weight:600;">'+icono('escudo',{tam:'s'})+' Propio:</span> ' + esc(s.efectoCherk) + '</div>' +
         '</div>' : '') +
     '</div>';
   });
@@ -3075,7 +3075,7 @@ function kPickerOpen(sel, title){
   var cur = sel.value;
   var html = '<div class="kpick-bg" id="kpickBg"><div class="kpick" role="dialog" aria-modal="true" aria-label="'+esc(title)+'">'+
     '<div class="kpick-grab"></div>'+
-    '<div class="kpick-head"><h2>'+esc(title)+'</h2><button type="button" class="kpick-x" data-kp-close="1" aria-label="Cerrar">✕</button></div>'+
+    '<div class="kpick-head"><h2>'+esc(title)+'</h2><button type="button" class="kpick-x" data-kp-close="1" aria-label="Cerrar">'+iconoUI("cerrar")+'</button></div>'+
     '<div class="kpick-search"><input type="search" class="k-input" id="kpickSearch" placeholder="Buscar…" autocomplete="off" aria-label="Buscar"></div>'+
     '<div class="kpick-list" id="kpickList">'+
     opts.map(function(o, i){

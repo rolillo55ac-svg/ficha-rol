@@ -201,7 +201,7 @@ function openLongRestModal(){
   if(!isGM()) return;
   var chars = (state.characters || []).filter(function(c){ return !c.isNPC && c.db_id; });
   var resetIds = longRestBuffIds();
-  var html = '<h2>🌙 Descanso largo<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
+  var html = '<h2>' + icono("descanso",{tam:"s"}) + ' Descanso largo<button data-action="close-modal" aria-label="Cerrar">&times;</button></h2>';
   html += '<p class="lr-help">Vida y maná al máximo, escudo a 0 y se quitan los buffos marcados "Se resetea al descansar largo".</p>';
   if(!chars.length){
     html += '<p class="lr-help">No hay personajes guardados en la nube.</p>';
@@ -231,7 +231,7 @@ function openLongRestModal(){
   html += '</div>';
   if(chars.length){
     html += '<div class="lr-foot"><button type="button" class="btn-compact" data-action="close-modal">Cancelar</button>'+
-      '<button type="button" class="btn-compact btn-solid-gold" id="lrGo" data-action="do-long-rest">🌙 Descansar</button></div>';
+      '<button type="button" class="btn-compact btn-solid-gold" id="lrGo" data-action="do-long-rest">' + icono("descanso",{tam:"s"}) + ' Descansar</button></div>';
   }
   document.getElementById("charModal").innerHTML = html;
   document.getElementById("charModalOverlay").classList.remove("hidden");
@@ -257,7 +257,7 @@ function updateLongRestUi(){
   var cnt = document.getElementById("lrCount");
   if(cnt) cnt.textContent = n + " de " + all.length + " descansan";
   var go = document.getElementById("lrGo");
-  if(go){ go.textContent = "🌙 Descansar (" + n + ")"; go.disabled = n === 0; }
+  if(go){ go.innerHTML = icono("descanso",{tam:"s"}) + " Descansar (" + n + ")"; go.disabled = n === 0; }
 }
 
 function setLongRestAll(on){
@@ -275,7 +275,7 @@ function playLongRestFx(){
   if(h.classList.contains("juice-off") || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
   var fx = document.createElement("div");
   fx.className = "lr-fx";
-  fx.innerHTML = '<span>🌙</span>';
+  fx.innerHTML = '<span>' + icono("descanso",{tam:"m"}) + '</span>';
   document.body.appendChild(fx);
   setTimeout(function(){ if(fx.parentNode) fx.parentNode.removeChild(fx); }, 700);
 }
@@ -315,7 +315,7 @@ async function doLongRest(btn){
   playLongRestFx();
   renderTopbar();
   renderTab();
-  showToast("🌙 Descanso largo: " + done + (done === 1 ? " personaje descansado" : " personajes descansados"), "success");
+  showToast("Descanso largo: " + done + (done === 1 ? " personaje descansado" : " personajes descansados"), "success", {icono:"descanso"});
 }
 
 // Pone en la copia local lo que devolvió la base y lo marca como ya guardado
@@ -347,5 +347,5 @@ function handleRemoteLongRest(data){
   if(typeof loadRollHistory === "function") loadRollHistory();
   renderTopbar();
   if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
-  if(mine) showToast("🌙 Has descansado: vida y maná al máximo", "success");
+  if(mine) showToast("Has descansado: vida y maná al máximo", "success", {icono:"descanso"});
 }

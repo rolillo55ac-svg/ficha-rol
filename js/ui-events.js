@@ -457,7 +457,7 @@ function handleClick(e){
     var vistaOn = !vistaComoJugador();
     setVistaComoJugador(vistaOn);
     renderTopbar(); renderTabbar(); renderTab();
-    showToast(vistaOn ? "👤 Vista de jugador: ves la web como un jugador. Toca la etiqueta para volver." : "🛡️ Vuelves a la vista de admin", "info");
+    showToast(vistaOn ? "Vista de jugador: ves la web como un jugador. Toca la etiqueta para volver." : "Vuelves a la vista de admin", "info", {icono: vistaOn ? "jugador" : "admin"});
     return;
   }
 
@@ -667,7 +667,7 @@ function handleClick(e){
         pushCharacterPatch(c.id, { skillBonus: c.skillBonus });
       }
       var sdef = SKILL_DEFS.find(function(x){ return x.id === targetSkillId; });
-      showToast("🏆 ¡Recompensa otorgada! +1 a " + (sdef ? sdef.name : targetSkillId), "success");
+      showToast("¡Recompensa otorgada! +1 a " + (sdef ? sdef.name : targetSkillId), "success", {icono:"trofeo"});
     } else {
       c.skillPoints = num(c.skillPoints, 0) + 1;
       c._lastLocalEdit = Date.now();
@@ -676,7 +676,7 @@ function handleClick(e){
       if(typeof pushCharacterPatch === 'function'){
         pushCharacterPatch(c.id, { skillPoints: c.skillPoints });
       }
-      showToast("🏆 Recompensa otorgada: +1 punto de habilidad", "success");
+      showToast("Recompensa otorgada: +1 punto de habilidad", "success", {icono:"trofeo"});
     }
     return;
   }
@@ -1354,7 +1354,7 @@ function handleClick(e){
         sp.shieldStacks = sp.shieldStacks || [];
         sp.shieldStacks.push(shieldGain);
         sp.shieldGranted = (sp.shieldGranted || 0) + shieldGain;
-        statNotice = " [🛡️ +" + shieldGain + " Escudo/Vida Falsa (Carga " + sp.activeStacks + ")]";
+        statNotice = " [+" + shieldGain + " Escudo/Vida Falsa (Carga " + sp.activeStacks + ")]";
         changeShieldRPC(c, shieldGain);
       }
     } else if(sp.statAttr && sp.statMod){
@@ -2592,7 +2592,7 @@ function handleClick(e){
 
     // El dado que se ve en la ventana es el que cuenta: una sola tirada y una sola entrada en el historial
     openBg3RollModal({
-      title: "🥋 Entrenar: " + (tr.name || "Habilidad"),
+      title: "Entrenar: " + (tr.name || "Habilidad"),
       subtitle: "Tirada de Esfuerzo (d" + sides + ")",
       sides: sides,
       mode: "normal",
@@ -2664,7 +2664,7 @@ function handleClick(e){
     state.rollLog.unshift({
       id: uid(),
       charName: c.name || "Aventurero",
-      label: "🥋 Entrenar (Manual): " + (tr.name || "Habilidad") + " (d" + sides + ")",
+      label: "Entrenar (Manual): " + (tr.name || "Habilidad") + " (d" + sides + ")",
       total: val,
       formulaText: "Esfuerzo: " + ptsText,
       ts: Date.now()
@@ -2674,7 +2674,7 @@ function handleClick(e){
     broadcastDiceRoll({
       id: uid(),
       charName: c.name || "Aventurero",
-      label: "🥋 Entrenar (Manual): " + (tr.name || "Habilidad") + " (d" + sides + ")",
+      label: "Entrenar (Manual): " + (tr.name || "Habilidad") + " (d" + sides + ")",
       total: val,
       formulaText: "Esfuerzo: " + ptsText,
       isCrit: isCrit,
@@ -2768,7 +2768,7 @@ function handleClick(e){
     var rollItem = {
       id: uid(),
       charName: c.name,
-      label: "Doma (" + creatureName + ")" + (isSuccess ? " ✅ ÉXITO" : " ❌ FALLO"),
+      label: "Doma (" + creatureName + ")" + (isSuccess ? " ÉXITO" : " FALLO"),
       total: total,
       formulaText: formula,
       isCrit: d === 10,

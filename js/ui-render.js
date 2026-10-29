@@ -14,8 +14,8 @@ function renderTopbar(){
   var nameClass = isNPC ? 'char-name npc-name' : 'char-name';
 
   var hpNumsClass = curPv < 0 ? 'gauge-nums dying' : (curPv === 0 ? 'gauge-nums unconscious' : 'gauge-nums');
-  var hpStatusBadge = curPv < 0 ? '<span class="status-pill dying">💀 Agonizando ('+curPv+')</span>' : (curPv === 0 ? '<span class="status-pill unconscious">💤 Inconsciente</span>' : '');
-  var hpDebuffBadge = isHpDebuffed ? ' <small style="color:#E88178;font-weight:700;" title="Vida máxima reducida por debuff (Base: '+rawMaxHp+')">⚠️ Reducida de '+rawMaxHp+'</small>' : '';
+  var hpStatusBadge = curPv < 0 ? '<span class="status-pill dying">'+icono("hueso",{tam:"s"})+' Agonizando ('+curPv+')</span>' : (curPv === 0 ? '<span class="status-pill unconscious">'+icono("sueno",{tam:"s"})+' Inconsciente</span>' : '');
+  var hpDebuffBadge = isHpDebuffed ? ' <small style="color:#E88178;font-weight:700;" title="Vida máxima reducida por debuff (Base: '+rawMaxHp+')">'+iconoUI("aviso")+' Reducida de '+rawMaxHp+'</small>' : '';
 
   var crestContent = (c.portrait && c.portrait.trim())
     ? '<img src="' + esc(c.portrait) + '" alt="' + esc(c.name) + '" class="crest-img" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';"><span class="crest-initial" style="display:none;">' + esc(c.name.charAt(0).toUpperCase()) + '</span>'
@@ -38,7 +38,7 @@ function renderTopbar(){
     if(canEdit){
       roleBadgeHtml = '<span class="role-badge player" title="Tu personaje (Control total)">Jugador</span>';
     } else {
-      roleBadgeHtml = '<span class="role-badge spectator" title="Modo Espectador: Solo lectura">👁️ Espectador</span>';
+      roleBadgeHtml = '<span class="role-badge spectator" title="Modo Espectador: Solo lectura">'+iconoUI("ver")+' Espectador</span>';
     }
   } else {
     roleBadgeHtml = '<span class="role-badge player">Local</span>';
@@ -197,13 +197,13 @@ function tplLapidario(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes tallar ni modificar las piedras en esta ficha.</span>'+
+      '<span>'+iconoUI("ver")+' Modo Espectador: Solo lectura. No puedes tallar ni modificar las piedras en esta ficha.</span>'+
     '</div>';
   }
   if(typeof renderLapidaryWorkshop === 'function'){
     html += renderLapidaryWorkshop(c, canEdit);
   } else {
-    html += '<div style="padding:32px;text-align:center;color:var(--ink-faint);">⚙️ Taller de Lapidario cargando...</div>';
+    html += '<div style="padding:32px;text-align:center;color:var(--ink-faint);">Taller de Lapidario cargando...</div>';
   }
   return html;
 }
@@ -217,11 +217,11 @@ function tplFicha(c){
           '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="-1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">-</button>'+
           '<span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--gold-light);min-width:30px;text-align:center;">'+num(c.attrs[a],0)+'</span>'+
           '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">+</button>'+
-          '<button class="dice-btn" data-action="roll-attr" data-attr="'+a+'" style="width:22px;height:22px;font-size:0.75rem;margin-left:2px;" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)">🎲</button>'+
+          '<button class="dice-btn" data-action="roll-attr" data-attr="'+a+'" style="width:22px;height:22px;font-size:0.75rem;margin-left:2px;" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)">'+icono("d10",{tam:"s"})+'</button>'+
         '</div>'+
       '</div>';
     }
-    return '<div class="attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div><span class="attr-roll-hint">🎲 Tirar</span></div>';
+    return '<div class="attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div><span class="attr-roll-hint">'+icono("dado",{tam:"s"})+' Tirar</span></div>';
   }).join('');
 
   var levelControl = '';
@@ -237,12 +237,12 @@ function tplFicha(c){
   var levelPointsPill = '';
   var ptsLibres = num(c.skillPoints, 0);
   if(!c.isNPC && ptsLibres > 0){
-    levelPointsPill = '<button type="button" class="lvl-points-pill" data-action="switch-tab" data-tab="habilidades" title="Ir a Habilidades">✨ '+ptsLibres+' '+(ptsLibres === 1 ? 'punto' : 'puntos')+' por repartir'+((c.skillPointsUnlocked || isGM()) ? '' : ' <small>(el máster abrirá el reparto)</small>')+'</button>';
+    levelPointsPill = '<button type="button" class="lvl-points-pill" data-action="switch-tab" data-tab="habilidades" title="Ir a Habilidades">'+icono("destellos",{tam:"s"})+' '+ptsLibres+' '+(ptsLibres === 1 ? 'punto' : 'puntos')+' por repartir'+((c.skillPointsUnlocked || isGM()) ? '' : ' <small>(el máster abrirá el reparto)</small>')+'</button>';
   }
 
   // Aviso de gemas talladas que esperan el veredicto del máster
   var pendingStones = (c.stones || []).filter(function(st){ return st.pendienteMaster; });
-  var stoneNotice = pendingStones.length ? '<div class="lapidary-verdict-status wait" style="margin-bottom:12px;"><span class="ic">⏳</span><span><b>' + (pendingStones.length === 1 ? 'Una gema tallada espera' : pendingStones.length + ' gemas talladas esperan') + ' al máster</b>: decidirá si aguanta' + (pendingStones.length === 1 ? '' : 'n') + '. Lo verás en la pestaña Piedras.</span></div>' : '';
+  var stoneNotice = pendingStones.length ? '<div class="lapidary-verdict-status wait" style="margin-bottom:12px;"><span class="ic">'+icono("actividad",{tam:"s"})+'</span><span><b>' + (pendingStones.length === 1 ? 'Una gema tallada espera' : pendingStones.length + ' gemas talladas esperan') + ' al máster</b>: decidirá si aguanta' + (pendingStones.length === 1 ? '' : 'n') + '. Lo verás en la pestaña Piedras.</span></div>' : '';
 
   var sound = c.charSound;
   if(!sound && (c.id === "char_ink" || (c.name && c.name.toLowerCase().includes("ink")))){
@@ -253,7 +253,7 @@ function tplFicha(c){
   var soundHtml = '';
 
   if(hasSound){
-    var sIcon = esc(sound.icon || "🦇");
+    var sIcon = soundIconHtml(sound.icon || "🦇");
     var sName = sound.name || "Sonido";
     soundHtml = '<div class="char-sound-widget" title="Efecto de sonido característico">'+
       '<button class="char-sound-play-btn" data-action="play-char-sound" data-id="' + esc(c.id) + '" aria-label="Reproducir ' + esc(sName) + '" title="Reproducir: ' + esc(sName) + '">'+
@@ -261,12 +261,12 @@ function tplFicha(c){
         '<span class="char-sound-name">' + esc(sName) + '</span>'+
         '<span class="char-sound-waves"><span></span><span></span><span></span></span>'+
       '</button>'+
-      (canEdit ? '<button class="char-sound-cfg-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Configurar sonido del personaje">⚙️</button>' : '')+
+      (canEdit ? '<button class="char-sound-cfg-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Configurar sonido del personaje">' + icono("ajustes", {tam:"s"}) + '</button>' : '')+
     '</div>';
   } else if(canEdit){
     soundHtml = '<div class="char-sound-widget empty">'+
       '<button class="char-sound-add-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Asignar un sonido característico">'+
-        '<span class="char-sound-icon">🎵</span>'+
+        '<span class="char-sound-icon">'+iconoUI("sonido")+'</span>'+
         '<span class="char-sound-name">+ Añadir sonido</span>'+
       '</button>'+
     '</div>';
@@ -280,23 +280,23 @@ function tplFicha(c){
     stoneNotice+
     (!canEdit && currentUser ?
       '<div class="tr-spectator-banner" style="margin-bottom:12px;">'+
-        '<span style="font-size:1.15rem;flex:none;">👁️</span>'+
+        '<span style="font-size:1.15rem;flex:none;">'+iconoUI("ver")+'</span>'+
         '<div><strong>Modo Espectador:</strong> Consultando la ficha de <b>'+esc(c.name)+'</b> en modo solo lectura. No puedes modificar sus datos ni su equipo.</div>'+
       '</div>' : '')+
     '<div class="ficha-layout">'+
       '<div class="portrait-box">'+
-        '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':'👤')+'</div>'+
+        '<div class="portrait-img"'+pStyle+'>'+(c.portrait?'':icono("jugador"))+'</div>'+
         (canEdit ?
           '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+
             '<button class="btn-compact" data-action="upload-portrait" title="Subir foto desde archivo">Foto</button>'+
             '<button class="btn-compact" data-action="url-portrait" title="Pegar enlace de GitHub o web">URL</button>'+
-            (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">✕</button>' : '')+
+            (c.portrait ? '<button class="btn-compact" data-action="remove-portrait" title="Quitar foto">'+iconoUI("cerrar")+'</button>' : '')+
           '</div>' : '')+
       '</div>'+
       '<div>'+
         '<div class="field-grid">'+
           field("Nombre", "name", c.name, "text", ro)+
-          (isGM() && !c.isNPC ? '<div class="field"><label>👤 Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
+          (isGM() && !c.isNPC ? '<div class="field"><label>'+icono("jugador",{tam:"s"})+' Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
           '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(isGM() ? '' : 'readonly')+'>'+levelControl+'</div>'+levelPointsPill+'</div>'+
           '<div class="field"><label>Título</label><input type="text" data-bind="titulo" value="'+esc(c.titulo||"")+'" placeholder="ej: Vástago" '+(isGM() ? '' : 'readonly')+'></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text", ro)+
@@ -344,7 +344,7 @@ function tplHabilidades(c){
   var banner = '';
   if(!canEdit && currentUser){
     banner = '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni asignar puntos de habilidad en esta ficha.</span>'+
+      '<span>'+iconoUI("ver")+' Modo Espectador: Solo lectura. No puedes modificar ni asignar puntos de habilidad en esta ficha.</span>'+
     '</div>';
   } else if(isGM() && !c.isNPC){
     banner = '<div class="skill-pool-banner">'+
@@ -352,7 +352,7 @@ function tplHabilidades(c){
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'+
         '<button class="btn-solid-gold" data-action="gm-sub-skill-point" title="Quitar 1 punto de habilidad al personaje">-1 Pto (GM)</button>'+
         '<button class="btn-solid-gold" data-action="gm-add-skill-point" title="Dar 1 punto de habilidad al personaje">+1 Pto (GM)</button>'+
-        '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?'🔒 Bloquear Asignación (GM)':'🔓 Permitir Asignación (GM)')+'</button>'+
+        '<button class="btn-solid-gold" data-action="toggle-skill-lock">'+(unlocked?iconoUI("candado")+' Bloquear Asignación (GM)':iconoUI("candado-abierto")+' Permitir Asignación (GM)')+'</button>'+
       '</div>'+
     '</div>';
   } else if(c.isNPC && isGM()){
@@ -452,7 +452,7 @@ function tplHabilidades(c){
       html += '<div class="skills-orig-attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Lanzar tirada de '+ATTR_LABELS[a]+' (1d10)">'+
         '<label>'+ATTR_LABELS[a]+'</label>'+
         '<div class="skills-orig-attr-val">'+effVal+'</div>'+
-        '<span class="attr-roll-hint">Tirar 🎲</span>'+
+        '<span class="attr-roll-hint">Tirar '+icono("dado",{tam:"s"})+'</span>'+
       '</div>';
     });
     html += '</div>';
@@ -690,13 +690,13 @@ function tplEntrenamiento(c){
   var html = '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">';
   
   html += '<div class="section-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-    '<span>🥋 Entrenamiento y Progresión</span>' +
+    '<span>' + icono("espantapajaros") + ' Entrenamiento y Progresión</span>' +
   '</div>' +
   (canEdit ? '<button class="btn-solid-gold btn-add-training" data-action="add-training">+ Nuevo Entrenamiento</button>' : '');
 
   if(!canEdit && currentUser){
     html += '<div class="tr-spectator-banner">' +
-      '<span style="font-size:1.15rem;flex:none;">👁️</span>' +
+      '<span style="font-size:1.15rem;flex:none;">' + icono("percepcion") + '</span>' +
       '<div>' +
         '<strong>Modo Espectador (Solo lectura):</strong> ' +
         (c.ownerEmail
@@ -731,13 +731,13 @@ function tplEntrenamiento(c){
       if(isGM()){
         gmMilestoneHtml = '<div class="tr-gm-milestone-box">' +
           '<div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;">' +
-            '<span style="color:var(--gold-light);font-weight:700;">👑 Hito del Máster (Puntos Meta):</span>' +
+            '<span style="color:var(--gold-light);font-weight:700;">' + icono("master") + ' Hito del Máster (Puntos Meta):</span>' +
             '<input type="number" min="1" step="5" data-action="set-training-goal" data-id="' + t.id + '" value="' + targetGoal + '" title="Puntos para completar este hito (Invisible para jugadores)" style="width:60px;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:3px 6px;color:var(--gold-light);font-family:var(--font-mono);font-weight:700;font-size:0.82rem;text-align:center;">' +
             '<span style="color:var(--ink-faint);font-size:0.7rem;">pts meta (Oculto a jugadores)</span>' +
           '</div>' +
           '<div style="font-size:0.72rem;display:flex;align-items:center;gap:6px;">' +
             (isCompleted
-              ? '<span style="color:#4ADE80;font-weight:700;background:rgba(46,139,87,0.25);border:1px solid rgba(74,222,128,0.4);padding:2px 8px;border-radius:4px;">🏆 ¡Hito alcanzado! (' + points + ' / ' + targetGoal + ' pts)</span>'
+              ? '<span style="color:#4ADE80;font-weight:700;background:rgba(46,139,87,0.25);border:1px solid rgba(74,222,128,0.4);padding:2px 8px;border-radius:4px;">' + icono("trofeo") + ' ¡Hito alcanzado! (' + points + ' / ' + targetGoal + ' pts)</span>'
               : '<span style="color:var(--gold-light);font-family:var(--font-mono);font-weight:600;">Progreso real: ' + points + ' / ' + targetGoal + ' pts (' + progressPct + '%)</span>'
             ) +
           '</div>' +
@@ -751,14 +751,14 @@ function tplEntrenamiento(c){
           '<label>Elemento a Mejorar</label>' +
           '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
             '<option value="">-- Seleccionar Hechizo o Invocación --</option>' +
-            '<optgroup label="✨ Hechizos">' +
+            '<optgroup label="Hechizos">' +
               (c.spells || []).map(function(sp){
-                return '<option value="spell:' + sp.id + '" ' + (t.linkedId === sp.id ? 'selected' : '') + '>✨ ' + esc(sp.name || "Hechizo") + '</option>';
+                return '<option value="spell:' + sp.id + '" ' + (t.linkedId === sp.id ? 'selected' : '') + '>' + esc(sp.name || "Hechizo") + '</option>';
               }).join('') +
             '</optgroup>' +
-            '<optgroup label="🐾 Invocaciones">' +
+            '<optgroup label="Invocaciones">' +
               (c.summons || []).map(function(sm){
-                return '<option value="summon:' + sm.id + '" ' + (t.linkedId === sm.id ? 'selected' : '') + '>🐾 ' + esc(sm.name || "Invocación") + '</option>';
+                return '<option value="summon:' + sm.id + '" ' + (t.linkedId === sm.id ? 'selected' : '') + '>' + esc(sm.name || "Invocación") + '</option>';
               }).join('') +
             '</optgroup>' +
           '</select>' +
@@ -768,15 +768,15 @@ function tplEntrenamiento(c){
         secondaryHtml = '<div class="creature-field" style="flex:1;min-width:140px;">' +
           '<label>Atributo o Estadística</label>' +
           '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
-            '<option value="stat:pv" ' + (curTargetStat === "+10 PV" || t.linkedId === "stat:pv" ? 'selected' : '') + '>❤️ Vida (+10 PV)</option>' +
-            '<option value="stat:mana" ' + (curTargetStat === "+5 Maná" || t.linkedId === "stat:mana" ? 'selected' : '') + '>🔷 Maná (+5 Maná)</option>' +
-            '<option value="stat:defensa" ' + (curTargetStat === "+1 Defensa" || t.linkedId === "stat:defensa" ? 'selected' : '') + '>🛡️ Defensa (+1)</option>' +
-            '<option value="stat:iniciativa" ' + (curTargetStat === "+1 Iniciativa" || t.linkedId === "stat:iniciativa" ? 'selected' : '') + '>⚡ Iniciativa (+1)</option>' +
-            (isLegacyAttr && (curTargetStat === "+1 Físico" || t.linkedId === "stat:fisico") ? '<option value="stat:fisico" selected>💪 Físico (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Destreza" || t.linkedId === "stat:destreza") ? '<option value="stat:destreza" selected>🏃 Destreza (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Inteligencia" || t.linkedId === "stat:inteligencia") ? '<option value="stat:inteligencia" selected>🧠 Inteligencia (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Percepción" || t.linkedId === "stat:percepcion") ? '<option value="stat:percepcion" selected>👁️ Percepción (+1) · antiguo</option>' : '') +
-            (isLegacyAttr && (curTargetStat === "+1 Carisma" || t.linkedId === "stat:carisma") ? '<option value="stat:carisma" selected>🎭 Carisma (+1) · antiguo</option>' : '') +
+            '<option value="stat:pv" ' + (curTargetStat === "+10 PV" || t.linkedId === "stat:pv" ? 'selected' : '') + '>Vida (+10 PV)</option>' +
+            '<option value="stat:mana" ' + (curTargetStat === "+5 Maná" || t.linkedId === "stat:mana" ? 'selected' : '') + '>Maná (+5 Maná)</option>' +
+            '<option value="stat:defensa" ' + (curTargetStat === "+1 Defensa" || t.linkedId === "stat:defensa" ? 'selected' : '') + '>Defensa (+1)</option>' +
+            '<option value="stat:iniciativa" ' + (curTargetStat === "+1 Iniciativa" || t.linkedId === "stat:iniciativa" ? 'selected' : '') + '>Iniciativa (+1)</option>' +
+            (isLegacyAttr && (curTargetStat === "+1 Físico" || t.linkedId === "stat:fisico") ? '<option value="stat:fisico" selected>Físico (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Destreza" || t.linkedId === "stat:destreza") ? '<option value="stat:destreza" selected>Destreza (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Inteligencia" || t.linkedId === "stat:inteligencia") ? '<option value="stat:inteligencia" selected>Inteligencia (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Percepción" || t.linkedId === "stat:percepcion") ? '<option value="stat:percepcion" selected>Percepción (+1) · antiguo</option>' : '') +
+            (isLegacyAttr && (curTargetStat === "+1 Carisma" || t.linkedId === "stat:carisma") ? '<option value="stat:carisma" selected>Carisma (+1) · antiguo</option>' : '') +
           '</select>' +
         '</div>';
       } else if(catId === "skill"){
@@ -785,7 +785,7 @@ function tplEntrenamiento(c){
           '<select class="tr-cat-select k-input" data-action="set-training-linked" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
             '<option value="">-- Seleccionar Habilidad --</option>' +
             (typeof SKILL_DEFS !== "undefined" ? SKILL_DEFS : []).map(function(sdef){
-              return '<option value="skill:' + sdef.id + '" ' + (t.linkedId === sdef.id || t.linkedId === "skill:" + sdef.id ? 'selected' : '') + '>🎯 ' + esc(sdef.name) + '</option>';
+              return '<option value="skill:' + sdef.id + '" ' + (t.linkedId === sdef.id || t.linkedId === "skill:" + sdef.id ? 'selected' : '') + '>' + esc(sdef.name) + '</option>';
             }).join('') +
           '</select>' +
         '</div>';
@@ -801,7 +801,7 @@ function tplEntrenamiento(c){
             '</div>' +
             '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;flex-wrap:wrap;gap:4px;">' +
               '<div style="display:flex;align-items:center;gap:6px;">' +
-                (isCompleted ? '<button type="button" class="btn-solid-gold btn-compact" data-action="grant-training-reward" data-id="' + t.id + '" title="Otorgar +1 a la habilidad entrenada (GM)" style="padding:2px 7px;font-size:0.68rem;cursor:pointer;">🏆 Otorgar Recompensa (+1)</button>' : '') +
+                (isCompleted ? '<button type="button" class="btn-solid-gold btn-compact" data-action="grant-training-reward" data-id="' + t.id + '" title="Otorgar +1 a la habilidad entrenada (GM)" style="padding:2px 7px;font-size:0.68rem;cursor:pointer;">' + icono("trofeo") + ' Otorgar Recompensa (+1)</button>' : '') +
                 '<span>' + (isCompleted ? '¡Hito completado!' : 'Progreso hacia el hito del Máster...') + '</span>' +
               '</div>' +
               '<span style="color:var(--gold-light);font-weight:600;"><b>' + points + ' / ' + targetGoal + ' pts</b> (' + progressPct + '%)</span>' +
@@ -811,7 +811,7 @@ function tplEntrenamiento(c){
           if(isCompleted){
             progressHtml = '<div class="tr-player-complete-box">' +
               '<div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#4ADE80;font-weight:700;">' +
-                '<span>✨ ¡Hito de Entrenamiento Completado!</span>' +
+                '<span>' + icono("destellos") + ' ¡Hito de Entrenamiento Completado!</span>' +
                 '<span style="font-weight:400;color:var(--ink-dim);font-size:0.72rem;">Has alcanzado suficiente dominio. Habla con el Máster para recibir tu mejora.</span>' +
               '</div>' +
               '<span style="font-size:0.78rem;color:var(--gold-light);font-weight:700;font-family:var(--font-mono);flex:none;">' + points + ' pts acumulados</span>' +
@@ -822,7 +822,7 @@ function tplEntrenamiento(c){
                 '<div class="tr-progress-fill" style="background:linear-gradient(90deg, var(--gold), var(--teal-light));height:100%;border-radius:5px;width:' + Math.min(100, Math.max(8, points * 2)) + '%;opacity:0.85;"></div>' +
               '</div>' +
               '<div class="tr-progress-caption" style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--ink-dim);margin-top:3px;">' +
-                '<span>⏳ Entrenamiento en progreso... (Acumulando puntos de esfuerzo)</span>' +
+                '<span>' + icono("actividad") + ' Entrenamiento en progreso... (Acumulando puntos de esfuerzo)</span>' +
                 '<span style="color:var(--gold-light);font-weight:600;"><b>' + (points > 0 ? '+' + points : points) + ' pts</b> acumulados</span>' +
               '</div>' +
             '</div>';
@@ -843,7 +843,7 @@ function tplEntrenamiento(c){
             return '<div class="tr-mini-chip ' + chipClass + '" title="Tirada: ' + r.roll + ' (d' + r.sides + ')">' +
               '<span class="chip-val">' + r.roll + '</span>' +
               '<span class="chip-delta">' + sign + r.pts + '</span>' +
-              (canEdit ? '<button type="button" class="tr-chip-del" data-action="undo-training-roll" data-training-id="' + t.id + '" data-roll-id="' + r.id + '" title="Deshacer tirada">✕</button>' : '') +
+              (canEdit ? '<button type="button" class="tr-chip-del" data-action="undo-training-roll" data-training-id="' + t.id + '" data-roll-id="' + r.id + '" title="Deshacer tirada">&times;</button>' : '') +
             '</div>';
           }).join('') +
         '</div>';
@@ -859,7 +859,7 @@ function tplEntrenamiento(c){
               '<span class="tr-points-val" style="font-family:var(--font-mono);font-weight:700;font-size:.85rem;color:var(--gold-light);">' + (points > 0 ? '+' + points : points) + '</span>' +
               '<span class="tr-points-label" style="font-size:.6rem;color:var(--ink-faint);text-transform:uppercase;">PTS</span>' +
             '</div>' +
-            (canEdit ? '<button class="row-del" data-action="del-training" data-id="' + t.id + '" title="Eliminar entrenamiento" aria-label="Eliminar" style="width:28px;height:28px;min-width:28px;min-height:28px;">✕</button>' : '') +
+            (canEdit ? '<button class="row-del" data-action="del-training" data-id="' + t.id + '" title="Eliminar entrenamiento" aria-label="Eliminar" style="width:28px;height:28px;min-width:28px;min-height:28px;">&times;</button>' : '') +
           '</div>' +
         '</div>' +
 
@@ -868,10 +868,10 @@ function tplEntrenamiento(c){
           '<div class="creature-field" style="flex:1;min-width:130px;">' +
             '<label>Categoría</label>' +
             '<select class="tr-cat-select k-input" data-action="set-training-category" data-id="' + t.id + '" ' + (canEdit ? '' : 'disabled') + ' style="background:var(--bg-card);border:1px solid var(--line);border-radius:5px;padding:7px 6px;font-size:.8rem;color:var(--ink);width:100%;">' +
-              '<option value="skill" ' + (catId === 'skill' ? 'selected' : '') + '>🎯 Habilidad</option>' +
-              '<option value="spell_summon" ' + (catId === 'spell_summon' ? 'selected' : '') + '>✨ Magia / Hechizo</option>' +
-              '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>⚔️ Combate</option>' +
-              '<option value="narrative" ' + (catId === 'narrative' ? 'selected' : '') + '>📜 Lore / Narrativa</option>' +
+              '<option value="skill" ' + (catId === 'skill' ? 'selected' : '') + '>Habilidad</option>' +
+              '<option value="spell_summon" ' + (catId === 'spell_summon' ? 'selected' : '') + '>Magia / Hechizo</option>' +
+              '<option value="combat" ' + (catId === 'combat' ? 'selected' : '') + '>Combate</option>' +
+              '<option value="narrative" ' + (catId === 'narrative' ? 'selected' : '') + '>Lore / Narrativa</option>' +
             '</select>' +
           '</div>' +
           secondaryHtml +
@@ -901,7 +901,7 @@ function tplEntrenamiento(c){
           (canRoll ? (
             '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
               '<button type="button" class="btn-compact tr-roll-btn" data-action="roll-training" data-id="' + t.id + '" style="padding:5px 9px;font-size:.78rem;font-weight:700;">' +
-                '🎲 Tirar Automático (d' + sides + ')' +
+                icono("dado") + ' Tirar Automático (d' + sides + ')' +
               '</button>' +
               '<div class="tr-manual-group" style="display:inline-flex;align-items:center;gap:3px;background:var(--bg-card);border:1px solid var(--line);border-radius:4px;padding:2px 4px;">' +
                 '<input type="number" min="1" max="' + sides + '" class="tr-manual-input k-input" data-manual-for="' + t.id + '" placeholder="1-' + sides + '" title="Tirada de dado físico" style="width:44px;background:none;border:none;color:var(--ink);font-family:var(--font-mono);font-size:.8rem;text-align:center;">' +
@@ -931,13 +931,13 @@ function tplCombate(c){
 
   // 1. Subnavegación rápida entre Combate y Estados
   html += '<div class="combat-subnav-pills k-seg">'+
-    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="combate">' + icono("puno") + ' Combate y Armas</button>'+
     '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="estados">' + icono("aturdido", {tam:"s"}) + ' Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar combate, armas ni armaduras en esta ficha.</span>'+
+      '<span>' + icono("percepcion") + ' Modo Espectador: Solo lectura. No puedes modificar combate, armas ni armaduras en esta ficha.</span>'+
     '</div>';
   }
 
@@ -945,9 +945,9 @@ function tplCombate(c){
   if(activeBuffsList.length > 0 || activeDebuffsList.length > 0 || activeSpells.length > 0){
     html += '<div class="combat-status-strip" data-action="switch-tab" data-tab="estados" role="button" title="Haz clic para ver y gestionar estados en detalle">'+
       '<div class="css-left">'+
-        (activeBuffsList.length > 0 ? '<span class="css-badge-buff">✨ '+activeBuffsList.length+' Buff'+(activeBuffsList.length>1?'s':'')+'</span>' : '')+
-        (activeDebuffsList.length > 0 ? '<span class="css-badge-debuff">⚠️ '+activeDebuffsList.length+' Debuff'+(activeDebuffsList.length>1?'s':'')+'</span>' : '')+
-        (activeSpells.length > 0 ? '<span class="css-badge-spell">🪄 '+activeSpells.length+' Magia'+(activeSpells.length>1?'s':'')+'</span>' : '')+
+        (activeBuffsList.length > 0 ? '<span class="css-badge-buff">'+icono("destellos")+' '+activeBuffsList.length+' Buff'+(activeBuffsList.length>1?'s':'')+'</span>' : '')+
+        (activeDebuffsList.length > 0 ? '<span class="css-badge-debuff">'+icono("peligro")+' '+activeDebuffsList.length+' Debuff'+(activeDebuffsList.length>1?'s':'')+'</span>' : '')+
+        (activeSpells.length > 0 ? '<span class="css-badge-spell">'+icono("varita")+' '+activeSpells.length+' Magia'+(activeSpells.length>1?'s':'')+'</span>' : '')+
       '</div>'+
       '<div class="css-right">Gestionar Estados ➔</div>'+
     '</div>';
@@ -981,7 +981,7 @@ function tplCombate(c){
     var isBlocked = selectedCatItem ? (selectedCatItem.visible === false) : false;
     var infoText = selectedCatItem ? ('Daño: ' + esc(selectedCatItem.dano) + ' | Alcance: ' + esc(selectedCatItem.alcance)) : 'Selecciona un arma del compendio';
     if(isBlocked){
-      infoText += ' | <span style="color:#F87171;font-weight:700;">[🔒 Bloqueada por el Máster - No usable]</span>';
+      infoText += ' | <span style="color:#F87171;font-weight:700;">[' + iconoUI("candado") + ' Bloqueada por el Máster - No usable]</span>';
     }
 
     var gridCols = canEdit ? '1fr 36px 36px' : '1fr 36px';
@@ -995,10 +995,10 @@ function tplCombate(c){
         }).join('')+
       '</select></div>'+
       (isBlocked && !isGM()
-        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">🔒</button>'
+        ? '<button class="dice-btn disabled" disabled title="Esta arma está bloqueada por el Máster y no se puede usar en combate" aria-label="Arma bloqueada" style="opacity:0.38;cursor:not-allowed;filter:grayscale(1);">' + iconoUI("candado") + '</button>'
         : '<button class="dice-btn" data-action="roll-weapon" data-id="'+w.id+'" title="Tirar Daño ('+esc(selectedCatItem ? selectedCatItem.dano : "1d6")+')" aria-label="Tirar daño">&#127922;</button>'
       )+
-      (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">✕</button>' : '')+
+      (canEdit ? '<button class="row-del" data-action="del-weapon" data-id="'+w.id+'" aria-label="Eliminar arma">' + iconoUI("cerrar") + '</button>' : '')+
     '</div>'+
     '<div style="font-size:0.7rem;color:var(--gold-light);margin-bottom:6px;padding-left:2px;">'+infoText+(selectedCatItem && selectedCatItem.critico?' | <b>Crítico:</b> '+esc(selectedCatItem.critico):'')+'</div>';
   });
@@ -1015,7 +1015,7 @@ function tplCombate(c){
       '<input type="text" placeholder="Armadura" data-bind="armors.'+a.id+'.name" value="'+esc(a.name)+'" aria-label="Nombre de armadura" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Absorción" data-bind="armors.'+a.id+'.absorcion" value="'+esc(a.absorcion)+'" aria-label="Absorción" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Estorbo" data-bind="armors.'+a.id+'.estorbo" value="'+esc(a.estorbo)+'" aria-label="Estorbo" '+(canEdit?'':'readonly')+'>'+
-      (canEdit ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">✕</button>' : '')+
+      (canEdit ? '<button class="row-del" data-action="del-armor" data-id="'+a.id+'" aria-label="Eliminar armadura">' + iconoUI("cerrar") + '</button>' : '')+
     '</div>';
   });
   if(canEdit){
@@ -1035,13 +1035,13 @@ function tplEstados(c){
 
   // 1. Subnavegación rápida entre Combate y Estados
   html += '<div class="combat-subnav-pills k-seg">'+
-    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="combate">⚔️ Combate y Armas</button>'+
+    '<button type="button" class="k-seg-btn subnav-pill" data-action="switch-tab" data-tab="combate">' + icono("puno") + ' Combate y Armas</button>'+
     '<button type="button" class="k-seg-btn subnav-pill active" data-action="switch-tab" data-tab="estados">' + icono("aturdido", {tam:"s"}) + ' Estados y Buffs ('+assignedBuffs.length+')</button>'+
   '</div>';
 
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar los estados de este personaje.</span>'+
+      '<span>' + icono("percepcion") + ' Modo Espectador: Solo lectura. No puedes modificar los estados de este personaje.</span>'+
     '</div>';
   }
 
@@ -1058,15 +1058,15 @@ function tplEstados(c){
       var isActive = ab.active !== false;
       var isDebuff = ab.type === "debuff";
       var statusClass = isActive ? (isDebuff ? 'buff-status-debuff-active' : 'buff-status-active') : 'buff-status-inactive';
-      var statusLabel = isActive ? 'ACTIVO ✓' : 'DESACTIVADO ⏸';
+      var statusLabel = isActive ? 'ACTIVO' : 'DESACTIVADO';
       var statusTitle = isActive ? (isDebuff ? 'Debuff activo y aplicando penalizaciones. Clic para desactivar.' : 'Buff activo y aplicando efectos. Clic para desactivar.') : 'Estado asignado pero desactivado. Clic para activar.';
       var cardClass = 'assigned-buff-card ' + (isActive ? (isDebuff ? 'is-debuff' : 'is-buff') : 'is-inactive');
 
       html += '<div class="'+cardClass+'">'+
         '<div class="abc-header">'+
           '<div class="abc-tags">'+
-            '<span class="abc-type-tag '+(isDebuff?'debuff':'buff')+'">'+(isDebuff?'⚠️ DEBUFF':'✨ BUFF')+'</span>'+
-            (ab.duration ? '<span class="abc-duration-tag" style="font-size:.68rem;color:var(--gold-light);background:rgba(176,141,87,0.15);padding:2px 6px;border-radius:4px;">⏱️ '+esc(ab.duration)+'</span>' : '')+
+            '<span class="abc-type-tag '+(isDebuff?'debuff':'buff')+'">'+(isDebuff?icono("peligro")+' DEBUFF':icono("destellos")+' BUFF')+'</span>'+
+            (ab.duration ? '<span class="abc-duration-tag" style="font-size:.68rem;color:var(--gold-light);background:rgba(176,141,87,0.15);padding:2px 6px;border-radius:4px;">'+icono("reloj",{tam:"s"})+' '+esc(ab.duration)+'</span>' : '')+
           '</div>'+
           '<div class="abc-actions">'+
             (canEdit ? 
@@ -1081,7 +1081,7 @@ function tplEstados(c){
         (ab.bonus ? 
           '<div class="abc-effect-row" style="margin-top:4px;">'+
             '<span class="abc-bonus-badge '+(isDebuff?'debuff':'buff')+'" style="display:inline-flex;align-items:center;gap:4px;font-size:.75rem;padding:2px 7px;border-radius:4px;font-weight:600;background:'+(isDebuff?'rgba(192,57,43,0.18)':'rgba(61,110,96,0.2)')+';color:'+(isDebuff?'#E88178':'var(--teal-light)')+';border:1px dashed '+(isDebuff?'rgba(232,129,120,0.5)':'rgba(61,110,96,0.5)')+';">'+
-              '🎯 Efecto: <b>'+esc(ab.bonus)+'</b>'+(ab.attr ? ' ('+esc(ab.attr)+')' : '')+
+              ''+icono("diana",{tam:"s"})+' Efecto: <b>'+esc(ab.bonus)+'</b>'+(ab.attr ? ' ('+esc(ab.attr)+')' : '')+
             '</span>'+
           '</div>' : '')+
         (ab.desc ? '<div class="abc-desc" style="font-size:.72rem;color:var(--ink-dim);font-style:italic;line-height:1.3;margin-top:3px;">'+esc(ab.desc)+'</div>' : '')+
@@ -1102,7 +1102,7 @@ function tplEstados(c){
       '<select data-action="assign-buff-from-catalog" class="kpick-native buff-quick-assign-select">'+
         '<option value="">-- Seleccionar buff o debuff para asignar --</option>'+
         unassignedBuffs.map(function(ub){
-          return '<option value="'+ub.id+'">'+(ub.type==='debuff'?'⚠️ [Debuff] ':'✨ [Buff] ')+esc(ub.name)+(ub.bonus?' ('+esc(ub.bonus)+')':'')+'</option>';
+          return '<option value="'+ub.id+'">'+(ub.type==='debuff'?'[Debuff] ':'[Buff] ')+esc(ub.name)+(ub.bonus?' ('+esc(ub.bonus)+')':'')+'</option>';
         }).join('')+
       '</select></div>'+
     '</div>';
@@ -1110,7 +1110,7 @@ function tplEstados(c){
 
   // Panel desplegable con los 3 estados claros para cada buff/debuff del catálogo
   html += '<details class="buff-catalog-details" style="background:var(--bg-card);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-top:10px;">'+
-    '<summary style="font-size:.75rem;color:var(--gold-light);cursor:pointer;user-select:none;font-weight:600;">📋 Ver todos los buffs y debuffs del catálogo ('+catalogBuffs.length+' totales) y sus 3 estados</summary>'+
+    '<summary style="font-size:.75rem;color:var(--gold-light);cursor:pointer;user-select:none;font-weight:600;">'+iconoUI("menu")+' Ver todos los buffs y debuffs del catálogo ('+catalogBuffs.length+' totales) y sus 3 estados</summary>'+
     '<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">';
 
   catalogBuffs.forEach(function(cbuff){
@@ -1119,27 +1119,27 @@ function tplEstados(c){
     var actionBtns = '';
 
     if(!assigned){
-      stateBadge = '<span class="buff-state-pill unassigned" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--ink-dim);border:1px solid var(--line);font-weight:600;">○ No asignado</span>';
+      stateBadge = '<span class="buff-state-pill unassigned" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--ink-dim);border:1px solid var(--line);font-weight:600;"><span class="dot"></span> No asignado</span>';
       if(canEdit){
         actionBtns = '<button type="button" class="btn-compact" data-action="assign-buff-from-catalog" data-id="'+cbuff.id+'" style="font-size:.68rem;padding:4px 8px;">+ Asignar</button>';
       }
     } else if(assigned.active === false){
-      stateBadge = '<span class="buff-state-pill assigned-inactive" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(180,130,40,0.18);color:#E5B869;border:1px solid rgba(180,130,40,0.35);font-weight:600;">⏸ Inactivo</span>';
+      stateBadge = '<span class="buff-state-pill assigned-inactive" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(180,130,40,0.18);color:#E5B869;border:1px solid rgba(180,130,40,0.35);font-weight:600;">'+iconoUI("pausa")+' Inactivo</span>';
       if(canEdit){
         actionBtns = '<button type="button" class="btn-compact" data-action="toggle-global-buff" data-id="'+cbuff.id+'" style="font-size:.68rem;padding:4px 8px;">Activar</button>'+
-          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">✕</button>';
+          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">'+iconoUI("cerrar")+'</button>';
       }
     } else {
-      stateBadge = '<span class="buff-state-pill assigned-active" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(61,110,96,0.25);color:var(--teal-light);border:1px solid var(--teal-light);font-weight:600;">✓ Activo</span>';
+      stateBadge = '<span class="buff-state-pill assigned-active" style="font-size:.65rem;padding:2px 6px;border-radius:4px;background:rgba(61,110,96,0.25);color:var(--teal-light);border:1px solid var(--teal-light);font-weight:600;">'+iconoUI("hecho")+' Activo</span>';
       if(canEdit){
         actionBtns = '<button type="button" class="btn-compact" data-action="toggle-global-buff" data-id="'+cbuff.id+'" style="font-size:.68rem;padding:4px 8px;">Desactivar</button>'+
-          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">✕</button>';
+          '<button type="button" class="row-del" data-action="remove-active-buff" data-id="'+cbuff.id+'" title="Desanclar del personaje" style="min-width:26px;min-height:26px;width:26px;height:26px;font-size:.7rem;">'+iconoUI("cerrar")+'</button>';
       }
     }
 
     html += '<div class="catalog-buff-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:var(--bg-elev);border:1px solid var(--line);border-radius:5px;flex-wrap:wrap;">'+
       '<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 200px;">'+
-        '<span style="font-size:.82rem;">'+(cbuff.type==='debuff'?'⚠️':'✨')+'</span>'+
+        '<span style="font-size:.82rem;">'+(cbuff.type==='debuff'?icono("debuff",{tam:"s"}):icono("buff",{tam:"s"}))+'</span>'+
         '<span style="font-size:.78rem;font-weight:600;color:var(--ink);">'+esc(cbuff.name)+(cbuff.bonus?' ('+esc(cbuff.bonus)+')':'')+'</span>'+
         stateBadge+
       '</div>'+
@@ -1163,8 +1163,8 @@ function tplEstados(c){
       var stacks = asp.activeStacks || 1;
       var statNote = (asp.statAttr && asp.statMod) ? ' ('+asp.statMod+' a '+asp.statAttr+(stacks>1?' x'+stacks:'')+')' : (stacks>1?' (x'+stacks+')':'');
       html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:rgba(61,110,96,0.15);border:1px solid var(--teal-light);border-radius:6px;">'+
-        '<span style="font-size:.8rem;color:var(--teal-light);font-weight:600;">✨ '+esc(asp.name || "Hechizo")+(stacks>1?' <b>(Cargas: '+stacks+')</b>':'')+statNote+'</span>'+
-        (canEdit ? '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Quitar carga de magia" style="min-width:28px;min-height:28px;width:28px;height:28px;" title="Quitar 1 carga">✕</button>' : '')+
+        '<span style="font-size:.8rem;color:var(--teal-light);font-weight:600;">'+icono("destellos",{tam:"s"})+' '+esc(asp.name || "Hechizo")+(stacks>1?' <b>(Cargas: '+stacks+')</b>':'')+statNote+'</span>'+
+        (canEdit ? '<button class="row-del" data-action="toggle-spell-active" data-id="'+asp.id+'" aria-label="Quitar carga de magia" style="min-width:28px;min-height:28px;width:28px;height:28px;" title="Quitar 1 carga">'+iconoUI("cerrar")+'</button>' : '')+
       '</div>';
     });
     html += '</div></div>';
@@ -1177,7 +1177,7 @@ function tplEstados(c){
     c.customBuffs.forEach(function(cbuff){
       html += '<div class="list-row text-row">'+
         '<input type="text" placeholder="Efecto de estado temporal" data-bind="customBuffs.'+cbuff.id+'.name" value="'+esc(cbuff.name)+'" '+(canEdit?'':'readonly')+'>'+
-        (canEdit ? '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">✕</button>' : '')+
+        (canEdit ? '<button class="row-del" data-action="del-custom-buff" data-id="'+cbuff.id+'" aria-label="Eliminar buff">'+iconoUI("cerrar")+'</button>' : '')+
       '</div>';
     });
   }
@@ -1216,7 +1216,7 @@ function combatStat(label,bind,val,rollable){
 function renderSpellStatOptions(curVal){
   return '<option value="">-- Sin efecto en stats --</option>'+
     '<optgroup label="Combate y Vida">'+
-      '<option value="escudo" '+((curVal==='escudo'||curVal==='vida_falsa'||curVal==='escudoActual'||curVal==='vida falsa')?'selected':'')+'>🛡️ Escudo / Vida Falsa</option>'+
+      '<option value="escudo" '+((curVal==='escudo'||curVal==='vida_falsa'||curVal==='escudoActual'||curVal==='vida falsa')?'selected':'')+'>Escudo / Vida Falsa</option>'+
       '<option value="defensa" '+(curVal==='defensa'?'selected':'')+'>Defensa</option>'+
       '<option value="defensaMagica" '+(curVal==='defensaMagica'?'selected':'')+'>Defensa Mágica</option>'+
       '<option value="movilidad" '+(curVal==='movilidad'?'selected':'')+'>Movilidad</option>'+
@@ -1237,7 +1237,7 @@ function tplMagia(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes lanzar hechizos ni gastar maná en esta ficha.</span>'+
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes lanzar hechizos ni gastar maná en esta ficha.</span>'+
     '</div>';
   }
   html += renderSpellsGrimoire(c, canEdit);
@@ -1255,7 +1255,7 @@ function renderSpellsGrimoire(c, canEdit){
       var isActive = !!s.active;
       var stacks = s.activeStacks || (isActive ? 1 : 0);
       var hasStatMod = s.statAttr && s.statMod;
-      var statBadge = hasStatMod ? '<span class="spell-badge effect">✨ ' + esc(s.statMod) + ' ' + esc(s.statAttr) + (stacks > 1 ? ' (x' + stacks + ')' : '') + '</span>' : '';
+      var statBadge = hasStatMod ? '<span class="spell-badge effect">' + icono("destellos",{tam:"s"}) + ' ' + esc(s.statMod) + ' ' + esc(s.statAttr) + (stacks > 1 ? ' (x' + stacks + ')' : '') + '</span>' : '';
       var activeBadge = isActive ? '<span class="spell-badge active">ACTIVO' + (stacks > 1 ? ' x' + stacks : '') + '</span>' : '';
 
       if(canEdit && state._spellEdit && state._spellEdit[s.id]){
@@ -1267,11 +1267,11 @@ function renderSpellsGrimoire(c, canEdit){
             statBadge +
             (canEdit ? (isActive ?
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '" title="Lanzar de nuevo y superponer">+ Superponer (-' + num(s.coste, 1) + ' Maná)</button>' +
-              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">✕ Quitar Carga (' + stacks + ')</button>' :
-              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">⚡ Activar (-' + num(s.coste, 1) + ' Maná)</button>'
+              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">' + iconoUI("cerrar") + ' Quitar Carga (' + stacks + ')</button>' :
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">' + icono("iniciativa",{tam:"s"}) + ' Activar (-' + num(s.coste, 1) + ' Maná)</button>'
             ) : '') +
-            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">✓ Listo</button>' +
-            (canEdit ? '<button class="row-del" data-action="del-spell" data-id="' + s.id + '" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">✕</button>' : '') +
+            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">' + iconoUI("hecho") + ' Listo</button>' +
+            (canEdit ? '<button class="row-del" data-action="del-spell" data-id="' + s.id + '" aria-label="Eliminar hechizo" style="min-width:28px;min-height:28px;width:28px;height:28px;">' + iconoUI("cerrar") + '</button>' : '') +
           '</div>' +
         '</div>' +
         '<div class="spell-grid">' +
@@ -1296,16 +1296,16 @@ function renderSpellsGrimoire(c, canEdit){
           '<div class="spell-name-read">' + (esc(s.name) || 'Hechizo sin nombre') + '</div>' +
           '<div class="summon-pills-wrap spell-pills-read">' + activeBadge +
             '<span class="spell-pill">' + icono("mana", {tam:"s"}) + ' ' + num(s.coste, 1) + ' maná</span>' +
-            (s.rango ? '<span class="spell-pill">🎯 ' + esc(s.rango) + '</span>' : '') +
+            (s.rango ? '<span class="spell-pill">' + icono("diana",{tam:"s"}) + ' ' + esc(s.rango) + '</span>' : '') +
             statBadge +
           '</div>' +
           '<div class="spell-efecto-read' + (spOpen ? '' : ' spell-efecto-clamp') + '" data-action="toggle-spell-open" data-id="' + s.id + '">' + (s.efecto ? esc(s.efecto) : '<i>Sin descripción.</i>') + '</div>' +
           (canEdit ? '<div class="spell-act-row">' + (canEdit ? (isActive ?
               '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '" title="Lanzar de nuevo y superponer">+ Superponer (-' + num(s.coste, 1) + ' Maná)</button>' +
-              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">✕ Quitar Carga (' + stacks + ')</button>' :
-              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">⚡ Activar (-' + num(s.coste, 1) + ' Maná)</button>'
+              '<button class="spell-btn-act cancel" data-action="toggle-spell-active" data-id="' + s.id + '" title="Quitar una carga o desactivar">' + iconoUI("cerrar") + ' Quitar Carga (' + stacks + ')</button>' :
+              '<button class="spell-btn-act cast" data-action="cast-spell" data-id="' + s.id + '">' + icono("iniciativa",{tam:"s"}) + ' Activar (-' + num(s.coste, 1) + ' Maná)</button>'
             ) : '') +
-            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">✏️ Editar</button>' +
+            '<button type="button" class="btn-compact" data-action="toggle-spell-edit" data-id="' + s.id + '">' + iconoUI("editar") + ' Editar</button>' +
           '</div>' : '') +
         '</div>';
       }
@@ -1337,10 +1337,10 @@ function renderLapidaryWorkshop(c, canEdit){
 
   // 1. Panel Superior: Banco de Trabajo, Herramientas y Resumen
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + ' lapidary-bench-section">' +
-    '<div class="section-title"><span>💎 Taller de Lapidario y Talla Arcana</span></div>' +
+    '<div class="section-title"><span>' + icono("piedras",{tam:"s"}) + ' Taller de Lapidario y Talla Arcana</span></div>' +
     '<div class="lapidary-bench-top">' +
       '<div class="lapidary-tool-card">' +
-        '<div class="lapidary-tool-icon">' + curTier.icon + '</div>' +
+        '<div class="lapidary-tool-icon">' + iconoDeEmoji(curTier.icon, "objetos", {tam:"m"}) + '</div>' +
         '<div class="lapidary-tool-info">' +
           '<div class="lapidary-tool-name">' + esc(curTier.name) + ' <span class="lapidary-tool-bonus">+' + curTier.bonusRoll + ' a la Talla</span></div>' +
           '<div class="lapidary-tool-desc">' + esc(curTier.desc || "Herramientas de corte y facetado de gemas.") + '</div>' +
@@ -1358,19 +1358,19 @@ function renderLapidaryWorkshop(c, canEdit){
 
       '<div class="lapidary-stat-chips">' +
         '<div class="lapidary-stat-chip" title="Atributo Inteligencia">' +
-          '<span class="lapidary-stat-label">🧠 Inteligencia</span>' +
+          '<span class="lapidary-stat-label">' + icono("cerebro",{tam:"s"}) + ' Inteligencia</span>' +
           '<span class="lapidary-stat-val">+' + intVal + '</span>' +
         '</div>' +
         '<div class="lapidary-stat-chip" title="Bono de habilidad Piedras Mágicas">' +
-          '<span class="lapidary-stat-label">✨ Habilidad Piedras</span>' +
+          '<span class="lapidary-stat-label">' + icono("destellos",{tam:"s"}) + ' Habilidad Piedras</span>' +
           '<span class="lapidary-stat-val">+' + skillBonus + '</span>' +
         '</div>' +
         '<div class="lapidary-stat-chip" title="Total de gemas pulidas">' +
-          '<span class="lapidary-stat-label">💎 Pulidas</span>' +
+          '<span class="lapidary-stat-label">' + icono("piedras",{tam:"s"}) + ' Pulidas</span>' +
           '<span class="lapidary-stat-val">' + polishedStones.length + '</span>' +
         '</div>' +
         '<div class="lapidary-stat-chip gold" title="Gemas de calidad Perfecta">' +
-          '<span class="lapidary-stat-label">★ Perfectas</span>' +
+          '<span class="lapidary-stat-label">' + icono("estrella",{tam:"s"}) + ' Perfectas</span>' +
           '<span class="lapidary-stat-val">' + perfectStones.length + '</span>' +
         '</div>' +
       '</div>' +
@@ -1380,7 +1380,7 @@ function renderLapidaryWorkshop(c, canEdit){
   // 2. Bandeja de Minerales en Bruto (Listas para el Minijuego de Talla)
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">' +
     '<div class="section-title">' +
-      '<span>⛏️ Minerales y Gemas en Bruto (' + roughStones.length + ')</span>' +
+      '<span>' + icono("pico",{tam:"s"}) + ' Minerales y Gemas en Bruto (' + roughStones.length + ')</span>' +
       (canEdit ? '<button type="button" class="btn-compact" data-action="open-add-stone-modal" data-char-id="' + c.id + '" style="font-size:.68rem;">+ Añadir en Bruto</button>' : '') +
     '</div>';
 
@@ -1398,13 +1398,13 @@ function renderLapidaryWorkshop(c, canEdit){
             '<span class="lapidary-gem-dot" style="background:' + fam.hex + ';box-shadow:0 0 8px ' + (fam.glow || fam.hex) + ';"></span>' +
             '<b>Piedra ' + esc(fam.name) + ' en Bruto</b>' +
           '</div>' +
-          '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? "⛏️ " : "🪙 ") + esc(st.origen) + '</span>' +
+          '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? icono("pico",{tam:"s"}) + " " : icono("moneda-oro",{tam:"s"}) + " ") + esc(st.origen) + '</span>' +
         '</div>' +
         '<div class="lapidary-rough-desc">Familia: Piedra ' + esc(fam.name) + ' &bull; Potencial: <i>' + esc(fam.familia) + '</i></div>' +
         (st.notasInvestigacion ? '<div class="lapidary-rough-notes">' + esc(st.notasInvestigacion) + '</div>' : '') +
         '<div class="lapidary-rough-actions">' +
-          (canEdit ? '<button type="button" class="btn-solid-gold lapidary-btn-polish" data-action="open-lapidary-minigame" data-id="' + st.id + '" data-char-id="' + c.id + '">✨ Pulir en Taller</button>' : '') +
-          (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Descartar piedra">✕</button>' : '') +
+          (canEdit ? '<button type="button" class="btn-solid-gold lapidary-btn-polish" data-action="open-lapidary-minigame" data-id="' + st.id + '" data-char-id="' + c.id + '">' + icono("destellos",{tam:"s"}) + ' Pulir en Taller</button>' : '') +
+          (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Descartar piedra">' + iconoUI("cerrar") + '</button>' : '') +
         '</div>' +
       '</div>';
     });
@@ -1414,7 +1414,7 @@ function renderLapidaryWorkshop(c, canEdit){
 
   // 3. Colección de Piedras Pulidas (Joyel Mágico — Reutiliza .item-card y bordes de calidad, Punto 4)
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">' +
-    '<div class="section-title"><span>✨ Colección de Piedras Pulidas (' + polishedStones.length + ')</span></div>';
+    '<div class="section-title"><span>' + icono("destellos",{tam:"s"}) + ' Colección de Piedras Pulidas (' + polishedStones.length + ')</span></div>';
 
   if(!polishedStones.length){
     html += '<div style="font-size:.82rem;color:var(--ink-faint);font-style:italic;padding:12px 4px;text-align:center;background:rgba(0,0,0,0.15);border-radius:var(--radius-sm);border:1px dashed var(--line);">' +
@@ -1437,7 +1437,7 @@ function renderLapidaryWorkshop(c, canEdit){
       html += '<div class="item-card quality-' + qId + ' lapidary-gem-card" id="stone-card-' + st.id + '">' +
         '<div class="lapidary-card-top">' +
           '<div class="lapidary-card-title-row">' +
-            '<span class="lapidary-card-icon" style="color:' + fam.hex + ';filter:drop-shadow(0 0 6px ' + (fam.glow || fam.hex) + ');">' + fam.icon + '</span>' +
+            '<span class="lapidary-card-icon" style="color:' + fam.hex + ';filter:drop-shadow(0 0 6px ' + (fam.glow || fam.hex) + ');">' + iconoDeEmoji(fam.icon, "objetos", {tam:"m"}) + '</span>' +
             '<div class="lapidary-card-main-title">' +
               '<h3>Piedra ' + esc(fam.name) + ' Pulida</h3>' +
               '<div class="lapidary-card-subtitle">Efecto Base: ' + esc(fam.familia) + '</div>' +
@@ -1445,8 +1445,8 @@ function renderLapidaryWorkshop(c, canEdit){
           '</div>' +
           '<div class="lapidary-card-badges">' +
             '<span class="item-badge badge-' + qId + '" title="' + esc(qInfo.desc) + '">Calidad: ' + esc(qInfo.label) + '</span>' +
-            '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? "⛏️ " : "🪙 ") + esc(st.origen) + '</span>' +
-            (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Eliminar gema">✕</button>' : '') +
+            '<span class="lapidary-origin-pill">' + (st.origen.includes("Minas") ? icono("pico",{tam:"s"}) + " " : icono("moneda-oro",{tam:"s"}) + " ") + esc(st.origen) + '</span>' +
+            (canEdit ? '<button type="button" class="row-del" data-action="del-stone" data-id="' + st.id + '" aria-label="Eliminar gema">' + iconoUI("cerrar") + '</button>' : '') +
           '</div>' +
         '</div>' +
         (typeof renderLapidaryStoneStatus === "function" ? renderLapidaryStoneStatus(st) : '') +
@@ -1454,8 +1454,8 @@ function renderLapidaryWorkshop(c, canEdit){
         // Stepper de Progresión de Descubrimiento (Mismo patrón de 3 pasos)
         '<div class="lapidary-discovery-box">' +
           '<div class="lapidary-discovery-header">' +
-            '<span class="lapidary-discovery-title">🔍 Descubrimiento Arcana de Propiedades:</span>' +
-            (canEdit && !isConfirmed ? '<button type="button" class="btn-compact lapidary-btn-investigate" data-action="investigate-stone" data-id="' + st.id + '" data-char-id="' + c.id + '" title="Tirada de Inteligencia + Habilidad">🔬 Investigar Gema (1d10)</button>' : '') +
+            '<span class="lapidary-discovery-title">' + icono("lupa",{tam:"s"}) + ' Descubrimiento Arcana de Propiedades:</span>' +
+            (canEdit && !isConfirmed ? '<button type="button" class="btn-compact lapidary-btn-investigate" data-action="investigate-stone" data-id="' + st.id + '" data-char-id="' + c.id + '" title="Tirada de Inteligencia + Habilidad">' + icono("lupa",{tam:"s"}) + ' Investigar Gema (1d10)</button>' : '') +
           '</div>' +
           '<div class="lapidary-stepper-track">' +
             '<div class="lapidary-stepper-step ' + (pStep >= 1 ? 'active' : '') + ' ' + (pStep === 1 ? 'current' : '') + '">' +
@@ -1480,15 +1480,15 @@ function renderLapidaryWorkshop(c, canEdit){
           '<label class="lapidary-field-label">Efecto Mágico Concreto:</label>' +
           (isConfirmed ? 
             '<textarea class="lapidary-effect-input" data-bind="stones.' + st.id + '.efectoConcreto" placeholder="Efecto activo o pasivo verificado en acción..." ' + (canEdit ? '' : 'readonly') + '>' + esc(concreteEffect) + '</textarea>' :
-            '<div class="alchemy-mystery-fog"><span>🔒 Efecto concreto desconocido. Permanece oculto hasta ser confirmado o revelado por el GM.</span></div>'
+            '<div class="alchemy-mystery-fog"><span>' + iconoUI("candado") + ' Efecto concreto desconocido. Permanece oculto hasta ser confirmado o revelado por el GM.</span></div>'
           ) +
 
           // Tarjeta Confidencial Máster si no está confirmado y el usuario es GM
           (!isConfirmed && isMaster ?
             '<div class="alchemy-gm-confidential-card" style="margin-top:8px;">' +
               '<div class="alchemy-gm-confidential-header">' +
-                '<span class="alchemy-gm-badge">🔒 INFO SECRETA MÁSTER</span>' +
-                '<button type="button" class="alchemy-btn-reveal" data-action="stone-gm-reveal" data-id="' + st.id + '" data-char-id="' + c.id + '">👁️ Revelar a Jugador</button>' +
+                '<span class="alchemy-gm-badge">' + iconoUI("candado") + ' INFO SECRETA MÁSTER</span>' +
+                '<button type="button" class="alchemy-btn-reveal" data-action="stone-gm-reveal" data-id="' + st.id + '" data-char-id="' + c.id + '">' + iconoUI("ver") + ' Revelar a Jugador</button>' +
               '</div>' +
               '<div class="alchemy-gm-confidential-body"><b>Efecto Real Configurado:</b> ' + (concreteEffect ? esc(concreteEffect) : '<i>Sin efecto concreto redactado aún. Puedes escribirlo pulsando Revelar o editándolo como GM.</i>') + '</div>' +
             '</div>' : ''
@@ -1507,12 +1507,12 @@ function renderLapidaryWorkshop(c, canEdit){
 
   // 4. Códice de Piedras y Familias (Consulta y Lore de Krysalis)
   html += '<div class="section' + (c.isNPC ? ' gm-section' : '') + '">' +
-    '<div class="section-title"><span>📜 Códice de Piedras Mágicas y Familias Arcanas</span></div>' +
+    '<div class="section-title"><span>' + icono("pergamino",{tam:"s"}) + ' Códice de Piedras Mágicas y Familias Arcanas</span></div>' +
     '<div class="lapidary-codex-grid">' +
       (typeof MAGIC_STONE_FAMILIES !== "undefined" ? MAGIC_STONE_FAMILIES : []).map(function(f){
         return '<div class="lapidary-codex-card">' +
           '<div class="lapidary-codex-header">' +
-            '<span class="lapidary-codex-icon" style="color:' + f.hex + ';filter:drop-shadow(0 0 6px ' + f.glow + ');">' + f.icon + '</span>' +
+            '<span class="lapidary-codex-icon" style="color:' + f.hex + ';filter:drop-shadow(0 0 6px ' + f.glow + ');">' + iconoDeEmoji(f.icon, "objetos", {tam:"m"}) + '</span>' +
             '<div>' +
               '<b style="color:' + f.hex + ';">Piedra ' + esc(f.name) + '</b>' +
               '<div class="lapidary-codex-family">' + esc(f.familia) + '</div>' +
@@ -1638,15 +1638,15 @@ function tplPoisonLoadout(c, canEdit){
   var rows = list.map(function(x){
     var data = ' data-kind="' + x.kind + '" data-id="' + x.id + '" data-poison="' + esc(x.poisonId) + '"';
     return '<div class="psn-row' + (x.n < 1 ? ' empty' : '') + '">' +
-      '<span class="psn-ico">' + (x.kind === "weapon" ? '⚔️' : '🏹') + '</span>' +
-      '<span class="psn-txt"><b>' + esc(x.label) + '</b><small>' + (x.kind === "weapon" ? '🧪 ' + esc(x.poison) + ' · ' : '') +
+      '<span class="psn-ico">' + (x.kind === "weapon" ? icono("puno",{tam:"s"}) : icono("destreza",{tam:"s"})) + '</span>' +
+      '<span class="psn-txt"><b>' + esc(x.label) + '</b><small>' + (x.kind === "weapon" ? '' + icono("pocion",{tam:"s"}) + ' ' + esc(x.poison) + ' · ' : '') +
         (x.n > 0 ? poisonLoadoutUnits(x) : 'Agotado') + '</small></span>' +
       (canEdit && x.n > 0 ? '<button type="button" class="psn-btn"' + data + ' data-action="poison-spend">Gastar 1</button>' : '') +
       (canEdit && x.n < 1 ? '<button type="button" class="psn-btn"' + data + ' data-action="poison-clear">Quitar</button>' : '') +
-      (gm ? '<button type="button" class="psn-btn gm"' + data + ' data-action="poison-undo" aria-label="Deshacer un uso">↩ +1</button>' : '') +
+      (gm ? '<button type="button" class="psn-btn gm"' + data + ' data-action="poison-undo" aria-label="Deshacer un uso">' + iconoUI("deshacer") + ' +1</button>' : '') +
     '</div>';
   }).join('');
-  return '<div class="section psn-section' + (c.isNPC ? ' gm-section' : '') + '"><div class="section-title"><span>🧪 Preparado con veneno</span></div>' +
+  return '<div class="section psn-section' + (c.isNPC ? ' gm-section' : '') + '"><div class="section-title"><span>' + icono("pocion",{tam:"s"}) + ' Preparado con veneno</span></div>' +
     '<div class="psn-list">' + rows + '</div></div>';
 }
 
@@ -1660,22 +1660,22 @@ function tplAlquimiaPreparar(c, p){
   var weapons = (c.weapons || []).filter(function(w){ return w.name; });
   var wBtns = weapons.map(function(w){
     var has = (Array.isArray(w.venenos) ? w.venenos : []).find(function(v){ return v.poisonId === p.id; });
-    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-weapon" data-id="' + p.id + '" data-wid="' + w.id + '">⚔️ ' + esc(w.name) +
+    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-weapon" data-id="' + p.id + '" data-wid="' + w.id + '">' + icono("puno",{tam:"s"}) + ' ' + esc(w.name) +
       '<small>+' + uses + ' cargas' + (has && num(has.cargas, 0) > 0 ? ' (ya tiene ' + num(has.cargas, 0) + ')' : '') + '</small></button>';
   }).join('');
   var srcs = (c.inventory || []).filter(function(it){ return !it.poisonId && POISON_AMMO_RE.test(it.name || "") && num(it.qty, 0) > 0; });
   var aBtns = srcs.map(function(it){
     var n = Math.min(uses, num(it.qty, 0));
-    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="' + it.id + '">🏹 ' + esc(poisonAmmoBaseName(it.name)) + ' con ' + esc(p.name) + ' ×' + n +
+    return '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="' + it.id + '">' + icono("destreza",{tam:"s"}) + ' ' + esc(poisonAmmoBaseName(it.name)) + ' con ' + esc(p.name) + ' ×' + n +
       '<small>Gasta ' + n + ' de "' + esc(it.name) + '" (tienes ' + num(it.qty, 0) + ')</small></button>';
   }).join('');
   if(!aBtns){
-    aBtns = '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="">🏹 Dardo con ' + esc(p.name) + ' ×' + uses +
+    aBtns = '<button type="button" class="alq-btn psn-pick" data-action="alchemy-prepare-ammo" data-id="' + p.id + '" data-src="">' + icono("destreza",{tam:"s"}) + ' Dardo con ' + esc(p.name) + ' ×' + uses +
       '<small>No hay dardos ni flechas en el inventario</small></button>';
   }
   return '<div class="alq-sheet-bg" data-action="alchemy-close-prepare">' +
     '<div class="alq-sheet" role="dialog" aria-label="Preparar veneno">' +
-      '<div class="alq-sheet-head"><h3>Preparar: ' + esc(p.name) + '</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-prepare" aria-label="Cerrar">✕</button></div>' +
+      '<div class="alq-sheet-head"><h3>Preparar: ' + esc(p.name) + '</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-prepare" aria-label="Cerrar">' + iconoUI("cerrar") + '</button></div>' +
       '<p class="alq-note">Gastas 1 dosis (tienes ' + num(p.dosis, 0) + ') y da <b>' + uses + ' usos</b>.</p>' +
       '<div class="alq-sheet-lbl">Impregnar un arma</div>' +
       (wBtns ? '<div class="psn-picks">' + wBtns + '</div>' : '<p class="alq-note">No hay armas en la pestaña Combate.</p>') +
@@ -1705,7 +1705,7 @@ function tplAlquimiaHoras(){
   }).join('');
   return '<div class="alq-sheet-bg" data-action="alchemy-close-hours">' +
     '<div class="alq-sheet" role="dialog" aria-label="Horas de destilado">' +
-      '<div class="alq-sheet-head"><h3>Horas de destilado</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-hours" aria-label="Cerrar">✕</button></div>' +
+      '<div class="alq-sheet-head"><h3>Horas de destilado</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-hours" aria-label="Cerrar">' + iconoUI("cerrar") + '</button></div>' +
       '<p class="alq-note">Horas de juego que tarda una dosis según la rareza. Avanzan cuando mueves el reloj de la partida.</p>' +
       '<div class="alq-hours">' + rows + '</div>' +
       '<div class="alq-btnrow"><button type="button" class="alq-btn gold" data-action="alchemy-save-hours">Guardar</button></div>' +
@@ -1722,7 +1722,7 @@ function tplAlquimia(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar fórmulas ni venenos en esta ficha.</span>'+
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes modificar fórmulas ni venenos en esta ficha.</span>'+
     '</div>';
   }
 
@@ -1753,7 +1753,7 @@ function tplAlquimiaFiltros(){
   var opt = function(arr){ return arr.map(function(x){ return { v: x, l: x }; }); };
   return '<div class="alq-sheet-bg" data-action="alchemy-close-filters">' +
     '<div class="alq-sheet" role="dialog" aria-label="Filtros de alquimia">' +
-      '<div class="alq-sheet-head"><h3>Filtros</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-filters" aria-label="Cerrar">✕</button></div>' +
+      '<div class="alq-sheet-head"><h3>Filtros</h3><button type="button" class="alq-sheet-x" data-action="alchemy-close-filters" aria-label="Cerrar">' + iconoUI("cerrar") + '</button></div>' +
       '<div class="alq-sheet-lbl">Tipo</div>' +
       pills(opt(['Todos', 'Veneno', 'Poción', 'Ungüento']), alchemyFilterType, "set-alchemy-type-filter") +
       '<div class="alq-sheet-lbl">Estado</div>' +
@@ -1819,7 +1819,7 @@ function tplAlquimiaRecetario(c, canEdit){
 
   if(!filtered.length){
     html += '<div class="alq-empty">' +
-      '<p>🌿 ' + ((c.poisons || []).length ? 'Ninguna sustancia con esta búsqueda o filtros.' : 'Aún no hay sustancias en esta ficha.') + '</p>' +
+      '<p>' + icono("hierbas",{tam:"s"}) + ' ' + ((c.poisons || []).length ? 'Ninguna sustancia con esta búsqueda o filtros.' : 'Aún no hay sustancias en esta ficha.') + '</p>' +
       (nF ? '<button type="button" class="alq-btn" data-action="alchemy-clear-filters">Quitar filtros</button>' : '') +
     '</div>';
     return html;
@@ -1836,12 +1836,12 @@ function tplAlquimiaRecetario(c, canEdit){
 // Resumen corto de lo que el jugador ha anotado (nunca el efecto secreto del máster)
 function alqNoteSummary(p, showCherk){
   var txt = '';
-  if(getAlchemyStageIndex(p.progEnemigo) >= 3 && p.efectoEnemigo) txt = '⚔️ ' + p.efectoEnemigo;
-  else if(showCherk && getAlchemyStageIndex(p.progCherk) >= 3 && p.efectoCherk) txt = '🧪 ' + p.efectoCherk;
+  if(getAlchemyStageIndex(p.progEnemigo) >= 3 && p.efectoEnemigo) txt = icono("puno",{tam:"s"}) + ' ' + p.efectoEnemigo;
+  else if(showCherk && getAlchemyStageIndex(p.progCherk) >= 3 && p.efectoCherk) txt = icono("pocion",{tam:"s"}) + ' ' + p.efectoCherk;
   txt = String(txt).replace(/\s+/g, ' ').trim();
   if(!txt) return '';
   if(txt.length > 70) txt = txt.slice(0, 68) + '…';
-  return '<span class="alq-note-sum">' + esc(txt) + '</span>';
+  return '<span class="alq-note-sum">' + icono(ico,{tam:"s"}) + ' ' + esc(txt) + '</span>';
 }
 
 function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
@@ -1862,14 +1862,14 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
   if(showCherk) tags += '<span class="alq-tag s">' + icono("escudo", {tam:"s"}) + ' En ' + esc(c.name || 'Cherk') + ': ' + alchemyStageText(cIdx) + '</span>';
   if(base < 2) tags += '<span class="alq-tag">' + icono("hierbas", {tam:"s"}) + ' ' + (base === 1 ? 'Solo muestra' : 'Sin muestra') + '</span>';
   var dist = alchemyDistillState(p);
-  if(dist) tags += dist.ready ? '<span class="alq-tag ready">✓ Lista</span>' : '<span class="alq-tag wait">' + icono("actividad", {tam:"s"}) + ' faltan ' + dist.left + ' h</span>';
+  if(dist) tags += dist.ready ? '<span class="alq-tag ready">' + iconoUI("hecho") + ' Lista</span>' : '<span class="alq-tag wait">' + icono("actividad", {tam:"s"}) + ' faltan ' + dist.left + ' h</span>';
 
   var html = '<div class="alq-card ' + rClass + (open ? ' open' : '') + '" id="alchemy-card-' + p.id + '">' +
     '<button type="button" class="alq-row" data-action="toggle-alchemy-card" data-id="' + p.id + '" aria-expanded="' + open + '">' +
       '<span class="alq-ico">' + typeIcon + '</span>' +
       '<span class="alq-mid"><span class="alq-nm">' + esc(p.name) + '</span><span class="alq-sub">' + esc(p.type || 'Veneno') + ' · ' + esc(terrain) + '</span><span class="alq-tags">' + tags + '</span></span>' +
       '<span class="alq-dose">×' + dosis + '<small>dosis</small></span>' +
-      '<span class="alq-chev">▶</span>' +
+      '<span class="alq-chev">' + iconoUI("chevron-derecha") + '</span>' +
     '</button>';
   if(!open) return html + '</div>';
 
@@ -1884,7 +1884,7 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
 
   if(tab === "proceso"){
     html += '<div class="alq-meta"><span>' + esc(p.type || 'Veneno') + '</span><span>· ' + esc(rarity) + '</span><span>· ' + esc(terrain) + '</span>' +
-        (loreTitle ? '<button type="button" class="alq-link" data-action="alchemy-jump-lore" data-lore-title="' + esc(loreTitle) + '">Ver en Lore ↗</button>' : '') +
+        (loreTitle ? '<button type="button" class="alq-link" data-action="alchemy-jump-lore" data-lore-title="' + esc(loreTitle) + '">Ver en Lore '+iconoUI("flecha-derecha")+'</button>' : '') +
       '</div>' +
       '<div class="alq-path">' +
         tplAlquimiaStep(p, 1, base, "identificado", "Muestra", rawMat ? "Materia prima: " + rawMat + "." : "Materia prima recogida.", canEdit) +
@@ -1900,7 +1900,7 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
         '</div>';
     }
     if(isMaster && (p.type || "Veneno") === "Veneno") html += tplAlquimiaUses(p);
-    if(canEdit) html += '<button type="button" class="alq-btn alq-del" data-action="del-poison" data-id="' + p.id + '">🗑 Quitar de la ficha</button>';
+    if(canEdit) html += '<button type="button" class="alq-btn alq-del" data-action="del-poison" data-id="' + p.id + '">' + iconoUI("borrar") + ' Quitar de la ficha</button>';
     return html + '</div></div>';
   }
 
@@ -1914,8 +1914,8 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
   html += tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx, dosis, isMaster, rarity, dist) +
     tplAlquimiaPrepared(c, p) +
     '<div class="alq-split">' +
-      tplAlquimiaBranch(p, "progEnemigo", "efectoEnemigo", "⚔️ En enemigos", "e", eIdx, canEdit, isMaster, cat && cat.efectoEnemigo) +
-      (showCherk ? tplAlquimiaBranch(p, "progCherk", "efectoCherk", "🛡️ En " + esc(c.name || "Cherk") + " (su pasiva)", "s", cIdx, canEdit, isMaster, cat && cat.efectoCherk) : '') +
+      tplAlquimiaBranch(p, "progEnemigo", "efectoEnemigo", icono("puno",{tam:"s"}) + " En enemigos", "e", eIdx, canEdit, isMaster, cat && cat.efectoEnemigo) +
+      (showCherk ? tplAlquimiaBranch(p, "progCherk", "efectoCherk", icono("escudo",{tam:"s"}) + " En " + esc(c.name || "Cherk") + " (su pasiva)", "s", cIdx, canEdit, isMaster, cat && cat.efectoCherk) : '') +
     '</div>';
   return html + '</div></div>';
 }
@@ -1942,7 +1942,7 @@ function tplAlquimiaStep(p, n, base, stageId, title, sub, canEdit){
   var done = base >= n;
   var now = base === n && n < 2;
   var cls = 'alq-step' + (done && !now ? ' done' : '') + (now ? ' now' : '');
-  var dot = '<span class="alq-dot">' + (done && !now ? '✓' : n) + '</span>';
+  var dot = '<span class="alq-dot">' + (done && !now ? iconoUI("hecho") : n) + '</span>';
   var txt = '<span class="alq-step-txt"><b>' + title + '</b><span>' + esc(sub) + '</span></span>';
   if(!canEdit) return '<div class="' + cls + '">' + dot + txt + '</div>';
   return '<button type="button" class="' + cls + '" data-action="alchemy-set-base" data-id="' + p.id + '" data-stage="' + stageId + '" aria-pressed="' + done + '">' + dot + txt + '</button>';
@@ -1960,7 +1960,7 @@ function tplAlquimiaBranch(p, axis, field, label, cls, idx, canEdit, isMaster, s
     html += '<div class="alq-fog">Aún no sabéis qué hace. ' + (cls === "e" ? "Úsala en un enemigo." : "Tómatela para descubrirlo.") + '</div>';
   }
   if(isMaster && secret){
-    html += '<details class="alq-secret"><summary>🔒 Solo máster: efecto real</summary><p>' + esc(secret) + '</p>' +
+    html += '<details class="alq-secret"><summary>' + iconoUI("candado") + ' Solo máster: efecto real</summary><p>' + esc(secret) + '</p>' +
       '<button type="button" class="alq-btn gm" data-action="alchemy-gm-reveal" data-id="' + p.id + '" data-axis="' + axis + '" data-text="' + esc(secret) + '">Revelar y marcar como conocido</button></details>';
   }
   return html + '</div>';
@@ -1972,8 +1972,8 @@ function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx
   var timed = typeof getGameClockHours === "function" && getGameClockHours() !== null;
   var hrs = timed ? getDistillHours(rarity) : 0;
   var distill = '<button type="button" class="alq-btn gold" data-action="alchemy-craft-single" data-id="' + p.id + '">' +
-      (timed && hrs > 0 ? '⚗️ Empezar a destilar (' + hrs + ' h)' : '⚗️ Destilar (+1 dosis)') + '</button>' +
-    '<button type="button" class="alq-btn" data-action="alchemy-roll-herbalism" data-id="' + p.id + '" data-cd="' + cd + '">🎲 Herboristería (CD ' + cd + ')</button>';
+      (timed && hrs > 0 ? icono("alambique",{tam:"s"}) + ' Empezar a destilar (' + hrs + ' h)' : icono("alambique",{tam:"s"}) + ' Destilar (+1 dosis)') + '</button>' +
+    '<button type="button" class="alq-btn" data-action="alchemy-roll-herbalism" data-id="' + p.id + '" data-cd="' + cd + '">' + icono("dado",{tam:"s"}) + ' Herboristería (CD ' + cd + ')</button>';
   var lasts = timed && hrs > 0 ? ' Tarda <b>' + hrs + ' h de juego</b> (' + esc(rarity) + ').' : '';
   if(dist && !dist.ready){
     k = 'Destilando';
@@ -1986,7 +1986,7 @@ function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx
     btns = '<button type="button" class="alq-btn gold" data-action="alchemy-collect-distill" data-id="' + p.id + '">Guardar dosis (+1)</button>';
   } else if(base < 1){
     txt = 'Aún no tenéis la muestra' + (rawMat ? ' (' + esc(rawMat) + ')' : '') + '. Cuando la recojáis, márcala.';
-    btns = '<button type="button" class="alq-btn gold" data-action="alchemy-set-base" data-id="' + p.id + '" data-stage="identificado">🌿 Ya tengo la muestra</button>';
+    btns = '<button type="button" class="alq-btn gold" data-action="alchemy-set-base" data-id="' + p.id + '" data-stage="identificado">' + icono("hierbas",{tam:"s"}) + ' Ya tengo la muestra</button>';
   } else if(base < 2){
     txt = 'Tienes la <b>muestra</b>' + (rawMat ? ' (' + esc(rawMat) + ')' : '') + '. Destílala para poder usarla.' + lasts;
     btns = distill;
@@ -1995,7 +1995,7 @@ function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx
     btns = distill;
   } else if((p.type || "Veneno") === "Poción"){
     txt = 'Bébela (o dásela a alguien) cuando la necesites.';
-    btns = '<button type="button" class="alq-btn s" data-action="alchemy-consume-dose" data-id="' + p.id + '">🧪 Beberla (−1)</button>';
+    btns = '<button type="button" class="alq-btn s" data-action="alchemy-consume-dose" data-id="' + p.id + '">' + icono("pocion",{tam:"s"}) + ' Beberla (−1)</button>';
   } else if(p.type === "Ungüento"){
     txt = 'Aplícalo cuando lo necesites.';
     btns = '<button type="button" class="alq-btn s" data-action="alchemy-consume-dose" data-id="' + p.id + '">' + icono("cuentagotas", {tam:"s"}) + ' Aplicarlo (−1)</button>';
@@ -2012,7 +2012,7 @@ function tplAlquimiaNext(c, p, canEdit, showCherk, cat, rawMat, base, eIdx, cIdx
 
 function tplAlquimiaTaller(c, canEdit){
   var html = '<div class="alchemy-controls-card" style="margin-bottom:14px;">' +
-    '<h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.05rem;margin-bottom:4px;">⚗️ Mesa de Destilación y Extracción Alquímica</h3>' +
+    '<h3 style="font-family:var(--font-display);color:var(--gold-light);font-size:1.05rem;margin-bottom:4px;">' + icono("alambique",{tam:"s"}) + ' Mesa de Destilación y Extracción Alquímica</h3>' +
     '<p style="font-size:0.78rem;color:var(--ink-dim);line-height:1.4;">' +
       'Procesa materias primas recolectadas en el mundo combinándolas con bases solventes. Las tiradas de extracción utilizan tu habilidad de <b>Herboristería</b>.' +
     '</p>' +
@@ -2034,7 +2034,7 @@ function tplAlquimiaTaller(c, canEdit){
   });
 
   html += '<div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--line);">' +
-    '<span>🎒 <b>Suministros en Mochila:</b></span>' +
+    '<span>' + icono("mochila",{tam:"s"}) + ' <b>Suministros en Mochila:</b></span>' +
     '<span style="color:' + (basesVeneno > 0 ? 'var(--teal-light)' : 'var(--blood-light)') + ';">Bases de veneno: <b>' + basesVeneno + '</b></span>' +
   '</div>';
 
@@ -2056,11 +2056,11 @@ function tplAlquimiaTaller(c, canEdit){
 
       '<div class="alchemy-craft-ingredients">' +
         '<div class="alchemy-ing-item has-item">' +
-          '<span>🌱 Muestra: ' + esc(rawName) + '</span>' +
+          '<span>' + icono("brote",{tam:"s"}) + ' Muestra: ' + esc(rawName) + '</span>' +
           '<span>Disponible</span>' +
         '</div>' +
         '<div class="alchemy-ing-item ' + (basesVeneno > 0 ? 'has-item' : 'lacks-item') + '">' +
-          '<span>🧪 Solvente: ' + esc(baseName) + '</span>' +
+          '<span>' + icono("pocion",{tam:"s"}) + ' Solvente: ' + esc(baseName) + '</span>' +
           '<span>' + (basesVeneno > 0 ? 'Listo (' + basesVeneno + ')' : 'Agotado') + '</span>' +
         '</div>' +
         '<div style="margin-top:6px;font-size:0.7rem;color:var(--gold);">' +
@@ -2069,14 +2069,22 @@ function tplAlquimiaTaller(c, canEdit){
       '</div>' +
 
       '<div style="display:flex;gap:6px;margin-top:auto;">' +
-        '<button type="button" class="btn-compact" style="flex:1;" data-action="alchemy-roll-herbalism" data-id="' + p.id + '" data-cd="' + cd + '">🎲 Tirar Extracción</button>' +
-        '<button type="button" class="btn-compact btn-solid-gold" style="flex:1;" data-action="alchemy-craft-single" data-id="' + p.id + '" ' + (canEdit ? '' : 'disabled') + '>⚗️ Destilar Vial</button>' +
+        '<button type="button" class="btn-compact" style="flex:1;" data-action="alchemy-roll-herbalism" data-id="' + p.id + '" data-cd="' + cd + '">' + icono("dado",{tam:"s"}) + ' Tirar Extracción</button>' +
+        '<button type="button" class="btn-compact btn-solid-gold" style="flex:1;" data-action="alchemy-craft-single" data-id="' + p.id + '" ' + (canEdit ? '' : 'disabled') + '>' + icono("alambique",{tam:"s"}) + ' Destilar Vial</button>' +
       '</div>' +
     '</div>';
   });
   html += '</div>';
 
   return html;
+}
+
+// Icono de un sonido de personaje (el emoji guardado se conserva; solo cambia cómo se pinta)
+function soundIconHtml(emoji){
+  var propios = { "🦇": "murcielago", "🐺": "lobo", "🦅": "aguila" };
+  if(propios[emoji]) return icono(propios[emoji], {tam:"s"});
+  if(emoji === "🎵") return iconoUI("sonido");
+  return iconoDeEmoji(emoji, "objetos", {tam:"s"});
 }
 
 function getItemIcon(it){
@@ -2191,7 +2199,7 @@ function tplInventario(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar el dinero ni los objetos del inventario en esta ficha.</span>'+
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes modificar el dinero ni los objetos del inventario en esta ficha.</span>'+
     '</div>';
   }
 
@@ -2222,10 +2230,10 @@ function tplInventario(c){
   // Cabecera con selector de vista (Mochila Grid Beta vs Lista Clásica)
   var viewSwitcherHtml = '<div class="skills-view-switcher" role="group" aria-label="Modo de vista de inventario">'+
     '<button type="button" class="skills-view-btn '+(viewMode==="grid"?"active":"")+'" data-action="set-inv-view" data-val="grid" title="Cuadrícula visual inmersiva de mochila">'+
-      '<span class="view-btn-icon">🎒</span> Mochila Grid'+
+      '<span class="view-btn-icon">' + icono("mochila",{tam:"s"}) + '</span> Mochila Grid'+
     '</button>'+
     '<button type="button" class="skills-view-btn '+(viewMode==="list"?"active":"")+'" data-action="set-inv-view" data-val="list" title="Vista tradicional en lista">'+
-      '<span class="view-btn-icon">📋</span> Lista Clásica'+
+      '<span class="view-btn-icon">' + icono("pergamino",{tam:"s"}) + '</span> Lista Clásica'+
     '</button>'+
   '</div>';
 
@@ -2248,11 +2256,11 @@ function tplInventario(c){
     });
 
     var groupsDef = [
-      { id: "all", label: "Todo", icon: "🎒", count: groupCounts.all },
-      { id: "combate", label: "Combate", icon: "⚔️", count: groupCounts.combate },
-      { id: "consumibles", label: "Consumibles", icon: "🧪", count: groupCounts.consumibles },
-      { id: "aventura", label: "Aventura", icon: "⛺", count: groupCounts.aventura },
-      { id: "botin", label: "Botín / Varios", icon: "💎", count: groupCounts.botin }
+      { id: "all", label: "Todo", icon: icono("mochila",{tam:"s"}), count: groupCounts.all },
+      { id: "combate", label: "Combate", icon: icono("daga",{tam:"s"}), count: groupCounts.combate },
+      { id: "consumibles", label: "Consumibles", icon: icono("pocion",{tam:"s"}), count: groupCounts.consumibles },
+      { id: "aventura", label: "Aventura", icon: icono("campamento",{tam:"s"}), count: groupCounts.aventura },
+      { id: "botin", label: "Botín / Varios", icon: icono("gema",{tam:"s"}), count: groupCounts.botin }
     ];
 
     var filteredItems = c.inventory.filter(function(it){
@@ -2261,7 +2269,7 @@ function tplInventario(c){
 
     html += '<div class="backpack-container">'+
       '<div class="backpack-header-bar">'+
-        '<div class="backpack-capacity-tag">🎒 <span>Objetos guardados: <b>'+c.inventory.length+'</b></span></div>'+
+        '<div class="backpack-capacity-tag">' + icono("mochila",{tam:"s"}) + ' <span>Objetos guardados: <b>'+c.inventory.length+'</b></span></div>'+
         (canEdit ? '<button class="btn-solid-gold" data-action="add-inventory-slot" style="padding:4px 12px;font-size:0.75rem;">+ Añadir Objeto</button>' : '')+
       '</div>'+
       invSearchHtml+
@@ -2281,7 +2289,7 @@ function tplInventario(c){
 
     if(filteredItems.length === 0){
       html += '<div class="backpack-empty-state">'+
-        '<div class="backpack-empty-icon">🎒</div>'+
+        '<div class="backpack-empty-icon">' + icono("mochila",{tam:"s"}) + '</div>'+
         '<div class="backpack-empty-msg">'+(invQ ? 'Ningún objeto coincide con la búsqueda.' : currentGroup === "all" ? 'La mochila está vacía.' : 'No hay objetos en esta categoría.')+'</div>'+
         (canEdit ? '<button type="button" class="btn-solid-gold" data-action="add-inventory-slot" style="margin-top:6px;font-size:0.76rem;padding:6px 14px;">+ Añadir Primer Objeto</button>' : '')+
       '</div>';
@@ -2365,7 +2373,7 @@ function tplInventario(c){
             }).join('')+
           '</select>'+
           '<input type="number" placeholder="Cant." data-bind="inventory.'+it.id+'.qty" value="'+num(it.qty,1)+'" '+(canEdit?'':'readonly')+'>'+
-          (canEdit ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">✕</button>' : '<div></div>')+
+          (canEdit ? '<button class="row-del" data-action="del-inventory" data-id="'+it.id+'" aria-label="Eliminar objeto">' + iconoUI("cerrar") + '</button>' : '<div></div>')+
         '</div>';
       });
     }
@@ -2422,16 +2430,16 @@ function parseSummonRollItem(itemStr){
       formula = m2[2].trim();
     }
   }
-  var icon = "🎲";
+  var icon = icono("dado",{tam:"s"});
   var lLower = label.toLowerCase();
-  if(lLower.includes("melé") || lLower.includes("mele") || lLower.includes("ataque") || lLower.includes("mordisco") || lLower.includes("garra") || lLower.includes("picotazo")) icon = "⚔️";
-  else if(lLower.includes("atletismo") || lLower.includes("fuerza") || lLower.includes("carrera")) icon = "🏃";
-  else if(lLower.includes("inteligencia") || lLower.includes("conocimiento") || lLower.includes("arcana")) icon = "🧠";
-  else if(lLower.includes("percepción") || lLower.includes("percepcion") || lLower.includes("vista") || lLower.includes("oído") || lLower.includes("oido")) icon = "👁️";
-  else if(lLower.includes("sigilo") || lLower.includes("ocultar") || lLower.includes("esconder")) icon = "🥷";
-  else if(lLower.includes("supervivencia") || lLower.includes("rastreo") || lLower.includes("naturaleza")) icon = "🌿";
-  else if(lLower.includes("esquivar") || lLower.includes("evasión") || lLower.includes("evasion") || lLower.includes("agilidad")) icon = "💨";
-  else if(lLower.includes("daño") || lLower.includes("dano")) icon = "🩸";
+  if(lLower.includes("melé") || lLower.includes("mele") || lLower.includes("ataque") || lLower.includes("mordisco") || lLower.includes("garra") || lLower.includes("picotazo")) icon = icono("golpe",{tam:"s"});
+  else if(lLower.includes("atletismo") || lLower.includes("fuerza") || lLower.includes("carrera")) icon = icono("fuerza",{tam:"s"});
+  else if(lLower.includes("inteligencia") || lLower.includes("conocimiento") || lLower.includes("arcana")) icon = icono("intelecto",{tam:"s"});
+  else if(lLower.includes("percepción") || lLower.includes("percepcion") || lLower.includes("vista") || lLower.includes("oído") || lLower.includes("oido")) icon = icono("percepcion",{tam:"s"});
+  else if(lLower.includes("sigilo") || lLower.includes("ocultar") || lLower.includes("esconder")) icon = icono("sigilo",{tam:"s"});
+  else if(lLower.includes("supervivencia") || lLower.includes("rastreo") || lLower.includes("naturaleza")) icon = icono("hierbas",{tam:"s"});
+  else if(lLower.includes("esquivar") || lLower.includes("evasión") || lLower.includes("evasion") || lLower.includes("agilidad")) icon = icono("esquivar",{tam:"s"});
+  else if(lLower.includes("daño") || lLower.includes("dano")) icon = icono("sangrado",{tam:"s"});
 
   return { raw: s, label: label, formula: formula, icon: icon };
 }
@@ -2492,7 +2500,7 @@ function tplInvocaciones(c){
 
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">' +
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar ni gestionar invocaciones en esta ficha.</span>' +
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes modificar ni gestionar invocaciones en esta ficha.</span>' +
     '</div>';
   }
 
@@ -2500,7 +2508,7 @@ function tplInvocaciones(c){
   html += '<div class="section-title">';
   html += '<span>Invocaciones y familiares</span>';
   if(canEdit && c.summons.length > 0){
-    html += '<button type="button" class="btn-compact" data-action="toggle-summon-edit">' + (editing ? '✓ Listo' : '✎ Editar') + '</button>';
+    html += '<button type="button" class="btn-compact" data-action="toggle-summon-edit">' + (editing ? iconoUI("hecho") + ' Listo' : iconoUI("editar") + ' Editar') + '</button>';
   }
   html += '</div>';
 
@@ -2518,7 +2526,7 @@ function tplInvocaciones(c){
     var isAct = active && (s.id === active.id);
     var miniStyle = s.image ? (' style="background-image:url(\'' + esc(safeUrl(s.image)) + '\');"') : '';
     html += '<button type="button" class="summon-tab" role="tab" aria-selected="' + (isAct ? 'true' : 'false') + '" data-action="select-summon" data-id="' + s.id + '">';
-    html += '<span class="summon-tab-mini"' + miniStyle + '>' + (s.image ? '' : '🐾') + '</span>';
+    html += '<span class="summon-tab-mini"' + miniStyle + '>' + (s.image ? '' : icono("huellas",{tam:"s"})) + '</span>';
     html += '<span class="summon-tab-name">' + esc(s.name || 'Sin nombre') + '</span>';
     html += '</button>';
   });
@@ -2541,12 +2549,12 @@ function tplInvocaciones(c){
   html += '<div class="summon-header">';
   if(canEdit){
     html += '<button type="button" class="summon-avatar-btn"' + imgStyle + ' data-action="summon-photo-menu" data-id="' + s.id + '" aria-label="Cambiar foto">' +
-      (s.image ? '' : '🐾') +
-      '<span class="summon-cam-badge">📷</span>' +
+      (s.image ? '' : icono("huellas",{tam:"s"})) +
+      '<span class="summon-cam-badge">' + icono("camara",{tam:"s"}) + '</span>' +
     '</button>';
   } else {
     html += '<div class="summon-avatar-img"' + imgStyle + '>' +
-      (s.image ? '' : '🐾') +
+      (s.image ? '' : icono("huellas",{tam:"s"})) +
     '</div>';
   }
 
@@ -2593,7 +2601,7 @@ function tplInvocaciones(c){
       '<div class="creature-field beast-mobility-cell">' +
         '<label>Movilidad (Casillas)</label>' +
         '<button type="button" class="beast-mov-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">' +
-          '<span class="beast-mov-label">🏃 <strong>' + esc(movN) + '</strong> casillas</span>' +
+          '<span class="beast-mov-label">' + icono("movilidad",{tam:"s"}) + ' <strong>' + esc(movN) + '</strong> casillas</span>' +
           (s.movilidad && s.movilidad.includes('(') ? (' <span class="beast-terrain-pill">' + esc(s.movilidad.slice(s.movilidad.indexOf('('))) + '</span>') : '') +
           '<span class="beast-mov-chevron">▾</span>' +
         '</button>' +
@@ -2602,21 +2610,21 @@ function tplInvocaciones(c){
   } else {
     html += '<div class="summon-chips-row">';
     if(s.defensa !== "" && s.defensa !== undefined && s.defensa !== null){
-      html += '<span class="summon-chip">🛡️ Def <b>' + esc(s.defensa) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("escudo",{tam:"s"}) + ' Def <b>' + esc(s.defensa) + '</b></span>';
     }
     if(s.absorcion !== "" && s.absorcion !== undefined && s.absorcion !== null){
-      html += '<span class="summon-chip">🧱 Abs <b>' + esc(s.absorcion) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("armadura",{tam:"s"}) + ' Abs <b>' + esc(s.absorcion) + '</b></span>';
     }
     if(s.dano !== "" && s.dano !== undefined && s.dano !== null){
-      html += '<span class="summon-chip">🗡️ <b>' + esc(s.dano) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("daga",{tam:"s"}) + ' <b>' + esc(s.dano) + '</b></span>';
     }
     if(canEdit){
-      html += '<button type="button" class="summon-chip summon-chip-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">🏃 <b>' + esc(movN) + '</b> <small>casillas</small></button>';
+      html += '<button type="button" class="summon-chip summon-chip-btn" data-action="pick-summon-mov" data-id="' + s.id + '" title="Casillas de movimiento">' + icono("movilidad",{tam:"s"}) + ' <b>' + esc(movN) + '</b> <small>casillas</small></button>';
     } else {
-      html += '<span class="summon-chip">🏃 <b>' + esc(movN) + '</b> <small>casillas</small></span>';
+      html += '<span class="summon-chip">' + icono("movilidad",{tam:"s"}) + ' <b>' + esc(movN) + '</b> <small>casillas</small></span>';
     }
     if(s.inteligencia !== "" && s.inteligencia !== undefined && s.inteligencia !== null){
-      html += '<span class="summon-chip">🧠 Int <b>' + esc(s.inteligencia) + '</b></span>';
+      html += '<span class="summon-chip">' + icono("intelecto",{tam:"s"}) + ' Int <b>' + esc(s.inteligencia) + '</b></span>';
     }
     html += '</div>';
   }
@@ -2643,7 +2651,7 @@ function tplInvocaciones(c){
     });
     if(!hasDano){
       combatRolls.push({
-        item: { raw: "Daño " + s.dano, label: "Daño", formula: s.dano, icon: "🩸" },
+        item: { raw: "Daño " + s.dano, label: "Daño", formula: s.dano, icon: icono("sangrado",{tam:"s"}) },
         originalIndex: -1
       });
     }
@@ -2651,7 +2659,7 @@ function tplInvocaciones(c){
 
   html += '<div class="summon-block summon-rolls-block">' +
     '<div class="summon-block-header">' +
-      '<span class="summon-block-title">⚔️ Tiradas</span>' +
+      '<span class="summon-block-title">' + icono("golpe",{tam:"s"}) + ' Tiradas</span>' +
       (editing ? '<button type="button" class="btn-compact" data-action="add-summon-skill" data-id="' + s.id + '">+ Añadir</button>' : '') +
     '</div>';
 
@@ -2667,7 +2675,7 @@ function tplInvocaciones(c){
           html += '<div class="summon-roll-box-edit">' +
             '<input type="text" class="summon-skill-input-name" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.label) + '" placeholder="Nombre">' +
             '<input type="text" class="summon-skill-input-formula" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.formula) + '" placeholder="Fórmula">' +
-            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">✕</button>' +
+            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>' +
           '</div>';
         } else {
           var fStr = it.formula || it.raw;
@@ -2689,7 +2697,7 @@ function tplInvocaciones(c){
           html += '<div class="summon-roll-box-edit">' +
             '<input type="text" class="summon-skill-input-name" data-action="change-summon-skill-name" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.label) + '" placeholder="Nombre">' +
             '<input type="text" class="summon-skill-input-formula" data-action="change-summon-skill-formula" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" value="' + esc(it.formula) + '" placeholder="Fórmula">' +
-            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">✕</button>' +
+            '<button type="button" class="row-del summon-roll-del" data-action="del-summon-skill" data-summon-id="' + s.id + '" data-index="' + r.originalIndex + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>' +
           '</div>';
         } else {
           var fStr = it.formula || it.raw;
@@ -2718,7 +2726,7 @@ function tplInvocaciones(c){
     traits.forEach(function(t, tIdx){
       html += '<li>' +
         '<span class="summon-list-text">' + esc(t) + '</span>' +
-        (editing ? ('<button type="button" class="row-del" data-action="del-summon-trait" data-id="' + s.id + '" data-index="' + tIdx + '" aria-label="Quitar">✕</button>') : '') +
+        (editing ? ('<button type="button" class="row-del" data-action="del-summon-trait" data-id="' + s.id + '" data-index="' + tIdx + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>') : '') +
       '</li>';
     });
     html += '</ul>';
@@ -2739,7 +2747,7 @@ function tplInvocaciones(c){
   html += '<div class="summon-block summon-learned-block">' +
     '<div class="summon-block-header">' +
       '<span class="summon-block-title">Aprendizaje</span>' +
-      (canEdit ? ('<button type="button" class="btn-compact" data-action="toggle-summon-teach" data-id="' + s.id + '">📖 Enseñar</button>') : '') +
+      (canEdit ? ('<button type="button" class="btn-compact" data-action="toggle-summon-teach" data-id="' + s.id + '">' + icono("pergamino",{tam:"s"}) + ' Enseñar</button>') : '') +
     '</div>';
 
   if(canEdit && state._summonTeachOpen === s.id){
@@ -2778,8 +2786,8 @@ function tplInvocaciones(c){
           ((diaText || canEdit) ? ('<div class="summon-add-row">' +
             (diaText ? ('<span class="summon-list-dia">' + esc(diaText) + '</span>') : '') +
             (canEdit ? (
-              '<button type="button" class="btn-compact" data-action="learned-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '">✓ Ya lo sabe</button>' +
-              '<button type="button" class="row-del" data-action="del-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '" aria-label="Quitar">✕</button>'
+              '<button type="button" class="btn-compact" data-action="learned-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '">' + iconoUI("hecho") + ' Ya lo sabe</button>' +
+              '<button type="button" class="row-del" data-action="del-summon-teach" data-id="' + s.id + '" data-lid="' + esc(itemId) + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>'
             ) : '') +
           '</div>') : '') +
         '</div>' +
@@ -2810,7 +2818,7 @@ function tplInvocaciones(c){
           (lPor ? ('<div class="summon-list-by">apuntado por ' + esc(lPor) + '</div>') : '') +
         '</div>' +
         (diaText ? ('<span class="summon-list-dia">' + esc(diaText) + '</span>') : '') +
-        (canEdit ? ('<button type="button" class="row-del" data-action="del-summon-learned" data-id="' + s.id + '" data-lid="' + esc(lId) + '" aria-label="Quitar">✕</button>') : '') +
+        (canEdit ? ('<button type="button" class="row-del" data-action="del-summon-learned" data-id="' + s.id + '" data-lid="' + esc(lId) + '" aria-label="Quitar">' + iconoUI("cerrar") + '</button>') : '') +
       '</li>';
     });
     html += '</ul>';
@@ -2868,8 +2876,8 @@ function tplInvocaciones(c){
   if(canEdit && state._summonPhotoMenu === s.id){
     html += '<div class="summon-photo-backdrop" data-action="close-summon-photo-menu"></div>' +
       '<div class="summon-photo-sheet" role="dialog" aria-label="Foto">' +
-        '<button type="button" class="btn-compact summon-sheet-btn" data-action="upload-summon-img" data-id="' + s.id + '">📷 Cambiar foto</button>' +
-        '<button type="button" class="btn-compact summon-sheet-btn" data-action="url-summon-img" data-id="' + s.id + '">🔗 Pegar URL</button>' +
+        '<button type="button" class="btn-compact summon-sheet-btn" data-action="upload-summon-img" data-id="' + s.id + '">' + icono("camara",{tam:"s"}) + ' Cambiar foto</button>' +
+        '<button type="button" class="btn-compact summon-sheet-btn" data-action="url-summon-img" data-id="' + s.id + '">' + iconoUI("enlace") + ' Pegar URL</button>' +
         (s.image ? ('<button type="button" class="btn-compact summon-sheet-btn summon-sheet-btn-danger" data-action="remove-summon-img" data-id="' + s.id + '">Quitar foto</button>') : '') +
         '<button type="button" class="btn-compact summon-sheet-btn" data-action="close-summon-photo-menu">Cancelar</button>' +
       '</div>';
@@ -2883,7 +2891,7 @@ function tplExtra(c){
   var html = '';
   if(!canEdit && currentUser){
     html += '<div class="spectator-banner">'+
-      '<span>👁️ Modo Espectador: Solo lectura. No puedes modificar pasivas ni la tabla de diosas en esta ficha.</span>'+
+      '<span>' + icono("percepcion",{tam:"s"}) + ' Modo Espectador: Solo lectura. No puedes modificar pasivas ni la tabla de diosas en esta ficha.</span>'+
     '</div>';
   }
   c.passivesNeg = c.passivesNeg || [];
@@ -2891,7 +2899,7 @@ function tplExtra(c){
   c.goddessTable = c.goddessTable || [];
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Negativas</span></div>';
   (c.passivesNeg||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesNeg.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passiveNeg" data-id="'+p.id+'" aria-label="Eliminar pasiva">' + iconoUI("cerrar") + '</button>':'')+'</div>';
   });
   if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passiveNeg">+ Añadir pasiva negativa</button>';
@@ -2900,7 +2908,7 @@ function tplExtra(c){
 
   html += '<div class="section'+(c.isNPC?' gm-section':'')+'"><div class="section-title"><span>Pasivas Positivas</span></div>';
   (c.passivesPos||[]).forEach(function(p){
-    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">✕</button>':'')+'</div>';
+    html += '<div class="list-row text-row"><input type="text" data-bind="passivesPos.'+p.id+'.text" value="'+esc(p.text)+'" '+(canEdit?'':'readonly')+'>'+(canEdit?'<button class="row-del" data-action="del-passivePos" data-id="'+p.id+'" aria-label="Eliminar pasiva">' + iconoUI("cerrar") + '</button>':'')+'</div>';
   });
   if(canEdit){
     html += '<button class="btn-compact" style="margin-top:6px;" data-action="add-passivePos">+ Añadir pasiva positiva</button>';
@@ -2913,7 +2921,7 @@ function tplExtra(c){
       '<input type="text" placeholder="Nombre" data-bind="goddessTable.'+g.id+'.nombre" value="'+esc(g.nombre)+'" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Gustos" data-bind="goddessTable.'+g.id+'.gustos" value="'+esc(g.gustos)+'" '+(canEdit?'':'readonly')+'>'+
       '<input type="text" placeholder="Disgustos" data-bind="goddessTable.'+g.id+'.disgustos" value="'+esc(g.disgustos)+'" '+(canEdit?'':'readonly')+'>'+
-      (canEdit?'<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">✕</button>':'')+
+      (canEdit?'<button class="row-del" data-action="del-goddess" data-id="'+g.id+'" aria-label="Eliminar diosa">' + iconoUI("cerrar") + '</button>':'')+
     '</div>';
   });
   if(canEdit){
@@ -2929,11 +2937,11 @@ function tplMundo(s){
   var subtab = currentWorldSubtab || "mapas";
   var html = '<div class="section" style="margin-bottom:10px;">'+
     '<div class="filter-pills">'+
-      '<button class="f-pill '+(subtab==='mapas'?'active':'')+'" data-action="set-world-subtab" data-val="mapas">🗺️ Mapas</button>'+
-      '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">⚔️ Catálogo de Armas</button>'+
-      '<button class="f-pill '+(subtab==='buffs'?'active':'')+'" data-action="set-world-subtab" data-val="buffs">✨ Buffos</button>'+
-      '<button class="f-pill '+(subtab==='lore'?'active':'')+'" data-action="set-world-subtab" data-val="lore">📜 Lore y Flora</button>'+
-      '<button class="f-pill '+(subtab==='galeria'?'active':'')+'" data-action="set-world-subtab" data-val="galeria">🖼️ Galería</button>'+
+      '<button class="f-pill '+(subtab==='mapas'?'active':'')+'" data-action="set-world-subtab" data-val="mapas">' + icono("mapa",{tam:"s"}) + ' Mapas</button>'+
+      '<button class="f-pill '+(subtab==='armas'?'active':'')+'" data-action="set-world-subtab" data-val="armas">' + icono("golpe",{tam:"s"}) + ' Catálogo de Armas</button>'+
+      '<button class="f-pill '+(subtab==='buffs'?'active':'')+'" data-action="set-world-subtab" data-val="buffs">' + icono("buff",{tam:"s"}) + ' Buffos</button>'+
+      '<button class="f-pill '+(subtab==='lore'?'active':'')+'" data-action="set-world-subtab" data-val="lore">' + icono("pergamino",{tam:"s"}) + ' Lore y Flora</button>'+
+      '<button class="f-pill '+(subtab==='galeria'?'active':'')+'" data-action="set-world-subtab" data-val="galeria">' + icono("cuadro",{tam:"s"}) + ' Galería</button>'+
     '</div>'+
   '</div>';
 
@@ -2964,9 +2972,9 @@ function tplMundoLore(s){
       '<div class="filter-section"><div class="filter-label">Tipo</div><div class="filter-pills lore-pills">'+typePills+'</div></div>'+
       '<div class="filter-section"><div class="filter-label">Terreno</div><div class="filter-pills lore-pills">'+terrPills+'</div></div>':'')+
     '<div class="filter-pills lore-pills" style="margin:10px 0;border-bottom:1px solid var(--line);padding-bottom:6px;">'+
-      '<button class="f-pill '+(currentLoreSubtab==='objetos'?'active':'')+'" data-action="set-lore-subtab" data-val="objetos">🌿 Recursos / Objetos</button>'+
-      '<button class="f-pill '+(currentLoreSubtab==='pistas'?'active':'')+'" data-action="set-lore-subtab" data-val="pistas">📜 Pistas</button>'+
-      '<button class="f-pill '+(currentLoreSubtab==='npcs'?'active':'')+'" data-action="set-lore-subtab" data-val="npcs">👤 NPCs</button>'+
+      '<button class="f-pill '+(currentLoreSubtab==='objetos'?'active':'')+'" data-action="set-lore-subtab" data-val="objetos">' + icono("hierbas",{tam:"s"}) + ' Recursos / Objetos</button>'+
+      '<button class="f-pill '+(currentLoreSubtab==='pistas'?'active':'')+'" data-action="set-lore-subtab" data-val="pistas">' + icono("pergamino",{tam:"s"}) + ' Pistas</button>'+
+      '<button class="f-pill '+(currentLoreSubtab==='npcs'?'active':'')+'" data-action="set-lore-subtab" data-val="npcs">' + icono("jugador",{tam:"s"}) + ' NPCs</button>'+
     '</div>';
 
   var cat = currentLoreSubtab;
@@ -2989,12 +2997,12 @@ function tplMundoLore(s){
         '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'+
           '<span class="item-badge '+bClass+'">'+rName+'</span>'+
           (it.type ? '<span style="font-size:.62rem;color:var(--teal-light);font-weight:700;">['+esc(it.type)+']</span>' : '')+
-          (it.terrain ? '<span style="font-size:.62rem;color:var(--ink-faint);">📍 '+esc(it.terrain)+'</span>' : '')+
+          (it.terrain ? '<span style="font-size:.62rem;color:var(--ink-faint);">' + icono("lugar",{tam:"s"}) + ' '+esc(it.terrain)+'</span>' : '')+
         '</div>'+
         '<div style="display:flex;gap:4px;">'+
-          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-visibility" data-cat="' + cat + '" data-id="' + it.id + '" title="Mostrar/Ocultar para jugadores">'+(it.visible!==false?'👁️':'🙈')+'</button>' : '')+
-          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-edit" data-id="' + it.id + '" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing?'✔️':'✏️')+'</button>' : '')+
-          (canEdit ? '<button class="btn-compact lore-btn" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">✕</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-visibility" data-cat="' + cat + '" data-id="' + it.id + '" title="Mostrar/Ocultar para jugadores">'+(it.visible!==false?iconoUI("ver"):iconoUI("ocultar"))+'</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="toggle-lore-edit" data-id="' + it.id + '" title="'+(editing?'Terminar de editar':'Editar')+'" aria-label="'+(editing?'Terminar de editar':'Editar')+'">'+(editing?iconoUI("hecho"):iconoUI("editar"))+'</button>' : '')+
+          (canEdit ? '<button class="btn-compact lore-btn" data-action="del-lore" data-cat="' + cat + '" data-id="' + it.id + '" aria-label="Eliminar entrada">' + iconoUI("cerrar") + '</button>' : '')+
         '</div>'+
       '</div>'+
       (canEdit && editing ? '<div class="creature-field lore-field"><label>Nombre</label><input type="text" class="k-input" data-scope="global" data-bind="lore.'+cat+'.'+it.id+'.title" value="'+esc(it.title)+'" placeholder="Nombre"></div>' : '<div class="lore-title">'+esc(it.title)+'</div>')+

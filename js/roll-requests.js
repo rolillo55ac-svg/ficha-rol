@@ -270,7 +270,7 @@ function renderRollRequestTab(){
       '<div class="dice-mode-pills">' +
         '<button type="button" class="dmode-pill ' + (d.mode === "normal" ? "active" : "") + '" data-action="roll-request-mode" data-mode="normal">' + icono("fisico", {tam:"s"}) + ' Normal</button>' +
         '<button type="button" class="dmode-pill ' + (d.mode === "adv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="adv">' + icono("critico", {tam:"s"}) + ' Ventaja</button>' +
-        '<button type="button" class="dmode-pill ' + (d.mode === "disadv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="disadv">💀 Desventaja</button>' +
+        '<button type="button" class="dmode-pill ' + (d.mode === "disadv" ? "active" : "") + '" data-action="roll-request-mode" data-mode="disadv">' + icono("pifia", {tam:"s"}) + ' Desventaja</button>' +
       '</div>' +
       '<div class="field"><label for="rollReqNote">Texto corto (opcional)</label>' +
       '<input type="text" id="rollReqNote" class="game-clock-input" maxlength="120" value="' + esc(d.note) + '"></div>' +
@@ -278,7 +278,7 @@ function renderRollRequestTab(){
       (chars.length ? chars.map(function(c){
         return '<label class="roll-history-check"><input type="checkbox" class="roll-req-target k-check" value="' + esc(c.db_id) + '"' + (targets.indexOf(c.db_id) >= 0 ? " checked" : "") + '> ' + esc(c.name || "Ficha") + '</label>';
       }).join("") : '<div class="roll-empty">No hay fichas de jugadores.</div>') +
-      '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-request-send">📣 Pedir tirada</button>' +
+      '<button type="button" class="btn-solid-gold btn-roll-cup" data-action="roll-request-send">' + icono("cuerno", {tam:"s"}) + ' Pedir tirada</button>' +
     '</div>';
   var list = rollRequestsList.slice(0, 10);
   html += '<div class="cup-tray-label">Peticiones</div>';

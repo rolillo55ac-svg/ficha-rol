@@ -34,7 +34,7 @@ function handleRemoteLevelUp(info){
     levelUpMarkSeen(c, info.nivel);
     levelUpShow(info);
   } else {
-    showToast("✨ " + (info.charName || "Un personaje") + " ha subido a nivel " + info.nivel, "success");
+    showToast((info.charName || "Un personaje") + " ha subido a nivel " + info.nivel, "success", {icono:"destellos"});
   }
 }
 

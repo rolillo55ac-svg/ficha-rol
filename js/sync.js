@@ -230,7 +230,7 @@ function updateSyncBadge(st){
   var el = document.getElementById("syncBadge");
   if(!el) return;
   if(st==="synced"){ el.className="sync-status synced"; el.textContent="● En la nube"; }
-  else if(st==="saving"){ el.className="sync-status saving"; el.textContent="⏳ Guardando..."; }
+  else if(st==="saving"){ el.className="sync-status saving"; el.innerHTML=icono("actividad",{tam:"s"})+" Guardando..."; }
   else { el.className="sync-status"; el.textContent="○ Local"; }
 }
 
