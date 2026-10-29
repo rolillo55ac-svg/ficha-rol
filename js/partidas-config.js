@@ -28,6 +28,14 @@ function pkey(k){
   return PARTIDA_ACTUAL.id === "krysalis" ? k : "krysalis_p_" + PARTIDA_ACTUAL.id + "__" + k;
 }
 
+// Pestañas que una partida no tiene (solo ocultar; los datos no se tocan)
+var PARTIDA_SIN = { partida2: ["casa", "alquimia"] };
+
+function partidaTiene(pestana){
+  var sin = PARTIDA_SIN[PARTIDA_ACTUAL.id] || [];
+  return sin.indexOf(pestana) === -1;
+}
+
 function cambiarPartida(id){
   if(!PARTIDAS.some(function(p){ return p.id === id; }) || id === PARTIDA_ACTUAL.id) return;
   try { localStorage.setItem(PARTIDA_STORAGE_KEY, id); } catch(e){}

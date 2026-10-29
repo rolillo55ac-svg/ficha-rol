@@ -12428,3 +12428,24 @@ html.juice-off .lvlup-btns {
 .game-clock-steps .btn-compact { min-height: 44px; padding: 0 4px; background: var(--bg-card); color: var(--ink-dim); }
 .game-clock-modal .btn-solid-gold:disabled { opacity: .5; }
 .lr-foot { position: sticky; bottom: 0; background: var(--bg-card); }
+
+/* Bienvenida (primera vez) */
+.bienv-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(8, 5, 4, .94); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.bienv-card { position: relative; width: 100%; max-width: 420px; max-height: 100%; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 56px 22px 20px; text-align: center; display: flex; flex-direction: column; gap: 18px; }
+.bienv-saltar { position: absolute; top: 8px; right: 8px; min-height: 44px; min-width: 44px; padding: 0 12px; background: none; border: none; color: var(--ink-dim); font-size: 14px; cursor: pointer; }
+.bienv-cuerpo { display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 230px; justify-content: center; animation: bienvEntra .25s ease; }
+.bienv-ico { width: 56px; height: 56px; object-fit: contain; }
+.bienv-fila { display: flex; gap: 14px; justify-content: center; }
+.bienv-tit { margin: 0; font-family: var(--font-display); font-size: 22px; color: var(--gold-light); font-weight: 600; }
+.bienv-txt { margin: 0; color: var(--ink); font-size: 15px; line-height: 1.5; }
+.bienv-gm { color: var(--gold-light); }
+.bienv-marco { display: flex; gap: 8px; border: 2px solid var(--gold); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--gold-light); font-size: 14px; }
+.bienv-pie { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.bienv-puntos { display: flex; gap: 8px; }
+.bienv-puntos i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+.bienv-puntos i.on { background: var(--gold); }
+.bienv-sig { min-height: 44px; width: 100%; background: var(--gold); color: #1A120D; border: none; border-radius: var(--radius-sm); font-size: 16px; font-weight: 600; cursor: pointer; }
+.guia-bienvenida { min-height: 44px; margin-top: 12px; width: 100%; }
+@keyframes bienvEntra { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+html.juice-off .bienv-cuerpo { animation: none; }
+@media (prefers-reduced-motion: reduce) { .bienv-cuerpo { animation: none; } }
