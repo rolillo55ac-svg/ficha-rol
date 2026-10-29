@@ -534,7 +534,7 @@ function openGeodeSheet(kind){
       '<div class="lapidary-sheet-score"><b>' + s.total + '</b><span>/ 100</span></div>' +
       '<div class="lapidary-sheet-rows">' +
         row("Costra retirada (" + s.opened + "/" + s.safeN + ")", s.crust + " / 60") +
-        row("Integridad (" + Math.max(0, G.hearts) + " de " + G.d.hearts + " ♥)", s.integ + " / 25") +
+        row("Integridad (" + Math.max(0, G.hearts) + " de " + G.d.hearts + " " + icono("corazon", {tam:"s"}) + ")", s.integ + " / 25") +
         row("Vetas encontradas (" + G.veinsFound + " de " + G.d.veins + ")", s.veins + " / 10") +
         row("Mejor racha (" + G.maxStreak + ")", s.streak + " / 5") +
         (s.broken ? row("Sin corazones", "×0,6", true) : "") +

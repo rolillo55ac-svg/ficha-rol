@@ -1353,7 +1353,7 @@ function openBeastMobilityModal(beastId, isSummon){
     '</div>'+
 
     '<div class="beast-tactical-box">'+
-      '<div class="beast-tactical-title">⚡ Desplazamiento táctico en combate:</div>'+
+      '<div class="beast-tactical-title">' + icono("iniciativa", {tam:"s"}) + ' Desplazamiento táctico en combate:</div>'+
       '<div class="beast-tactical-row"><span><strong>Paso Normal:</strong></span> <span><strong>'+curNum+'</strong> casillas ('+meters+' m)</span></div>'+
       '<div class="beast-tactical-row"><span><strong>A la Carrera / Galope:</strong></span> <span><strong>'+runCasillas+'</strong> casillas ('+runMeters+' m)</span></div>'+
       '<div class="beast-tactical-row"><span><strong>Terreno Difícil / Nadar:</strong></span> <span><strong>'+slowCasillas+'</strong> casillas ('+slowMeters+' m)</span></div>'+
@@ -1811,7 +1811,7 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
     var catOptions = [
       { id: "bug", label: "🐛 Error / Bug", desc: "Algo no funciona o se rompió" },
       { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o propuesta de mejora" },
-      { id: "balance", label: "⚖️ Reglas / Balance", desc: "Cálculo, daño o habilidad" },
+      { id: "balance", label: icono("balanza", {tam:"s"}) + " Reglas / Balance", desc: "Cálculo, daño o habilidad" },
       { id: "otro", label: "💬 Consulta / Otro", desc: "Duda general del juego" }
     ];
 

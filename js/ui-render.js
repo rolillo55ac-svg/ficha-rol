@@ -261,7 +261,7 @@ function tplFicha(c){
         '<span class="char-sound-name">' + esc(sName) + '</span>'+
         '<span class="char-sound-waves"><span></span><span></span><span></span></span>'+
       '</button>'+
-      (canEdit ? '<button class="char-sound-cfg-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Configurar sonido del personaje">⚙️</button>' : '')+
+      (canEdit ? '<button class="char-sound-cfg-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Configurar sonido del personaje">' + icono("ajustes", {tam:"s"}) + '</button>' : '')+
     '</div>';
   } else if(canEdit){
     soundHtml = '<div class="char-sound-widget empty">'+

@@ -186,7 +186,7 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
       '<div class="pin-preview-meta">' +
         '<span style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;">Vista previa del marcador</span>' +
         '<strong id="pinPreviewSub" style="font-size:.82rem;color:' + curColor + ';">' + esc(curTypeDef.name) + '</strong>' +
-        '<span style="font-size:.68rem;color:var(--ink-dim);">' + (contextType === "questMap" ? '🗺️ Plano Táctico' : (contextType === "questCard" ? '⚔️ Imagen de Misión' : '🌍 Mapa de Campaña')) + '</span>' +
+        '<span style="font-size:.68rem;color:var(--ink-dim);">' + (contextType === "questMap" ? icono("mapa", {tam:"s"}) + ' Plano Táctico' : (contextType === "questCard" ? '⚔️ Imagen de Misión' : '🌍 Mapa de Campaña')) + '</span>' +
       '</div>' +
     '</div>' +
 
@@ -211,7 +211,7 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
     '<div class="field" style="margin-top:10px;"><label>Color del Globo / Pin (Escoge libremente)</label>' +
       '<div class="pin-colors-shelf">' + colorButtonsHtml + '</div>' +
       '<div class="pin-custom-color-row">' +
-        '<label for="pinInputCustomColor" style="font-size:.74rem;color:var(--ink-dim);cursor:pointer;">🎨 Color personalizado o exacto:</label>' +
+        '<label for="pinInputCustomColor" style="font-size:.74rem;color:var(--ink-dim);cursor:pointer;">' + icono("paleta", {tam:"s"}) + ' Color personalizado o exacto:</label>' +
         '<div style="display:flex;align-items:center;gap:8px;">' +
           '<input type="color" id="pinInputCustomColor" value="' + curColor + '" oninput="if(window.onCustomPinColorChange) window.onCustomPinColorChange(this.value);" title="Abre el selector de color del sistema">' +
           '<span style="font-family:var(--font-mono);font-size:.72rem;color:var(--gold-light);" id="pinColorHexDisplay">' + curColor.toUpperCase() + '</span>' +

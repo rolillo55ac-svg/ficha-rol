@@ -5717,7 +5717,7 @@ function renderRoomInspector(roomId){
       html += '  <div class="house-furniture-list">';
       furnitureList.forEach(function(fur){
         var items = Array.isArray(fur.items) ? fur.items : [];
-        var icon = (fur.type === "armero" ? "🗡️" : (fur.type === "alacena" ? "🍲" : (fur.type === "estanteria" ? "🧪" : "🧰")));
+        var icon = (fur.type === "armero" ? icono("daga", {tam:"s"}) : (fur.type === "alacena" ? icono("cocina", {tam:"s"}) : (fur.type === "estanteria" ? icono("pocion", {tam:"s"}) : "🧰")));
 
         html += '    <div class="house-furniture-card">';
         html += '      <div class="house-furniture-card-head">';
@@ -6284,7 +6284,7 @@ function openAddUpgradeModal(roomId){
 
   var html = '<div class="house-modal-box">' +
     '  <div class="house-modal-header">' +
-    '    <h3 class="house-modal-title">✨ Añadir Mejora a ' + esc(r.name) + '</h3>' +
+    '    <h3 class="house-modal-title">' + icono("destellos", {tam:"s"}) + ' Añadir Mejora a ' + esc(r.name) + '</h3>' +
     '    <button class="btn-compact" data-action="close-house-modal">&times;</button>' +
     '  </div>' +
     '  <input type="hidden" id="newUpgRoomId" value="' + r.id + '">' +
