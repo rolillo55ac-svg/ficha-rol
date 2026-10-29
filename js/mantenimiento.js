@@ -54,7 +54,7 @@ function pintarMantenimiento(){
       gate.id = "mantenimientoGate";
       gate.className = "login-gate mant-gate";
       gate.innerHTML = '<div class="login-gate-card">'+
-        '<h1 class="login-gate-brand">🔧 Mantenimiento</h1>'+
+        '<h1 class="login-gate-brand">'+(typeof icono==="function"?icono("mantenimiento",{tam:"s"})+" ":"")+'Mantenimiento</h1>'+
         '<div class="login-gate-sub mant-gate-msg"></div>'+
         '<button type="button" class="login-gate-signup" data-mant="salir">Salir</button>'+
       '</div>';
@@ -78,9 +78,9 @@ function pintarMantenimiento(){
       franja.className = "mant-franja";
       document.body.appendChild(franja);
     }
-    franja.textContent = mantenimientoExento && !(typeof esAdminReal === "function" && esAdminReal())
-      ? "🔧 Mantenimiento activo · cuenta de prueba exenta"
-      : "🔧 Mantenimiento activo · solo tú puedes usar la web";
+    franja.innerHTML = icono("mantenimiento",{tam:"s"}) + " " + (mantenimientoExento && !(typeof esAdminReal === "function" && esAdminReal())
+      ? "Mantenimiento activo · cuenta de prueba exenta"
+      : "Mantenimiento activo · solo tú puedes usar la web");
     franja.hidden = false;
   } else if(franja){
     franja.hidden = true;

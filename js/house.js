@@ -5049,7 +5049,7 @@ function openHousePerksEditor(){
       html += '<button class="house-perk-mini" data-action="house-perk-restore" data-perk-id="' + esc(p.id) + '">Recuperar</button></div>';
     });
   }
-  openHouseGmModal("✏️ Mejoras de la casa", html);
+  openHouseGmModal(iconoUI("editar") + " Mejoras de la casa", html);
 }
 
 async function refreshHousePerksAfterChange(reopen){
@@ -5212,7 +5212,7 @@ function openHouseSecretsPanel(){
   });
   html += renderHouseRoomEditorsList();
   html += '<button class="house-perk-gm-btn gold" data-action="house-secrets-save">Guardar panel secreto</button>';
-  openHouseGmModal("🔒 Panel secreto", html);
+  openHouseGmModal(iconoUI("candado") + " Panel secreto", html);
 }
 
 // Interruptor por jugador: puede mover y cambiar el tamaño de su habitación (se guarda al tocarlo)
@@ -5717,7 +5717,7 @@ function renderRoomInspector(roomId){
       html += '  <div class="house-furniture-list">';
       furnitureList.forEach(function(fur){
         var items = Array.isArray(fur.items) ? fur.items : [];
-        var icon = (fur.type === "armero" ? icono("daga", {tam:"s"}) : (fur.type === "alacena" ? icono("cocina", {tam:"s"}) : (fur.type === "estanteria" ? icono("pocion", {tam:"s"}) : "🧰")));
+        var icon = (fur.type === "armero" ? icono("daga", {tam:"s"}) : (fur.type === "alacena" ? icono("cocina", {tam:"s"}) : (fur.type === "estanteria" ? icono("pocion", {tam:"s"}) : icono("caja", {tam:"s"}))));
 
         html += '    <div class="house-furniture-card">';
         html += '      <div class="house-furniture-card-head">';
@@ -5860,7 +5860,7 @@ function openAddFurnitureModal(roomId){
 
   var html = '<div class="house-modal-box">' +
     '  <div class="house-modal-header">' +
-    '    <h3 class="house-modal-title">🧰 Añadir Mueble a ' + esc(r.name) + '</h3>' +
+    '    <h3 class="house-modal-title">' + icono("caja", {tam:"s"}) + ' Añadir Mueble a ' + esc(r.name) + '</h3>' +
     '    <button class="btn-compact" data-action="close-house-modal">&times;</button>' +
     '  </div>' +
     '  <input type="hidden" id="newFurRoomId" value="' + r.id + '">' +
@@ -6201,7 +6201,7 @@ function openCreateRoomModal(){
 
   var html = '<div class="house-modal-box">' +
     '  <div class="house-modal-header">' +
-    '    <h3 class="house-modal-title">➕ Nueva Habitación en el Plano</h3>' +
+    '    <h3 class="house-modal-title">' + iconoUI("mas") + ' Nueva Habitación en el Plano</h3>' +
     '    <button class="btn-compact" data-action="close-house-modal">&times;</button>' +
     '  </div>' +
     '  <div class="field">' +

@@ -221,7 +221,7 @@ function tplFicha(c){
         '</div>'+
       '</div>';
     }
-    return '<div class="attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div><span class="attr-roll-hint">🎲 Tirar</span></div>';
+    return '<div class="attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)"><label>'+ATTR_LABELS[a]+'</label><div class="attr-val-box">'+num(c.attrs[a],0)+'</div><span class="attr-roll-hint">'+icono("dado",{tam:"s"})+' Tirar</span></div>';
   }).join('');
 
   var levelControl = '';
@@ -253,7 +253,7 @@ function tplFicha(c){
   var soundHtml = '';
 
   if(hasSound){
-    var sIcon = esc(sound.icon || "🦇");
+    var sIcon = soundIconHtml(sound.icon || "🦇");
     var sName = sound.name || "Sonido";
     soundHtml = '<div class="char-sound-widget" title="Efecto de sonido característico">'+
       '<button class="char-sound-play-btn" data-action="play-char-sound" data-id="' + esc(c.id) + '" aria-label="Reproducir ' + esc(sName) + '" title="Reproducir: ' + esc(sName) + '">'+
@@ -266,7 +266,7 @@ function tplFicha(c){
   } else if(canEdit){
     soundHtml = '<div class="char-sound-widget empty">'+
       '<button class="char-sound-add-btn" data-action="edit-char-sound" data-id="' + esc(c.id) + '" title="Asignar un sonido característico">'+
-        '<span class="char-sound-icon">🎵</span>'+
+        '<span class="char-sound-icon">'+iconoUI("sonido")+'</span>'+
         '<span class="char-sound-name">+ Añadir sonido</span>'+
       '</button>'+
     '</div>';
@@ -452,7 +452,7 @@ function tplHabilidades(c){
       html += '<div class="skills-orig-attr-card rollable" data-action="roll-attr" data-attr="'+a+'" role="button" tabindex="0" title="Lanzar tirada de '+ATTR_LABELS[a]+' (1d10)">'+
         '<label>'+ATTR_LABELS[a]+'</label>'+
         '<div class="skills-orig-attr-val">'+effVal+'</div>'+
-        '<span class="attr-roll-hint">Tirar 🎲</span>'+
+        '<span class="attr-roll-hint">Tirar '+icono("dado",{tam:"s"})+'</span>'+
       '</div>';
     });
     html += '</div>';
@@ -1058,7 +1058,7 @@ function tplEstados(c){
       var isActive = ab.active !== false;
       var isDebuff = ab.type === "debuff";
       var statusClass = isActive ? (isDebuff ? 'buff-status-debuff-active' : 'buff-status-active') : 'buff-status-inactive';
-      var statusLabel = isActive ? 'ACTIVO ✓' : 'DESACTIVADO ⏸';
+      var statusLabel = isActive ? 'ACTIVO' : 'DESACTIVADO';
       var statusTitle = isActive ? (isDebuff ? 'Debuff activo y aplicando penalizaciones. Clic para desactivar.' : 'Buff activo y aplicando efectos. Clic para desactivar.') : 'Estado asignado pero desactivado. Clic para activar.';
       var cardClass = 'assigned-buff-card ' + (isActive ? (isDebuff ? 'is-debuff' : 'is-buff') : 'is-inactive');
 
@@ -1066,7 +1066,7 @@ function tplEstados(c){
         '<div class="abc-header">'+
           '<div class="abc-tags">'+
             '<span class="abc-type-tag '+(isDebuff?'debuff':'buff')+'">'+(isDebuff?icono("peligro")+' DEBUFF':icono("destellos")+' BUFF')+'</span>'+
-            (ab.duration ? '<span class="abc-duration-tag" style="font-size:.68rem;color:var(--gold-light);background:rgba(176,141,87,0.15);padding:2px 6px;border-radius:4px;">⏱️ '+esc(ab.duration)+'</span>' : '')+
+            (ab.duration ? '<span class="abc-duration-tag" style="font-size:.68rem;color:var(--gold-light);background:rgba(176,141,87,0.15);padding:2px 6px;border-radius:4px;">'+icono("reloj",{tam:"s"})+' '+esc(ab.duration)+'</span>' : '')+
           '</div>'+
           '<div class="abc-actions">'+
             (canEdit ? 
@@ -1884,7 +1884,7 @@ function tplAlquimiaCard(c, p, canEdit, isMaster, showCherk){
 
   if(tab === "proceso"){
     html += '<div class="alq-meta"><span>' + esc(p.type || 'Veneno') + '</span><span>· ' + esc(rarity) + '</span><span>· ' + esc(terrain) + '</span>' +
-        (loreTitle ? '<button type="button" class="alq-link" data-action="alchemy-jump-lore" data-lore-title="' + esc(loreTitle) + '">Ver en Lore ↗</button>' : '') +
+        (loreTitle ? '<button type="button" class="alq-link" data-action="alchemy-jump-lore" data-lore-title="' + esc(loreTitle) + '">Ver en Lore '+iconoUI("flecha-derecha")+'</button>' : '') +
       '</div>' +
       '<div class="alq-path">' +
         tplAlquimiaStep(p, 1, base, "identificado", "Muestra", rawMat ? "Materia prima: " + rawMat + "." : "Materia prima recogida.", canEdit) +
@@ -2077,6 +2077,14 @@ function tplAlquimiaTaller(c, canEdit){
   html += '</div>';
 
   return html;
+}
+
+// Icono de un sonido de personaje (el emoji guardado se conserva; solo cambia cómo se pinta)
+function soundIconHtml(emoji){
+  var propios = { "🦇": "murcielago", "🐺": "lobo", "🦅": "aguila" };
+  if(propios[emoji]) return icono(propios[emoji], {tam:"s"});
+  if(emoji === "🎵") return iconoUI("sonido");
+  return iconoDeEmoji(emoji, "objetos", {tam:"s"});
 }
 
 function getItemIcon(it){

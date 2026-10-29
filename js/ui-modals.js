@@ -1809,10 +1809,10 @@ function openFeedbackModal(activeTab, prefilledCategory, prefilledTitle, skipSyn
 
   if(currentFeedbackTab === "new"){
     var catOptions = [
-      { id: "bug", label: "🐛 Error / Bug", desc: "Algo no funciona o se rompió" },
-      { id: "sugerencia", label: "💡 Sugerencia", desc: "Idea o propuesta de mejora" },
+      { id: "bug", label: icono("errores", {tam:"s"}) + " Error / Bug", desc: "Algo no funciona o se rompió" },
+      { id: "sugerencia", label: icono("cerebro", {tam:"s"}) + " Sugerencia", desc: "Idea o propuesta de mejora" },
       { id: "balance", label: icono("balanza", {tam:"s"}) + " Reglas / Balance", desc: "Cálculo, daño o habilidad" },
-      { id: "otro", label: "💬 Consulta / Otro", desc: "Duda general del juego" }
+      { id: "otro", label: icono("buzon", {tam:"s"}) + " Consulta / Otro", desc: "Duda general del juego" }
     ];
 
     var catPills = catOptions.map(function(cat){
@@ -2807,7 +2807,7 @@ function openCharSoundModal(c){
   var presetsHtml = CHAR_SOUND_PRESETS.map(function(p){
     var isSelected = (curType === p.type) || (curName.toLowerCase() === p.name.toLowerCase());
     return '<button type="button" class="char-sound-preset-card ' + (isSelected ? 'active' : '') + '" data-action="pick-char-sound-preset" data-name="' + esc(p.name) + '" data-icon="' + esc(p.icon) + '" data-type="' + esc(p.type) + '" data-url="' + esc(p.url) + '">' +
-      '<span class="preset-icon">' + p.icon + '</span>' +
+      '<span class="preset-icon">' + soundIconHtml(p.icon) + '</span>' +
       '<div class="preset-info">' +
         '<strong>' + esc(p.name) + '</strong>' +
         '<small>' + esc(p.desc) + '</small>' +

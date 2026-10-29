@@ -186,7 +186,7 @@ function openPinModal(targetObj, x, y, pinId, contextType, contextId){
       '<div class="pin-preview-meta">' +
         '<span style="font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;">Vista previa del marcador</span>' +
         '<strong id="pinPreviewSub" style="font-size:.82rem;color:' + curColor + ';">' + esc(curTypeDef.name) + '</strong>' +
-        '<span style="font-size:.68rem;color:var(--ink-dim);">' + (contextType === "questMap" ? icono("mapa", {tam:"s"}) + ' Plano Táctico' : (contextType === "questCard" ? '⚔️ Imagen de Misión' : '🌍 Mapa de Campaña')) + '</span>' +
+        '<span style="font-size:.68rem;color:var(--ink-dim);">' + (contextType === "questMap" ? icono("mapa", {tam:"s"}) + ' Plano Táctico' : (contextType === "questCard" ? icono("fisico", {tam:"s"}) + ' Imagen de Misión' : icono("mapa", {tam:"s"}) + ' Mapa de Campaña')) + '</span>' +
       '</div>' +
     '</div>' +
 
