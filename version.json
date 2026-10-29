@@ -1,6 +1,6 @@
 {
-  "version": "1.4.121.0",
-  "build": "2026.10.29.1",
-  "updatedAt": "2026-10-29T12:00:00Z",
-  "changelog": "Casi todos los emojis pasan a iconos dibujados (Ficha, La Casa, lapidario, avisos)."
+  "version": "1.4.122.0",
+  "build": "2026.10.29.2",
+  "updatedAt": "2026-10-29T18:00:00Z",
+  "changelog": "El Reloj de la partida estrena campos y botones con el estilo de la web."
 }

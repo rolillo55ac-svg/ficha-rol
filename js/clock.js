@@ -120,25 +120,29 @@ function renderGameClockModal(){
   var modal = document.getElementById("clockModal");
   if(!modal) return;
   var p = gameClockParts(gameClockTotal || 0);
-  var html = '<h2>' + icono("reloj", {tam:"m"}) + ' Reloj de la partida<button type="button" data-action="close-game-clock" aria-label="Cerrar">&times;</button></h2>' +
+  var html = '<h2 class="game-clock-title">' + icono("reloj", {tam:"m"}) + ' <span>Reloj de la partida</span><button type="button" data-action="close-game-clock" aria-label="Cerrar">&times;</button></h2>' +
     '<div class="game-clock-now" id="gameClockNow">' + (gameClockTotal === null ? "Sin hora" : formatGameClock(gameClockTotal)) + '</div>';
   if(isGM()){
     var hourOpts = "";
     for(var h = 0; h < 24; h++) hourOpts += '<option value="' + h + '"' + (h === p.hour ? " selected" : "") + '>' + (h < 10 ? "0" : "") + h + ':00</option>';
     html += '<div class="game-clock-steps">' +
-        '<button type="button" class="game-clock-btn" data-action="clock-add" data-hours="-1"' + (gameClockBusy ? " disabled" : "") + '>−1 h</button>' +
-        '<button type="button" class="game-clock-btn" data-action="clock-add" data-hours="1"' + (gameClockBusy ? " disabled" : "") + '>+1 h</button>' +
-        '<button type="button" class="game-clock-btn" data-action="clock-add" data-hours="4"' + (gameClockBusy ? " disabled" : "") + '>+4 h</button>' +
-        '<button type="button" class="game-clock-btn" data-action="clock-add" data-hours="24"' + (gameClockBusy ? " disabled" : "") + '>+1 día</button>' +
+        '<button type="button" class="game-clock-btn btn-compact" data-action="clock-add" data-hours="-1"' + (gameClockBusy ? " disabled" : "") + '>−1 h</button>' +
+        '<button type="button" class="game-clock-btn btn-compact" data-action="clock-add" data-hours="1"' + (gameClockBusy ? " disabled" : "") + '>+1 h</button>' +
+        '<button type="button" class="game-clock-btn btn-compact" data-action="clock-add" data-hours="4"' + (gameClockBusy ? " disabled" : "") + '>+4 h</button>' +
+        '<button type="button" class="game-clock-btn btn-compact" data-action="clock-add" data-hours="24"' + (gameClockBusy ? " disabled" : "") + '>+1 día</button>' +
       '</div>' +
       '<div class="game-clock-set">' +
-        '<label for="gameClockDay">Día</label>' +
-        '<input type="number" id="gameClockDay" class="game-clock-input" min="1" max="100000" inputmode="numeric" value="' + p.day + '">' +
-        '<label for="gameClockHour">Hora</label>' +
-        '<select id="gameClockHour" class="game-clock-input">' + hourOpts + '</select>' +
-        '<button type="button" class="game-clock-btn primary" data-action="clock-set"' + (gameClockBusy ? " disabled" : "") + '>Poner</button>' +
+        '<div class="creature-field game-clock-field"><label for="gameClockDay">Día</label>' +
+          '<div class="game-clock-num">' +
+            '<button type="button" class="btn-compact game-clock-step" data-action="clock-day-step" data-step="-1" aria-label="Día anterior">−</button>' +
+            '<input type="number" id="gameClockDay" class="game-clock-input" min="1" max="100000" inputmode="numeric" value="' + p.day + '">' +
+            '<button type="button" class="btn-compact game-clock-step" data-action="clock-day-step" data-step="1" aria-label="Día siguiente">+</button>' +
+          '</div></div>' +
+        '<div class="creature-field game-clock-field"><label for="gameClockHour">Hora</label>' +
+          '<select id="gameClockHour" class="game-clock-input game-clock-select">' + hourOpts + '</select></div>' +
+        '<button type="button" class="btn-solid-gold game-clock-wide" data-action="clock-set"' + (gameClockBusy ? " disabled" : "") + '>Poner</button>' +
       '</div>' +
-      '<button type="button" class="game-clock-btn game-clock-rest" data-action="clock-long-rest">' + icono("descanso", {tam:"s"}) + ' Descanso largo…</button>';
+      '<button type="button" class="btn-compact game-clock-wide game-clock-rest" data-action="clock-long-rest">' + icono("descanso", {tam:"s"}) + ' Descanso largo…</button>';
   } else {
     html += '<p class="game-clock-note">Solo el máster puede cambiar la hora.</p>';
   }
@@ -181,6 +185,11 @@ document.addEventListener("click", function(e){
   if(action === "open-game-clock"){ openGameClockModal(); return; }
   if(action === "close-game-clock"){ closeGameClockModal(); return; }
   if(action === "clock-long-rest"){ closeGameClockModal(); openLongRestModal(); return; }
+  if(action === "clock-day-step"){
+    var inp = document.getElementById("gameClockDay");
+    if(inp){ inp.value = Math.min(100000, Math.max(1, (parseInt(inp.value, 10) || 1) + (parseInt(btn.getAttribute("data-step"), 10) || 0))); }
+    return;
+  }
   if(action === "clock-add"){
     changeGameClock("game_clock_add", { p_hours: parseInt(btn.getAttribute("data-hours"), 10) || 0 });
     return;

@@ -12414,3 +12414,17 @@ html.juice-off .lvlup-btns {
 .dot-amarillo{background:var(--warning)}
 .dot-rojo{background:var(--danger)}
 .dot-azul{background:currentColor}
+
+/* Reloj de la partida: campos y botones con el estilo de la web */
+.game-clock-title { display: flex; align-items: center; gap: 8px; }
+.game-clock-title > span { flex: 1; min-width: 0; }
+.game-clock-set { grid-template-columns: 1fr 1fr; align-items: end; }
+.game-clock-field label { font-size: .7rem; }
+.game-clock-num { display: grid; grid-template-columns: 44px 1fr 44px; gap: 4px; }
+.game-clock-step { min-height: 44px; min-width: 44px; padding: 0; font-size: 1.1rem; }
+.game-clock-set .game-clock-input { background: var(--bg-card); border: 1px solid var(--line-strong); border-radius: 5px; color: var(--ink); min-height: 44px; padding: 0 8px; text-align: center; font-family: var(--font-mono); }
+.game-clock-set .game-clock-select { -webkit-appearance: none; appearance: none; text-align: left; padding-right: 30px; background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%), linear-gradient(135deg, var(--gold) 50%, transparent 50%); background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+.game-clock-set .game-clock-wide, .game-clock-rest { grid-column: 1 / -1; width: 100%; min-height: 44px; }
+.game-clock-steps .btn-compact { min-height: 44px; padding: 0 4px; background: var(--bg-card); color: var(--ink-dim); }
+.game-clock-modal .btn-solid-gold:disabled { opacity: .5; }
+.lr-foot { position: sticky; bottom: 0; background: var(--bg-card); }
