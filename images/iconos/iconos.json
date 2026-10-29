@@ -2077,6 +2077,138 @@
    "sustituye": "🪨 (suelo)",
    "estado": "listo",
    "nota": ""
+  },
+  {
+   "nombre": "piedra-blanca",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/piedra-blanca.webp",
+   "focus": null,
+   "significado": "Piedra en bruto blanca",
+   "se_usa_en": "Lapidario: piedra blanca (control de elemento natural)",
+   "sustituye": "(🌪 en la tarjeta)",
+   "estado": "listo",
+   "nota": "La amarilla es barra/piedras"
+  },
+  {
+   "nombre": "piedra-roja",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/piedra-roja.webp",
+   "focus": null,
+   "significado": "Piedra en bruto roja",
+   "se_usa_en": "Lapidario: piedra roja (potencia física)",
+   "sustituye": "💪",
+   "estado": "listo",
+   "nota": "La amarilla es barra/piedras"
+  },
+  {
+   "nombre": "piedra-azul",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/piedra-azul.webp",
+   "focus": null,
+   "significado": "Piedra en bruto azul",
+   "se_usa_en": "Lapidario: piedra azul (magia/maná)",
+   "sustituye": "✨",
+   "estado": "listo",
+   "nota": "La amarilla es barra/piedras"
+  },
+  {
+   "nombre": "piedra-verde",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/piedra-verde.webp",
+   "focus": null,
+   "significado": "Piedra en bruto verde",
+   "se_usa_en": "Lapidario: piedra verde (debuffo)",
+   "sustituye": "🌿",
+   "estado": "listo",
+   "nota": "La amarilla es barra/piedras"
+  },
+  {
+   "nombre": "piedra-negra",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/piedra-negra.webp",
+   "focus": null,
+   "significado": "Piedra en bruto negra",
+   "se_usa_en": "Lapidario: piedra negra (misterio/vacío)",
+   "sustituye": "🌑",
+   "estado": "listo",
+   "nota": "La amarilla es barra/piedras"
+  },
+  {
+   "nombre": "piedra-morada",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/piedra-morada.webp",
+   "focus": null,
+   "significado": "Piedra en bruto morada",
+   "se_usa_en": "Lapidario: piedra morada (control de personas)",
+   "sustituye": "—",
+   "estado": "listo",
+   "nota": "La amarilla es barra/piedras"
+  },
+  {
+   "nombre": "musica",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/musica.webp",
+   "focus": null,
+   "significado": "Sonidos / música",
+   "se_usa_en": "Ajustes › Sonidos; sonidos de personaje",
+   "sustituye": "🎵 🔊",
+   "estado": "listo",
+   "nota": ""
+  },
+  {
+   "nombre": "vibracion",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/vibracion.webp",
+   "focus": null,
+   "significado": "Vibración",
+   "se_usa_en": "Ajustes › Vibración",
+   "sustituye": "📳",
+   "estado": "listo",
+   "nota": ""
+  },
+  {
+   "nombre": "mensaje",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/mensaje.webp",
+   "focus": null,
+   "significado": "Mensaje / diálogo",
+   "se_usa_en": "Reportes, comentarios, mensajes",
+   "sustituye": "💬",
+   "estado": "listo",
+   "nota": ""
+  },
+  {
+   "nombre": "flor-lis",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/flor-lis.webp",
+   "focus": null,
+   "significado": "Flor de lis (adorno)",
+   "se_usa_en": "Adorno de títulos de sección",
+   "sustituye": "⚜",
+   "estado": "listo",
+   "nota": ""
+  },
+  {
+   "nombre": "cafe",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/cafe.webp",
+   "focus": null,
+   "significado": "Café / invitar",
+   "se_usa_en": "Ajustes › Donar",
+   "sustituye": "☕",
+   "estado": "listo",
+   "nota": ""
+  },
+  {
+   "nombre": "bailarin",
+   "grupo": "extra",
+   "archivo": "images/iconos/extra/bailarin.webp",
+   "focus": null,
+   "significado": "Alegría / baile",
+   "se_usa_en": "Ajustes › Donar",
+   "sustituye": "🕺",
+   "estado": "listo",
+   "nota": ""
   }
  ],
  "marcadores_mapa": {
