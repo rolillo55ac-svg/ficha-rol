@@ -90,6 +90,7 @@ function guiaLista(R, filtro){
   var q = (filtro || "").toLowerCase().trim();
   var html = "", n = 0;
   GUIA_TEMAS.forEach(function(t){
+    if(typeof partidaTiene === "function" && !partidaTiene(t.id)) return;
     var ej = t.ejemplo ? t.ejemplo(R) : "";
     var plano = (t.titulo + " " + t.texto.join(" ") + " " + ej).toLowerCase();
     if(q && plano.indexOf(q) === -1) return;
@@ -106,7 +107,8 @@ function guiaLista(R, filtro){
 
 function guiaHtml(R){
   return '<input type="search" class="guia-buscar" id="guiaBuscar" placeholder="Buscar en la guía…" aria-label="Buscar en la guía" autocomplete="off">' +
-    '<div id="guiaLista">' + guiaLista(R, "") + '</div>';
+    '<div id="guiaLista">' + guiaLista(R, "") + '</div>' +
+    '<button type="button" class="btn-compact settings-btn guia-bienvenida" data-bienv="ver">Ver la bienvenida otra vez</button>';
 }
 
 if(typeof document !== "undefined"){

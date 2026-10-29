@@ -148,6 +148,8 @@ function renderTabbar(){
   if(typeof CONFIG_ENABLE_HOUSE !== "undefined" && !CONFIG_ENABLE_HOUSE){
     tabs = tabs.filter(function(t){ return t.id !== "casa"; });
   }
+  tabs = tabs.filter(function(t){ return partidaTiene(t.id); });
+  if(!partidaTiene(state.activeTab)) state.activeTab = "ficha";
   document.getElementById("tabbar").innerHTML = tabs.map(function(t){
     var isActive = state.activeTab===t.id;
     // Contador de veredictos de talla pendientes para el máster
@@ -157,6 +159,7 @@ function renderTabbar(){
 }
 
 function renderTab(){
+  if(!partidaTiene(state.activeTab)) state.activeTab = "ficha";
   if(state.activeTab==="casa"){
     if(typeof renderHouseView === "function") renderHouseView();
     return;

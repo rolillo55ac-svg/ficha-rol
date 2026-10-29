@@ -50,7 +50,7 @@ function renderQuestCard(q, canEdit){
           '<option value="principal" '+(isPrincipal?'selected':'')+'>Principal</option>'+
           '<option value="secundaria" '+(!isPrincipal?'selected':'')+'>◈ Secundaria</option>'+
         '</select>'+
-        '<button type="button" class="btn-compact quest-house-toggle'+(q.house===true?' highlight':'')+'" data-action="toggle-quest-house" data-id="'+q.id+'" title="Marcar como misión de la Casa">' + icono("casa", {tam:"s"}) + ' ' + (q.house===true ? 'Casa ' + iconoUI("hecho") : 'Casa') + '</button>'+
+        (partidaTiene("casa") ? '<button type="button" class="btn-compact quest-house-toggle'+(q.house===true?' highlight':'')+'" data-action="toggle-quest-house" data-id="'+q.id+'" title="Marcar como misión de la Casa">' + icono("casa", {tam:"s"}) + ' ' + (q.house===true ? 'Casa ' + iconoUI("hecho") : 'Casa') + '</button>' : '')+
         '<button class="row-del" data-action="del-quest" data-id="'+q.id+'" title="Eliminar misión">' + iconoUI("cerrar") + '</button>'+
       '</div>' : ''
     )+

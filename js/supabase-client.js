@@ -184,6 +184,7 @@ function enterApp(){
   renderTab();
   if(firstTime) startRealtime();
   if(currentUser) fetchUserProfile();
+  if(firstTime && typeof bienvenidaInicio === 'function') bienvenidaInicio();
   if(firstTime){
     setTimeout(function(){
       if(typeof syncPlayerTicketsWithSupabase === 'function') syncPlayerTicketsWithSupabase();
