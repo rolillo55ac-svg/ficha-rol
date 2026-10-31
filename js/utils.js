@@ -206,7 +206,7 @@ var CONFIRMAR_ACCIONES = {
   "clear-char-owner": function(btn){
     var id = btn.getAttribute("data-id");
     var ch = (state.characters || []).find(function(x){ return x.id === id || x.db_id === id; });
-    return { titulo: "¿Desvincular a «" + (ch && ch.ownerEmail || "este jugador") + "»?", texto: "El personaje quedará libre.", boton: "Desvincular" };
+    return { titulo: "¿Desvincular a «" + nombreDeCuenta(ch && ch.ownerEmail || "este jugador") + "»?", texto: "El personaje quedará libre.", boton: "Desvincular" };
   },
   "delete-map": function(){
     var m = (state.maps || []).find(function(x){ return x.id === state.activeMapId; });

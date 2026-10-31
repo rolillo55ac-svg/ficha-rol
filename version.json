@@ -1,6 +1,6 @@
 {
-  "version": "1.4.124.0",
-  "build": "2026.10.30.1",
-  "updatedAt": "2026-10-30T12:00:00Z",
-  "changelog": "Bienvenida la primera vez y La Casa y Alquimia solo en Krysalis."
+  "version": "1.4.125.0",
+  "build": "2026.10.31.1",
+  "updatedAt": "2026-10-31T12:00:00Z",
+  "changelog": "Se puede vincular un jugador escribiendo solo su nombre de usuario."
 }

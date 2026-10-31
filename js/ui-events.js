@@ -116,7 +116,7 @@ function handleChange(e){
       showToast("Solo el Máster puede cambiar el propietario de un personaje.", "warning");
       return;
     }
-    var val = (el.value || "").trim().toLowerCase();
+    var val = usuarioAEmail(el.value || "").toLowerCase();
     target.ownerEmail = val;
     target.owner_id = null;
     target._lastLocalEdit = Date.now();

@@ -27,7 +27,7 @@ function renderTopbar(){
     roleBadgeHtml = (typeof isAdmin === 'function' && isAdmin()) ? '<span class="role-badge admin role-badge-vista" data-action="toggle-vista-jugador" role="button" tabindex="0" title="Tocar para ver la web como un jugador">' + icono("admin", {tam:"s"}) + ' ADMIN</span>' : '<span class="role-badge gm">' + icono("master", {tam:"s"}) + ' GM</span>';
     if(!isNPC){
       if(c.ownerEmail){
-        roleBadgeHtml += '<span class="char-owner-topbar-tag" title="Asignado a ' + esc(c.ownerEmail) + '">' + icono("jugador", {tam:"s"}) + ' ' + esc(c.ownerEmail) + '</span>';
+        roleBadgeHtml += '<span class="char-owner-topbar-tag" title="Asignado a ' + esc(nombreDeCuenta(c.ownerEmail)) + '">' + icono("jugador", {tam:"s"}) + ' ' + esc(nombreDeCuenta(c.ownerEmail)) + '</span>';
       } else {
         roleBadgeHtml += '<span class="char-owner-topbar-tag unassigned" title="Personaje sin jugador asignado">○ Libre</span>';
       }
@@ -299,7 +299,7 @@ function tplFicha(c){
       '<div>'+
         '<div class="field-grid">'+
           field("Nombre", "name", c.name, "text", ro)+
-          (isGM() && !c.isNPC ? '<div class="field"><label>'+icono("jugador",{tam:"s"})+' Jugador Asignado (Email)</label><input type="email" data-bind="ownerEmail" value="'+esc(c.ownerEmail||"")+'" placeholder="ej: jugador@gmail.com"></div>' : '')+
+          (isGM() && !c.isNPC ? '<div class="field"><label>'+icono("jugador",{tam:"s"})+' Jugador Asignado (usuario o correo)</label><input type="text" data-bind="ownerEmail" value="'+esc(nombreDeCuenta(c.ownerEmail||""))+'" placeholder="ej: martu o jugador@gmail.com"></div>' : '')+
           '<div class="field"><label>'+(c.isNPC?'Nivel / CR':'Nivel')+'</label><div style="display:flex;gap:4px;"><input type="text" data-bind="nivel" value="'+esc(c.nivel||"1")+'" '+(isGM() ? '' : 'readonly')+'>'+levelControl+'</div>'+levelPointsPill+'</div>'+
           '<div class="field"><label>Título</label><input type="text" data-bind="titulo" value="'+esc(c.titulo||"")+'" placeholder="ej: Vástago" '+(isGM() ? '' : 'readonly')+'></div>'+
           field("Trabajo / Rol","trabajo",c.trabajo,"text", ro)+
@@ -703,7 +703,7 @@ function tplEntrenamiento(c){
       '<div>' +
         '<strong>Modo Espectador (Solo lectura):</strong> ' +
         (c.ownerEmail
-          ? 'Esta ficha pertenece a <b>' + esc(c.ownerEmail) + '</b>.'
+          ? 'Esta ficha pertenece a <b>' + esc(nombreDeCuenta(c.ownerEmail)) + '</b>.'
           : 'Este personaje no tiene jugador asignado.') +
         ' Solo el propietario de la ficha o el Máster pueden crear o registrar tiradas de entrenamiento.' +
       '</div>' +
