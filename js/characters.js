@@ -989,14 +989,10 @@ async function pushExistingCharacter(c, explicitPatch){
       console.warn('Supabase update_character_data RPC error:', (rpcRes && rpcRes.error && (rpcRes.error.message || rpcRes.error)) || 'desconocido');
       // Fallback: intento de actualización directa en la tabla characters
       try {
-        var cleanC = JSON.parse(JSON.stringify(c));
-        delete cleanC._isDirty;
-        delete cleanC._lastLocalEdit;
-        delete cleanC._serverUpdatedAt;
-        delete cleanC._lastSyncedData;
-        delete cleanC._pendingKeys;
-        delete cleanC._saveRetries;
-        delete cleanC.db_id;
+        // Solo lo cambiado encima de lo que hay en la nube: la ficha entera pisaría lo guardado desde otro móvil
+        var curRes = await supabaseClient.from('characters').select('data').eq('id', c.db_id).single();
+        if(curRes.error || !curRes.data) throw (curRes.error || new Error('sin datos de la ficha'));
+        var cleanC = Object.assign({}, curRes.data.data || {}, patchToPush);
 
         var directRes = await supabaseClient.from('characters').update({
           data: cleanC,
