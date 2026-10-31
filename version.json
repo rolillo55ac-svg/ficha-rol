@@ -1,6 +1,6 @@
 {
-  "version": "1.4.127.0",
-  "build": "2026.10.31.3",
-  "updatedAt": "2026-10-31T23:30:00Z",
-  "changelog": "Catálogo común: bestiario y monturas, armas, buffos y lore/fauna son los mismos en todas las partidas; lo que ve cada jugador sigue siendo de cada partida."
+  "version": "1.4.128.0",
+  "build": "2026.10.31.4",
+  "updatedAt": "2026-10-31T23:45:00Z",
+  "changelog": "En las otras partidas, el bestiario y la flora/fauna vuelven a verse: lo de siempre se ve y lo nuevo del catálogo común espera a que el máster lo muestre."
 }
