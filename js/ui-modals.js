@@ -132,7 +132,7 @@ function openCharModal(){
         ownerHtml = '<div class="char-owner-assign-box">' +
           '<div class="char-owner-info">' +
             '<span class="char-owner-label">' + icono("jugador", {tam:"s"}) + ' Jugador:</span> ' +
-            (c.ownerEmail ? '<span class="char-owner-email">' + esc(c.ownerEmail) + '</span>' : '<span class="char-owner-empty">Sin asignar</span>') +
+            (c.ownerEmail ? '<span class="char-owner-email">' + esc(nombreDeCuenta(c.ownerEmail)) + '</span>' : '<span class="char-owner-empty">Sin asignar</span>') +
           '</div>' +
           '<div class="char-owner-actions">' +
             '<button type="button" class="btn-compact" data-action="assign-char-owner" data-id="' + c.id + '" style="font-size:0.7rem;padding:3px 7px;">' +
@@ -147,7 +147,7 @@ function openCharModal(){
           (isMine
             ? '<span class="char-owner-badge mine">' + icono("estrella", {tam:"s"}) + ' Tu Personaje (Control total)</span>'
             : (c.ownerEmail
-                ? '<span class="char-owner-badge other">' + iconoUI("ver") + ' De: ' + esc(c.ownerEmail) + ' (Espectador)</span>'
+                ? '<span class="char-owner-badge other">' + iconoUI("ver") + ' De: ' + esc(nombreDeCuenta(c.ownerEmail)) + ' (Espectador)</span>'
                 : '<span class="char-owner-badge unassigned">Sin asignar (Solo lectura)</span>'
               )
           ) +
@@ -892,11 +892,11 @@ function modalClick(e){
     var targetChar = (state.characters||[]).find(function(x){ return x.id===targetId || x.db_id===targetId; });
     if(!targetChar) return;
 
-    var curEmail = targetChar.ownerEmail || "";
-    var newEmail = prompt("Introduce el email de la cuenta del jugador para " + targetChar.name + ":", curEmail);
+    var curEmail = nombreDeCuenta(targetChar.ownerEmail || "");
+    var newEmail = prompt("Escribe el nombre de usuario o el correo del jugador para " + targetChar.name + ":", curEmail);
     if(newEmail === null) return;
 
-    newEmail = newEmail.trim().toLowerCase();
+    newEmail = usuarioAEmail(newEmail).toLowerCase();
     targetChar.ownerEmail = newEmail;
     targetChar.owner_id = null;
     targetChar._lastLocalEdit = Date.now();
@@ -923,7 +923,7 @@ function modalClick(e){
     var targetChar = (state.characters||[]).find(function(x){ return x.id===targetId || x.db_id===targetId; });
     if(!targetChar) return;
 
-    if(btn._confirmado || confirm("¿Desvincular a \"" + (targetChar.ownerEmail || "este jugador") + "\" de " + targetChar.name + "? El personaje quedará libre.")){
+    if(btn._confirmado || confirm("¿Desvincular a \"" + nombreDeCuenta(targetChar.ownerEmail || "este jugador") + "\" de " + targetChar.name + "? El personaje quedará libre.")){
       targetChar.ownerEmail = "";
       targetChar.owner_id = null;
       targetChar._lastLocalEdit = Date.now();

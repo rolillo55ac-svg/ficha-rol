@@ -97,7 +97,7 @@ function resetSessionRole(){
 function isCharOwner(c, user){
   if(!c || !user) return false;
   if(c.ownerEmail && c.ownerEmail.trim()){
-    if(user.email && c.ownerEmail.trim().toLowerCase() === user.email.trim().toLowerCase()) return true;
+    if(user.email && usuarioAEmail(c.ownerEmail).toLowerCase() === user.email.trim().toLowerCase()) return true;
     return false;
   }
   if(c.owner_id && c.owner_id === user.id) return true;

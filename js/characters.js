@@ -710,7 +710,7 @@ async function pullAllFromSupabase(){
       if(currentUser && currentUser.email){
         var userEmail = currentUser.email.trim().toLowerCase();
         pulledChars.forEach(function(c){
-          if(c.ownerEmail && c.ownerEmail.trim().toLowerCase() === userEmail){
+          if(c.ownerEmail && usuarioAEmail(c.ownerEmail).toLowerCase() === userEmail){
             c.owner_id = currentUser.id;
           }
         });
