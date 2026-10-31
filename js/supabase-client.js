@@ -399,6 +399,10 @@ function handleRemoteCompendiumBroadcast(comp){
   if(Array.isArray(comp.bestiary)) state.bestiary = comp.bestiary;
   if(comp.lore && comp.lore.objetos) state.lore = comp.lore;
   if(Array.isArray(comp.buffCatalog)) state.buffCatalog = comp.buffCatalog;
+  if(comp.catalogoVisible && typeof aplicarVisibilidadPropia === "function" && !esPartidaDuenaCatalogo()){
+    state.catalogoVisible = comp.catalogoVisible;
+    aplicarVisibilidadPropia();
+  }
   if(Array.isArray(comp.quests)) state.quests = comp.quests;
   if(Array.isArray(comp.questClues)) state.questClues = comp.questClues;
   if(Array.isArray(comp._deletedSeedQuests)) state._deletedSeedQuests = comp._deletedSeedQuests;

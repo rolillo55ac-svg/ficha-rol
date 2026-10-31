@@ -1,6 +1,6 @@
 {
-  "version": "1.4.126.0",
-  "build": "2026.10.31.2",
-  "updatedAt": "2026-10-31T22:00:00Z",
-  "changelog": "Revisión general: la bienvenida se recuerda por cuenta y el guardado de emergencia ya no pisa cambios de otro móvil."
+  "version": "1.4.127.0",
+  "build": "2026.10.31.3",
+  "updatedAt": "2026-10-31T23:30:00Z",
+  "changelog": "Catálogo común: bestiario y monturas, armas, buffos y lore/fauna son los mismos en todas las partidas; lo que ve cada jugador sigue siendo de cada partida."
 }

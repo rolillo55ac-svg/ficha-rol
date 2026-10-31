@@ -168,8 +168,10 @@ async function pullSharedDataFromSupabase(){
         if(bufRes.data && bufRes.data.length) state.buffCatalog = bufRes.data;
       }catch(errNorm){}
     }
+    if(!esPartidaDuenaCatalogo()) await cargarCatalogoComun(res.data && res.data.data);
     // Asegurar que tras la sincronización se aplique la verificación e integridad de datos
     state = migrateState(state);
+    if(!esPartidaDuenaCatalogo()) marcarBaseCatalogoComun();
     saveState(true);
     if(["mundo","bestiario","mision"].indexOf(state.activeTab)!==-1){
       if(!document.activeElement || !document.activeElement.matches("input, textarea")) renderTab();
@@ -205,6 +207,8 @@ function pushSharedData(patch){
       console.warn('Aviso broadcast campaign_compendium_update:', errBc);
     }
   }
+
+  if(!esPartidaDuenaCatalogo()) dataPatch = repartirCatalogoComun(dataPatch);
 
   supabaseClient.rpc('update_campaign_map', {
     map_id: 'world_compendium',
@@ -248,5 +252,162 @@ async function loadAlchemySecrets(){
   if(state && state.activeTab === "alquimia"){
     var ae = document.activeElement;
     if(!(ae && (ae.tagName === "TEXTAREA" || ae.tagName === "INPUT" || ae.tagName === "SELECT"))) renderTab();
+  }
+}
+
+// Catálogo común (bestiario y monturas, armas, buffos y lore/fauna): lo guarda Krysalis y lo comparten
+// todas las partidas. Las demás lo leen y escriben con su propio token (Krysalis lo comprueba con su base).
+// Qué ve cada jugador (visible) y las misiones, pistas y PNJ siguen siendo de cada partida.
+var CATALOGO_COMUN_CLAVES = ["bestiary", "weaponsCatalog", "buffCatalog", "loreObjetos"];
+var catalogoComunCargado = false;
+var catalogoComunBase = null;
+var catalogoComunCliente = null;
+var catalogoComunAvisado = false;
+
+function esPartidaDuenaCatalogo(){
+  return typeof PARTIDA_ACTUAL === "undefined" || PARTIDA_ACTUAL.id === "krysalis";
+}
+
+function clienteCatalogoComun(){
+  if(catalogoComunCliente) return catalogoComunCliente;
+  var duena = PARTIDAS.find(function(p){ return p.id === "krysalis"; });
+  catalogoComunCliente = window.supabase.createClient(duena.url, duena.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: "krysalis_catalogo_comun" }
+  });
+  return catalogoComunCliente;
+}
+
+async function tokenPartidaActual(){
+  var ses = await supabaseClient.auth.getSession();
+  return ses && ses.data && ses.data.session ? ses.data.session.access_token : null;
+}
+
+function avisoCatalogoComun(texto){
+  if(catalogoComunAvisado) return;
+  catalogoComunAvisado = true;
+  if(typeof showToast === "function") showToast(texto, "info");
+}
+
+function listaCatalogo(s, clave){
+  if(clave === "loreObjetos") return (s.lore && Array.isArray(s.lore.objetos)) ? s.lore.objetos : [];
+  return Array.isArray(s[clave]) ? s[clave] : [];
+}
+
+function huellaItemCatalogo(x){
+  var c = Object.assign({}, x);
+  delete c.visible;
+  return JSON.stringify(c);
+}
+
+// Qué ve cada jugador en esta partida: bestiario y lore ocultos hasta que el máster los muestre;
+// armas y buffos, como vengan del catálogo
+function aplicarVisibilidadPropia(){
+  var vis = state.catalogoVisible || {};
+  CATALOGO_COMUN_CLAVES.forEach(function(clave){
+    var v = vis[clave] || {};
+    var ocultoPorDefecto = clave === "bestiary" || clave === "loreObjetos";
+    listaCatalogo(state, clave).forEach(function(x){
+      if(v[x.id] !== undefined) x.visible = v[x.id] === true;
+      else if(ocultoPorDefecto) x.visible = false;
+    });
+  });
+}
+
+function visibilidadPropiaCatalogo(){
+  var vis = {};
+  CATALOGO_COMUN_CLAVES.forEach(function(clave){
+    vis[clave] = {};
+    listaCatalogo(state, clave).forEach(function(x){ if(x && x.id) vis[clave][x.id] = x.visible !== false; });
+  });
+  return vis;
+}
+
+// Se llama tras cargar y migrar: lo que hay ahora es lo que ya está en el catálogo común
+function marcarBaseCatalogoComun(){
+  if(!catalogoComunCargado) return;
+  catalogoComunBase = {};
+  CATALOGO_COMUN_CLAVES.forEach(function(clave){
+    var m = {};
+    listaCatalogo(state, clave).forEach(function(x){ if(x && x.id) m[x.id] = huellaItemCatalogo(x); });
+    catalogoComunBase[clave] = m;
+  });
+}
+
+async function cargarCatalogoComun(comp){
+  if(comp){
+    if(comp.catalogoVisible && typeof comp.catalogoVisible === "object") state.catalogoVisible = comp.catalogoVisible;
+    if(comp.lorePropio && typeof comp.lorePropio === "object"){
+      if(!state.lore || typeof state.lore !== "object") state.lore = {};
+      if(Array.isArray(comp.lorePropio.npcs)) state.lore.npcs = comp.lorePropio.npcs;
+      if(Array.isArray(comp.lorePropio.pistas)) state.lore.pistas = comp.lorePropio.pistas;
+    }
+  }
+  try{
+    var tok = await tokenPartidaActual();
+    if(!tok) return;
+    var res = await clienteCatalogoComun().rpc("catalogo_comun_leer", { p_token: tok });
+    if(res.error) throw res.error;
+    var d = res.data || {};
+    if(Array.isArray(d.bestiary) && d.bestiary.length) state.bestiary = d.bestiary;
+    if(Array.isArray(d.weaponsCatalog) && d.weaponsCatalog.length) state.weaponsCatalog = d.weaponsCatalog;
+    if(Array.isArray(d.buffCatalog) && d.buffCatalog.length) state.buffCatalog = d.buffCatalog;
+    if(Array.isArray(d.loreObjetos) && d.loreObjetos.length){
+      if(!state.lore || typeof state.lore !== "object") state.lore = {};
+      state.lore.objetos = d.loreObjetos;
+    }
+    aplicarVisibilidadPropia();
+    catalogoComunCargado = true;
+  }catch(e){
+    console.warn("Catálogo común no disponible:", e);
+    avisoCatalogoComun("No se pudo cargar el catálogo común: se muestra lo último guardado en este móvil.");
+  }
+}
+
+// Las demás partidas: lo del catálogo va a Krysalis (solo lo que ha cambiado); el resto se queda aquí
+function repartirCatalogoComun(patch){
+  var local = {}, comun = false;
+  Object.keys(patch).forEach(function(k){
+    if(k === "bestiary" || k === "weaponsCatalog" || k === "buffCatalog") comun = true;
+    else if(k === "lore"){
+      comun = true;
+      if(patch.lore) local.lorePropio = { npcs: patch.lore.npcs || [], pistas: patch.lore.pistas || [] };
+    }
+    else local[k] = patch[k];
+  });
+  if(comun){
+    local.catalogoVisible = visibilidadPropiaCatalogo();
+    state.catalogoVisible = local.catalogoVisible;
+    guardarCatalogoComun();
+  }
+  return local;
+}
+
+async function guardarCatalogoComun(){
+  if(!catalogoComunCargado || !catalogoComunBase){
+    avisoCatalogoComun("Sin conexión con el catálogo común: este cambio no llega a las demás partidas. Recarga cuando vuelva.");
+    return;
+  }
+  var envio = {}, nuevaBase = {};
+  CATALOGO_COMUN_CLAVES.forEach(function(clave){
+    var base = catalogoComunBase[clave] || {}, actual = {}, cambios = [], borrados = [];
+    listaCatalogo(state, clave).forEach(function(x){
+      if(!x || !x.id) return;
+      var h = huellaItemCatalogo(x);
+      actual[x.id] = h;
+      if(base[x.id] !== h) cambios.push(JSON.parse(h));
+    });
+    Object.keys(base).forEach(function(id){ if(actual[id] === undefined) borrados.push(id); });
+    if(cambios.length || borrados.length) envio[clave] = { cambios: cambios, borrados: borrados };
+    nuevaBase[clave] = actual;
+  });
+  if(!Object.keys(envio).length) return;
+  try{
+    var tok = await tokenPartidaActual();
+    var res = await clienteCatalogoComun().rpc("catalogo_comun_guardar", { p_token: tok, p_patch: envio });
+    if(res.error) throw res.error;
+    Object.keys(envio).forEach(function(clave){ catalogoComunBase[clave] = nuevaBase[clave]; });
+  }catch(e){
+    console.warn("No se pudo guardar en el catálogo común:", e);
+    avisoCatalogoComun("No se pudo guardar en el catálogo común. Se reintentará con el próximo cambio.");
   }
 }
