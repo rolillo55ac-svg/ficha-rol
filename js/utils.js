@@ -166,6 +166,65 @@ function confirmarAccion(o){
   });
 }
 
+// Ventana para elegir la cuenta de un personaje: desplegable con las cuentas de la partida y opción de escribir a mano.
+// Devuelve el nombre de usuario (o correo) elegido, "" para dejarlo sin asignar, o null si se cancela.
+function elegirJugador(nombreFicha, actual){
+  actual = actual || "";
+  return new Promise(function(resolve){
+    var ov = document.createElement("div");
+    ov.className = "modal-overlay";
+    ov.style.zIndex = "10002";
+    ov.innerHTML = '<div class="modal confirm-quitar" role="dialog" aria-modal="true">'+
+      '<h2><span>Jugador de '+esc(nombreFicha || "la ficha")+'</span></h2>'+
+      '<p class="confirm-quitar-txt">Elige la cuenta que lleva este personaje.</p>'+
+      '<select class="k-input elegir-jugador-campo" aria-label="Cuenta"><option value="__cargando">Cargando cuentas…</option></select>'+
+      '<input type="text" class="k-input elegir-jugador-campo" aria-label="Usuario o correo" placeholder="Usuario o correo" autocomplete="off" hidden>'+
+      '<div class="confirm-quitar-btns">'+
+        '<button type="button" class="btn-solid-gold confirm-quitar-btn" data-r="0">Cancelar</button>'+
+        '<button type="button" class="btn-compact confirm-quitar-btn" data-r="1">Asignar</button>'+
+      '</div></div>';
+    var sel = ov.querySelector("select");
+    var txt = ov.querySelector("input");
+    function fin(v){ if(ov.parentNode) ov.parentNode.removeChild(ov); resolve(v); }
+    ov.addEventListener("click", function(e){
+      if(e.target === ov){ fin(null); return; }
+      var b = e.target.closest ? e.target.closest("[data-r]") : null;
+      if(!b) return;
+      if(b.getAttribute("data-r") !== "1"){ fin(null); return; }
+      if(sel.value === "__cargando") return;
+      fin(sel.value === "__mano" ? txt.value.trim() : sel.value);
+    });
+    sel.addEventListener("change", function(){
+      txt.hidden = sel.value !== "__mano";
+      if(!txt.hidden) txt.focus();
+    });
+    document.body.appendChild(ov);
+    supabaseClient.from("profiles").select("email, display_name, role").then(function(res){
+      var cuentas = (res && !res.error && res.data) || [];
+      cuentas.sort(function(a, b){
+        if((a.role === "gm") !== (b.role === "gm")) return a.role === "gm" ? 1 : -1;
+        return (a.display_name || a.email || "").localeCompare(b.display_name || b.email || "", "es");
+      });
+      var hay = false;
+      var html = '<option value="">Sin asignar</option>' + cuentas.filter(function(c){ return c.email; }).map(function(c){
+        var usuario = nombreDeCuenta(c.email);
+        if(usuario.toLowerCase() === nombreDeCuenta(actual).toLowerCase()) hay = true;
+        var etiqueta = (c.display_name && c.display_name !== usuario) ? c.display_name + " (" + usuario + ")" : usuario;
+        return '<option value="'+esc(usuario)+'">'+esc(etiqueta + (c.role === "gm" ? " · Máster" : ""))+'</option>';
+      }).join("") + '<option value="__mano">Escribir a mano…</option>';
+      sel.innerHTML = html;
+      if(actual && !hay){
+        sel.value = "__mano";
+        txt.value = nombreDeCuenta(actual);
+        txt.hidden = false;
+      } else {
+        Array.prototype.forEach.call(sel.options, function(o){ if(actual && o.value.toLowerCase() === nombreDeCuenta(actual).toLowerCase()) sel.value = o.value; });
+      }
+    });
+    sel.focus();
+  });
+}
+
 function confirmarQuitar(nombre, detalle){
   return confirmarAccion({ titulo: "¿Quitar «" + (nombre || "esto") + "»?", texto: detalle, boton: "Quitar", peligro: true });
 }

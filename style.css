@@ -11320,6 +11320,8 @@ html.juice-off .quest-row-body{animation:none;}
 /* Confirmar antes de quitar + aviso de deshacer */
 .confirm-quitar{max-width:340px;}
 .confirm-quitar-txt{font-size:.88rem;color:var(--ink-dim);line-height:1.5;margin:0 0 14px;}
+.confirm-quitar .elegir-jugador-campo{display:block;width:100%;min-height:44px;margin:0 0 14px;font-size:1rem;}
+.confirm-quitar .elegir-jugador-campo[hidden]{display:none;}
 .confirm-quitar-btns{display:flex;gap:10px;}
 .confirm-quitar-btn{flex:1;min-height:48px;font-size:.9rem;}
 .confirm-quitar-del{border-color:rgba(239,68,68,0.5);color:#F87171;}

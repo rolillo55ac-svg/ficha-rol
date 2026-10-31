@@ -1,6 +1,6 @@
 {
-  "version": "1.4.128.0",
-  "build": "2026.10.31.4",
-  "updatedAt": "2026-10-31T23:45:00Z",
-  "changelog": "En las otras partidas, el bestiario y la flora/fauna vuelven a verse: lo de siempre se ve y lo nuevo del catálogo común espera a que el máster lo muestre."
+  "version": "1.4.129.0",
+  "build": "2026.10.31.5",
+  "updatedAt": "2026-10-31T18:45:00Z",
+  "changelog": "Lo que se borra dentro de la ficha (una bonificación, un objeto…) ya no vuelve al recargar. Al asignar jugador a una ficha, ventana con la lista de cuentas."
 }
