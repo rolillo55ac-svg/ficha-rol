@@ -1,4 +1,4 @@
-// Bienvenida: tutorial corto que sale una sola vez por cuenta (se apunta en este móvil).
+// Bienvenida: tutorial corto que sale una sola vez por cuenta (se apunta en este móvil y en la cuenta).
 var BIENVENIDA_PASOS = [
   { tit: function(n, p){ return "Bienvenido a " + p + (n ? ", " + n : ""); },
     txt: "Esta web es tu ficha de rol. Lo que cambies lo ven todos en directo.", ico: "pergamino" },
@@ -25,6 +25,7 @@ function bienvenidaVista(){
 
 function bienvenidaMarcar(){
   try { localStorage.setItem(bienvenidaClave(), "1"); } catch(e){}
+  try { if(supabaseClient) supabaseClient.rpc("marcar_bienvenida_vista").then(function(){}, function(){}); } catch(e){}
 }
 
 function bienvenidaIcono(n){
@@ -93,7 +94,17 @@ function bienvenidaInicio(){
     if(!currentUser || bienvenidaVista()) return;
     var gate = document.getElementById("mantenimientoGate");
     if(gate && !gate.hidden) return;
-    bienvenidaAbrir();
+    // Vista ya desde otro móvil: se apunta aquí y no sale
+    if(!supabaseClient){ bienvenidaAbrir(); return; }
+    var uid = currentUser.id;
+    supabaseClient.from("profiles").select("bienvenida_vista").eq("id", uid).maybeSingle().then(function(r){
+      if(!currentUser || currentUser.id !== uid) return;
+      if(r && !r.error && r.data && r.data.bienvenida_vista){
+        try { localStorage.setItem(bienvenidaClave(), "1"); } catch(e){}
+        return;
+      }
+      bienvenidaAbrir();
+    }, function(){ bienvenidaAbrir(); });
   }, 1500);
 }
 

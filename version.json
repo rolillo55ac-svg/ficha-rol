@@ -1,6 +1,6 @@
 {
-  "version": "1.4.125.0",
-  "build": "2026.10.31.1",
-  "updatedAt": "2026-10-31T12:00:00Z",
-  "changelog": "Se puede vincular un jugador escribiendo solo su nombre de usuario."
+  "version": "1.4.126.0",
+  "build": "2026.10.31.2",
+  "updatedAt": "2026-10-31T22:00:00Z",
+  "changelog": "Revisión general: la bienvenida se recuerda por cuenta y el guardado de emergencia ya no pisa cambios de otro móvil."
 }
