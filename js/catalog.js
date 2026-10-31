@@ -299,16 +299,25 @@ function huellaItemCatalogo(x){
   return JSON.stringify(c);
 }
 
-// Qué ve cada jugador en esta partida: bestiario y lore ocultos hasta que el máster los muestre;
-// armas y buffos, como vengan del catálogo
+// Qué ve cada jugador en esta partida: en bestiario y lore, lo de serie (lo que ya veían antes del
+// catálogo común) se ve; lo nuevo de Krysalis, oculto hasta que el máster lo muestre.
+// Armas y buffos, como vengan del catálogo
+function nombresDeSerieVisibles(clave){
+  var lista = clave === "bestiary" ? getSeedBestiary() : (getSeedLore().objetos || []);
+  var m = {};
+  lista.forEach(function(x){ if(x.visible !== false) m[(x.nombre || x.title || "").trim().toLowerCase()] = true; });
+  return m;
+}
+
 function aplicarVisibilidadPropia(){
   var vis = state.catalogoVisible || {};
   CATALOGO_COMUN_CLAVES.forEach(function(clave){
     var v = vis[clave] || {};
     var ocultoPorDefecto = clave === "bestiary" || clave === "loreObjetos";
+    var deSerie = ocultoPorDefecto ? nombresDeSerieVisibles(clave) : {};
     listaCatalogo(state, clave).forEach(function(x){
       if(v[x.id] !== undefined) x.visible = v[x.id] === true;
-      else if(ocultoPorDefecto) x.visible = false;
+      else if(ocultoPorDefecto) x.visible = deSerie[(x.nombre || x.title || "").trim().toLowerCase()] === true;
     });
   });
 }
