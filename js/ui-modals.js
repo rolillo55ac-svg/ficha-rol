@@ -892,8 +892,7 @@ function modalClick(e){
     var targetChar = (state.characters||[]).find(function(x){ return x.id===targetId || x.db_id===targetId; });
     if(!targetChar) return;
 
-    var curEmail = nombreDeCuenta(targetChar.ownerEmail || "");
-    var newEmail = prompt("Escribe el nombre de usuario o el correo del jugador para " + targetChar.name + ":", curEmail);
+    elegirJugador(targetChar.name, targetChar.ownerEmail || "").then(function(newEmail){
     if(newEmail === null) return;
 
     newEmail = usuarioAEmail(newEmail).toLowerCase();
@@ -912,6 +911,7 @@ function modalClick(e){
     } else {
       showToast("Personaje " + targetChar.name + " liberado (sin asignar)", "info");
     }
+    });
     return;
   }
   if(action==="clear-char-owner"){
