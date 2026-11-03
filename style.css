@@ -12451,3 +12451,7 @@ html.juice-off .lvlup-btns {
 @keyframes bienvEntra { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
 html.juice-off .bienv-cuerpo { animation: none; }
 @media (prefers-reduced-motion: reduce) { .bienv-cuerpo { animation: none; } }
+
+/* Candado de atributos base del PNJ */
+.npc-attr-lock-row { display:flex; justify-content:flex-end; margin-bottom:8px; }
+.npc-attr-lock { min-height:44px; padding:0 14px; display:inline-flex; align-items:center; gap:6px; }
