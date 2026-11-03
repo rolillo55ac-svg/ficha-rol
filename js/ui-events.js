@@ -1005,7 +1005,7 @@ function handleClick(e){
   if(action==="npc-attr-lock"){
     if(!isGM() || !c.isNPC) return;
     if(window._npcAttrDesbloq === c.id){ window._npcAttrDesbloq = null; renderTab(); return; }
-    confirmarAccion({titulo:"¿Editar los atributos base?", texto:"Cambiarán los valores que dependen de ellos.", boton:"Aceptar", peligro:false}).then(function(ok){
+    confirmarAccion({titulo:"¿Editar atributos y habilidades base?", texto:"Cambiarán los valores que dependen de ellos.", boton:"Aceptar", peligro:false}).then(function(ok){
       if(!ok) return;
       window._npcAttrDesbloq = c.id;
       renderTab();
