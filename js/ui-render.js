@@ -512,6 +512,14 @@ function tplHabilidades(c){
   return html;
 }
 
+function skillBaseCtrlHtml(s, c, base){
+  if(!(c.isNPC && isGM() && window._npcAttrDesbloq === c.id)) return base;
+  var ak = s.attr!=="hybrid" ? s.attr : ((c.skillHybrid && c.skillHybrid[s.id]) || s.hybridOptions[0]);
+  var st = 'width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;';
+  return '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+ak+'" data-delta="-1" style="'+st+'" aria-label="Restar a la base de '+esc(s.name)+'">-</button> '+base+
+    ' <button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+ak+'" data-delta="1" style="'+st+'" aria-label="Sumar a la base de '+esc(s.name)+'">+</button>';
+}
+
 function skillRowHtml(s, c, unlocked, canEdit){
   var base = skillBase(s,c);
   var total = skillTotal(s,c);
@@ -549,7 +557,7 @@ function skillRowHtml(s, c, unlocked, canEdit){
 
   return '<div class="skill-row">'+
     '<span class="skill-name">'+esc(s.name)+hybridSel+'</span>'+
-    '<span class="skill-base">'+base+'</span>'+
+    '<span class="skill-base">'+skillBaseCtrlHtml(s,c,base)+'</span>'+
     '<span class="skill-bonus-ctrl">'+
       (isGM() ? gmControls : (
         '<button data-action="skill-sub" data-id="'+s.id+'" '+(canSub?'':'disabled')+' aria-label="Restar progreso a '+esc(s.name)+'">-</button>'+
@@ -606,7 +614,7 @@ function skillRowExcelHtml(s, c, unlocked, canEdit){
       '<div class="skills-orig-attr-badge">'+attrCol+'</div>'+
     '</div>'+
     '<div class="skills-orig-data">'+
-      '<div class="skills-orig-stat-item"><span class="skills-orig-stat-lbl">Base</span><span class="skills-orig-base" title="Base: '+base+'">'+base+'</span></div>'+
+      '<div class="skills-orig-stat-item"><span class="skills-orig-stat-lbl">Base</span><span class="skills-orig-base" title="Base: '+base+'">'+skillBaseCtrlHtml(s,c,base)+'</span></div>'+
       '<div class="skills-orig-stat-item bonus-item"><span class="skills-orig-stat-lbl">Bono</span>'+
         '<span class="skill-bonus-ctrl">'+
           (isGM() ? gmControls : (
