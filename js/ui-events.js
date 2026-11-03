@@ -1003,7 +1003,7 @@ function handleClick(e){
     return;
   }
   if(action==="npc-attr-lock"){
-    if(!isGM() || !c.isNPC) return;
+    if(!isGM()) return;
     if(window._npcAttrDesbloq === c.id){ window._npcAttrDesbloq = null; renderTab(); return; }
     confirmarAccion({titulo:"¿Editar atributos y habilidades base?", texto:"Cambiarán los valores que dependen de ellos.", boton:"Aceptar", peligro:false}).then(function(ok){
       if(!ok) return;
@@ -1013,11 +1013,12 @@ function handleClick(e){
     return;
   }
   if(action==="npc-attr-mod"){
-    if(!isGM() || !c.isNPC) return;
+    if(!isGM()) return;
     var attrKey = btn.getAttribute("data-attr");
     var delta = parseInt(btn.getAttribute("data-delta"),10);
     if(attrKey && c.attrs[attrKey] !== undefined){
       c.attrs[attrKey] = Math.max(0, num(c.attrs[attrKey],0) + delta);
+      markCharDirty(c.id, { attrs: c.attrs });
       saveState();
       renderTab();
     }
