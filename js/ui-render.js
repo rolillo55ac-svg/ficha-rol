@@ -215,11 +215,14 @@ function tplFicha(c){
   var pStyle = safeUrl(c.portrait) ? ' style="background-image:url(\''+esc(safeUrl(c.portrait))+'\')"' : '';
   var attrCards = ATTRS.map(function(a){
     if(c.isNPC){
+      var npcDesbloq = isGM() && window._npcAttrDesbloq === c.id;
+      var ctrlMenos = npcDesbloq ? '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="-1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">-</button>' : '';
+      var ctrlMas = npcDesbloq ? '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">+</button>' : '';
       return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label>'+
         '<div style="display:flex;align-items:center;justify-content:center;gap:4px;">'+
-          '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="-1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">-</button>'+
+          ctrlMenos+
           '<span style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--gold-light);min-width:30px;text-align:center;">'+num(c.attrs[a],0)+'</span>'+
-          '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">+</button>'+
+          ctrlMas+
           '<button class="dice-btn" data-action="roll-attr" data-attr="'+a+'" style="width:22px;height:22px;font-size:0.75rem;margin-left:2px;" title="Tirar prueba de '+ATTR_LABELS[a]+' (1d10)">'+icono("d10",{tam:"s"})+'</button>'+
         '</div>'+
       '</div>';
@@ -318,6 +321,7 @@ function tplFicha(c){
   '</div>'+
   '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
     '<div class="section-title"><span>Atributos'+(c.isNPC?' (Editables)':'')+'</span></div>'+
+    (c.isNPC && isGM() ? '<div class="npc-attr-lock-row"><button type="button" class="btn-compact npc-attr-lock" data-action="npc-attr-lock" title="'+(window._npcAttrDesbloq===c.id?'Bloquear atributos base':'Editar atributos base')+'">'+iconoUI(window._npcAttrDesbloq===c.id?'candado-abierto':'candado')+' '+(window._npcAttrDesbloq===c.id?'Bloquear atributos':'Editar atributos base')+'</button></div>' : '')+
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>'+
   (typeof tplHistoria === "function" ? tplHistoria(c) : '');
