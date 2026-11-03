@@ -214,8 +214,8 @@ function tplLapidario(c){
 function tplFicha(c){
   var pStyle = safeUrl(c.portrait) ? ' style="background-image:url(\''+esc(safeUrl(c.portrait))+'\')"' : '';
   var attrCards = ATTRS.map(function(a){
-    if(c.isNPC){
-      var npcDesbloq = isGM() && window._npcAttrDesbloq === c.id;
+    var npcDesbloq = isGM() && window._npcAttrDesbloq === c.id;
+    if(c.isNPC || npcDesbloq){
       var ctrlMenos = npcDesbloq ? '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="-1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">-</button>' : '';
       var ctrlMas = npcDesbloq ? '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+a+'" data-delta="1" style="width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;">+</button>' : '';
       return '<div class="attr-card"><label>'+ATTR_LABELS[a]+'</label>'+
@@ -321,7 +321,7 @@ function tplFicha(c){
   '</div>'+
   '<div class="section'+(c.isNPC?' gm-section':'')+'">'+
     '<div class="section-title"><span>Atributos'+(c.isNPC?' (Editables)':'')+'</span></div>'+
-    (c.isNPC && isGM() ? '<div class="npc-attr-lock-row"><button type="button" class="btn-compact npc-attr-lock" data-action="npc-attr-lock" title="'+(window._npcAttrDesbloq===c.id?'Bloquear atributos base':'Editar atributos base')+'">'+iconoUI(window._npcAttrDesbloq===c.id?'candado-abierto':'candado')+' '+(window._npcAttrDesbloq===c.id?'Bloquear atributos':'Editar atributos base')+'</button></div>' : '')+
+    (isGM() ? '<div class="npc-attr-lock-row"><button type="button" class="btn-compact npc-attr-lock" data-action="npc-attr-lock" title="'+(window._npcAttrDesbloq===c.id?'Bloquear atributos base':'Editar atributos base')+'">'+iconoUI(window._npcAttrDesbloq===c.id?'candado-abierto':'candado')+' '+(window._npcAttrDesbloq===c.id?'Bloquear atributos':'Editar atributos base')+'</button></div>' : '')+
     '<div class="attr-grid">'+attrCards+'</div>'+
   '</div>'+
   (typeof tplHistoria === "function" ? tplHistoria(c) : '');
@@ -513,7 +513,7 @@ function tplHabilidades(c){
 }
 
 function skillBaseCtrlHtml(s, c, base){
-  if(!(c.isNPC && isGM() && window._npcAttrDesbloq === c.id)) return base;
+  if(!(isGM() && window._npcAttrDesbloq === c.id)) return base;
   var ak = s.attr!=="hybrid" ? s.attr : ((c.skillHybrid && c.skillHybrid[s.id]) || s.hybridOptions[0]);
   var st = 'width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;';
   return '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+ak+'" data-delta="-1" style="'+st+'" aria-label="Restar a la base de '+esc(s.name)+'">-</button> '+base+

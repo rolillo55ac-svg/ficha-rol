@@ -1,6 +1,6 @@
 {
-  "version": "1.4.131.0",
-  "build": "2026.11.03.2",
-  "updatedAt": "2026-11-03T12:00:00Z",
-  "changelog": "El candado del PNJ también desbloquea el número base de las habilidades (suma o resta al atributo del que dependen)."
+  "version": "1.4.132.0",
+  "build": "2026.11.03.3",
+  "updatedAt": "2026-11-03T15:00:00Z",
+  "changelog": "El máster o admin puede usar el candado de atributos y habilidades base también en las fichas de jugador."
 }
