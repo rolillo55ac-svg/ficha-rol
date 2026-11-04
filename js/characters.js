@@ -738,9 +738,11 @@ async function pullAllFromSupabase(){
 
       // Merge: Supabase es la fuente de verdad remota, pero preservamos cambios locales no sincronizados o más recientes
       var mergedChars = pulledChars.map(function(remoteC){
-        var localC = (state.characters || []).find(function(lc){ 
-          return lc.id === remoteC.id || (lc.db_id && lc.db_id === remoteC.db_id) || (lc.name && remoteC.name && lc.name.trim().toLowerCase() === remoteC.name.trim().toLowerCase()); 
-        });
+        // Por nombre solo si la local aún no está en la nube: dos fichas con el mismo nombre se juntaban en una
+        var localC = (state.characters || []).find(function(lc){ return lc.db_id && lc.db_id === remoteC.db_id; }) ||
+          (state.characters || []).find(function(lc){
+            return !lc.db_id && (lc.id === remoteC.id || (lc.name && remoteC.name && lc.name.trim().toLowerCase() === remoteC.name.trim().toLowerCase()));
+          });
 
         var hasDirty = localC && (localC._isDirty || dirtyCharIds.has(localC.id) || (typeof dirtyCharPatches !== 'undefined' && dirtyCharPatches.has(localC.id)));
         var localIsNewer = localC && localC._lastLocalEdit && (!remoteC._serverUpdatedAt || localC._lastLocalEdit > remoteC._serverUpdatedAt);
@@ -775,7 +777,8 @@ async function pullAllFromSupabase(){
       // fueron ELIMINADOS del servidor. ¡NO RESUCITAR!
       (state.characters || []).forEach(function(localC){
         var alreadyIn = mergedChars.some(function(mc){ 
-          return mc.id === localC.id || (mc.db_id && mc.db_id === localC.db_id) || (mc.name && localC.name && mc.name.trim().toLowerCase() === localC.name.trim().toLowerCase()); 
+          if(localC.db_id) return mc.db_id === localC.db_id;
+          return mc.id === localC.id || (mc.name && localC.name && mc.name.trim().toLowerCase() === localC.name.trim().toLowerCase()); 
         });
         if(!alreadyIn){
           if(localC.db_id){
@@ -879,6 +882,7 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
     delete cleanData._lastSyncedData;
     delete cleanData._pendingKeys;
     delete cleanData._saveRetries;
+    delete cleanData._lastSaveError;
 
     var ownerId = (currentUser && currentUser.id) ? currentUser.id : c.owner_id;
     c.owner_id = ownerId;
@@ -987,6 +991,7 @@ async function pushExistingCharacter(c, explicitPatch){
       serverRow = rpcRes.data;
     } else {
       console.warn('Supabase update_character_data RPC error:', (rpcRes && rpcRes.error && (rpcRes.error.message || rpcRes.error)) || 'desconocido');
+      c._lastSaveError = (rpcRes && rpcRes.error && (rpcRes.error.message || String(rpcRes.error))) || '';
       // Fallback: intento de actualización directa en la tabla characters
       try {
         // Solo lo cambiado encima de lo que hay en la nube: la ficha entera pisaría lo guardado desde otro móvil
@@ -1017,6 +1022,7 @@ async function pushExistingCharacter(c, explicitPatch){
       var cur = (state.characters||[]).find(function(x){ return x.id === c.id || (c.db_id && x.db_id === c.db_id); }) || c;
       cur._serverUpdatedAt = serverRow.updated_at ? new Date(serverRow.updated_at).getTime() : Date.now();
       cur._saveRetries = 0;
+      delete cur._lastSaveError;
       if(!cur._lastSyncedData) cur._lastSyncedData = {};
       // Solo se da por guardado lo que se envió; lo cambiado mientras tanto sigue pendiente
       var stillPending = Array.isArray(cur._pendingKeys) ? cur._pendingKeys.slice() : [];

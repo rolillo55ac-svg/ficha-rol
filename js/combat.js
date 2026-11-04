@@ -111,6 +111,8 @@ async function sendMoneyChange(char, deltaOro, deltaPlata, deltaGremio, clave, m
       }
       if(err && err.message && !isMoneyNetError(err)){
         errMsg = /MANTENIMIENTO/.test(err.message) ? 'La web está en mantenimiento: no se guardan cambios' : ('No se pudo cambiar el dinero: ' + err.message);
+        // Que el admin lo vea en Errores: un rechazo de la nube no es un fallo de conexión
+        if(!/MANTENIMIENTO/.test(err.message) && typeof registrarErrorCliente === 'function') registrarErrorCliente('Dinero rechazado (' + (char.name || char.id) + '): ' + err.message, 'combat.js', 0);
         break;
       }
       await new Promise(function(r){ setTimeout(r, 800 * (intento + 1)); });

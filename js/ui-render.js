@@ -1218,10 +1218,20 @@ function combatStat(label,bind,val,rollable){
   } else if(bind === "escudoActual"){
     info = 'Escudo actual: '+num(val,0)+'. Sube y baja con los botones de la barra de escudo y con los estados activos.';
   } else {
-    info = label+' '+num(val,0)+': valor propio del personaje.'+(diff !== 0 ? ' Con estados y magias activos: '+eff+'.' : ' Cambia con estados y magias activos.');
+    info = label+' '+num(val,0)+': lo pone el máster en tu ficha.'+(diff !== 0 ? ' Con estados y magias activos: '+eff+'.' : ' Cambia con estados y magias activos.');
+  }
+  // Iniciativa, Movilidad y Def. mágica no tienen fórmula: las pone el máster con -/+
+  var editable = (bind === "iniciativa" || bind === "movilidad" || bind === "defensaMagica") && isGM();
+  var valHtml = '<span class="k-stat-value" data-stat="combat.'+bind+'" aria-label="'+esc(label)+'">'+num(val,0)+'</span>';
+  if(editable){
+    valHtml = '<div class="combat-stat-edit">'+
+      '<button type="button" class="combat-stat-ctrl" data-action="combat-stat-mod" data-stat="'+bind+'" data-delta="-1" aria-label="Restar a '+esc(label)+'">−</button>'+
+      valHtml+
+      '<button type="button" class="combat-stat-ctrl" data-action="combat-stat-mod" data-stat="'+bind+'" data-delta="1" aria-label="Sumar a '+esc(label)+'">+</button>'+
+    '</div>';
   }
   return '<div class="combat-stat k-stat"><label class="k-stat-label">'+esc(label)+diffBadge+'</label>'+
-    '<span class="k-stat-value" data-stat="combat.'+bind+'" aria-label="'+esc(label)+'">'+num(val,0)+'</span>'+
+    valHtml+
     '<button type="button" class="stat-info-btn" data-action="toggle-stat-info" aria-label="De dónde sale '+esc(label)+'">&#9432;</button>'+
     '<div class="stat-info-text" hidden>'+esc(info)+'</div>'+
     (rollable?'<button class="mini-roll" data-action="roll-init" aria-label="Tirar iniciativa" title="Tirar Iniciativa (1d10 + '+eff+')">&#127922;</button>':'')+
