@@ -474,7 +474,8 @@ function handleRemoteCharacterChange(payload){
       if(row.owner_id) c.owner_id = row.owner_id;
 
       var idx = state.characters.findIndex(function(x){
-        return x.db_id === row.id || x.id === c.id || (x.name && c.name && x.name.trim().toLowerCase() === c.name.trim().toLowerCase());
+        // Por nombre solo si la local aún no está en la nube: dos fichas pueden llamarse igual
+        return x.db_id === row.id || (!x.db_id && (x.id === c.id || (x.name && c.name && x.name.trim().toLowerCase() === c.name.trim().toLowerCase())));
       });
 
       if(idx !== -1){

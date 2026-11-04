@@ -1,6 +1,6 @@
 {
-  "version": "1.4.132.0",
-  "build": "2026.11.03.3",
-  "updatedAt": "2026-11-03T15:00:00Z",
-  "changelog": "El máster o admin puede usar el candado de atributos y habilidades base también en las fichas de jugador."
+  "version": "1.4.133.0",
+  "build": "2026.11.04.1",
+  "updatedAt": "2026-11-04T18:00:00Z",
+  "changelog": "Arreglos de reportes: el máster pone Iniciativa, Movilidad y Def. mágica con -/+; las fichas asignadas pasan a ser del jugador en la base (ya pueden guardar y mover su dinero); dos fichas con el mismo nombre ya no se juntan; avisos claros cuando la nube rechaza un guardado."
 }

@@ -12455,3 +12455,27 @@ html.juice-off .bienv-cuerpo { animation: none; }
 /* Candado de atributos base del PNJ */
 .npc-attr-lock-row { display:flex; justify-content:flex-end; margin-bottom:8px; }
 .npc-attr-lock { min-height:44px; padding:0 14px; display:inline-flex; align-items:center; gap:6px; }
+
+/* Combate: -/+ del máster en Iniciativa, Movilidad y Def. mágica */
+.combat-stat.k-stat .combat-stat-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+.combat-stat.k-stat .combat-stat-edit .k-stat-value {
+  width: auto;
+  min-width: 2ch;
+}
+.combat-stat.k-stat .combat-stat-ctrl {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--gold-light);
+  font-size: 1.1rem;
+  line-height: 1;
+}

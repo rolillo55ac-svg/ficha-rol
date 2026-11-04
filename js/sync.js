@@ -16,7 +16,7 @@ var CHAR_DATA_KEYS = [
   "magiaTipo", "spells", "stones", "passivesNeg", "passivesPos",
   "goddessCurses", "goddessBlessings", "goddessTable",
   "summons", "buffs", "customBuffs", "poisons", "skillPoints",
-  "activeBuffs", "personalNotes", "trainings", "charSound"
+  "activeBuffs", "personalNotes", "trainings", "charSound", "lapidaryTier"
 ];
 
 function getCharacterDiffPatch(c){
@@ -129,6 +129,16 @@ function carryCharPending(local, target){
 var lastCharSaveFailToast = 0;
 function notifyCharSaveFailed(c){
   updateSyncBadge("local");
+  // La nube dice que no hay permiso: no es la conexión y reintentar no sirve. Se avisa claro y queda en Errores.
+  var motivo = (c && c._lastSaveError) || "";
+  if(c && /permiso|permission|row-level|42501/i.test(motivo) && !/MANTENIMIENTO/.test(motivo)){
+    if(Date.now() - lastCharSaveFailToast > 5000){
+      lastCharSaveFailToast = Date.now();
+      showToast("La nube no deja guardar la ficha de " + (c.name || "este personaje") + ": falta permiso. Avisa al máster (tus cambios siguen en este móvil).", "error");
+    }
+    if(typeof registrarErrorCliente === "function") registrarErrorCliente("Guardado sin permiso (" + (c.name || c.id) + "): " + motivo, "sync.js", 0);
+    return;
+  }
   if(Date.now() - lastCharSaveFailToast > 5000){
     lastCharSaveFailToast = Date.now();
     showToast("No se ha guardado " + ((c && c.name) ? "la ficha de " + c.name : "la ficha") + " en la nube. Revisa la conexión; se reintentará.", "error");

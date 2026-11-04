@@ -1012,6 +1012,26 @@ function handleClick(e){
     });
     return;
   }
+  if(action==="combat-stat-mod"){
+    if(!isGM()) return;
+    var csKey = btn.getAttribute("data-stat");
+    if(["iniciativa","movilidad","defensaMagica"].indexOf(csKey) === -1) return;
+    var csDelta = parseInt(btn.getAttribute("data-delta"),10) || 0;
+    c.combat = c.combat || {};
+    var csAntes = num(c.combat[csKey], 0);
+    var csDespues = csAntes + csDelta;
+    var csAplicar = function(){
+      c.combat[csKey] = csDespues;
+      markCharDirty(c.id, "combat." + csKey);
+      saveState();
+      broadcastCharStatUpdate(c.id, c.combat);
+      renderTab();
+    };
+    if(bajadaPideConfirmar(csAntes, csDespues)){
+      confirmarAccion({ titulo: "¿Bajar de " + csAntes + " a " + csDespues + "?", boton: "Bajar", peligro: true }).then(function(ok){ if(ok) csAplicar(); });
+    } else csAplicar();
+    return;
+  }
   if(action==="npc-attr-mod"){
     if(!isGM()) return;
     var attrKey = btn.getAttribute("data-attr");
