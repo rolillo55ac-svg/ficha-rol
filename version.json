@@ -1,6 +1,6 @@
 {
-  "version": "1.4.133.0",
-  "build": "2026.11.04.1",
-  "updatedAt": "2026-11-04T18:00:00Z",
-  "changelog": "Arreglos de reportes: el máster pone Iniciativa, Movilidad y Def. mágica con -/+; las fichas asignadas pasan a ser del jugador en la base (ya pueden guardar y mover su dinero); dos fichas con el mismo nombre ya no se juntan; avisos claros cuando la nube rechaza un guardado."
+  "version": "1.4.134.0",
+  "build": "2026.11.04.2",
+  "updatedAt": "2026-11-04T21:00:00Z",
+  "changelog": "Iniciativa, Movilidad y Def. mágica piden confirmación en cada cambio del máster y se pueden deshacer. La Defensa se comprueba siempre calculada con Destreza y Esquivar base."
 }

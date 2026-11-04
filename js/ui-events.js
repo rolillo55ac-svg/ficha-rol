@@ -1027,9 +1027,19 @@ function handleClick(e){
       broadcastCharStatUpdate(c.id, c.combat);
       renderTab();
     };
-    if(bajadaPideConfirmar(csAntes, csDespues)){
-      confirmarAccion({ titulo: "¿Bajar de " + csAntes + " a " + csDespues + "?", boton: "Bajar", peligro: true }).then(function(ok){ if(ok) csAplicar(); });
-    } else csAplicar();
+    var csNombre = { iniciativa: "Iniciativa", movilidad: "Movilidad", defensaMagica: "Def. mágica" }[csKey];
+    // Son datos sensibles: se pregunta siempre, también al subir
+    confirmarAccion({ titulo: "¿Cambiar " + csNombre + " de " + csAntes + " a " + csDespues + "?", boton: "Cambiar", peligro: false }).then(function(ok){
+      if(!ok) return;
+      csAplicar();
+      if(typeof avisoDeshacer === "function") avisoDeshacer(csNombre + ": " + csAntes + " → " + csDespues, function(){
+        c.combat[csKey] = csAntes;
+        markCharDirty(c.id, "combat." + csKey);
+        saveState();
+        broadcastCharStatUpdate(c.id, c.combat);
+        renderTab();
+      });
+    });
     return;
   }
   if(action==="npc-attr-mod"){
