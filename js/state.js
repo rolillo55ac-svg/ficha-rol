@@ -1,5 +1,5 @@
-var APP_VERSION = "1.4.136.0";
-var APP_BUILD = "2026.11.05.2";
+var APP_VERSION = "1.4.137.0";
+var APP_BUILD = "2026.11.05.3";
 
 var state = null;
 var supabaseClient = null;
@@ -75,7 +75,7 @@ function blankCharacter(name, isNPC){
     nivel:"1", titulo:"", lugarNacimiento:"", altura:"", peso:"", edad:"", ojos:"", pelo:"", trabajo:"", descripcion:"",
     attrs:{fisico:1,destreza:1,inteligencia:1,percepcion:1,carisma:1},
     skillBonus:{}, skillProgress:{}, skillPointsUnlocked:false,
-    skillHybrid:{}, customSkills:[],
+    skillHybrid:{}, skillOwn:{}, customSkills:[],
     combat:{iniciativa:0,movilidad:0,defensa:10,defensaMagica:0,pvActual:10,pvMax:10,escudoActual:0,manaActual:10,manaMax:10},
     weapons:[], armors:[], inventory:[], money:{oro:0,plata:0,gremio:0},
     magiaTipo:"", spells:[], stones:[], passivesNeg:[], passivesPos:[], goddessCurses:[], goddessBlessings:[], goddessTable:[],
@@ -112,6 +112,7 @@ function ensureCharDefaults(c){
   if(!c.skillProgress || typeof c.skillProgress !== "object") c.skillProgress = {};
   if(c.skillPointsUnlocked === undefined) c.skillPointsUnlocked = false;
   if(!c.skillHybrid || typeof c.skillHybrid !== "object") c.skillHybrid = {};
+  if(!c.skillOwn || typeof c.skillOwn !== "object") c.skillOwn = {};
   if(!Array.isArray(c.customSkills)) c.customSkills = [];
   if(c.skillPoints === undefined) c.skillPoints = 0;
 
@@ -1516,7 +1517,16 @@ function getEffectiveAttr(aKey, c){
   return base;
 }
 
+// Valor propio de una habilidad de PNJ (como en una ficha de monstruo): número o null si no tiene
+function skillOwnValue(c, skillId){
+  if(!c || !c.isNPC || !c.skillOwn) return null;
+  var v = c.skillOwn[skillId];
+  return (typeof v === "number" && isFinite(v)) ? v : null;
+}
+
 function skillBase(skill, c){
+  var own = skillOwnValue(c, skill.id);
+  if(own !== null) return own;
   var attrKey = skill.attr!=="hybrid" ? skill.attr : (c.skillHybrid[skill.id] || skill.hybridOptions[0]);
   return getEffectiveAttr(attrKey, c);
 }
@@ -1599,7 +1609,8 @@ function parseShieldBonus(modStr){
 // Defensa = Esquivar base + 5, igual para todos: sin buffos de atributo (TK-T47Q)
 function defensaBase(c){
   if(!c) return 5;
-  return reglasDefensaBase(c.attrs ? c.attrs.destreza : 0, c.skillBonus ? c.skillBonus.esquivar : 0);
+  var ownEsq = skillOwnValue(c, "esquivar");
+  return reglasDefensaBase(ownEsq !== null ? ownEsq : (c.attrs ? c.attrs.destreza : 0), c.skillBonus ? c.skillBonus.esquivar : 0);
 }
 
 function getEffectiveCombatStat(statKey, c){
