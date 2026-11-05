@@ -513,11 +513,14 @@ function tplHabilidades(c){
 }
 
 function skillBaseCtrlHtml(s, c, base){
-  if(!(isGM() && window._npcAttrDesbloq === c.id)) return base;
-  var ak = s.attr!=="hybrid" ? s.attr : ((c.skillHybrid && c.skillHybrid[s.id]) || s.hybridOptions[0]);
+  var propio = skillOwnValue(c, s.id) !== null;
+  var marca = propio ? ' <span class="skill-own-mark" title="Valor propio del PNJ (no sale del atributo)">propio</span>' : '';
+  if(!(isGM() && window._npcAttrDesbloq === c.id)) return base + marca;
+  // Con el candado abierto, el +/- cambia solo esta habilidad (valor propio), nunca el atributo
   var st = 'width:22px;height:22px;min-width:22px;min-height:22px;font-size:.6rem;';
-  return '<button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+ak+'" data-delta="-1" style="'+st+'" aria-label="Restar a la base de '+esc(s.name)+'">-</button> '+base+
-    ' <button class="skill-bonus-ctrl" data-action="npc-attr-mod" data-attr="'+ak+'" data-delta="1" style="'+st+'" aria-label="Sumar a la base de '+esc(s.name)+'">+</button>';
+  var volver = propio ? ' <button class="skill-bonus-ctrl" data-action="npc-skill-own-clear" data-id="'+s.id+'" style="'+st+'" title="Volver al valor del atributo" aria-label="Volver al valor del atributo de '+esc(s.name)+'">&#8634;</button>' : '';
+  return '<button class="skill-bonus-ctrl" data-action="npc-skill-own" data-id="'+s.id+'" data-delta="-1" style="'+st+'" aria-label="Restar al valor de '+esc(s.name)+'">-</button> '+base+marca+
+    ' <button class="skill-bonus-ctrl" data-action="npc-skill-own" data-id="'+s.id+'" data-delta="1" style="'+st+'" aria-label="Sumar al valor de '+esc(s.name)+'">+</button>'+volver;
 }
 
 function skillRowHtml(s, c, unlocked, canEdit){

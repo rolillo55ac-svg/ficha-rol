@@ -1,6 +1,6 @@
 {
-  "version": "1.4.136.0",
-  "build": "2026.11.05.2",
-  "updatedAt": "2026-11-05T21:00:00Z",
-  "changelog": "Al entrar, la partida se elige con dos botones y se recuerda. Si tu cuenta no está en la partida elegida, la web te avisa y te ofrece ir a la otra; ya no cambia sola."
+  "version": "1.4.137.0",
+  "build": "2026.11.05.3",
+  "updatedAt": "2026-11-05T22:00:00Z",
+  "changelog": "PNJ: cada habilidad puede llevar un valor propio, como en una ficha de monstruo. El máster lo sube o baja con el candado abierto y no mueve el atributo; hay un botón para volver al valor del atributo."
 }

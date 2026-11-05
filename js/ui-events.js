@@ -1042,6 +1042,20 @@ function handleClick(e){
     });
     return;
   }
+  if(action==="npc-skill-own" || action==="npc-skill-own-clear"){
+    if(!isGM() || !c.isNPC) return;
+    var ownId = btn.getAttribute("data-id");
+    var ownDef = (typeof SKILL_DEFS !== "undefined") ? SKILL_DEFS.find(function(s){ return s.id === ownId; }) : null;
+    if(!ownDef) return;
+    if(!c.skillOwn || typeof c.skillOwn !== "object") c.skillOwn = {};
+    if(action==="npc-skill-own-clear") delete c.skillOwn[ownId];
+    else c.skillOwn[ownId] = Math.max(0, skillBase(ownDef, c) + parseInt(btn.getAttribute("data-delta"),10));
+    c._lastLocalEdit = Date.now();
+    markCharDirty(c.id, { skillOwn: c.skillOwn });
+    saveState(); renderTab();
+    if(typeof pushCharacterPatch === 'function') pushCharacterPatch(c.id, { skillOwn: c.skillOwn });
+    return;
+  }
   if(action==="npc-attr-mod"){
     if(!isGM()) return;
     var attrKey = btn.getAttribute("data-attr");
