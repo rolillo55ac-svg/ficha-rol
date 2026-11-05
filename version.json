@@ -1,6 +1,6 @@
 {
-  "version": "1.4.137.0",
-  "build": "2026.11.05.3",
+  "version": "1.4.138.0",
+  "build": "2026.11.05.4",
   "updatedAt": "2026-11-05T22:00:00Z",
-  "changelog": "PNJ: cada habilidad puede llevar un valor propio, como en una ficha de monstruo. El máster lo sube o baja con el candado abierto y no mueve el atributo; hay un botón para volver al valor del atributo."
+  "changelog": "Fichas de PNJ: en cada habilidad la base sale del atributo (solo se lee) y el bono es propio de esa habilidad, como en la ficha del jugador. El total y la Defensa usan base + bono."
 }

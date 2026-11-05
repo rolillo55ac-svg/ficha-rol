@@ -505,7 +505,6 @@ main{flex:1;padding:16px 10px calc(120px + env(safe-area-inset-bottom));overflow
 .skill-hybrid-select{font-size:.6rem;background:var(--bg-elev);border:1px solid var(--line);color:var(--ink-faint);border-radius:4px;padding:1px;margin-top:1px;}
 .skill-base{font-family:var(--font-mono);font-size:.8rem;color:var(--ink-faint);text-align:center;}
 .skill-bonus-ctrl{display:flex;align-items:center;justify-content:center;gap:1px;}
-.skill-own-mark{font-size:.55rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;margin-left:2px;}
 .skill-bonus-ctrl span{font-family:var(--font-mono);font-size:.75rem;min-width:20px;text-align:center;color:var(--gold-light);}
 .skill-bonus-ctrl button{
   width:28px;height:28px;background:var(--bg-elev);border:1px solid var(--line);border-radius:3px;

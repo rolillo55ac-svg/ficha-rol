@@ -2028,8 +2028,7 @@ function closeBg3Roll(){
 function openBg3SkillRoll(c, sdef, extra){
   if(!c || !sdef) return;
   var attrKey = sdef.attr !== "hybrid" ? sdef.attr : ((c.skillHybrid && c.skillHybrid[sdef.id]) || sdef.hybridOptions[0]);
-  var ownV = skillOwnValue(c, sdef.id);
-  var baseAttrVal = ownV !== null ? ownV : num(c.attrs ? c.attrs[attrKey] : 0, 0);
+  var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
   var attrName = ATTR_LABELS[attrKey] || "Atributo";
   var trainBonus = num(c.skillBonus ? c.skillBonus[sdef.id] : 0, 0);
 
@@ -2254,8 +2253,7 @@ function openBg3WeaponAttackRoll(c, wpn){
   var skillId = isMelee ? "melee" : "distancia";
   var sdef = (typeof SKILL_DEFS !== 'undefined') ? SKILL_DEFS.find(function(s){ return s.id === skillId; }) : null;
   var attrKey = sdef ? sdef.attr : (isMelee ? "fisico" : "destreza");
-  var ownA = skillOwnValue(c, skillId);
-  var baseAttrVal = ownA !== null ? ownA : num(c.attrs ? c.attrs[attrKey] : 0, 0);
+  var baseAttrVal = num(c.attrs ? c.attrs[attrKey] : 0, 0);
   var attrName = (typeof ATTR_LABELS !== 'undefined' && ATTR_LABELS[attrKey]) ? ATTR_LABELS[attrKey] : (isMelee ? "Físico" : "Destreza");
   var trainBonus = num(c.skillBonus ? c.skillBonus[skillId] : 0, 0);
 
