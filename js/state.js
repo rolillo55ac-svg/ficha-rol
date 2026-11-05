@@ -1,4 +1,4 @@
-var APP_VERSION = "1.4.134.0";
+var APP_VERSION = "1.4.135.0";
 var APP_BUILD = "2026.11.04.2";
 
 var state = null;
