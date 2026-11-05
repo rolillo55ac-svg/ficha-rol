@@ -70,6 +70,8 @@ body.auth-locked #app{display:none;}
   margin-top:20px;min-height:50px;border-radius:var(--radius);font-size:1.05rem;font-weight:700;cursor:pointer;
   background:linear-gradient(180deg, var(--gold-light), var(--gold));color:var(--bg-elev);border:none;
 }
+.login-gate-aviso{margin-top:14px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--radius);color:var(--ink);font-size:0.95rem;line-height:1.4;}
+.login-gate-ir{display:block;width:100%;margin-top:10px;min-height:44px;border-radius:var(--radius);font-size:1rem;font-weight:700;cursor:pointer;background:transparent;color:var(--gold-light);border:1px solid var(--gold-light);}
 .login-gate-signup{
   margin-top:10px;min-height:44px;border-radius:var(--radius);font-size:0.95rem;cursor:pointer;
   background:transparent;color:var(--ink-dim);border:1px solid var(--line);

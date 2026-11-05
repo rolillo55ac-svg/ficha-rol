@@ -188,9 +188,17 @@ async function supabaseLogin(em, pw){
     showToast("Demasiados intentos seguidos. Espera " + remainingMins + " min para volver a probar.", "warning");
     return;
   }
+  mostrarAvisoGate("");
   var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
-  // La cuenta puede ser de la otra partida: se prueba allí y, si entra, se cambia de partida
-  if(res.error && /Invalid login/i.test(res.error.message || "") && await entrarEnOtraPartida(em, pw)) return;
+  var noExiste = false;
+  if(res.error && /Invalid login/i.test(res.error.message || "")){
+    // Solo se pregunta si la cuenta existe (nunca se envía la contraseña)
+    noExiste = (await cuentaExisteEn(supabaseClient, em)) === false;
+  }
+  if(noExiste){
+    await avisarCuentaOtraPartida(em);
+    return;
+  }
   if(typeof registrarLogin === "function") registrarLogin(nombreDeCuenta(em), !res.error);
   if(res.error){
     var updated = recordFailedLoginAttempt();
@@ -198,38 +206,53 @@ async function supabaseLogin(em, pw){
     if(remainingAttempts <= 0){
       showToast("Has fallado 5 veces seguidas. Espera 15 minutos para volver a probar.", "error");
     } else {
-      var msg = res.error.message.includes("Invalid login") ? "Usuario o contraseña incorrectos" : res.error.message;
+      var msg = res.error.message.includes("Invalid login") ? "Contraseña incorrecta" : res.error.message;
       showToast(msg + " (te quedan " + remainingAttempts + " intentos)", "error");
     }
   } else {
     clearAuthAttempts();
+    try { localStorage.setItem(PARTIDA_STORAGE_KEY, PARTIDA_ACTUAL.id); } catch(e){}
     closeModals();
     showToast("¡Sesión iniciada!", "success");
   }
 }
-// Prueba usuario y contraseña en las otras partidas. La sesión queda guardada con la clave de ese
-// proyecto, así que al recargar con esa partida elegida ya se entra solo.
-async function entrarEnOtraPartida(em, pw){
-  if(!window.supabase || typeof PARTIDAS === "undefined") return false;
+function mostrarAvisoGate(html){
+  var el = document.getElementById("gateAviso");
+  if(!el) return;
+  el.innerHTML = html || "";
+  el.hidden = !html;
+}
+// true / false si se sabe; null si no se puede saber (sin red o función sin instalar)
+async function cuentaExisteEn(cli, em){
+  try{
+    var r = await cli.rpc("cuenta_existe", { p_usuario: nombreDeCuenta(em) });
+    if(r.error || typeof r.data !== "boolean") return null;
+    return r.data;
+  }catch(e){ return null; }
+}
+// La cuenta no está en la partida elegida: se avisa y se ofrece ir a la otra. No cambia sola ni entra sola.
+async function avisarCuentaOtraPartida(em){
+  var html = "Esta cuenta no existe en <b>" + esc(PARTIDA_ACTUAL.nombre) + "</b>.";
   var otras = PARTIDAS.filter(function(p){ return p.id !== PARTIDA_ACTUAL.id; });
   for(var i = 0; i < otras.length; i++){
     var p = otras[i];
     try{
       var cli = window.supabase.createClient(p.url, p.anonKey, {
-        auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
       });
-      var r = await cli.auth.signInWithPassword({email:em, password:pw});
-      if(!r.error && r.data && r.data.session){
-        try { await cli.rpc("registrar_acceso", { p_usuario: nombreDeCuenta(em), p_ok: true, p_ua: (typeof actDispositivo === "function" ? actDispositivo() : null) }); } catch(e){}
-        clearAuthAttempts();
-        try { localStorage.setItem(PARTIDA_STORAGE_KEY, p.id); } catch(e){}
-        showToast("Tu cuenta es de " + p.nombre + ": entrando ahí…", "success");
-        setTimeout(function(){ location.reload(); }, 900);
-        return true;
+      if(await cuentaExisteEn(cli, em) === true){
+        html += " Está en <b>" + esc(p.nombre) + "</b>. " +
+          '<button type="button" class="login-gate-ir" data-partida="' + esc(p.id) + '">Ir a ' + esc(p.nombre) + '</button>';
+        break;
       }
-    }catch(e){ console.error("Login en otra partida:", e); }
+    }catch(e){}
   }
-  return false;
+  mostrarAvisoGate(html);
+  var ir = document.querySelector("#gateAviso .login-gate-ir");
+  if(ir) ir.onclick = function(){
+    try { sessionStorage.setItem("krysalis_gate_user", document.getElementById("gateEmail").value); } catch(e){}
+    cambiarPartida(ir.getAttribute("data-partida"));
+  };
 }
 async function supabaseLogout(){
   try {
