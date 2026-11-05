@@ -1,6 +1,6 @@
 {
-  "version": "1.4.134.0",
-  "build": "2026.11.04.2",
-  "updatedAt": "2026-11-04T21:00:00Z",
-  "changelog": "Iniciativa, Movilidad y Def. mágica piden confirmación en cada cambio del máster y se pueden deshacer. La Defensa se comprueba siempre calculada con Destreza y Esquivar base."
+  "version": "1.4.135.0",
+  "build": "2026.11.05.1",
+  "updatedAt": "2026-11-05T19:00:00Z",
+  "changelog": "Si entras con la partida equivocada elegida, la web prueba tu usuario en la otra partida y te lleva a la tuya sola."
 }

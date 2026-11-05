@@ -189,6 +189,8 @@ async function supabaseLogin(em, pw){
     return;
   }
   var res = await supabaseClient.auth.signInWithPassword({email:em, password:pw});
+  // La cuenta puede ser de la otra partida: se prueba allí y, si entra, se cambia de partida
+  if(res.error && /Invalid login/i.test(res.error.message || "") && await entrarEnOtraPartida(em, pw)) return;
   if(typeof registrarLogin === "function") registrarLogin(nombreDeCuenta(em), !res.error);
   if(res.error){
     var updated = recordFailedLoginAttempt();
@@ -204,6 +206,30 @@ async function supabaseLogin(em, pw){
     closeModals();
     showToast("¡Sesión iniciada!", "success");
   }
+}
+// Prueba usuario y contraseña en las otras partidas. La sesión queda guardada con la clave de ese
+// proyecto, así que al recargar con esa partida elegida ya se entra solo.
+async function entrarEnOtraPartida(em, pw){
+  if(!window.supabase || typeof PARTIDAS === "undefined") return false;
+  var otras = PARTIDAS.filter(function(p){ return p.id !== PARTIDA_ACTUAL.id; });
+  for(var i = 0; i < otras.length; i++){
+    var p = otras[i];
+    try{
+      var cli = window.supabase.createClient(p.url, p.anonKey, {
+        auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+      var r = await cli.auth.signInWithPassword({email:em, password:pw});
+      if(!r.error && r.data && r.data.session){
+        try { await cli.rpc("registrar_acceso", { p_usuario: nombreDeCuenta(em), p_ok: true, p_ua: (typeof actDispositivo === "function" ? actDispositivo() : null) }); } catch(e){}
+        clearAuthAttempts();
+        try { localStorage.setItem(PARTIDA_STORAGE_KEY, p.id); } catch(e){}
+        showToast("Tu cuenta es de " + p.nombre + ": entrando ahí…", "success");
+        setTimeout(function(){ location.reload(); }, 900);
+        return true;
+      }
+    }catch(e){ console.error("Login en otra partida:", e); }
+  }
+  return false;
 }
 async function supabaseLogout(){
   try {
