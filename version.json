@@ -1,6 +1,6 @@
 {
-  "version": "1.4.135.0",
-  "build": "2026.11.05.1",
-  "updatedAt": "2026-11-05T19:00:00Z",
-  "changelog": "Si entras con la partida equivocada elegida, la web prueba tu usuario en la otra partida y te lleva a la tuya sola."
+  "version": "1.4.136.0",
+  "build": "2026.11.05.2",
+  "updatedAt": "2026-11-05T21:00:00Z",
+  "changelog": "Al entrar, la partida se elige con dos botones y se recuerda. Si tu cuenta no está en la partida elegida, la web te avisa y te ofrece ir a la otra; ya no cambia sola."
 }

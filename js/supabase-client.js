@@ -167,6 +167,23 @@ function showLoginGate(){
       return '<option value="' + esc(p.id) + '"' + (p.id === PARTIDA_ACTUAL.id ? ' selected' : '') + '>' + esc(p.nombre) + '</option>';
     }).join('');
     sel.onchange = function(){ cambiarPartida(sel.value); };
+    var btns = document.getElementById('gatePartidaBtns');
+    if(btns){
+      btns.innerHTML = PARTIDAS.map(function(p){
+        return '<button type="button" class="k-seg-btn' + (p.id === PARTIDA_ACTUAL.id ? ' active' : '') + '" data-partida="' + esc(p.id) + '">' + esc(p.nombre) + '</button>';
+      }).join('');
+      btns.onclick = function(ev){
+        var b = ev.target.closest && ev.target.closest('button[data-partida]');
+        if(!b) return;
+        var u = document.getElementById('gateEmail');
+        try { if(u && u.value) sessionStorage.setItem('krysalis_gate_user', u.value); } catch(e){}
+        cambiarPartida(b.getAttribute('data-partida'));
+      };
+    }
+    try {
+      var pre = sessionStorage.getItem('krysalis_gate_user');
+      if(pre){ sessionStorage.removeItem('krysalis_gate_user'); var ue = document.getElementById('gateEmail'); if(ue) ue.value = pre; }
+    } catch(e){}
     wrap.hidden = false;
   }
   if(typeof hideLoadingScreen === 'function') hideLoadingScreen();
