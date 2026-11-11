@@ -1,6 +1,6 @@
 {
-  "version": "1.4.139.0",
-  "build": "2026.11.11.1",
-  "updatedAt": "2026-11-11T12:00:00Z",
-  "changelog": "Crear una ficha o un PNJ y editarlo enseguida ya no crea dos copias ni pierde lo editado. Si alguna vez llegan dos copias de la misma ficha, se enseña solo la más reciente."
+  "version": "1.4.140.0",
+  "build": "2026.11.11.2",
+  "updatedAt": "2026-11-11T23:30:00Z",
+  "changelog": "El máster puede cambiar la vida máxima y el maná máximo de cualquier ficha (jugador o PNJ) desde Estadísticas de Combate, con aviso y confirmación. Las subidas de nivel siguen sumando sobre ese valor."
 }
