@@ -1053,14 +1053,18 @@ function handleClick(e){
     var vmNombre = vmEsVida ? "Vida máxima" : "Maná máximo";
     c.combat = c.combat || {};
     var vmAntes = num(c.combat[vmKey], 10);
+    var vmId = c.id;
     var vmPoner = function(v){
-      c.combat[vmKey] = v;
+      // La ficha puede haber llegado renovada de la nube mientras la ventana estaba abierta: se cambia la vigente
+      var f = (state.characters || []).find(function(x){ return x.id === vmId; }) || c;
+      f.combat = f.combat || {};
+      f.combat[vmKey] = v;
       // Si lo actual queda por encima del nuevo máximo, se recorta
-      clampCurrentVitalsToEffectiveMax(c);
-      c._lastLocalEdit = Date.now();
-      markCharDirty(c.id, "combat." + vmKey);
+      clampCurrentVitalsToEffectiveMax(f);
+      f._lastLocalEdit = Date.now();
+      markCharDirty(f.id, "combat." + vmKey);
       saveState();
-      broadcastCharStatUpdate(c.id, c.combat);
+      broadcastCharStatUpdate(f.id, f.combat);
       renderTopbar(); renderTab();
     };
     pedirMaximoVital({
