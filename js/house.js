@@ -5110,13 +5110,20 @@ async function handleHousePerkAction(act, btn){
     var newName = document.getElementById("housePerkNewName").value.trim();
     if(!newName){ if(typeof showToast === "function") showToast("Ponle un nombre a la mejora.", "warning"); return; }
     var maxOrder = (houseState.perks || []).reduce(function(m, p){ return Math.max(m, p.sort_order || 0); }, 0);
-    var ins = await supabaseClient.from("house_perks").insert({
+    // Un solo envío a la vez: dos toques seguidos en Añadir creaban la mejora dos veces
+    if(window._housePerkAdding) return;
+    window._housePerkAdding = true;
+    var ins;
+    try {
+      ins = await supabaseClient.from("house_perks").insert({
       house_id: houseState.house.id,
       icon: document.getElementById("housePerkNewIcon").value.trim() || "✨",
       name: newName,
       description: document.getElementById("housePerkNewDesc").value.trim(),
       sort_order: maxOrder + 1
     }).select();
+    } catch(ePerk){ ins = { error: ePerk }; }
+    window._housePerkAdding = false;
     if(ins.error){
       if(typeof showToast === "function") showToast("No se ha podido añadir la mejora.", "warning");
       return;
