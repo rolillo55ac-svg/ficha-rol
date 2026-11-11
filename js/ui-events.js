@@ -216,6 +216,39 @@ function handleChange(e){
 }
 
 
+// Ventana del máster para escribir un máximo de vida o maná. Devuelve el número, o null si se cancela.
+function pedirMaximoVital(o){
+  return new Promise(function(resolve){
+    var ov = document.createElement("div");
+    ov.className = "modal-overlay";
+    ov.style.zIndex = "10002";
+    ov.innerHTML = '<div class="modal confirm-quitar" role="dialog" aria-modal="true">'+
+      '<h2><span>'+esc(o.titulo)+'</span></h2>'+
+      '<p class="confirm-quitar-txt">'+esc(o.texto)+'</p>'+
+      '<input type="number" inputmode="numeric" class="k-input" style="min-height:44px;width:100%;margin-bottom:12px;" aria-label="Nuevo máximo" min="'+o.minimo+'" max="9999" step="1" value="'+o.valor+'">'+
+      '<div class="confirm-quitar-btns">'+
+        '<button type="button" class="btn-solid-gold confirm-quitar-btn" data-r="0">Cancelar</button>'+
+        '<button type="button" class="btn-compact confirm-quitar-btn" data-r="1">Seguir</button>'+
+      '</div></div>';
+    var inp = ov.querySelector("input");
+    function fin(v){ if(ov.parentNode) ov.parentNode.removeChild(ov); resolve(v); }
+    ov.addEventListener("click", function(e){
+      if(e.target === ov){ fin(null); return; }
+      var b = e.target.closest ? e.target.closest("[data-r]") : null;
+      if(!b) return;
+      if(b.getAttribute("data-r") !== "1"){ fin(null); return; }
+      var v = parseInt(inp.value, 10);
+      if(isNaN(v) || v < o.minimo || v > 9999){
+        if(typeof showToast === "function") showToast("Escribe un número entre " + o.minimo + " y 9999.", "warning");
+        return;
+      }
+      fin(v);
+    });
+    document.body.appendChild(ov);
+    inp.focus(); inp.select();
+  });
+}
+
 function clampCurrentVitalsToEffectiveMax(c){
   if(!c || !c.combat) return false;
   var changed = false;
@@ -1009,6 +1042,43 @@ function handleClick(e){
       if(!ok) return;
       window._npcAttrDesbloq = c.id;
       renderTab();
+    });
+    return;
+  }
+  if(action==="vital-max-edit"){
+    if(!isGM()) return;
+    var vmKey = btn.getAttribute("data-stat");
+    if(vmKey !== "pvMax" && vmKey !== "manaMax") return;
+    var vmEsVida = vmKey === "pvMax";
+    var vmNombre = vmEsVida ? "Vida máxima" : "Maná máximo";
+    c.combat = c.combat || {};
+    var vmAntes = num(c.combat[vmKey], 10);
+    var vmId = c.id;
+    var vmPoner = function(v){
+      // La ficha puede haber llegado renovada de la nube mientras la ventana estaba abierta: se cambia la vigente
+      var f = (state.characters || []).find(function(x){ return x.id === vmId; }) || c;
+      f.combat = f.combat || {};
+      f.combat[vmKey] = v;
+      // Si lo actual queda por encima del nuevo máximo, se recorta
+      clampCurrentVitalsToEffectiveMax(f);
+      f._lastLocalEdit = Date.now();
+      markCharDirty(f.id, "combat." + vmKey);
+      saveState();
+      broadcastCharStatUpdate(f.id, f.combat);
+      renderTopbar(); renderTab();
+    };
+    pedirMaximoVital({
+      titulo: vmNombre + " de " + (c.name || "la ficha"),
+      texto: "Ahora: " + vmAntes + ". Es el valor base, sin estados ni magias. Las subidas de nivel seguirán sumando sobre lo que pongas. Si lo bajas, " + (vmEsVida ? "la vida" : "el maná") + " actual se recorta al nuevo máximo; si lo subes, lo actual no cambia.",
+      valor: vmAntes,
+      minimo: vmEsVida ? 1 : 0
+    }).then(function(vmNuevo){
+      if(vmNuevo === null || vmNuevo === vmAntes) return;
+      confirmarAccion({ titulo: "¿Cambiar " + vmNombre + " de " + vmAntes + " a " + vmNuevo + "?", texto: (c.isNPC ? "PNJ: " : "Jugador: ") + (c.name || ""), boton: "Cambiar", peligro: vmNuevo < vmAntes }).then(function(ok){
+        if(!ok) return;
+        vmPoner(vmNuevo);
+        if(typeof avisoDeshacer === "function") avisoDeshacer(vmNombre + ": " + vmAntes + " → " + vmNuevo, function(){ vmPoner(vmAntes); });
+      });
     });
     return;
   }

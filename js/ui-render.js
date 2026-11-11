@@ -983,6 +983,11 @@ function tplCombate(c){
       combatStat("Def. Mágica","defensaMagica",cb.defensaMagica,false)+
       combatStat("Escudo","escudoActual",cb.escudoActual,false)+
     '</div>'+
+    // Vida y maná máximos: solo el máster, con ventana de aviso (la subida de nivel sigue sumando encima)
+    (isGM() ? '<div class="npc-attr-lock-row vital-max-row" style="gap:8px;flex-wrap:wrap;margin:8px 0 0;">'+
+      '<button type="button" class="btn-compact" style="min-height:44px;" data-action="vital-max-edit" data-stat="pvMax">Vida máx. '+num(cb.pvMax,10)+' · Cambiar</button>'+
+      '<button type="button" class="btn-compact" style="min-height:44px;" data-action="vital-max-edit" data-stat="manaMax">Maná máx. '+num(cb.manaMax,10)+' · Cambiar</button>'+
+    '</div>' : '')+
   '</div>';
 
   // 5. Armas del Personaje
