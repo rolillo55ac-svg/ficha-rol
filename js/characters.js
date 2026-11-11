@@ -666,6 +666,18 @@ async function pullAllFromSupabase(){
         return n && n !== "sin personaje" && n !== "nuevo personaje" && n !== "kaelen mago";
       });
 
+      // Dos filas con el mismo id de ficha (no debería pasar): se enseña solo la más reciente y queda apuntado
+      var masReciente = {};
+      pulledChars.forEach(function(c){
+        var prev = masReciente[c.id];
+        if(!prev || (c._serverUpdatedAt || 0) > (prev._serverUpdatedAt || 0)) masReciente[c.id] = c;
+      });
+      pulledChars = pulledChars.filter(function(c){
+        if(masReciente[c.id] === c) return true;
+        if(typeof registrarErrorCliente === 'function') registrarErrorCliente("Ficha duplicada en la nube (" + (c.name || c.id) + "): filas " + c.db_id + " y " + masReciente[c.id].db_id, "characters.js", 0);
+        return false;
+      });
+
       // Ensure all official characters exist in the database (never overwrite existing player modifications)
       var officials = getOfficialCharacters();
       officials.forEach(function(off){
@@ -875,6 +887,18 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
 
   // 1. SI NO TIENE db_id: Es un personaje nuevo que debe INSERTARSE
   if(!c.db_id){
+    // Un solo envío de creación por ficha: si no, crear y editar enseguida hacía dos filas con el mismo id.
+    // Lo que se cambie mientras tanto sale después como parche a la fila creada.
+    if(charPushInFlight[c.id]){
+      if(explicitPatch && typeof dirtyCharPatches !== 'undefined'){
+        var accN = dirtyCharPatches.get(c.id) || {};
+        try { Object.assign(accN, JSON.parse(JSON.stringify(explicitPatch))); } catch(eN){}
+        dirtyCharPatches.set(c.id, accN);
+      }
+      charPushQueued[c.id] = true;
+      return;
+    }
+    charPushInFlight[c.id] = true;
     var cleanData = JSON.parse(JSON.stringify(c));
     delete cleanData._isDirty;
     delete cleanData._lastLocalEdit;
@@ -897,24 +921,69 @@ async function pushCharacterById(charId, forceOverwrite, explicitPatch){
 
     try{
       var insertRes = await supabaseClient.from('characters').insert(payload).select();
-      if(insertRes.error){
+      var newRow = (!insertRes.error && insertRes.data) ? insertRes.data[0] : null;
+      if(insertRes.error && (insertRes.error.code === '23505' || /duplicate key|characters_data_id_uniq/i.test(insertRes.error.message || ''))){
+        // La nube ya tiene una fila con este id (otra pestaña o un envío anterior): se sigue con esa, sin crear otra
+        var exRes = await supabaseClient.from('characters').select('id, data, updated_at').eq('data->>id', c.id).limit(1);
+        newRow = (!exRes.error && exRes.data) ? exRes.data[0] : null;
+        if(newRow){
+          cleanData = newRow.data || {};
+          // De la ficha local solo vale lo que estaba pendiente; el resto manda la fila de la nube
+          var pendR = (Array.isArray(c._pendingKeys) ? c._pendingKeys : []).concat(Object.keys((typeof dirtyCharPatches !== 'undefined' && dirtyCharPatches.get(c.id)) || {}));
+          var locR = (state.characters||[]).find(function(x){ return x.id === c.id; }) || c;
+          Object.keys(cleanData).forEach(function(k){
+            if(k === 'id' || k.charAt(0) === '_' || pendR.indexOf(k) !== -1) return;
+            try { locR[k] = JSON.parse(JSON.stringify(cleanData[k])); } catch(eR){}
+          });
+          if(typeof registrarErrorCliente === 'function') registrarErrorCliente("Creación repetida de ficha evitada (" + (c.name || c.id) + ")", "characters.js", 0);
+        }
+      }
+      if(!newRow){
         console.error('Error creando personaje en Supabase:', insertRes.error);
         notifyCharSaveFailed(c);
         return;
       }
-      if(insertRes.data && insertRes.data[0]){
-        c.db_id = insertRes.data[0].id;
-        c._serverUpdatedAt = insertRes.data[0].updated_at ? new Date(insertRes.data[0].updated_at).getTime() : Date.now();
-        if(typeof snapshotCharacterSynced === 'function') snapshotCharacterSynced(c);
-        if(typeof subscribeToActiveCharacter === 'function') subscribeToActiveCharacter(c.db_id);
+      // La ficha puede haber sido sustituida en memoria (lectura de la nube) mientras se creaba
+      var curN = (state.characters||[]).find(function(x){ return x.id === c.id; }) || c;
+      c.db_id = newRow.id;
+      curN.db_id = newRow.id;
+      curN._serverUpdatedAt = newRow.updated_at ? new Date(newRow.updated_at).getTime() : Date.now();
+      // Solo se da por guardado lo que se envió; lo cambiado mientras se creaba sigue pendiente y sale como parche
+      if(typeof snapshotCharacterSynced === 'function'){
+        snapshotCharacterSynced(cleanData);
+        curN._lastSyncedData = cleanData._lastSyncedData || {};
       }
-      clearCharPending(c);
-      c._saveRetries = 0;
+      if(typeof subscribeToActiveCharacter === 'function') subscribeToActiveCharacter(curN.db_id);
+      var accIns = (typeof dirtyCharPatches !== 'undefined') ? dirtyCharPatches.get(curN.id) : null;
+      var diffIns = (typeof getCharacterDiffPatch === 'function') ? Object.keys(getCharacterDiffPatch(curN)) : [];
+      diffIns = diffIns.filter(function(k){ return k !== 'money'; });
+      if(accIns){
+        Object.keys(accIns).forEach(function(k){
+          if(JSON.stringify(accIns[k]) === JSON.stringify(cleanData[k])) delete accIns[k];
+        });
+      }
+      if(!diffIns.length && (!accIns || !Object.keys(accIns).length)){
+        clearCharPending(curN);
+      } else {
+        curN._pendingKeys = [];
+        addCharPendingKeys(curN, diffIns);
+        curN._isDirty = true;
+        dirtyCharIds.add(curN.id);
+        charPushQueued[c.id] = true;
+      }
+      curN._saveRetries = 0;
       saveState(true);
       updateSyncBadge("synced");
     }catch(errIns){
       console.error('Excepción insertando personaje:', errIns);
       notifyCharSaveFailed(c);
+    }finally{
+      delete charPushInFlight[c.id];
+      if(charPushQueued[c.id]){
+        delete charPushQueued[c.id];
+        // Solo si ya hay fila: si la creación falló, lo reintenta el guardado normal, no un bucle
+        if(c.db_id) pushCharacterById(c.id);
+      }
     }
     return;
   }
